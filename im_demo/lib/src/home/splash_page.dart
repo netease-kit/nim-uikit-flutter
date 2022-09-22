@@ -29,8 +29,10 @@ class _SplashState extends State<SplashPage> {
     if(haveLogin){
       return const HomePage();
     }else{
-      return Center(
-        child: Text("will go to homePage after login",style: TextStyle(fontSize: 16),),
+      return Scaffold(
+        body: Center(
+          child: Text("will go to homePage after login...",style: TextStyle(fontSize: 16),),
+        ),
       );
     }
   }
