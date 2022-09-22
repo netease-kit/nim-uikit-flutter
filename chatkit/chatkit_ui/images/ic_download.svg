@@ -1,0 +1,10 @@
+<!--
+  - Copyright (c) 2022 NetEase, Inc. All rights reserved.
+  - Use of this source code is governed by a MIT license that can be
+  - found in the LICENSE file.
+  -->
+
+<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+<circle cx="14" cy="14" r="14" fill="#4C4C4C"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M14.5 6C15.0523 6 15.5 6.44772 15.5 7V10H13.5V7C13.5 6.44772 13.9477 6 14.5 6ZM13.5 10H10C8.89543 10 8 10.8954 8 12V20C8 21.1046 8.89543 22 10 22H19C20.1046 22 21 21.1046 21 20V12C21 10.8954 20.1046 10 19 10H15.5V16.0858L17.2929 14.2929C17.6834 13.9024 18.3166 13.9024 18.7071 14.2929C19.0976 14.6834 19.0976 15.3166 18.7071 15.7071L15.2071 19.2071C14.8166 19.5976 14.1834 19.5976 13.7929 19.2071L10.2929 15.7071C9.90237 15.3166 9.90237 14.6834 10.2929 14.2929C10.6834 13.9024 11.3166 13.9024 11.7071 14.2929L13.5 16.0858V10Z" fill="white"/>
+</svg>

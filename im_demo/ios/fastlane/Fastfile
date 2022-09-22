@@ -1,0 +1,39 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+# Uncomment the line if you want fastlane to automatically update itself
+# update_fastlane
+
+default_platform(:ios)
+
+platform :ios do
+  desc "Build enterprise"
+      lane :build_enterprise do |options|
+
+        update_app_identifier(
+          app_identifier: "com.netease.yunxin.app.flutter.im.imDemo",
+          plist_path: "Runner/Info.plist",
+        )
+        gym(
+          configuration: "Release",
+          scheme: "Runner",
+          clean: true,
+          include_bitcode: false,
+          include_symbols: options[:with_archive],
+          export_method: 'enterprise',
+          archive_path: options[:archive_path],
+          output_directory: options[:output_directory],
+          output_name: options[:output_name],
+          export_options: "fastlane/options/EnterpriseExportOptions.plist"
+        )
+      end
+end

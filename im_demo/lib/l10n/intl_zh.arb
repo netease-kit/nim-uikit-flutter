@@ -1,0 +1,71 @@
+{
+  "@@locale": "zh",
+  "appName": "云信IM",
+  "yunxin_name": "网易云信",
+  "yunxin_desc": "真正稳定的IM 云服务",
+  "welcome_button": "注册/登录",
+  "message": "消息",
+  "contact": "通讯录",
+  "mine": "我的",
+  "conversation": "会话列表",
+  "dataIsLoading": "数据加载中...",
+  "tab_mine_account": "账号:{account}",
+  "@tab_mine_account": {
+    "placeholders": {
+      "account": {
+        "type": "String"
+      }
+    }
+  },
+  "mine_collect": "收藏",
+  "mine_about": "关于云信",
+  "mine_setting": "设置",
+  "mine_version": "版本号",
+  "mine_product": "产品介绍",
+  "user_info_title": "个人信息",
+  "user_info_avatar": "头像",
+  "user_info_account": "账号",
+  "user_info_nickname": "昵称",
+  "user_info_sexual": "性别",
+  "user_info_birthday": "生日",
+  "user_info_phone": "手机",
+  "user_info_email": "邮箱",
+  "user_info_sign": "个性签名",
+  "action_copy_success": "复制成功！",
+  "sexual_male": "男",
+  "sexual_female": "女",
+  "sexual_unknown": "未知",
+  "user_info_complete": "完成",
+  "request_fail": "操作失败",
+  "mine_logout": "退出登录",
+  "logout_dialog_content": "确认注销当前登录账号？",
+  "logout_dialog_agree": "是",
+  "logout_dialog_disagree": "否",
+  "setting_notify": "消息提醒",
+  "setting_clear_cache": "清理缓存",
+  "setting_play_mode": "听筒模式",
+  "setting_filter_notify": "过滤通知",
+  "setting_friend_delete_mode": "删除好友是否同步删除备注",
+  "setting_message_read_mode": "消息已读未读功能",
+  "setting_notify_info": "新消息通知",
+  "setting_notify_mode": "消息提醒方式",
+  "setting_notify_mode_ring": "响铃模式",
+  "setting_notify_mode_shake": "震动模式",
+  "setting_notify_push": "推送设置",
+  "setting_notify_push_sync": "PC/Web同步接收推送",
+  "setting_notify_push_detail": "通知栏不显示消息详情",
+  "clear_message": "清理所有聊天记录",
+  "clear_sdk_cache": "清理SDK文件缓存",
+  "clear_message_tips": "聊天记录已清理",
+  "cache_size_text": "{size} M",
+  "@cache_size_text": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "not_usable": "功能暂未开放",
+  "setting_fail": "设置失败",
+  "setting_success": "设置成功"
+}

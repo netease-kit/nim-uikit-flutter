@@ -1,0 +1,71 @@
+{
+  "@@locale": "en",
+  "appName": "Netease IM",
+  "yunxin_name": "Netease CommsEase",
+  "yunxin_desc": "Stable instant messaging service",
+  "welcome_button": "register/login",
+  "message": "message",
+  "contact": "contact",
+  "mine": "mine",
+  "conversation": "conversation",
+  "dataIsLoading": "Loading...",
+  "tab_mine_account": "Account:{account}",
+  "@tab_mine_account": {
+    "placeholders": {
+      "account": {
+        "type": "String"
+      }
+    }
+  },
+  "mine_collect": "Collect",
+  "mine_about": "About",
+  "mine_setting": "Setting",
+  "mine_version": "Version",
+  "mine_product": "Product introduction",
+  "user_info_title": "User info",
+  "user_info_avatar": "Avatar",
+  "user_info_account": "Account",
+  "user_info_nickname": "Nickname",
+  "user_info_sexual": "Sex",
+  "user_info_birthday": "Birthday",
+  "user_info_phone": "Phone",
+  "user_info_email": "Email",
+  "user_info_sign": "Signature",
+  "action_copy_success": "Copy success!",
+  "sexual_male": "Male",
+  "sexual_female": "Female",
+  "sexual_unknown": "Unknown",
+  "user_info_complete": "Complete",
+  "request_fail": "Request fail",
+  "mine_logout": "Logout",
+  "logout_dialog_content": "Are you sure to log out of the current login account?",
+  "logout_dialog_agree": "YES",
+  "logout_dialog_disagree": "NO",
+  "setting_notify": "Notify",
+  "setting_clear_cache": "Clear cache",
+  "setting_play_mode": "Handset mode",
+  "setting_filter_notify": "Filter notify",
+  "setting_friend_delete_mode": "Delete notes when deleting friends",
+  "setting_message_read_mode": "Message read and unread function",
+  "setting_notify_info": "New message notification",
+  "setting_notify_mode": "Message reminder mode",
+  "setting_notify_mode_ring": "Ring Mode",
+  "setting_notify_mode_shake": "Vibration Mode",
+  "setting_notify_push": "Push settings",
+  "setting_notify_push_sync": "Receive pushes synchronously on PC/Web",
+  "setting_notify_push_detail": "Notification bar does not show message details",
+  "clear_message": "Clear all chat history",
+  "clear_sdk_cache": "Clear SDK file cache",
+  "clear_message_tips": "Chat history has been cleaned up",
+  "cache_size_text": "{size} M",
+  "@cache_size_text": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "not_usable": "Feature not yet available",
+  "setting_fail": "Setting failed",
+  "setting_success": "Set successfully"
+}

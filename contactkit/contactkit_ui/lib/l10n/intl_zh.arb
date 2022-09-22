@@ -1,0 +1,141 @@
+{
+  "@@locale": "zh",
+  "contact_title": "通讯录",
+  "contact_nick": "昵称:{userName}",
+  "@contact_nick": {
+    "placeholders": {
+      "userName": {
+        "type": "String"
+      }
+    }
+  },
+  "contact_account": "账号:{userName}",
+  "@contact_account": {
+    "placeholders": {
+      "userName": {
+        "type": "String"
+      }
+    }
+  },
+  "contact_verify_message": "验证消息",
+  "contact_black_list": "黑名单",
+  "contact_team": "我的群聊",
+  "contact_comment": "备注名",
+  "contact_birthday": "生日",
+  "contact_phone": "手机",
+  "contact_mail": "邮箱",
+  "contact_signature": "个性签名",
+  "contact_message_notice": "消息提醒",
+  "contact_add_to_blacklist": "加入黑名单",
+  "contact_chat": "聊天",
+  "contact_delete": "删除好友",
+  "contact_delete_specific_friend": "将联系人\"{userName}\"删除",
+  "@contact_delete_specific_friend": {
+    "placeholders": {
+      "userName": {
+        "type": "String"
+      }
+    }
+  },
+  "contact_cancel": "取消",
+  "contact_add_friend": "添加好友",
+  "contact_you_will_never_receive_any_message_from_those_person": "你不会收到列表中任何联系人的消息",
+  "contact_release": "解除",
+  "contact_user_selector": "人员选择",
+  "contact_sure_with_count": "确定({count})",
+  "@contact_sure_with_count": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "contact_select_as_most": "选择人员已达上限",
+  "contact_clean": "清空",
+  "contact_accept": "同意",
+  "contact_accepted": "已同意",
+  "contact_rejected": "已拒绝",
+  "contact_ignored": "已忽略",
+  "contact_expired": "已过期",
+  "contact_reject": "拒绝",
+  "contact_apply_from": "{user}好友申请",
+  "@contact_apply_from": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "contact_someone_invite_your_join_team": "{user}邀请你加入{team}",
+  "@contact_someone_invite_your_join_team": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "team": {
+        "type": "String"
+      }
+    }
+  },
+  "contact_some_accept_your_apply": "{user}同意了你的好友请求",
+  "@contact_some_accept_your_apply": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "contact_some_reject_your_apply": "{user}拒绝了你的好友请求",
+  "@contact_some_reject_your_apply": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "contact_some_accept_your_invitation": "{user}同意了你入群邀请",
+  "@contact_some_accept_your_invitation": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "contact_some_reject_your_invitation": "{user}拒绝了你入群邀请",
+  "@contact_some_reject_your_invitation": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "contact_some_add_your_as_friend": "{user}已经添加你为好友",
+  "@contact_some_add_your_as_friend": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "contact_someone_apply_join_team": "{user}申请加入{team}",
+  "@contact_someone_apply_join_team": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "team": {
+        "type": "String"
+      }
+    }
+  },
+  "contact_some_reject_your_team_apply": "{user}拒绝了你入群申请",
+  "@contact_some_reject_your_team_apply": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "contact_save": "保存",
+  "contact_have_send_apply": "已发送申请"
+}

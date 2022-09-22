@@ -1,0 +1,25 @@
+{
+  "@@locale": "zh",
+  "conversation_title":"云信IM",
+  "create_advanced_team_success": "成功创建高级群",
+  "stick_title": "置顶",
+  "cancel_stick_title": "取消置顶",
+  "delete_title": "删除",
+  "recent_title": "最近聊天",
+  "cancel_title": "取消",
+  "sure_title": "确定",
+  "sure_count_title": "确定({size})",
+  "@sure_count_title": {
+    "placeholders": {
+      "size": {
+        "type": "int"
+      }
+    }
+  },
+  "conversation_network_error_tip": "当前网络不可用，请检查你当网络设置。",
+  "add_friend": "添加好友",
+  "add_friend_search_hint": "请输入账号",
+  "add_friend_search_empty_tips": "该用户不存在",
+  "create_group_team": "创建讨论组",
+  "create_advanced_team": "创建高级群"
+}
