@@ -1,0 +1,11 @@
+<!--
+  - Copyright (c) 2022 NetEase, Inc. All rights reserved.
+  - Use of this source code is governed by a MIT license that can be
+  - found in the LICENSE file.
+  -->
+
+<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+<circle cx="14" cy="14" r="14" fill="#4C4C4C"/>
+<path d="M9 9L18.5 18.5" stroke="white" stroke-width="2" stroke-linecap="round"/>
+<path d="M19 9L9.5 18.5" stroke="white" stroke-width="2" stroke-linecap="round"/>
+</svg>

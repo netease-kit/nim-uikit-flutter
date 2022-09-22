@@ -1,0 +1,13 @@
+<!--
+  - Copyright (c) 2022 NetEase, Inc. All rights reserved.
+  - Use of this source code is governed by a MIT license that can be
+  - found in the LICENSE file.
+  -->
+
+<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M0.5 2.5L12 13" stroke="#656A72" stroke-linecap="round"/>
+<path d="M11.4737 10.5005V6.50003C11.4737 3.88394 9.35293 1.76318 6.73684 1.76318C5.57009 1.76318 4.50186 2.18502 3.67636 2.8845M2 6.50003V10.5005H6.73684" stroke="#656A72" stroke-linecap="round"/>
+<path d="M0.8125 10.5C3.43099 10.5 4.95614 10.5 7 10.5M13 10.5C12.2123 10.5 12.197 10.5 11.5 10.5" stroke="#656A72" stroke-linecap="round"/>
+<path d="M5.5 13H8.5" stroke="#656A72" stroke-linecap="round"/>
+<path d="M6 1C6 0.447715 6.44772 0 7 0C7.55228 0 8 0.447715 8 1V1.5H6V1Z" fill="#656A72"/>
+</svg>
