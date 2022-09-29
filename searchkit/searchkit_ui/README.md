@@ -9,5 +9,5 @@
 
 ```
 dependencies:
-  searchkit_ui: ^1.0.0-rc.0
+  searchkit_ui: ^1.0.0
 ```

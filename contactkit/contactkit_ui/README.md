@@ -9,5 +9,5 @@
 
 ```
 dependencies:
-  contactkit_ui: ^1.0.0-rc.0
+  contactkit_ui: ^1.0.0
 ```

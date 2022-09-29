@@ -12,13 +12,13 @@ import 'generated/l10n.dart';
 import 'page/add_friend_page.dart';
 import 'page/conversation_page.dart';
 
-typedef ConversationItemClick = void Function(
+typedef ConversationItemClick = bool Function(
     ConversationInfo data, int position);
-typedef ConversationItemLongClick = void Function(
+typedef ConversationItemLongClick = bool Function(
     ConversationInfo data, int position);
-typedef ConversationAvatarClick = void Function(
+typedef ConversationAvatarClick = bool Function(
     ConversationInfo data, int position);
-typedef ConversationAvatarLongClick = void Function(
+typedef ConversationAvatarLongClick = bool Function(
     ConversationInfo data, int position);
 typedef ConversationItemBuilder = Widget Function(
     ConversationInfo data, int position);
@@ -35,6 +35,9 @@ class ConversationTitleBarConfig {
 
   /// 是否展示 Title Bar 次最右侧图标
   final bool showTitleBarRight2Icon;
+
+  /// 是否将 Title 居中展示
+  final bool centerTitle;
 
   /// Title Bar 左侧图标
   final Widget? titleBarLeftIcon;
@@ -56,6 +59,7 @@ class ConversationTitleBarConfig {
       this.showTitleBarLeftIcon = true,
       this.showTitleBarRightIcon = true,
       this.showTitleBarRight2Icon = true,
+      this.centerTitle = false,
       this.titleBarLeftIcon,
       this.titleBarRightIcon,
       this.titleBarRight2Icon,

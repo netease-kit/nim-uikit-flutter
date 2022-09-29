@@ -17,8 +17,8 @@ import 'page/contact_kit_team_list_page.dart';
 import 'page/contact_page.dart';
 import 'widgets/contact_kit_contact_list_view.dart';
 
-typedef TopEntranceClick = void Function(int position, TopListItem data);
-typedef ContactItemClick = void Function(int position, ContactInfo data);
+typedef TopEntranceClick = bool Function(int position, TopListItem data);
+typedef ContactItemClick = bool Function(int position, ContactInfo data);
 typedef ContactItemSelect = void Function(bool select, ContactInfo data);
 
 typedef TopListItemBuilder = Widget? Function(TopListItem item);
@@ -43,6 +43,9 @@ class ContactTitleBarConfig {
   /// Title Bar 标题文案
   final String? title;
 
+  /// Title Bar 标题居中
+  final bool centerTitle;
+
   /// Title Bar 标题颜色值
   final Color titleColor;
 
@@ -53,6 +56,7 @@ class ContactTitleBarConfig {
       this.titleBarRightIcon,
       this.titleBarRight2Icon,
       this.title,
+      this.centerTitle = false,
       this.titleColor = CommonColors.color_333333});
 }
 

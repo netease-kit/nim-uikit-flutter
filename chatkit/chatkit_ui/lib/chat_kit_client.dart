@@ -4,10 +4,12 @@
 
 import 'dart:core';
 
-import 'package:im_common_ui/router/imkit_router.dart';
-import 'package:im_common_ui/router/imkit_router_constants.dart';
+import 'package:chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
+import 'package:corekit_im/services/message/chat_message.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:im_common_ui/router/imkit_router.dart';
+import 'package:im_common_ui/router/imkit_router_constants.dart';
 import 'package:nim_core/nim_core.dart';
 
 import 'chat_page.dart';
@@ -69,6 +71,8 @@ class ChatUIConfig {
   ///自定义消息构建
   ChatKitMessageBuilder? messageBuilder;
 
+  MessageClickListener? messageClickListener;
+
   ChatUIConfig(
       {this.showTeamMessageStatus,
       this.receiveMessageBg,
@@ -86,7 +90,25 @@ class ChatUIConfig {
       this.popMenuConfig,
       this.keepDefaultMoreAction = true,
       this.moreActions,
-      this.messageBuilder});
+      this.messageBuilder,
+      this.messageClickListener});
+}
+
+///消息点击回调
+class MessageClickListener {
+  PopMenuAction? customPopActions;
+
+  bool Function(ChatMessage message)? onMessageItemClick;
+
+  bool Function(ChatMessage message)? onMessageItemLongClick;
+
+  bool Function(String? userID, {bool isSelf})? onTapAvatar;
+
+  MessageClickListener(
+      {this.onMessageItemLongClick,
+      this.onMessageItemClick,
+      this.customPopActions,
+      this.onTapAvatar});
 }
 
 ///长按弹框开关配置

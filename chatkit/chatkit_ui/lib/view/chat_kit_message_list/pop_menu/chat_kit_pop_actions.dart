@@ -5,21 +5,21 @@
 import 'package:corekit_im/services/message/chat_message.dart';
 
 class PopMenuAction {
-  void Function(ChatMessage message)? onMessageCopy;
+  bool Function(ChatMessage message)? onMessageCopy;
 
-  void Function(ChatMessage message)? onMessageReply;
+  bool Function(ChatMessage message)? onMessageReply;
 
-  void Function(ChatMessage message)? onMessageForward;
+  bool Function(ChatMessage message)? onMessageForward;
 
-  void Function(ChatMessage message, bool isCancel)? onMessagePin;
+  bool Function(ChatMessage message, bool isCancel)? onMessagePin;
 
-  void Function(ChatMessage message)? onMessageMultiSelect;
+  bool Function(ChatMessage message)? onMessageMultiSelect;
 
-  void Function(ChatMessage message)? onMessageCollect;
+  bool Function(ChatMessage message)? onMessageCollect;
 
-  void Function(ChatMessage message)? onMessageDelete;
+  bool Function(ChatMessage message)? onMessageDelete;
 
-  void Function(ChatMessage message)? onMessageRevoke;
+  bool Function(ChatMessage message)? onMessageRevoke;
 
   PopMenuAction(
       {this.onMessageCollect,

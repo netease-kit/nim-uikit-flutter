@@ -15,6 +15,7 @@ import 'package:flutter_svg/svg.dart';
 
 import '../contact_kit_client.dart';
 import '../generated/l10n.dart';
+import '../page/contact_kit_detail_page.dart';
 
 class ContactListView extends StatefulWidget {
   final List<ContactInfo> contactList;
@@ -28,9 +29,6 @@ class ContactListView extends StatefulWidget {
 
   /// 选择回调
   final ContactItemSelect? onSelectedMemberItemChange;
-
-  /// 点击事件回调
-  final ContactItemClick? onTapItem;
 
   /// 顶部列表
   final List<TopListItem>? topList;
@@ -46,7 +44,6 @@ class ContactListView extends StatefulWidget {
       this.config,
       this.isCanSelectMemberItem = false,
       this.onSelectedMemberItemChange,
-      this.onTapItem,
       this.topList,
       this.topListItemBuilder,
       this.selectedUser,
@@ -123,11 +120,19 @@ class ContactListViewState extends State<ContactListView> {
     );
   }
 
-  Widget _buildTop(BuildContext context, TopListItem top) {
+  Widget _buildTop(BuildContext context, TopListItem top, int index) {
     return Container(
       padding: const EdgeInsets.only(left: 20, top: 16, right: 20),
       child: InkWell(
-        onTap: top.onTap,
+        onTap: () {
+          bool handle = false;
+          if (widget.config?.topEntranceClick != null) {
+            handle = widget.config!.topEntranceClick!(index, top);
+          }
+          if (top.onTap != null && !handle) {
+            top.onTap!();
+          }
+        },
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -214,7 +219,7 @@ class ContactListViewState extends State<ContactListView> {
             }
             return Column(
               children: [
-                _buildTop(context, showItem),
+                _buildTop(context, showItem, index),
                 if (index < topList!.length - 1)
                   Container(
                     height: 1,
@@ -231,12 +236,17 @@ class ContactListViewState extends State<ContactListView> {
           } else if (listConfig?.showSelector ?? widget.isCanSelectMemberItem) {
             return _buildItem(context, showItem, true);
           } else {
-            final onTapItem =
-                widget.onTapItem ?? widget.config?.contactItemClick;
             return InkWell(
               onTap: () {
-                if (onTapItem != null) {
-                  onTapItem(index, showItem);
+                bool handle = false;
+                if (widget.config?.contactItemClick != null) {
+                  handle = widget.config!.contactItemClick!(index, showItem);
+                }
+                if (!handle) {
+                  // default to detail
+                  Navigator.push(context, MaterialPageRoute(builder: (context) {
+                    return ContactKitDetailPage(accId: showItem.user.userId!);
+                  }));
                 }
               },
               child: _buildItem(context, showItem, false),

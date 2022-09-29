@@ -6,7 +6,6 @@ import 'package:contactkit_ui/page/contact_kit_black_list_page.dart';
 import 'package:contactkit_ui/page/contact_kit_system_notify_message_page.dart';
 import 'package:contactkit_ui/page/contact_kit_team_list_page.dart';
 import 'package:contactkit_ui/page/viewmodel/contact_viewmodel.dart';
-import 'package:corekit_im/model/contact_info.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -14,7 +13,6 @@ import 'package:provider/provider.dart';
 import '../contact_kit_client.dart';
 import '../generated/l10n.dart';
 import '../widgets/contact_kit_contact_list_view.dart';
-import 'contact_kit_detail_page.dart';
 
 class ContactKitContactPage extends StatefulWidget {
   final ContactUIConfig? config;
@@ -91,12 +89,6 @@ class _ContactKitContactState extends State<ContactKitContactPage> {
     ];
   }
 
-  void _goDetail(int pos, ContactInfo item) {
-    Navigator.push(context, MaterialPageRoute(builder: (context) {
-      return ContactKitDetailPage(accId: item.user.userId!);
-    }));
-  }
-
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -114,7 +106,6 @@ class _ContactKitContactState extends State<ContactKitContactPage> {
               .toList(),
           config: uiConfig,
           topList: uiConfig.headerData ?? _buildDefaultTopList(context),
-          onTapItem: uiConfig.contactItemClick ?? _goDetail,
         );
       },
     );

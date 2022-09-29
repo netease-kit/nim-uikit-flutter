@@ -1,5 +1,9 @@
 # ChatKitUI ChangeLog
 
+## 1.0.0(Sep 30, 2022)
+### New Features
+* 正式版本
+
 ## 1.0.0-rc.0(Sep 22, 2022)
 ### New Features
 * 聊天模块增加单聊、群聊，支持图片、视频、文字和表情消息体。

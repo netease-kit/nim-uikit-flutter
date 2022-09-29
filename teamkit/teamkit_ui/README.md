@@ -9,5 +9,5 @@
 
 ```
 dependencies:
-  teamkit_ui: ^1.0.0-rc.0
+  teamkit_ui: ^1.0.0
 ```

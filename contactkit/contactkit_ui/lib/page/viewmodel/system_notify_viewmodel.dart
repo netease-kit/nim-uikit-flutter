@@ -32,7 +32,7 @@ class SystemNotifyViewModel extends ChangeNotifier {
         } else {
           haveMore = false;
         }
-        if (value.data != null) {
+        if (value.data != null && value.data!.isNotEmpty) {
           lastMessage = value.data!.last;
         }
         notifyListeners();

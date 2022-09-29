@@ -9,6 +9,7 @@ import 'package:chatkit_ui/view/chat_kit_message_list/chat_kit_message_list.dart
 import 'package:chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_item.dart';
 import 'package:chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
 import 'package:chatkit_ui/view_model/chat_view_model.dart';
+import 'package:corekit_im/services/message/chat_message.dart';
 import 'package:im_common_ui/router/imkit_router_constants.dart';
 import 'package:im_common_ui/router/imkit_router_factory.dart';
 import 'package:im_common_ui/widgets/no_network_tip.dart';
@@ -32,7 +33,11 @@ class ChatPage extends StatefulWidget {
 
   final PopMenuAction? customPopActions;
 
-  final void Function(String? userID, {bool isSelf})? onTapAvatar;
+  final bool Function(ChatMessage message)? onMessageItemClick;
+
+  final bool Function(ChatMessage message)? onMessageItemLongClick;
+
+  final bool Function(String? userID, {bool isSelf})? onTapAvatar;
 
   final ChatUIConfig? chatUIConfig;
 
@@ -46,7 +51,9 @@ class ChatPage extends StatefulWidget {
       this.customPopActions,
       this.onTapAvatar,
       this.chatUIConfig,
-      this.messageBuilder})
+      this.messageBuilder,
+      this.onMessageItemClick,
+      this.onMessageItemLongClick})
       : super(key: key);
 
   @override
@@ -172,16 +179,40 @@ class ChatPageState extends State<ChatPage> {
                           },
                           child: ChatKitMessageList(
                             scrollController: autoController,
-                            popMenuAction: widget.customPopActions,
+                            popMenuAction: widget.customPopActions ??
+                                widget.chatUIConfig?.messageClickListener
+                                    ?.customPopActions,
                             anchor: widget.anchor,
                             messageBuilder: widget.messageBuilder ??
                                 widget.chatUIConfig?.messageBuilder ??
                                 ChatKitClient
                                     .instance.chatUIConfig.messageBuilder,
-                            onTapAvatar: widget.onTapAvatar ?? defaultAvatarTap,
+                            onTapAvatar: (String? userId,
+                                {bool isSelf = false}) {
+                              if (widget.onTapAvatar != null &&
+                                  widget.onTapAvatar!(userId, isSelf: isSelf)) {
+                                return true;
+                              }
+                              if (widget.chatUIConfig?.messageClickListener
+                                          ?.onTapAvatar !=
+                                      null &&
+                                  widget.chatUIConfig!.messageClickListener!
+                                      .onTapAvatar!(userId, isSelf: isSelf)) {
+                                return true;
+                              }
+                              defaultAvatarTap(userId, isSelf: isSelf);
+                              return true;
+                            },
                             chatUIConfig: widget.chatUIConfig ??
                                 ChatKitClient.instance.chatUIConfig,
                             teamInfo: context.watch<ChatViewModel>().teamInfo,
+                            onMessageItemClick: widget.onMessageItemClick ??
+                                widget.chatUIConfig?.messageClickListener
+                                    ?.onMessageItemClick,
+                            onMessageItemLongClick:
+                                widget.onMessageItemLongClick ??
+                                    widget.chatUIConfig?.messageClickListener
+                                        ?.onMessageItemLongClick,
                           ),
                         ),
                       ),

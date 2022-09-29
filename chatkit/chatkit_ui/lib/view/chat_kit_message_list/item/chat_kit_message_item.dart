@@ -53,7 +53,11 @@ class ChatKitMessageItem extends StatefulWidget {
 
   final ChatKitMessageBuilder? messageBuilder;
 
-  final void Function(String? userID, {bool isSelf})? onTapAvatar;
+  final bool Function(ChatMessage message)? onMessageItemClick;
+
+  final bool Function(ChatMessage message)? onMessageItemLongClick;
+
+  final bool Function(String? userID, {bool isSelf})? onTapAvatar;
 
   final void Function(ChatMessage message)? onTapFailedMessage;
 
@@ -76,7 +80,9 @@ class ChatKitMessageItem extends StatefulWidget {
       this.onTapFailedMessage,
       required this.scrollToIndex,
       this.teamInfo,
-      this.chatUIConfig})
+      this.chatUIConfig,
+      this.onMessageItemClick,
+      this.onMessageItemLongClick})
       : super(key: key);
 
   @override
@@ -164,7 +170,7 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
     _popMenu?.clean();
     _popMenu = null;
     _popMenu = ChatKitMessagePopMenu(widget.chatMessage, context,
-        popMenuAction: widget.popMenuAction);
+        popMenuAction: widget.popMenuAction, chatUIConfig: widget.chatUIConfig);
     _popMenu!.show();
   }
 
@@ -396,7 +402,7 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   BoxDecoration _getMessageDecoration() {
     if (isSelf() && widget.chatUIConfig?.selfMessageBg != null) {
       return widget.chatUIConfig!.selfMessageBg!;
-    } else if (widget.chatUIConfig?.receiveMessageBg != null) {
+    } else if (!isSelf() && widget.chatUIConfig?.receiveMessageBg != null) {
       return widget.chatUIConfig!.receiveMessageBg!;
     } else {
       Color color = isSelf() ? '#D6E5F6'.toColor() : '#E8EAED'.toColor();
@@ -584,11 +590,25 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
                                                             ],
                                                           ),
                                               ),
+                                              onTap: () {
+                                                if (widget.onMessageItemClick !=
+                                                    null) {
+                                                  widget.onMessageItemClick!(
+                                                      widget.chatMessage);
+                                                }
+                                              },
                                               onLongPress: () {
                                                 //long press
-                                                if (!widget
-                                                    .chatMessage.isRevoke) {
-                                                  _onLongPress(context);
+                                                if (widget.onMessageItemLongClick ==
+                                                        null ||
+                                                    widget.onMessageItemLongClick!(
+                                                            widget
+                                                                .chatMessage) !=
+                                                        true) {
+                                                  if (!widget
+                                                      .chatMessage.isRevoke) {
+                                                    _onLongPress(context);
+                                                  }
                                                 }
                                               },
                                             );

@@ -29,7 +29,11 @@ class ChatKitMessageList extends StatefulWidget {
 
   final ChatKitMessageBuilder? messageBuilder;
 
-  final void Function(String? userID, {bool isSelf})? onTapAvatar;
+  final bool Function(ChatMessage message)? onMessageItemClick;
+
+  final bool Function(ChatMessage message)? onMessageItemLongClick;
+
+  final bool Function(String? userID, {bool isSelf})? onTapAvatar;
 
   final PopMenuAction? popMenuAction;
 
@@ -47,7 +51,9 @@ class ChatKitMessageList extends StatefulWidget {
       this.popMenuAction,
       this.onTapAvatar,
       this.teamInfo,
-      this.chatUIConfig})
+      this.chatUIConfig,
+      this.onMessageItemClick,
+      this.onMessageItemLongClick})
       : super(key: key);
 
   @override
@@ -61,9 +67,15 @@ class ChatKitMessageListState extends State<ChatKitMessageList> {
     Alog.i(tag: 'ChatKit', moduleName: 'message list', content: content);
   }
 
-  void _onMessageCopy(ChatMessage message) {
+  bool _onMessageCopy(ChatMessage message) {
+    var customActions = widget.popMenuAction;
+    if (customActions?.onMessageCopy != null &&
+        customActions!.onMessageCopy!(message)) {
+      return true;
+    }
     Clipboard.setData(ClipboardData(text: message.nimMessage.content));
     Fluttertoast.showToast(msg: S().chat_message_copy_success);
+    return true;
   }
 
   _scrollToIndex(String uuid) {
@@ -114,13 +126,25 @@ class ChatKitMessageListState extends State<ChatKitMessageList> {
     }
   }
 
-  void _onMessageCollect(ChatMessage message) {
+  bool _onMessageCollect(ChatMessage message) {
+    var customActions = widget.popMenuAction;
+    if (customActions?.onMessageCollect != null &&
+        customActions!.onMessageCollect!(message)) {
+      return true;
+    }
     context.read<ChatViewModel>().collectMessage(message.nimMessage);
     Fluttertoast.showToast(msg: S().chat_message_collect_success);
+    return true;
   }
 
-  void _onMessageReply(ChatMessage message) {
+  bool _onMessageReply(ChatMessage message) {
+    var customActions = widget.popMenuAction;
+    if (customActions?.onMessageReply != null &&
+        customActions!.onMessageReply!(message)) {
+      return true;
+    }
     context.read<ChatViewModel>().replyMessage = message;
+    return true;
   }
 
   void _goContactSelector(ChatMessage message) {
@@ -166,7 +190,12 @@ class ChatKitMessageListState extends State<ChatKitMessageList> {
     });
   }
 
-  void _onMessageForward(ChatMessage message) {
+  bool _onMessageForward(ChatMessage message) {
+    var customActions = widget.popMenuAction;
+    if (customActions?.onMessageForward != null &&
+        customActions!.onMessageForward!(message)) {
+      return true;
+    }
     // 转发
     var style = const TextStyle(fontSize: 16, color: CommonColors.color_333333);
     showBottomChoose<int>(context: context, actions: [
@@ -195,21 +224,34 @@ class ChatKitMessageListState extends State<ChatKitMessageList> {
         _goTeamSelector(message);
       }
     });
+    return true;
   }
 
-  void _onMessagePin(ChatMessage message, bool isCancel) {
+  bool _onMessagePin(ChatMessage message, bool isCancel) {
+    var customActions = widget.popMenuAction;
+    if (customActions?.onMessagePin != null &&
+        customActions!.onMessagePin!(message, isCancel)) {
+      return true;
+    }
     if (isCancel) {
       context.read<ChatViewModel>().removeMessagePin(message.nimMessage);
     } else {
       context.read<ChatViewModel>().addMessagePin(message.nimMessage);
     }
+    return true;
   }
 
-  void _onMessageMultiSelect(ChatMessage message) {
+  bool _onMessageMultiSelect(ChatMessage message) {
     ///todo implement
+    return true;
   }
 
-  void _onMessageDelete(ChatMessage message) {
+  bool _onMessageDelete(ChatMessage message) {
+    var customActions = widget.popMenuAction;
+    if (customActions?.onMessageDelete != null &&
+        customActions!.onMessageDelete!(message)) {
+      return true;
+    }
     showCommonDialog(
             context: context,
             title: S().chat_message_action_delete,
@@ -218,6 +260,7 @@ class ChatKitMessageListState extends State<ChatKitMessageList> {
               if (value ?? false)
                 context.read<ChatViewModel>().deleteMessage(message)
             });
+    return true;
   }
 
   void _resendMessage(ChatMessage message) {
@@ -225,7 +268,12 @@ class ChatKitMessageListState extends State<ChatKitMessageList> {
         replyMsg: message.replyMsg, resend: true);
   }
 
-  void _onMessageRevoke(ChatMessage message) {
+  bool _onMessageRevoke(ChatMessage message) {
+    var customActions = widget.popMenuAction;
+    if (customActions?.onMessageRevoke != null &&
+        customActions!.onMessageRevoke!(message)) {
+      return true;
+    }
     showCommonDialog(
             context: context,
             title: S().chat_message_action_revoke,
@@ -247,6 +295,7 @@ class ChatKitMessageListState extends State<ChatKitMessageList> {
                   }
                 })
             });
+    return true;
   }
 
   _loadMore() async {
@@ -262,17 +311,14 @@ class ChatKitMessageListState extends State<ChatKitMessageList> {
 
   PopMenuAction getDefaultPopMenuActions(PopMenuAction? customActions) {
     PopMenuAction actions = PopMenuAction();
-    if (customActions != null) {
-      actions = customActions;
-    }
-    actions.onMessageCopy ??= _onMessageCopy;
-    actions.onMessageReply ??= _onMessageReply;
-    actions.onMessageCollect ??= _onMessageCollect;
-    actions.onMessageForward ??= _onMessageForward;
-    actions.onMessagePin ??= _onMessagePin;
-    actions.onMessageMultiSelect ??= _onMessageMultiSelect;
-    actions.onMessageDelete ??= _onMessageDelete;
-    actions.onMessageRevoke ??= _onMessageRevoke;
+    actions.onMessageCopy = _onMessageCopy;
+    actions.onMessageReply = _onMessageReply;
+    actions.onMessageCollect = _onMessageCollect;
+    actions.onMessageForward = _onMessageForward;
+    actions.onMessagePin = _onMessagePin;
+    actions.onMessageMultiSelect = _onMessageMultiSelect;
+    actions.onMessageDelete = _onMessageDelete;
+    actions.onMessageRevoke = _onMessageRevoke;
     return actions;
   }
 
@@ -349,6 +395,8 @@ class ChatKitMessageListState extends State<ChatKitMessageList> {
                       onTapAvatar: widget.onTapAvatar,
                       chatUIConfig: widget.chatUIConfig,
                       teamInfo: widget.teamInfo,
+                      onMessageItemClick: widget.onMessageItemClick,
+                      onMessageItemLongClick: widget.onMessageItemLongClick,
                     ),
                   );
                 },

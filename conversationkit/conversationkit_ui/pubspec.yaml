@@ -1,6 +1,6 @@
 name: conversationkit_ui
 description: Conversation UI base on ConversationKit.
-version: 1.0.0-rc.0
+version: 1.0.0
 homepage: https://github.com/netease-kit/nim-uikit-flutter
 
 environment:

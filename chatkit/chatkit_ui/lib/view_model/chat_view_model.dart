@@ -171,7 +171,11 @@ class ChatViewModel extends ChangeNotifier {
         .add(ChatServiceObserverRepo.observeMsgStatus().listen((event) {
       _logI(
           'onMessageStatus ${event.uuid} status change -->> ${event.status}, ${event.attachmentStatus}');
-      _updateNimMessage(event);
+      if (_updateNimMessage(event) == false) {
+        //如果更新失败则添加
+        _messageList.add(ChatMessage(event));
+        notifyListeners();
+      }
     }));
 
     //p2p message receipt
@@ -560,7 +564,7 @@ class ChatViewModel extends ChangeNotifier {
     _updateNimMessage(message.nimMessage);
   }
 
-  void _updateNimMessage(NIMMessage nimMessage) {
+  bool _updateNimMessage(NIMMessage nimMessage) {
     int pos = _messageList
         .indexWhere((element) => nimMessage.uuid == element.nimMessage.uuid);
     _logI('update nim message find $pos');
@@ -568,7 +572,9 @@ class ChatViewModel extends ChangeNotifier {
       _logI('update nim message at $pos');
       _messageList[pos].nimMessage = nimMessage;
       notifyListeners();
+      return true;
     }
+    return false;
   }
 
   void forwardMessage(

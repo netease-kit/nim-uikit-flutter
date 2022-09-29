@@ -48,13 +48,16 @@ class _ConversationListState extends State<ConversationList> {
                               index: index,
                             ),
                       onLongPress: () {
-                        if (widget.config.itemLongClick != null) {
-                          widget.config.itemLongClick!(conversationInfo, index);
+                        if (widget.config.itemLongClick != null &&
+                            widget.config.itemLongClick!(
+                                conversationInfo, index)) {
+                          return;
                         }
                       },
                       onTap: () {
-                        if (widget.config.itemClick != null) {
-                          widget.config.itemClick!(conversationInfo, index);
+                        if (widget.config.itemClick != null &&
+                            widget.config.itemClick!(conversationInfo, index)) {
+                          return;
                         }
                         Navigator.pushNamed(
                             context, RouterConstants.PATH_CHAT_PAGE,

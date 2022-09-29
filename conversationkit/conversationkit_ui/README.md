@@ -9,5 +9,5 @@
 
 ```
 dependencies:
-  conversationkit_ui: ^1.0.0-rc.0
+  conversationkit_ui: ^1.0.0
 ```

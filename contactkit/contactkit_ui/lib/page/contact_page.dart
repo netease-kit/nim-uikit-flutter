@@ -20,16 +20,10 @@ class ContactPage extends StatefulWidget {
 }
 
 class _ContactState extends State<ContactPage> {
-  late ContactTitleBarConfig _titleBarConfig;
-
   ContactUIConfig get uiConfig =>
       widget.config ?? ContactKitClient.instance.contactUIConfig;
 
-  @override
-  void initState() {
-    super.initState();
-    _titleBarConfig = uiConfig.contactTitleBarConfig;
-  }
+  ContactTitleBarConfig get _titleBarConfig => uiConfig.contactTitleBarConfig;
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +38,7 @@ class _ContactState extends State<ContactPage> {
                     color: _titleBarConfig.titleColor,
                     fontWeight: FontWeight.bold),
               ),
+              centerTitle: _titleBarConfig.centerTitle,
               actions: [
                 if (_titleBarConfig.showTitleBarRight2Icon)
                   _titleBarConfig.titleBarRight2Icon ??

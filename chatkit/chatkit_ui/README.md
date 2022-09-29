@@ -9,5 +9,5 @@
 
 ```
 dependencies:
-  chatkit_ui: ^1.0.0-rc.0
+  chatkit_ui: ^1.0.0
 ```

@@ -1,6 +1,6 @@
 name: chatkit_ui
 description: Chat UI base on ChatKit.
-version: 1.0.0-rc.0
+version: 1.0.0
 homepage: https://github.com/netease-kit/nim-uikit-flutter
 
 environment:

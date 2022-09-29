@@ -1,6 +1,6 @@
 name: searchkit_ui
 description: Search UI base on SearchKit.
-version: 1.0.0-rc.0
+version: 1.0.0
 homepage: https://github.com/netease-kit/nim-uikit-flutter
 # Remove this line if you wish to publish to pub.dev
 #publish_to: none

@@ -55,13 +55,15 @@ class ConversationItem extends StatelessWidget {
                 radius: config.avatarCornerRadius,
               ),
               onTap: () {
-                if (config.avatarClick != null) {
-                  config.avatarClick!(conversationInfo, index);
+                if (config.avatarClick != null &&
+                    config.avatarClick!(conversationInfo, index)) {
+                  return;
                 }
               },
               onLongPress: () {
-                if (config.avatarLongClick != null) {
-                  config.avatarLongClick!(conversationInfo, index);
+                if (config.avatarLongClick != null &&
+                    config.avatarLongClick!(conversationInfo, index)) {
+                  return;
                 }
               },
             ),
