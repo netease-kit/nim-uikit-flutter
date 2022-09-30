@@ -2,18 +2,18 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:im_common_ui/ui/avatar.dart';
-import 'package:im_common_ui/ui/background.dart';
-import 'package:im_common_ui/ui/dialog.dart';
-import 'package:im_common_ui/ui/photo.dart';
-import 'package:im_common_ui/utils/color_utils.dart';
-import 'package:im_common_ui/widgets/transparent_scaffold.dart';
-import 'package:corekit_im/service_locator.dart';
-import 'package:corekit_im/services/login/login_service.dart';
-import 'package:corekit_im/services/user_info/user_info_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:im_demo/generated/l10n.dart';
+import 'package:netease_common_ui/ui/avatar.dart';
+import 'package:netease_common_ui/ui/background.dart';
+import 'package:netease_common_ui/ui/dialog.dart';
+import 'package:netease_common_ui/ui/photo.dart';
+import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
+import 'package:netease_corekit_im/service_locator.dart';
+import 'package:netease_corekit_im/services/login/login_service.dart';
+import 'package:netease_corekit_im/services/user_info/user_info_provider.dart';
 import 'package:nim_core/nim_core.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter_svg/svg.dart';

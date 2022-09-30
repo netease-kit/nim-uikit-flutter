@@ -2,20 +2,20 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:chatkit_ui/chat_kit_client.dart';
-import 'package:chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_item.dart';
-import 'package:chatkit_ui/view/input/actions.dart';
-import 'package:chatkit_ui/view_model/chat_view_model.dart';
-import 'package:im_common_ui/utils/color_utils.dart';
-import 'package:contactkit/repo/contact_repo.dart';
-import 'package:contactkit_ui/page/contact_page.dart';
-import 'package:conversationkit/repo/conversation_repo.dart';
-import 'package:conversationkit_ui/page/conversation_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:im_demo/generated/l10n.dart';
 import 'package:im_demo/src/mine/mine_page.dart';
+import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:nim_chatkit_ui/chat_kit_client.dart';
+import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_item.dart';
+import 'package:nim_chatkit_ui/view/input/actions.dart';
+import 'package:nim_chatkit_ui/view_model/chat_view_model.dart';
+import 'package:nim_contactkit_ui/page/contact_page.dart';
+import 'package:nim_conversationkit/repo/conversation_repo.dart';
+import 'package:nim_conversationkit_ui/page/conversation_page.dart';
+import 'package:nim_contactkit/repo/contact_repo.dart';
 import 'package:nim_core/nim_core.dart';
 import 'package:provider/provider.dart';
 

@@ -2,15 +2,15 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:im_common_ui/ui/background.dart';
-import 'package:im_common_ui/ui/dialog.dart';
-import 'package:im_common_ui/widgets/common_list_tile.dart';
-import 'package:im_common_ui/widgets/transparent_scaffold.dart';
-import 'package:corekit_im/im_kit_client.dart';
-import 'package:corekit_im/repo/config_repo.dart';
 import 'package:flutter/material.dart';
 import 'package:im_demo/src/mine/setting/clear_cache_page.dart';
 import 'package:im_demo/src/mine/setting/notify_setting_page.dart';
+import 'package:netease_common_ui/ui/background.dart';
+import 'package:netease_common_ui/ui/dialog.dart';
+import 'package:netease_common_ui/widgets/common_list_tile.dart';
+import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
+import 'package:netease_corekit_im/im_kit_client.dart';
+import 'package:netease_corekit_im/repo/config_repo.dart';
 
 import '../../../generated/l10n.dart';
 

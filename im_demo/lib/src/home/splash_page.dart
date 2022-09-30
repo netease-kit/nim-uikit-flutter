@@ -2,7 +2,7 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:corekit_im/im_kit_client.dart';
+import 'package:netease_corekit_im/im_kit_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:im_demo/src/config.dart';

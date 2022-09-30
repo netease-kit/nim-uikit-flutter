@@ -4,7 +4,7 @@
 
 import 'dart:io';
 
-import 'package:corekit_im/repo/config_repo.dart';
+import 'package:netease_corekit_im/repo/config_repo.dart';
 import 'package:nim_core/nim_core.dart';
 import 'package:path_provider/path_provider.dart';
 

@@ -2,14 +2,6 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:chatkit_ui/chat_kit_client.dart';
-import 'package:im_common_ui/common_ui.dart';
-import 'package:im_common_ui/router/imkit_router.dart';
-import 'package:im_common_ui/router/imkit_router_constants.dart';
-import 'package:im_common_ui/utils/color_utils.dart';
-import 'package:contactkit_ui/contact_kit_client.dart';
-import 'package:conversationkit_ui/conversation_kit_client.dart';
-import 'package:corekit_im/im_kit_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -17,9 +9,17 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:im_demo/generated/l10n.dart';
 import 'package:im_demo/src/home/splash_page.dart';
 import 'package:im_demo/src/mine/user_info_page.dart';
+import 'package:netease_common_ui/common_ui.dart';
+import 'package:netease_common_ui/router/imkit_router.dart';
+import 'package:netease_common_ui/router/imkit_router_constants.dart';
+import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_corekit_im/im_kit_client.dart';
+import 'package:nim_chatkit_ui/chat_kit_client.dart';
+import 'package:nim_contactkit_ui/contact_kit_client.dart';
+import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
+import 'package:nim_searchkit_ui/search_kit_client.dart';
+import 'package:nim_teamkit_ui/team_kit_client.dart';
 import 'package:provider/provider.dart';
-import 'package:searchkit_ui/search_kit_client.dart';
-import 'package:teamkit_ui/team_kit_client.dart';
 
 void main() {
   SystemChrome.setSystemUIOverlayStyle(

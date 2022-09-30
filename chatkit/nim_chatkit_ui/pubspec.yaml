@@ -1,0 +1,92 @@
+name: nim_chatkit_ui
+description: Chat UI base on ChatKit.
+version: 1.0.0
+homepage: https://github.com/netease-kit/nim-uikit-flutter
+
+environment:
+  sdk: ">=2.16.1 <3.0.0"
+  flutter: ">=1.17.0"
+
+# Remove this line if you wish to publish to pub.dev
+#publish_to: 'none'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  netease_common_ui:
+    ^1.0.0
+#    path: ../../netease_common_ui
+
+  netease_corekit_im:
+    ^1.0.0
+#    path: ../../../netease_corekit/netease_corekit_im
+
+  nim_chatkit:
+    ^1.0.0
+#    path: ../nim_chatkit
+
+  scroll_to_index: ^2.1.1
+  image_picker: ^0.8.5+3
+  cached_network_image: ^3.2.0
+  video_player: ^2.4.2
+  photo_view: ^0.14.0
+  audioplayers: ^1.0.1
+  visibility_detector: ^0.2.2
+  image_gallery_saver: ^1.7.1
+  fluttertoast: ^8.0.9
+  dio: ^4.0.6
+  super_tooltip: ^1.0.1
+  nim_core: ^1.0.11
+  intl: ^0.17.0
+  flutter_svg: ^1.0.3
+  provider: ^6.0.0
+  permission_handler: ^9.2.0
+  yunxin_alog: ^1.0.7
+  connectivity_plus: ^2.3.6
+  path_provider: ^2.0.11
+  collection: ^1.15.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^1.0.0
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+# The following section is specific to Flutter.
+flutter:
+
+  # To add assets to your package, add an assets section, like this:
+  assets:
+   - images/
+   - emoji/default/
+  #
+  # For details regarding assets in packages, see
+  # https://flutter.dev/assets-and-images/#from-packages
+  #
+  # An image asset can refer to one or more resolution-specific "variants", see
+  # https://flutter.dev/assets-and-images/#resolution-aware.
+
+  # To add custom fonts to your package, add a fonts section here,
+  # in this "flutter" section. Each entry in this list should have a
+  # "family" key with the font family name, and a "fonts" key with a
+  # list giving the asset and other descriptors for the font. For
+  # example:
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
+  #       - asset: fonts/Schyler-Italic.ttf
+  #         style: italic
+  #   - family: Trajan Pro
+  #     fonts:
+  #       - asset: fonts/TrajanPro.ttf
+  #       - asset: fonts/TrajanPro_Bold.ttf
+  #         weight: 700
+  #
+  # For details regarding fonts in packages, see
+  # https://flutter.dev/custom-fonts/#from-packages
+flutter_intl:
+  enabled: true
