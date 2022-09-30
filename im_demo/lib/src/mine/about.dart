@@ -2,10 +2,10 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:im_common_ui/utils/color_utils.dart';
-import 'package:im_common_ui/widgets/common_browse_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_common_ui/widgets/common_browse_page.dart';
 
 import '../../generated/l10n.dart';
 

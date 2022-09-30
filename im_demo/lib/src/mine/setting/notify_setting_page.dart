@@ -4,13 +4,13 @@
 
 import 'dart:io';
 
-import 'package:im_common_ui/ui/background.dart';
-import 'package:im_common_ui/widgets/common_list_tile.dart';
-import 'package:im_common_ui/utils/color_utils.dart';
-import 'package:im_common_ui/widgets/transparent_scaffold.dart';
-import 'package:corekit_im/repo/config_repo.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:netease_common_ui/ui/background.dart';
+import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_common_ui/widgets/common_list_tile.dart';
+import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
+import 'package:netease_corekit_im/repo/config_repo.dart';
 
 import '../../../generated/l10n.dart';
 

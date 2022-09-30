@@ -32,22 +32,25 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  corekit_im: ^1.0.0-rc.0
-#    path: ../../corekit/corekit_im
-  im_common_ui: ^1.0.0-rc.0
-#    path: ../im_common_ui
-  conversationkit: ^1.0.0-rc.0
-#    path: ../conversationkit/conversationkit
-  conversationkit_ui:
-    path: ../conversationkit/conversationkit_ui
-  chatkit_ui:
-    path: ../chatkit/chatkit_ui
-  teamkit_ui:
-    path: ../teamkit/teamkit_ui
-  contactkit_ui:
-    path: ../contactkit/contactkit_ui
-  searchkit_ui:
-    path: ../searchkit/searchkit_ui
+  netease_corekit_im:
+    ^1.0.0
+  #    path: ../../netease_corekit/netease_corekit_im
+  netease_common_ui:
+    ^1.0.0
+  #    path: ../netease_common_ui
+  nim_conversationkit:
+    ^1.0.0
+  #    path: ../conversationkit/nim_conversationkit
+  nim_conversationkit_ui:
+    path: ../conversationkit/nim_conversationkit_ui
+  nim_chatkit_ui:
+    path: ../chatkit/nim_chatkit_ui
+  nim_teamkit_ui:
+    path: ../teamkit/nim_teamkit_ui
+  nim_contactkit_ui:
+    path: ../contactkit/nim_contactkit_ui
+  nim_searchkit_ui:
+    path: ../searchkit/nim_searchkit_ui
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
