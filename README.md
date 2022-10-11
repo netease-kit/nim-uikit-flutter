@@ -25,3 +25,5 @@ dependencies:
   //联系人搜索组件
   nim_contactkit_ui: ^1.0.0
 ```
+### Run demo
+快速跑通请参考[快速跑通](https://doc.yunxin.163.com/messaging/docs/Dg3NDI5MzE?platform=flutter)
