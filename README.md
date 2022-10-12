@@ -26,7 +26,7 @@ dependencies:
   nim_contactkit_ui: ^1.0.0
 ```
 ### Try out
-demo 体验下载   
+体验包下载   
 [iOS](https://www.pgyer.com/tynH)   
 ![ios](ios.png)   
 [Android](https://www.pgyer.com/ettV)     
