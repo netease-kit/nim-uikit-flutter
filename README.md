@@ -26,10 +26,10 @@ dependencies:
   nim_contactkit_ui: ^1.0.0
 ```
 ### Try out
-demo 体验下载
+demo 体验下载   
 [iOS](https://www.pgyer.com/tynH)   
-![ios](ios.png)
-[Android](https://www.pgyer.com/ettV)   
+![ios](ios.png)   
+[Android](https://www.pgyer.com/ettV)     
 ![android](android.png)
 ### Run demo
 快速跑通请参考[快速跑通](https://doc.yunxin.163.com/messaging/docs/Dg3NDI5MzE?platform=flutter)
