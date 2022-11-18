@@ -88,6 +88,7 @@ class ContactViewModel extends ChangeNotifier {
     fetchContacts();
     initListener();
     getIt<ContactProvider>().initListener();
+    featSystemUnreadCount();
   }
 
   void featSystemUnreadCount() {
