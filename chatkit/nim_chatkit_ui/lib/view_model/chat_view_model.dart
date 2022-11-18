@@ -6,9 +6,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:nim_chatkit/repo/chat_message_repo.dart';
-import 'package:nim_chatkit/repo/chat_service_observer_repo.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/widgets.dart';
 import 'package:netease_corekit_im/model/contact_info.dart';
 import 'package:netease_corekit_im/model/team_models.dart';
 import 'package:netease_corekit_im/repo/config_repo.dart';
@@ -17,7 +16,8 @@ import 'package:netease_corekit_im/services/contact/contact_provider.dart';
 import 'package:netease_corekit_im/services/login/login_service.dart';
 import 'package:netease_corekit_im/services/message/chat_message.dart';
 import 'package:netease_corekit_im/services/team/team_provider.dart';
-import 'package:flutter/widgets.dart';
+import 'package:nim_chatkit/repo/chat_message_repo.dart';
+import 'package:nim_chatkit/repo/chat_service_observer_repo.dart';
 import 'package:nim_core/nim_core.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
 
@@ -171,7 +171,8 @@ class ChatViewModel extends ChangeNotifier {
         .add(ChatServiceObserverRepo.observeMsgStatus().listen((event) {
       _logI(
           'onMessageStatus ${event.uuid} status change -->> ${event.status}, ${event.attachmentStatus}');
-      if (_updateNimMessage(event) == false) {
+      if (_updateNimMessage(event) == false &&
+          event.messageDirection == NIMMessageDirection.outgoing) {
         //如果更新失败则添加
         _messageList.add(ChatMessage(event));
         notifyListeners();
