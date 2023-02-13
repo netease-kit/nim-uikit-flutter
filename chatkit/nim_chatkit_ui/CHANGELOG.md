@@ -1,5 +1,9 @@
 # NimChatKitUI ChangeLog
 
+## 1.0.1(Feb 13, 2023)
+### New Features
+* 去除讨论组入口
+
 ## 1.0.0(Sep 30, 2022)
 ### New Features
 * 正式版本

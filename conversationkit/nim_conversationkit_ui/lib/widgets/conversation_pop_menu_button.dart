@@ -77,11 +77,6 @@ class ConversationPopMenuButton extends StatelessWidget {
         'value': 'add_friend'
       },
       {
-        'image': 'images/icon_create_group_team.svg',
-        'name': S.of(context).create_group_team,
-        'value': 'create_group_team'
-      },
-      {
         'image': 'images/icon_create_advanced_team.svg',
         'name': S.of(context).create_advanced_team,
         'value': 'create_advanced_team'

@@ -428,11 +428,14 @@ class _BottomInputFieldState extends State<BottomInputField>
 
   void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 16), () {
-      widget.scrollController.animateTo(
-        widget.scrollController.position.minScrollExtent,
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.ease,
-      );
+      if (widget.scrollController.positions.isNotEmpty &&
+          widget.scrollController.positions.length == 1) {
+        widget.scrollController.animateTo(
+          widget.scrollController.position.minScrollExtent,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.ease,
+        );
+      }
     });
   }
 
@@ -454,7 +457,7 @@ class _BottomInputFieldState extends State<BottomInputField>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance!.addObserver(this);
+    WidgetsBinding.instance.addObserver(this);
     inputController = TextEditingController();
     inputController.addListener(() {
       if (_viewModel.sessionType == NIMSessionType.p2p) {
@@ -469,7 +472,7 @@ class _BottomInputFieldState extends State<BottomInputField>
 
   @override
   void dispose() {
-    WidgetsBinding.instance!.removeObserver(this);
+    WidgetsBinding.instance.removeObserver(this);
     _focusNode.dispose();
     _viewModel.removeListener(onViewModelChange);
     super.dispose();
@@ -477,7 +480,7 @@ class _BottomInputFieldState extends State<BottomInputField>
 
   @override
   void didChangeMetrics() {
-    final bottomInset = WidgetsBinding.instance!.window.viewInsets.bottom;
+    final bottomInset = WidgetsBinding.instance.window.viewInsets.bottom;
     final newValue = bottomInset > 0.0;
     if (newValue != _keyboardShow) {
       setState(() {

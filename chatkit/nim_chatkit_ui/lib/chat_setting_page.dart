@@ -3,8 +3,6 @@
 // found in the LICENSE file.
 
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
-import 'package:netease_common_ui/router/imkit_router_constants.dart';
-import 'package:netease_common_ui/router/imkit_router_factory.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/background.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
@@ -12,12 +10,9 @@ import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:netease_corekit_im/model/contact_info.dart';
 import 'package:netease_corekit_im/service_locator.dart';
 import 'package:netease_corekit_im/services/message/message_provider.dart';
-import 'package:netease_corekit_im/services/team/team_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:nim_core/nim_core.dart';
-import 'package:yunxin_alog/yunxin_alog.dart';
 
 import 'generated/l10n.dart';
 
@@ -70,48 +65,6 @@ class _ChatSettingPageState extends State<ChatSettingPage> {
           const SizedBox(
             width: 16,
           ),
-          GestureDetector(
-            onTap: () {
-              goToContactSelector(context,
-                      mostCount: 198, filter: [userId], returnContact: true)
-                  .then((contacts) {
-                if (contacts is List<ContactInfo> && contacts.isNotEmpty) {
-                  // add current friend
-                  contacts.add(widget.contactInfo);
-
-                  var selectName = contacts
-                      .map((e) => e.user.nick ?? e.user.userId!)
-                      .toList();
-                  getIt<TeamProvider>()
-                      .createTeam(selectName, NIMTeamTypeEnum.normal,
-                          contacts.map((e) => e.user.userId!).toList())
-                      .then((teamResult) {
-                    Alog.i(
-                        tag: 'ChatKit',
-                        moduleName: 'Chat Setting',
-                        content: 'create team ${teamResult?.toMap()}');
-                    if (teamResult != null && teamResult.team != null) {
-                      // pop and jump
-                      Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          RouterConstants.PATH_CHAT_PAGE,
-                          ModalRoute.withName(RouterConstants.PATH_CHAT_PAGE),
-                          arguments: {
-                            'sessionId': teamResult.team!.id!,
-                            'sessionType': NIMSessionType.team,
-                          });
-                    }
-                  });
-                }
-              });
-            },
-            child: SvgPicture.asset(
-              'images/ic_member_add.svg',
-              package: 'nim_chatkit_ui',
-              height: 42,
-              width: 42,
-            ),
-          )
         ],
       ),
     );
