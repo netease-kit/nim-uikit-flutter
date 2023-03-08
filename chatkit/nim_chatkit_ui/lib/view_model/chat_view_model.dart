@@ -172,7 +172,8 @@ class ChatViewModel extends ChangeNotifier {
       _logI(
           'onMessageStatus ${event.uuid} status change -->> ${event.status}, ${event.attachmentStatus}');
       if (_updateNimMessage(event) == false &&
-          event.messageDirection == NIMMessageDirection.outgoing) {
+          event.messageDirection == NIMMessageDirection.outgoing
+          && event.sessionId == sessionId) {
         //如果更新失败则添加
         _messageList.add(ChatMessage(event));
         notifyListeners();
