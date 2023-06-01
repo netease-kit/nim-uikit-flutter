@@ -39,7 +39,6 @@ if [[ -f "$project_path/../meeting_kit/example/ios/Podfile.lock" ]]; then
   rm "$project_path/../meeting_kit/example/ios/Podfile.lock"
 fi
 
-
 echo "开始repo update"
 pwd
 pod repo update

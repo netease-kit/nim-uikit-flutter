@@ -4,15 +4,15 @@
 
 import 'dart:io';
 
-import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:netease_common_ui/ui/background.dart';
-import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/common_list_tile.dart';
+import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:netease_corekit_im/repo/config_repo.dart';
+import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
-import '../../../generated/l10n.dart';
+import '../../../l10n/S.dart';
 
 class NotifySettingPage extends StatefulWidget {
   const NotifySettingPage({Key? key}) : super(key: key);
@@ -59,7 +59,7 @@ class _NotifySettingPageState extends State<NotifySettingPage> {
   @override
   Widget build(BuildContext context) {
     return TransparentScaffold(
-      title: S.of(context).setting_notify,
+      title: S.of(context).settingNotify,
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
@@ -67,7 +67,7 @@ class _NotifySettingPageState extends State<NotifySettingPage> {
           children: [
             CardBackground(
               child: CommonListTile(
-                title: S.of(context).setting_notify_info,
+                title: S.of(context).settingNotifyInfo,
                 trailingType: TrailingType.onOff,
                 switchValue: notify,
                 onSwitchChanged: (value) {
@@ -77,8 +77,8 @@ class _NotifySettingPageState extends State<NotifySettingPage> {
                   ConfigRepo.updateMixNotification(value).then((success) {
                     Fluttertoast.showToast(
                         msg: success
-                            ? S.of(context).setting_success
-                            : S.of(context).setting_fail);
+                            ? S.of(context).settingSuccess
+                            : S.of(context).settingFail);
                     if (success) {
                       setState(() {
                         notify = value;
@@ -89,12 +89,12 @@ class _NotifySettingPageState extends State<NotifySettingPage> {
               ),
             ),
             if (Platform.isAndroid) ...[
-              _dividerTitle(S.of(context).setting_notify_mode),
+              _dividerTitle(S.of(context).settingNotifyMode),
               CardBackground(
                 child: Column(
                   children: ListTile.divideTiles(context: context, tiles: [
                     CommonListTile(
-                      title: S.of(context).setting_notify_mode_ring,
+                      title: S.of(context).settingNotifyModeRing,
                       trailingType: TrailingType.onOff,
                       switchValue: ring,
                       onSwitchChanged: (value) {
@@ -105,7 +105,7 @@ class _NotifySettingPageState extends State<NotifySettingPage> {
                       },
                     ),
                     CommonListTile(
-                      title: S.of(context).setting_notify_mode_shake,
+                      title: S.of(context).settingNotifyModeShake,
                       trailingType: TrailingType.onOff,
                       switchValue: shake,
                       onSwitchChanged: (value) {
@@ -119,14 +119,14 @@ class _NotifySettingPageState extends State<NotifySettingPage> {
                 ),
               ),
             ],
-            _dividerTitle(S.of(context).setting_notify_push),
+            _dividerTitle(S.of(context).settingNotifyPush),
             CardBackground(
               child: Column(
                 children: ListTile.divideTiles(context: context, tiles: [
                   Visibility(
                     visible: false,
                     child: CommonListTile(
-                      title: S.of(context).setting_notify_push_sync,
+                      title: S.of(context).settingNotifyPushSync,
                       trailingType: TrailingType.onOff,
                       switchValue: pushSync,
                       onSwitchChanged: (value) {
@@ -138,15 +138,15 @@ class _NotifySettingPageState extends State<NotifySettingPage> {
                     ),
                   ),
                   CommonListTile(
-                    title: S.of(context).setting_notify_push_detail,
+                    title: S.of(context).settingNotifyPushDetail,
                     trailingType: TrailingType.onOff,
                     switchValue: showNoDetail,
                     onSwitchChanged: (value) {
                       ConfigRepo.updatePushShowNoDetail(value).then((success) {
                         Fluttertoast.showToast(
                             msg: success
-                                ? S.of(context).setting_success
-                                : S.of(context).setting_fail);
+                                ? S.of(context).settingSuccess
+                                : S.of(context).settingFail);
                         if (success) {
                           setState(() {
                             showNoDetail = value;

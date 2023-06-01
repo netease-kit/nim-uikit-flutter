@@ -1,0 +1,369 @@
+{
+  "@@locale": "en",
+  "chatMessageSendHint": "Send to {userName}",
+  "@chatMessageSendHint": {
+    "placeholders": {
+      "userName": {
+        "type": "String"
+      }
+    }
+  },
+  "chatPressedToSpeak": "Pressed to speak",
+  "chatMessageVoiceIn": "Release to send, hold and swipe to an empty area to cancel",
+  "chatMessagePickPhoto": "Pick photo",
+  "chatMessagePickVideo": "Pick video",
+  "chatMessageMoreShoot": "Shooting",
+  "chatMessageTakePhoto": "Take photo",
+  "chatMessageTakeVideo": "Take video",
+  "chatMessageNonsupport": "Nonsupport message Type",
+  "chatMessageMoreFile": "File",
+  "chatMessageMoreLocation": "Location",
+  "chatMessageAMapNotFound": "ALi Map not found",
+  "chatMessageTencentMapNotFound": "Tencent Map not found",
+  "chatMessageAMap": "ALi Map",
+  "chatMessageTencentMap": "Tencent Map",
+  "chatMessageUnknownType": "Unknown Type",
+  "chatMessageImageSave": "Image saved successfully",
+  "chatMessageImageSaveFail": "Failed to save image",
+  "chatMessageVideoSave": "Video saved successfully",
+  "chatMessageVideoSaveFail": "Failed to save video",
+  "chatMessageActionCopy": "copy",
+  "chatMessageActionReply": "reply",
+  "chatMessageActionForward": "forward",
+  "chatMessageActionPin": "pin",
+  "chatMessageActionUnPin": "unPin",
+  "chatMessageActionMultiSelect": "multiSelect",
+  "chatMessageActionCollect": "collect",
+  "chatMessageActionDelete": "delete",
+  "chatMessageActionRevoke": "revoke",
+  "chatMessageCopySuccess": "Copy Success",
+  "chatMessageCollectSuccess": "Collect Success",
+  "chatMessageDeleteConfirm": "Delete this message?",
+  "chatMessageRevokeConfirm": "Revoke this message?",
+  "chatMessageHaveBeenRevokedOrDelete": "this message have been revoked or deleted",
+  "chatMessagePinMessage": "Pined by {userName}，visible to both of you",
+  "@chatMessagePinMessage": {
+    "placeholders": {
+      "userName": {
+        "type": "String"
+      }
+    }
+  },
+  "chatMessagePinMessageForTeam": "Pined by {userName}，visible to everyone",
+  "@chatMessagePinMessageForTeam": {
+    "placeholders": {
+      "userName": {
+        "type": "String"
+      }
+    }
+  },
+  "chatMessageHaveBeenRevoked": "Message revoked",
+  "chatMessageReedit": " Reedit >",
+  "chatMessageRevokeOverTime": "Over Time,Revoke failed",
+  "chatMessageRevokeFailed": "Revoke failed",
+  "chatMessageReplySomeone": "Reply {content}",
+  "@chatMessageReplySomeone": {
+    "placeholders": {
+      "content": {
+        "type": "String"
+      }
+    }
+  },
+  "chatMessageBriefImage": "[Image]",
+  "chatMessageBriefAudio": "[Audio]",
+  "chatMessageBriefVideo": "[Video]",
+  "chatMessageBriefLocation": "[Location]",
+  "chatMessageBriefFile": "[File]",
+  "chatMessageBriefCustom": "[Custom Message]",
+  "chatSetting": "Chat setting",
+  "chatMessageSignal": "Message mark",
+  "chatMessageOpenMessageNotice": "Open message notice",
+  "chatMessageSetTop": "Set session top",
+  "chatMessageSend": "Send",
+  "chatAdviceTeamNotifyInvite": "{user} had invited {members} to join the team",
+  "@chatAdviceTeamNotifyInvite": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "members": {
+        "type": "String"
+      }
+    }
+  },
+  "chatDiscussTeamNotifyInvite": "{user} invited {members} join discuss team",
+  "@chatDiscussTeamNotifyInvite": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "members": {
+        "type": "String"
+      }
+    }
+  },
+  "chatDiscussTeamNotifyRemove": "{users} have been removed from discuss team",
+  "@chatDiscussTeamNotifyRemove": {
+    "placeholders": {
+      "users": {
+        "type": "String"
+      }
+    }
+  },
+  "chatAdvancedTeamNotifyRemove": "{users} have been removed from team",
+  "@chatAdvancedTeamNotifyRemove": {
+    "placeholders": {
+      "users": {
+        "type": "String"
+      }
+    }
+  },
+  "chatDiscussTeamNotifyLeave": "{users}have left discuss team",
+  "@chatDiscussTeamNotifyLeave": {
+    "placeholders": {
+      "users": {
+        "type": "String"
+      }
+    }
+  },
+  "chatAdvancedTeamNotifyLeave": "{user} had exited team",
+  "@chatAdvancedTeamNotifyLeave": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamNotifyDismiss": "{users}dismissed team",
+  "@chatTeamNotifyDismiss": {
+    "placeholders": {
+      "users": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamNotifyManagerPass": "Manager accepted {members} team apply",
+  "@chatTeamNotifyManagerPass": {
+    "placeholders": {
+      "members": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamNotifyTransOwner": "{user} transfer owner to {members}",
+  "@chatTeamNotifyTransOwner": {
+    "placeholders": {
+      "members": {
+        "type": "String"
+      },
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamNotifyAddManager": "{member} set as manager",
+  "@chatTeamNotifyAddManager": {
+    "placeholders": {
+      "member": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamNotifyRemoveManager": "{member}remove from managers",
+  "@chatTeamNotifyRemoveManager": {
+    "placeholders": {
+      "member": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamNotifyAcceptInvite": "{user} accept {members}'s invite and join",
+  "@chatTeamNotifyAcceptInvite": {
+    "placeholders": {
+      "members": {
+        "type": "String"
+      },
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamNotifyMute": "{user} mute by manager",
+  "@chatTeamNotifyMute": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamNotifyUnMute": "{user} un mute by manager",
+  "@chatTeamNotifyUnMute": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "chatMessageUnknownNotification": "Unknown Notification",
+  "chatTeamNotifyUpdateName": "{user} had updated team name:\"{name}\"",
+  "@chatTeamNotifyUpdateName": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamNotifyUpdateIntroduction": "{user} had updated team introduction",
+  "@chatTeamNotifyUpdateIntroduction": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamNoticeUpdate": "team announcement update as {notice}",
+  "@chatTeamNoticeUpdate": {
+    "placeholders": {
+      "notice": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamVerifyUpdateAsNeedVerify": "update as need verify",
+  "chatTeamVerifyUpdateAsNeedNoVerify": "update as need no verify",
+  "chatTeamVerifyUpdateAsDisallowAnyoneJoin": "update as disallow anyone join",
+  "chatTeamNotifyUpdateExtension": "team extension update as {name}",
+  "@chatTeamNotifyUpdateExtension": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamNotifyUpdateExtensionServer": "team extension (server) update as{name}",
+  "@chatTeamNotifyUpdateExtensionServer": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamNotifyUpdateTeamAvatar": "{user} had updated team avatar",
+  "@chatTeamNotifyUpdateTeamAvatar": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamInvitationPermissionUpdate": "{user} had updated team invite permission:\"{permission}\"",
+  "@chatTeamInvitationPermissionUpdate": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "permission": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamModifyResourcePermissionUpdate": "{user} had updated team resource permission: \"{permission}\"",
+  "@chatTeamModifyResourcePermissionUpdate": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "permission": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamInvitedIdVerifyPermissionUpdate": "team invited verify update as {permission}",
+  "@chatTeamInvitedIdVerifyPermissionUpdate": {
+    "placeholders": {
+      "permission": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamModifyExtensionPermissionUpdate": "team extension update permission as {permission}",
+  "@chatTeamModifyExtensionPermissionUpdate": {
+    "placeholders": {
+      "permission": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamAllMute": "Mute",
+  "chatTeamCancelAllMute": "cancel all mute",
+  "chatTeamFullMute": "mute all",
+  "chatTeamUpdate": "team {key} updated as {value}",
+  "@chatTeamUpdate": {
+    "placeholders": {
+      "key": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "chatMessageYou": "you",
+  "messageSearchTitle": "Search History",
+  "messageSearchHint": "Search chat content",
+  "messageSearchEmpty": "No chat history",
+  "messageForwardToP2p": "Forward to person",
+  "messageForwardToTeam": "Forward to team",
+  "messageForwardTo": "Send to",
+  "messageCancel": "Cancel",
+  "messageForwardMessageTips": "[Forward]{user} message",
+  "@messageForwardMessageTips": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "messageReadStatus": "Message read status",
+  "messageReadWithNumber": "Read ({num})",
+  "@messageReadWithNumber": {
+    "placeholders": {
+      "num": {
+        "type": "String"
+      }
+    }
+  },
+  "messageUnreadWithNumber": "Unread ({num})",
+  "@messageUnreadWithNumber": {
+    "placeholders": {
+      "num": {
+        "type": "String"
+      }
+    }
+  },
+  "messageAllRead": "All member have read",
+  "messageAllUnread": "All member unread",
+  "chatIsTyping": "Is Typing",
+  "chatMessageAitContactTitle": "Choose a reminder",
+  "chatTeamAitAll": "All",
+  "chatMessageFileSizeOverLimit": "Oops! File size limit {size}M.",
+  "@chatMessageFileSizeOverLimit": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamPermissionInviteAll": "all",
+  "chatTeamPermissionInviteOnlyOwner": "owner",
+  "chatTeamPermissionUpdateAll": "all",
+  "chatTeamPermissionUpdateOnlyOwner": "owner",
+  "microphoneDeniedTips": "Please give your phone micro permission",
+  "locationDeniedTips": "Please give your location permission",
+  "chatSpeakTooShort": "Talk too short",
+  "chatTeamBeRemovedTitle": "Tip",
+  "chatTeamBeRemovedContent": "This group is disbanded"
+}

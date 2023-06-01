@@ -1,0 +1,154 @@
+{
+  "@@locale": "zh",
+  "contactTitle": "通讯录",
+  "contactNick": "昵称:{userName}",
+  "@contactNick": {
+    "placeholders": {
+      "userName": {
+        "type": "String"
+      }
+    }
+  },
+  "contactAccount": "账号:{userName}",
+  "@contactAccount": {
+    "placeholders": {
+      "userName": {
+        "type": "String"
+      }
+    }
+  },
+  "contactVerifyMessage": "验证消息",
+  "contactBlackList": "黑名单",
+  "contactTeam": "我的群聊",
+  "contactComment": "备注名",
+  "contactBirthday": "生日",
+  "contactPhone": "手机",
+  "contactMail": "邮箱",
+  "contactSignature": "个性签名",
+  "contactMessageNotice": "消息提醒",
+  "contactAddToBlacklist": "加入黑名单",
+  "contactChat": "聊天",
+  "contactDelete": "删除好友",
+  "contactDeleteSpecificFriend": "将联系人\"{userName}\"删除",
+  "@contactDeleteSpecificFriend": {
+    "placeholders": {
+      "userName": {
+        "type": "String"
+      }
+    }
+  },
+  "contactCancel": "取消",
+  "contactAddFriend": "添加好友",
+  "contactYouWillNeverReceiveAnyMessageFromThosePerson": "你不会收到列表中任何联系人的消息",
+  "contactRelease": "解除",
+  "contactUserSelector": "人员选择",
+  "contactSureWithCount": "确定({count})",
+  "@contactSureWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "contactSelectAsMost": "选择人员已达上限",
+  "contactClean": "清空",
+  "contactAccept": "同意",
+  "contactAccepted": "已同意",
+  "contactRejected": "已拒绝",
+  "contactIgnored": "已忽略",
+  "contactExpired": "已过期",
+  "contactReject": "拒绝",
+  "contactApplyFrom": "{user}添加您为好友",
+  "@contactApplyFrom": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "contactSomeoneInviteYourJoinTeam": "{user}邀请您加入群聊\"{team}\"",
+  "@contactSomeoneInviteYourJoinTeam": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "team": {
+        "type": "String"
+      }
+    }
+  },
+  "contactSomeAcceptYourApply": "{user}通过了好友申请",
+  "@contactSomeAcceptYourApply": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "contactSomeRejectYourApply": "{user}拒绝了好友申请",
+  "@contactSomeRejectYourApply": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "contactSomeAcceptYourInvitation": "{user}通过入群邀请",
+  "@contactSomeAcceptYourInvitation": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "contactSomeRejectYourInvitation": "{user}拒绝了入群邀请",
+  "@contactSomeRejectYourInvitation": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "contactSomeAddYourAsFriend": "{user}已经添加你为好友",
+  "@contactSomeAddYourAsFriend": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "contactSomeoneApplyJoinTeam": "{user}申请加入{team}",
+  "@contactSomeoneApplyJoinTeam": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "team": {
+        "type": "String"
+      }
+    }
+  },
+  "contactSomeRejectYourTeamApply": "{user}拒绝了你入群申请",
+  "@contactSomeRejectYourTeamApply": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "contactSave": "保存",
+  "contactHaveSendApply": "已发送申请",
+  "systemVerifyMessageEmpty": "暂无验证消息",
+  "verifyAgreeMessageText": "我已经同意了你的申请，现在开始聊天吧~",
+  "verifyMessageHaveBeenHandled":"该验证消息已在其他端处理",
+  "operationFailed":"操作失败:{code}",
+  "@operationFailed": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "contactSelectEmptyTip": "请选择联系人",
+  "contactFriendEmpty": "暂无好友"
+}

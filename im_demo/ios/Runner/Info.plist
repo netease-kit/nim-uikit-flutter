@@ -2,6 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleAllowMixedLocalizations</key>
+	<true/>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>请点击“允许”以允许访问。 若不允许，将无法使用位置信息功能。</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>请点击“允许”以允许访问。 若不允许，将无法使用位置信息功能。</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>请点击“允许”以允许访问。 若不允许，将无法使用位置信息功能。</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
@@ -39,6 +47,10 @@
 	<string>访问相册，用于图片保存</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>访问相册,用于发送图片消息</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -56,5 +68,7 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
 </dict>
 </plist>

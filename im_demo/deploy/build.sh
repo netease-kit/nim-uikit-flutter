@@ -28,25 +28,18 @@ cd "$PROJECT_PATH"
 rm -rf "${PROJECT_PATH}/outputs"
 mkdir -p "${PROJECT_PATH}/outputs"
 
-
 now=$(date +"%Y%m%d%H%M")
 current_day=$(date "+%Y%m%d")
 
 VERSION_NAME_CODE=$(cat pubspec.yaml | shyaml get-value version)
 VERSION_NAME=$(echo "${VERSION_NAME_CODE}" | cut -d "+" -f 1)
 
-#BUILD_EVN=$(cat ${PROJECT_PATH}/assets/config.properties | grep -w '^ENV' | head -1 | cut -d '=' -f 2 | tr '[A-Z]' '[a-z]')
+BUILD_EVN=$(cat ${PROJECT_PATH}/assets/config.properties | grep -w '^ENV' | head -1 | cut -d '=' -f 2 | tr '[A-Z]' '[a-z]')
 BUILD_BRANCH=`git symbolic-ref HEAD 2>/dev/null | cut -d"/" -f 3`
 BUILD_COMMIT_ID=`git rev-parse --short HEAD`
-ARCHIVE_ROOT_PATH="${PROJECT_PATH}/outputs/v${VERSION_NAME}"
-
-if [ "$PLATFORM" == "Android" ]; then
-  ARCHIVE_DIRECTOR_NAME="android_${now}_${BUILD_COMMIT_ID}"
-  ARCHIVE_NAME="android_${now}_${BUILD_COMMIT_ID}"
-elif [ "$PLATFORM" == "iOS" ]; then
-  ARCHIVE_DIRECTOR_NAME="ios_${now}_${BUILD_COMMIT_ID}"
-  ARCHIVE_NAME="ios_${now}_${BUILD_COMMIT_ID}"
-fi
+ARCHIVE_ROOT_PATH="${PROJECT_PATH}/outputs"
+ARCHIVE_DIRECTOR_NAME="im_demo_${now}_${BUILD_COMMIT_ID}_${BUILD_EVN}"
+ARCHIVE_NAME="im_demo_${now}_${BUILD_COMMIT_ID}_${BUILD_EVN}"
 
 echo "===================================== "
 echo "PROJECT_PATH: ${PROJECT_PATH}"
@@ -64,11 +57,11 @@ echo "BACKUP_DIR: ${BACKUP_DIR}"
 echo "===================================== "
 
 if [ "$PLATFORM" == "Android" ]; then
-  sh $PROJECT_PATH/deploy/build_android.sh ${PROJECT_PATH} ${ARCHIVE_ROOT_PATH} ${ARCHIVE_DIRECTOR_NAME} ${ARCHIVE_NAME} "v${VERSION_NAME}"
+  sh $PROJECT_PATH/deploy/build_android.sh ${PROJECT_PATH} ${ARCHIVE_ROOT_PATH} ${ARCHIVE_DIRECTOR_NAME} ${ARCHIVE_NAME}
 elif [ "$PLATFORM" == "iOS" ]; then
   sh $PROJECT_PATH/deploy/build_ios.sh ${PROJECT_PATH} ${ARCHIVE_ROOT_PATH} ${ARCHIVE_DIRECTOR_NAME} ${ARCHIVE_NAME} ${IOS_DISTRIBUTE_PLATFORM}
 else
-  sh $PROJECT_PATH/deploy/build_android.sh ${PROJECT_PATH} ${ARCHIVE_ROOT_PATH} ${ARCHIVE_DIRECTOR_NAME} ${ARCHIVE_NAME} ${IOS_DISTRIBUTE_PLATFORM} "v${VERSION_NAME}"
+  sh $PROJECT_PATH/deploy/build_android.sh ${PROJECT_PATH} ${ARCHIVE_ROOT_PATH} ${ARCHIVE_DIRECTOR_NAME} ${ARCHIVE_NAME} ${IOS_DISTRIBUTE_PLATFORM}
   cd $PROJECT_PATH
   sh $PROJECT_PATH/deploy/build_ios.sh ${PROJECT_PATH} ${ARCHIVE_ROOT_PATH} ${ARCHIVE_DIRECTOR_NAME} ${ARCHIVE_NAME} ${IOS_DISTRIBUTE_PLATFORM}
 fi
@@ -77,17 +70,23 @@ fi
 if [ "$BACKUP_DIR" != "" ] && [ "$BACKUP_DIR" != "--" ]; then
     directory_name="${VERSION_NAME}"
     branch_name=${GIT_BRANCH-"$(git rev-parse --abbrev-ref HEAD)"}
-    if [[ "${branch_name}" =~ "feature/" ]] ; then
-        suffix=$(echo "${branch_name}" | awk -F'/' '{print $NF}' | tr '-' '_')
-        directory_name="${VERSION_NAME}_${suffix}"
-        mv "outputs/v${VERSION_NAME}" "outputs/v${directory_name}"
+    #if [[ "${branch_name}" =~ "feature/" ]] ; then
+    suffix=$(echo "${branch_name}" | awk -F'/' '{print $NF}' | tr '-' '_')
+    directory_name="${VERSION_NAME}_${suffix}"
+    target_path="outputs/${BACKUP_DIR}/im_demo/${VERSION_NAME}"
+    mkdir -p "${target_path}"
+    if [ "$PLATFORM" == "Android" ]; then
+      mv "outputs/android" "${target_path}"
+    else
+      mv "outputs/ios" "${target_path}"
     fi
+    #fi
     rm -rf build_tools
     git clone ssh://git@g.hz.netease.com:22222/yunxin-app/tools.git build_tools
-    sh $PROJECT_PATH/build_tools/backup/upload-artifacts.sh outputs/. "im_demo/$BACKUP_DIR"
+    sh $PROJECT_PATH/build_tools/backup/upload-artifacts.sh outputs/. "${BACKUP_DIR}/im_demo/${VERSION_NAME}"
     platform_lowercase=$(echo "$PLATFORM" | tr '[A-Z]' '[a-z]')
     sh $PROJECT_PATH/build_tools/notification/notify.sh --platform "$PLATFORM" --env "${ENV}" --version "${VERSION_NAME}" \
-      --downloadurl "http://10.242.100.195/im_demo/$BACKUP_DIR/v$directory_name/$platform_lowercase"
+      --downloadurl "http://10.242.100.195/xkit/${BACKUP_DIR}/im_demo/${VERSION_NAME}/$platform_lowercase"
     rm -rf build_tools
 fi
 ## upload done
@@ -109,7 +108,7 @@ git_cm_hash=$(git rev-parse --short HEAD)
 echo "git_cm_hash=${git_cm_hash}" >> results.properties
 directory_name="${VERSION_NAME}"
 platform_lowercase=$(echo "$PLATFORM" | tr '[A-Z]' '[a-z]')
-download_url=http://10.242.100.195/im_demo/$BACKUP_DIR/v$directory_name/$platform_lowercase/$ARCHIVE_NAME
+download_url=http://10.242.100.195/xkit/$BACKUP_DIR/im_demo/$VERSION_NAME/$platform_lowercase/$ARCHIVE_NAME
 echo "download_url=${download_url}" >> results.properties
 qr_url="https://api.pwmqr.com/qrcode/create/?url=${download_url}"
 echo "qr_url=${qr_url}" >> results.properties
@@ -125,6 +124,4 @@ MINS=$(($DURATION/60))
 SECS=$(($DURATION%60))
 echo "Total time: $MINS mins $SECS secs"
 
-
 set +e
-

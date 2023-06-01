@@ -10,8 +10,8 @@
 	<string>enterprise</string>
 	<key>provisioningProfiles</key>
 	<dict>
-		<key>com.netease.yunxin.app.flutter.im.imDemo</key>
-		<string>im_flutter_dis</string>
+		<key>com.netease.yunxin.app.flutter.im</key>
+		<string>im_flutter_uikit_dis</string>
 	</dict>
 	<key>signingCertificate</key>
 	<string>iPhone Distribution</string>

@@ -1,0 +1,369 @@
+{
+  "@@locale": "zh",
+  "chatMessageSendHint": "发送给 {userName}",
+  "@chatMessageSendHint": {
+    "placeholders": {
+      "userName": {
+        "type": "String"
+      }
+    }
+  },
+  "chatPressedToSpeak": "按住说话",
+  "chatMessageVoiceIn": "松开发送，按住滑到空白区域取消",
+  "chatMessagePickPhoto": "照片",
+  "chatMessagePickVideo": "视频",
+  "chatMessageMoreShoot": "拍摄",
+  "chatMessageTakePhoto": "拍照",
+  "chatMessageTakeVideo": "摄像",
+  "chatMessageNonsupport": "当前版本暂不支持该消息体",
+  "chatMessageMoreFile": "文件",
+  "chatMessageMoreLocation": "位置",
+  "chatMessageAMapNotFound": "未检测到高德地图",
+  "chatMessageTencentMapNotFound": "未检测到腾讯地图",
+  "chatMessageAMap": "高德地图",
+  "chatMessageTencentMap": "腾讯地图",
+  "chatMessageUnknownType": "未知类型",
+  "chatMessageImageSave": "图片已保存到手机",
+  "chatMessageVideoSave": "视频已保存到手机",
+  "chatMessageVideoSaveFail": "视频保存失败",
+  "chatMessageImageSaveFail": "图片保存失败",
+  "chatMessageActionCopy": "复制",
+  "chatMessageActionReply": "回复",
+  "chatMessageActionForward": "转发",
+  "chatMessageActionPin": "标记",
+  "chatMessageActionUnPin": "取消标记",
+  "chatMessageActionMultiSelect": "多选",
+  "chatMessageActionCollect": "收藏",
+  "chatMessageActionDelete": "删除",
+  "chatMessageActionRevoke": "撤回",
+  "chatMessageCopySuccess": "复制成功",
+  "chatMessageCollectSuccess": "收藏成功",
+  "chatMessageDeleteConfirm": "删除此消息？",
+  "chatMessageRevokeConfirm": "撤回此消息？",
+  "chatMessagePinMessage": "{userName}标记了这条信息，对话内容双方均可见",
+  "@chatMessagePinMessage": {
+    "placeholders": {
+      "userName": {
+        "type": "String"
+      }
+    }
+  },
+  "chatMessagePinMessageForTeam": "{userName}标记了这条信息，所有群成员均可见",
+  "@chatMessagePinMessageForTeam": {
+    "placeholders": {
+      "userName": {
+        "type": "String"
+      }
+    }
+  },
+  "chatMessageHaveBeenRevoked": "此消息已撤回",
+  "chatMessageReedit": " 重新编辑 >",
+  "chatMessageRevokeOverTime": "已超过时间无法撤回",
+  "chatMessageRevokeFailed": "撤回失败",
+  "chatMessageHaveBeenRevokedOrDelete": "该消息已被撤回或者删除",
+  "chatMessageReplySomeone": "回复 {content}",
+  "@chatMessageReplySomeone": {
+    "placeholders": {
+      "content": {
+        "type": "String"
+      }
+    }
+  },
+  "chatMessageBriefImage": "[图片]",
+  "chatMessageBriefAudio": "[语音]",
+  "chatMessageBriefVideo": "[视频]",
+  "chatMessageBriefLocation": "[地理位置]",
+  "chatMessageBriefFile": "[文件]",
+  "chatMessageBriefCustom": "[自定义消息]",
+  "chatSetting": "聊天设置",
+  "chatMessageSignal": "标记",
+  "chatMessageOpenMessageNotice": "开启消息提醒",
+  "chatMessageSetTop": "聊天置顶",
+  "chatMessageSend": "发送",
+  "chatAdviceTeamNotifyInvite": "{user} 邀请{members}加入群组",
+  "@chatAdviceTeamNotifyInvite": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "members": {
+        "type": "String"
+      }
+    }
+  },
+  "chatDiscussTeamNotifyInvite": "{user}邀请{members}加入讨论组",
+  "@chatDiscussTeamNotifyInvite": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "members": {
+        "type": "String"
+      }
+    }
+  },
+  "chatDiscussTeamNotifyRemove": "{users}已被移出讨论组",
+  "@chatDiscussTeamNotifyRemove": {
+    "placeholders": {
+      "users": {
+        "type": "String"
+      }
+    }
+  },
+  "chatAdvancedTeamNotifyRemove": "{users}已被移出群",
+  "@chatAdvancedTeamNotifyRemove": {
+    "placeholders": {
+      "users": {
+        "type": "String"
+      }
+    }
+  },
+  "chatDiscussTeamNotifyLeave": "{users}离开了讨论组",
+  "@chatDiscussTeamNotifyLeave": {
+    "placeholders": {
+      "users": {
+        "type": "String"
+      }
+    }
+  },
+  "chatAdvancedTeamNotifyLeave": "{user} 退出了群聊",
+  "@chatAdvancedTeamNotifyLeave": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamNotifyDismiss": "{users}解散了群",
+  "@chatTeamNotifyDismiss": {
+    "placeholders": {
+      "users": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamNotifyManagerPass": "管理员通过用户{members}的入群申请",
+  "@chatTeamNotifyManagerPass": {
+    "placeholders": {
+      "members": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamNotifyTransOwner": "{user}将群转移给{members}",
+  "@chatTeamNotifyTransOwner": {
+    "placeholders": {
+      "members": {
+        "type": "String"
+      },
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamNotifyAddManager": "{member}被任命为管理员",
+  "@chatTeamNotifyAddManager": {
+    "placeholders": {
+      "member": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamNotifyRemoveManager": "{member}被撤销管理员身份",
+  "@chatTeamNotifyRemoveManager": {
+    "placeholders": {
+      "member": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamNotifyAcceptInvite": "{user}接受了{members}的入群邀请",
+  "@chatTeamNotifyAcceptInvite": {
+    "placeholders": {
+      "members": {
+        "type": "String"
+      },
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamNotifyMute": "{user}被管理员禁言",
+  "@chatTeamNotifyMute": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamNotifyUnMute": "{user}被管理员解除禁言",
+  "@chatTeamNotifyUnMute": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "chatMessageUnknownNotification": "未知通知",
+  "chatTeamNotifyUpdateName": "{user} 更新群名称为\"{name}\"",
+  "@chatTeamNotifyUpdateName": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamNotifyUpdateIntroduction": "{user} 更新了群介绍",
+  "@chatTeamNotifyUpdateIntroduction": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamNoticeUpdate": "群公告变更为{notice}",
+  "@chatTeamNoticeUpdate": {
+    "placeholders": {
+      "notice": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamVerifyUpdateAsNeedVerify": "群身份验证权限更新为需要身份验证",
+  "chatTeamVerifyUpdateAsNeedNoVerify": "群身份验证权限更新为不需要身份验证",
+  "chatTeamVerifyUpdateAsDisallowAnyoneJoin": "群身份验证权限更新为不容许任何人申请加入",
+  "chatTeamNotifyUpdateExtension": "扩展字段被更新为{name}",
+  "@chatTeamNotifyUpdateExtension": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamNotifyUpdateExtensionServer": "扩展字段（服务器）被更新为{name}",
+  "@chatTeamNotifyUpdateExtensionServer": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamNotifyUpdateTeamAvatar": "{user} 更新了群头像",
+  "@chatTeamNotifyUpdateTeamAvatar": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamInvitationPermissionUpdate": "{user} 更新了群权限\"邀请他人权限\"为\"{permission}\"",
+  "@chatTeamInvitationPermissionUpdate": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "permission": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamModifyResourcePermissionUpdate": "{user} 更新了群权限\"群资料修改权限\"为\"{permission}\"",
+  "@chatTeamModifyResourcePermissionUpdate": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "permission": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamInvitedIdVerifyPermissionUpdate": "群被邀请人身份验证权限被更新为{permission}",
+  "@chatTeamInvitedIdVerifyPermissionUpdate": {
+    "placeholders": {
+      "permission": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamModifyExtensionPermissionUpdate": "群扩展字段修改权限被更新为{permission}",
+  "@chatTeamModifyExtensionPermissionUpdate": {
+    "placeholders": {
+      "permission": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamAllMute": "当前群主设置为禁言",
+  "chatTeamCancelAllMute": "群禁言已关闭",
+  "chatTeamFullMute": "群禁言已开启",
+  "chatTeamUpdate": "群{key}被更新为{value}",
+  "@chatTeamUpdate": {
+    "placeholders": {
+      "key": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "chatMessageYou": "你",
+  "messageSearchTitle": "历史记录",
+  "messageSearchHint": "搜索聊天内容",
+  "messageSearchEmpty": "暂无聊天记录",
+  "messageForwardToP2p": "转发到个人",
+  "messageForwardToTeam": "转发到群组",
+  "messageForwardTo": "发送给",
+  "messageCancel": "取消",
+  "messageForwardMessageTips": "[转发]{user}的会话记录",
+  "@messageForwardMessageTips": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "messageReadStatus": "消息阅读状态",
+  "messageReadWithNumber": "已读({num})",
+  "@messageReadWithNumber": {
+    "placeholders": {
+      "num": {
+        "type": "String"
+      }
+    }
+  },
+  "messageUnreadWithNumber": "未读({num})",
+  "@messageUnreadWithNumber": {
+    "placeholders": {
+      "num": {
+        "type": "String"
+      }
+    }
+  },
+  "messageAllRead": "全部成员已读",
+  "messageAllUnread": "全部成员未读",
+  "chatIsTyping": "正在输入中...",
+  "chatMessageAitContactTitle": "选择提醒",
+  "chatTeamAitAll": "所有人",
+  "chatMessageFileSizeOverLimit": "当前文件大小超出{size}M发送限制，请重新选择",
+  "@chatMessageFileSizeOverLimit": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamPermissionInviteAll": "所有人",
+  "chatTeamPermissionInviteOnlyOwner": "仅群主",
+  "chatTeamPermissionUpdateAll": "所有人",
+  "chatTeamPermissionUpdateOnlyOwner": "仅群主",
+  "microphoneDeniedTips": "请在设置页面添加麦克风权限",
+  "locationDeniedTips": "请在设置页面添加定位权限",
+  "chatSpeakTooShort": "说话时间太短",
+  "chatTeamBeRemovedTitle": "提醒",
+  "chatTeamBeRemovedContent": "该群聊已被解散"
+}

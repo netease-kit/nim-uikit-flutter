@@ -1,9 +1,0 @@
-{
-  "@@locale": "en",
-  "search_search": "Search",
-  "search_search_hit": "Please input your key word",
-  "search_search_friend": "Friend",
-  "search_search_normal_team": "Normal team",
-  "search_search_advance_team": "Advance Team",
-  "search_empty_tips": "This user not exist"
-}

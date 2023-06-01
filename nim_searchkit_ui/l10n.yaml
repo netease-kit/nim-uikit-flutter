@@ -1,0 +1,8 @@
+arb-dir: lib/l10n
+output-dir: lib/l10n/search_localization
+template-arb-file: intl_en.arb
+output-localization-file: search_kit_client_localizations.dart
+output-class: SearchKitClientLocalizations
+header-file: header.txt
+synthetic-package: false
+untranslated-messages-file: untranslated.txt

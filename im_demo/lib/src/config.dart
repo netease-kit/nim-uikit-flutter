@@ -9,12 +9,19 @@ import 'package:nim_core/nim_core.dart';
 import 'package:path_provider/path_provider.dart';
 
 class IMDemoConfig {
-  //fixme set your appkey here
+  //云信IM appKey
   static const AppKey = 'your app key';
+
+  //高德Android Key
+  static const AMapAndroid = 'your amap android key';
+
+  //高德IOS Key
+  static const AMapIOS = 'your amap ios key';
 }
 
 class NIMSDKOptionsConfig {
-  static Future<NIMSDKOptions?> getSDKOptions(String appKey) async {
+  static Future<NIMSDKOptions?> getSDKOptions(String appKey,
+      {NIMLoginInfo? loginInfo}) async {
     NIMSDKOptions? options;
     if (Platform.isAndroid) {
       final directory = await getExternalStorageDirectory();
@@ -23,25 +30,27 @@ class NIMSDKOptionsConfig {
         appKey: appKey,
         shouldSyncStickTopSessionInfos: true,
         enableTeamMessageReadReceipt: true,
+        autoLoginInfo: loginInfo,
         enableFcs: false,
         sdkRootDir: directory != null ? '${directory.path}/NIMFlutter' : null,
         notificationConfig: config,
         preLoadServers: true,
         shouldConsiderRevokedMessageUnreadCount: true,
         shouldSyncUnreadCount: true,
-        enablePreloadMessageAttachment: true
-        // mixPushConfig: _buildMixPushConfig(),
+        enablePreloadMessageAttachment: true,
+        mixPushConfig: _buildMixPushConfig(),
       );
-      ConfigRepo.saveStatusBarNotificationConfig(config);
+      ConfigRepo.saveStatusBarNotificationConfig(config, saveToNative: false);
     } else if (Platform.isIOS) {
       final directory = await getApplicationDocumentsDirectory();
       options = NIMIOSSDKOptions(
         appKey: appKey,
         shouldSyncStickTopSessionInfos: true,
         enableTeamMessageReadReceipt: true,
+        autoLoginInfo: loginInfo,
         sdkRootDir: '${directory.path}/NIMFlutter',
-        apnsCername: 'ENTERPRISE',
-        pkCername: 'DEMO_PUSH_KIT',
+        apnsCername: 'dis_im_flutter',
+        pkCername: '',
         shouldConsiderRevokedMessageUnreadCount: true,
         shouldSyncUnreadCount: true,
         enableTeamReceipt: true,
@@ -52,7 +61,11 @@ class NIMSDKOptionsConfig {
   }
 
   static NIMStatusBarNotificationConfig loadStatusBarNotificationConfig() {
-    return NIMStatusBarNotificationConfig();
+    //todo 设置Android通知栏点击跳转类
+    return NIMStatusBarNotificationConfig(
+        notificationEntranceClassName:
+            'com.netease.yunxin.app.flutter.im.MainActivity',
+        notificationExtraType: NIMNotificationExtraType.jsonArrStr);
   }
 
   static NIMMixPushConfig? _buildMixPushConfig() {

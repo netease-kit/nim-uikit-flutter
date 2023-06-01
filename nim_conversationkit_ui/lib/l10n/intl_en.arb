@@ -1,0 +1,27 @@
+{
+  "@@locale": "en",
+  "conversationTitle":"CommsEase IM",
+  "createAdvancedTeamSuccess": "create advanced team success",
+  "stickTitle": "Stick",
+  "cancelStickTitle": "Cancel stick",
+  "deleteTitle": "Delete",
+  "recentTitle": "Recent chat",
+  "cancelTitle": "Cancel",
+  "sureTitle": "Sure",
+  "sureCountTitle": "Sure({size})",
+  "@sureCountTitle": {
+    "placeholders": {
+      "size": {
+        "type": "int"
+      }
+    }
+  },
+  "conversationNetworkErrorTip": "The current network is unavailable, please check your network settings.",
+  "addFriend": "add friends",
+  "addFriendSearchHint": "Please enter account",
+  "addFriendSearchEmptyTips": "This user does not exist",
+  "createGroupTeam": "create group team",
+  "createAdvancedTeam": "create advanced team",
+  "chatMessageNonsupportType": "[Nonsupport message type]",
+  "conversationEmpty": "no chat"
+}
