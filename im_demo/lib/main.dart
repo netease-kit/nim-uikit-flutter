@@ -93,10 +93,7 @@ class _MainAppState extends State<MainApp> {
             ...GlobalMaterialLocalizations.delegates,
           ],
           navigatorObservers: [IMKitRouter.instance.routeObserver],
-          supportedLocales: const [
-            Locale('en', 'US'),
-        Locale('zh', 'CN'),
-        ],
+          supportedLocales: IMKitClient.supportedLocales,
           theme: ThemeData(
             primaryColor: CommonColors.color_337eff,
             pageTransitionsTheme: PageTransitionsTheme(builders: {
