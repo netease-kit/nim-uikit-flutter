@@ -2,18 +2,19 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:im_demo/generated/l10n.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/background.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/ui/photo.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:netease_corekit_im/service_locator.dart';
 import 'package:netease_corekit_im/services/login/login_service.dart';
 import 'package:netease_corekit_im/services/user_info/user_info_provider.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:im_demo/l10n/S.dart';
 import 'package:nim_core/nim_core.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter_svg/svg.dart';
@@ -35,23 +36,35 @@ class _UserInfoPageState extends State<UserInfoPage> {
   late NIMUser userInfo;
   late final TextEditingController _controller;
 
-  _updateInfo() {
+  _updateInfo() async {
+    if (!await haveConnectivity()) {
+      return;
+    }
     userInfoProvider.updateUserInfo(userInfo).then((value) {
       if (value.isSuccess) {
         loginService.getUserInfo();
         _backToPage();
       } else {
-        Fluttertoast.showToast(msg: S.of(context).request_fail);
+        Fluttertoast.showToast(msg: S.of(context).requestFail);
       }
     });
   }
 
-  _onEditClick(EditType type) {
+  _onEditClick(EditType type) async {
+    if (!await haveConnectivity()) {
+      return;
+    }
     if (type == EditType.avatar) {
-      showPhotoSelector(context).then((url) {
-        if (url != null) {
-          userInfo.avatar = url;
-          _updateInfo();
+      showPhotoSelector(context).then((path) {
+        if (path != null) {
+          NimCore.instance.nosService
+              .upload(filePath: path, mimeType: 'image/jpeg')
+              .then((value) {
+            if (value.isSuccess && value.data != null) {
+              userInfo.avatar = value.data;
+              _updateInfo();
+            }
+          });
         }
       });
       return;
@@ -65,23 +78,23 @@ class _UserInfoPageState extends State<UserInfoPage> {
     }
     switch (type) {
       case EditType.nick:
-        title = S.of(context).user_info_nickname;
+        title = S.of(context).userInfoNickname;
         _controller.text = userInfo.nick ?? '';
         break;
       case EditType.phone:
-        title = S.of(context).user_info_phone;
+        title = S.of(context).userInfoPhone;
         _controller.text = userInfo.mobile ?? '';
         break;
       case EditType.email:
-        title = S.of(context).user_info_email;
+        title = S.of(context).userInfoEmail;
         _controller.text = userInfo.email ?? '';
         break;
       case EditType.sign:
-        title = S.of(context).user_info_sign;
+        title = S.of(context).userInfoSign;
         _controller.text = userInfo.sign ?? '';
         break;
       case EditType.gender:
-        title = S.of(context).user_info_sexual;
+        title = S.of(context).userInfoSexual;
         break;
       default:
         break;
@@ -94,7 +107,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
   _onEditSave() {
     switch (editType) {
       case EditType.nick:
-        userInfo.nick = _controller.text;
+        userInfo.nick = _controller.text.trim();
         break;
       case EditType.phone:
         userInfo.mobile = _controller.text;
@@ -114,7 +127,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
   _backToPage() {
     setState(() {
       _controller.text = '';
-      title = S.of(context).user_info_title;
+      title = S.of(context).userInfoTitle;
       editType = EditType.none;
     });
   }
@@ -122,7 +135,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
   int? _maxLength() {
     switch (editType) {
       case EditType.nick:
-        return 30;
+        return 15;
       case EditType.sign:
         return 50;
       case EditType.email:
@@ -157,7 +170,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
             },
             icon: SvgPicture.asset(
               'images/ic_clear.svg',
-              package: 'teamkit_ui',
+              package: 'nim_teamkit_ui',
             ),
           ),
         ),
@@ -185,7 +198,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
         children: ListTile.divideTiles(context: context, tiles: [
           ListTile(
             title: Text(
-              S.of(context).sexual_unknown,
+              S.of(context).sexualUnknown,
               style: textStyle,
             ),
             trailing: userInfo.gender == NIMUserGenderEnum.unknown
@@ -198,7 +211,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
           ),
           ListTile(
             title: Text(
-              S.of(context).sexual_male,
+              S.of(context).sexualMale,
               style: textStyle,
             ),
             trailing: userInfo.gender == NIMUserGenderEnum.male
@@ -211,7 +224,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
           ),
           ListTile(
             title: Text(
-              S.of(context).sexual_female,
+              S.of(context).sexualFemale,
               style: textStyle,
             ),
             trailing: userInfo.gender == NIMUserGenderEnum.female
@@ -256,7 +269,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
       );
     }
     return TransparentScaffold(
-      title: title.isEmpty ? S.of(context).user_info_title : title,
+      title: title.isEmpty ? S.of(context).userInfoTitle : title,
       leading: IconButton(
         icon: const Icon(
           Icons.arrow_back_ios_rounded,
@@ -277,7 +290,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
                 child: TextButton(
                     onPressed: _onEditSave,
                     child: Text(
-                      S.of(context).user_info_complete,
+                      S.of(context).userInfoComplete,
                       style: const TextStyle(
                           fontSize: 16, color: CommonColors.color_666666),
                     )),
@@ -307,16 +320,16 @@ class _PersonalInfoPage extends StatelessWidget {
     );
     TextStyle styleLeft = const TextStyle(color: CommonColors.color_333333);
     TextStyle style = const TextStyle(fontSize: 12, color: Color(0xffa6adb6));
-    String sex = S.of(context).sexual_unknown;
+    String sex = S.of(context).sexualUnknown;
     if (userInfo.gender == NIMUserGenderEnum.male) {
-      sex = S.of(context).sexual_male;
+      sex = S.of(context).sexualMale;
     } else if (userInfo.gender == NIMUserGenderEnum.female) {
-      sex = S.of(context).sexual_female;
+      sex = S.of(context).sexualFemale;
     }
     List<Widget> userInfoTiles = [
       ListTile(
         title: Text(
-          S.of(context).user_info_avatar,
+          S.of(context).userInfoAvatar,
           style: styleLeft,
         ),
         trailing: Row(
@@ -338,7 +351,7 @@ class _PersonalInfoPage extends StatelessWidget {
         onTap: () => onEditClick(EditType.avatar),
       ),
       ListTile(
-        title: Text(S.of(context).user_info_nickname),
+        title: Text(S.of(context).userInfoNickname),
         trailing: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           mainAxisSize: MainAxisSize.min,
@@ -361,7 +374,7 @@ class _PersonalInfoPage extends StatelessWidget {
         onTap: () => onEditClick(EditType.nick),
       ),
       ListTile(
-        title: Text(S.of(context).user_info_account),
+        title: Text(S.of(context).userInfoAccount),
         trailing: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           mainAxisSize: MainAxisSize.min,
@@ -376,7 +389,7 @@ class _PersonalInfoPage extends StatelessWidget {
             InkWell(
               onTap: () {
                 Clipboard.setData(ClipboardData(text: userInfo.userId));
-                Fluttertoast.showToast(msg: S.of(context).action_copy_success);
+                Fluttertoast.showToast(msg: S.of(context).actionCopySuccess);
               },
               child: Image.asset(
                 'assets/ic_copy.png',
@@ -388,7 +401,7 @@ class _PersonalInfoPage extends StatelessWidget {
         ),
       ),
       ListTile(
-        title: Text(S.of(context).user_info_sexual),
+        title: Text(S.of(context).userInfoSexual),
         trailing: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           mainAxisSize: MainAxisSize.min,
@@ -406,7 +419,7 @@ class _PersonalInfoPage extends StatelessWidget {
         onTap: () => onEditClick(EditType.gender),
       ),
       ListTile(
-        title: Text(S.of(context).user_info_birthday),
+        title: Text(S.of(context).userInfoBirthday),
         trailing: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           mainAxisSize: MainAxisSize.min,
@@ -424,7 +437,7 @@ class _PersonalInfoPage extends StatelessWidget {
         onTap: () => onEditClick(EditType.birthday),
       ),
       ListTile(
-        title: Text(S.of(context).user_info_phone),
+        title: Text(S.of(context).userInfoPhone),
         trailing: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           mainAxisSize: MainAxisSize.min,
@@ -442,7 +455,7 @@ class _PersonalInfoPage extends StatelessWidget {
         onTap: () => onEditClick(EditType.phone),
       ),
       ListTile(
-        title: Text(S.of(context).user_info_email),
+        title: Text(S.of(context).userInfoEmail),
         trailing: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           mainAxisSize: MainAxisSize.min,
@@ -480,7 +493,7 @@ class _PersonalInfoPage extends StatelessWidget {
           ),
           CardBackground(
             child: ListTile(
-              title: Text(S.of(context).user_info_sign),
+              title: Text(S.of(context).userInfoSign),
               trailing: LayoutBuilder(
                 builder: (context, constraints) {
                   final w = constraints.maxWidth - 96 - 36;

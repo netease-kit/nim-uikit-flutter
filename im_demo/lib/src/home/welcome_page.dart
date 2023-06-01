@@ -6,7 +6,7 @@ import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
-import '../../generated/l10n.dart';
+import '../../l10n/S.dart';
 
 class WelcomePage extends StatelessWidget {
   const WelcomePage({Key? key, this.showButton = false, this.onPressed})
@@ -43,7 +43,7 @@ class WelcomePage extends StatelessWidget {
                 height: 8,
               ),
               Text(
-                S.of(context).yunxin_desc,
+                S.of(context).yunxinDesc,
                 style:
                     TextStyle(fontSize: 16, color: CommonColors.color_666666),
               ),
@@ -58,7 +58,7 @@ class WelcomePage extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.circular(8))),
                     child: Text(
-                      S.of(context).welcome_button,
+                      S.of(context).welcomeButton,
                       style: TextStyle(color: Colors.white, fontSize: 15),
                     ),
                   ),
@@ -76,7 +76,7 @@ class WelcomePage extends StatelessWidget {
                     width: 5,
                   ),
                   Text(
-                    S.of(context).yunxin_name,
+                    S.of(context).yunxinName,
                   )
                 ],
               ),

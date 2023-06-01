@@ -1,0 +1,9 @@
+{
+  "@@locale": "zh",
+  "searchSearch": "搜索",
+  "searchSearchHit": "请输入你要搜索的关键字",
+  "searchSearchFriend": "好友",
+  "searchSearchNormalTeam": "讨论组",
+  "searchSearchAdvanceTeam": "高级群",
+  "searchEmptyTips": "该用户不存在"
+}

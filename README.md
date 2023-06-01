@@ -11,19 +11,19 @@
 dependencies:
 
   //消息组件（聊天界面，包括单聊和群聊）
-  nim_chatkit_ui: ^1.0.0
+  nim_chatkit_ui: ^1.1.0
   
   //通讯录组件
-  nim_contactkit_ui: ^1.0.0
+  nim_contactkit_ui: ^1.1.0
   
   //会话列表组件
-  nim_conversationkit_ui: ^1.0.0
+  nim_conversationkit_ui: ^1.1.0
   
   //群组设置组件
-  nim_teamkit_ui: ^1.0.0
+  nim_teamkit_ui: ^1.1.0
   
   //联系人搜索组件
-  nim_contactkit_ui: ^1.0.0
+  nim_contactkit_ui: ^1.1.0
 ```
 ### Try out
 体验包下载   

@@ -15,7 +15,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 1.0.0+1
+version: 1.1.0
 
 environment:
   sdk: ">=2.16.1 <3.0.0"
@@ -33,26 +33,33 @@ dependencies:
     sdk: flutter
 
   netease_corekit_im:
-    ^1.0.0
-  #    path: ../../netease_corekit/netease_corekit_im
+    ^1.1.0
+#    path: ../../netease_corekit/netease_corekit_im
   netease_common_ui:
-    ^1.0.0
-  #    path: ../netease_common_ui
+    ^1.1.0
+#    path: ../../common/netease_common_ui
   nim_conversationkit:
-    ^1.0.0
-  #    path: ../conversationkit/nim_conversationkit
+    ^1.1.0
+#    path: ../nim_conversationkit
   nim_conversationkit_ui:
-    path: ../conversationkit/nim_conversationkit_ui
+    path: ../nim_conversationkit_ui
   nim_chatkit_ui:
-    path: ../chatkit/nim_chatkit_ui
+    path: ../nim_chatkit_ui
   nim_teamkit_ui:
-    path: ../teamkit/nim_teamkit_ui
+    path: ../nim_teamkit_ui
   nim_contactkit_ui:
-    path: ../contactkit/nim_contactkit_ui
+    path: ../nim_contactkit_ui
   nim_searchkit_ui:
-    path: ../searchkit/nim_searchkit_ui
-  nim_core: 1.4.6
+    path: ../nim_searchkit_ui
+  nim_core:
+    ^1.6.1
+#    path: ../../nim_core/nim_core
+  yunxin_alog: ^1.0.11
   fluttertoast: 8.1.2
+    #  高德定位
+  amap_flutter_location: ^3.0.0
+    #  高德地图
+  amap_flutter_map: ^3.0.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -114,5 +121,3 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
-flutter_intl:
-  enabled: true

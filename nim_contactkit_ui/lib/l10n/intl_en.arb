@@ -1,0 +1,154 @@
+{
+  "@@locale": "en",
+  "contactTitle": "Contacts",
+  "contactNick": "Nick:{userName}",
+  "@contactNick": {
+    "placeholders": {
+      "userName": {
+        "type": "String"
+      }
+    }
+  },
+  "contactAccount": "Account:{userName}",
+  "@contactAccount": {
+    "placeholders": {
+      "userName": {
+        "type": "String"
+      }
+    }
+  },
+  "contactVerifyMessage": "Verify Message",
+  "contactBlackList": "Black List",
+  "contactTeam": "My Team",
+  "contactComment": "Comment",
+  "contactBirthday": "Birthday",
+  "contactPhone": "Phone",
+  "contactMail": "E-Mail",
+  "contactSignature": "Signature",
+  "contactMessageNotice": "MessageNotice",
+  "contactAddToBlacklist": "Add Black List",
+  "contactChat": "Go Chat",
+  "contactDelete": "Delete Friend",
+  "contactDeleteSpecificFriend": "Delete\"{userName}\"",
+  "@contactDeleteSpecificFriend": {
+    "placeholders": {
+      "userName": {
+        "type": "String"
+      }
+    }
+  },
+  "contactCancel": "Cancel",
+  "contactAddFriend": "Add Friend",
+  "contactYouWillNeverReceiveAnyMessageFromThosePerson": "You will never receive any message from those person",
+  "contactRelease": "Release",
+  "contactUserSelector": "User Selector",
+  "contactSureWithCount": "Done({count})",
+  "@contactSureWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "contactSelectAsMost": "Selected too many users",
+  "contactClean": "Clean",
+  "contactAccept": "Accept",
+  "contactAccepted": "Accepted",
+  "contactRejected": "Rejected",
+  "contactIgnored": "Ignored",
+  "contactExpired": "Expired",
+  "contactReject": "Reject",
+  "contactApplyFrom": "Friend apply from {user}",
+  "@contactApplyFrom": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "contactSomeoneInviteYourJoinTeam": "{user} had invited you to join {team}",
+  "@contactSomeoneInviteYourJoinTeam": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "team": {
+        "type": "String"
+      }
+    }
+  },
+  "contactSomeAcceptYourApply": "{user} had accepted your apply",
+  "@contactSomeAcceptYourApply": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "contactSomeRejectYourApply": "{user} had rejected your apply",
+  "@contactSomeRejectYourApply": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "contactSomeAcceptYourInvitation": "{user} had accepted your invitation",
+  "@contactSomeAcceptYourInvitation": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "contactSomeRejectYourInvitation": "{user} had rejected your invitation",
+  "@contactSomeRejectYourInvitation": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "contactSomeAddYourAsFriend": "{user} have add you as friend",
+  "@contactSomeAddYourAsFriend": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "contactSomeoneApplyJoinTeam": "{user} apply join {team}",
+  "@contactSomeoneApplyJoinTeam": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "team": {
+        "type": "String"
+      }
+    }
+  },
+  "contactSomeRejectYourTeamApply": "{user} rejected your team apply",
+  "@contactSomeRejectYourTeamApply": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "contactSave": "Save",
+  "contactHaveSendApply": "Apply have been sent",
+  "systemVerifyMessageEmpty": "Verify Message Empty",
+  "verifyAgreeMessageText": "Nice to meet you，let's chat",
+  "verifyMessageHaveBeenHandled":"Already done on other devices",
+  "operationFailed":"Handle Fail:{code}",
+  "@operationFailed": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "contactSelectEmptyTip": "No Member",
+  "contactFriendEmpty": "No Friend"
+}

@@ -1,9 +1,0 @@
-{
-  "@@locale": "zh",
-  "search_search": "搜索",
-  "search_search_hit": "请输入你要搜索的关键字",
-  "search_search_friend": "好友",
-  "search_search_normal_team": "讨论组",
-  "search_search_advance_team": "高级群",
-  "search_empty_tips": "该用户不存在"
-}

@@ -2,17 +2,17 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:flutter/material.dart';
-import 'package:im_demo/src/mine/setting/clear_cache_page.dart';
-import 'package:im_demo/src/mine/setting/notify_setting_page.dart';
 import 'package:netease_common_ui/ui/background.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/widgets/common_list_tile.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:netease_corekit_im/im_kit_client.dart';
 import 'package:netease_corekit_im/repo/config_repo.dart';
+import 'package:flutter/material.dart';
+import 'package:im_demo/src/mine/setting/clear_cache_page.dart';
+import 'package:im_demo/src/mine/setting/notify_setting_page.dart';
 
-import '../../../generated/l10n.dart';
+import '../../../l10n/S.dart';
 
 class MineSettingPage extends StatefulWidget {
   const MineSettingPage({Key? key}) : super(key: key);
@@ -35,7 +35,6 @@ class _MineSettingPageState extends State<MineSettingPage> {
   initSwitchValue() async {
     int v = await ConfigRepo.getAudioPlayModel();
     audioPlayMode = v == ConfigRepo.audioPlayEarpiece;
-    friendDeleteMode = await ConfigRepo.getDeleteAlias();
     messageReadMode = await ConfigRepo.getShowReadStatus();
 
     setState(() {});
@@ -51,7 +50,7 @@ class _MineSettingPageState extends State<MineSettingPage> {
   Widget build(BuildContext context) {
     List<Widget> switchTiles = [
       CommonListTile(
-        title: S.of(context).setting_play_mode,
+        title: S.of(context).settingPlayMode,
         trailingType: TrailingType.onOff,
         switchValue: audioPlayMode,
         onSwitchChanged: (value) {
@@ -64,18 +63,7 @@ class _MineSettingPageState extends State<MineSettingPage> {
         },
       ),
       CommonListTile(
-        title: S.of(context).setting_friend_delete_mode,
-        trailingType: TrailingType.onOff,
-        switchValue: friendDeleteMode,
-        onSwitchChanged: (value) {
-          ConfigRepo.updateDeleteAlias(value);
-          setState(() {
-            friendDeleteMode = value;
-          });
-        },
-      ),
-      CommonListTile(
-        title: S.of(context).setting_message_read_mode,
+        title: S.of(context).settingMessageReadMode,
         trailingType: TrailingType.onOff,
         switchValue: messageReadMode,
         onSwitchChanged: (value) {
@@ -87,7 +75,7 @@ class _MineSettingPageState extends State<MineSettingPage> {
       ),
     ];
     return TransparentScaffold(
-      title: S.of(context).mine_setting,
+      title: S.of(context).mineSetting,
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
@@ -96,7 +84,7 @@ class _MineSettingPageState extends State<MineSettingPage> {
               child: Column(
                 children: ListTile.divideTiles(context: context, tiles: [
                   CommonListTile(
-                    title: S.of(context).setting_notify,
+                    title: S.of(context).settingNotify,
                     trailingType: TrailingType.arrow,
                     onTap: () {
                       Navigator.push(
@@ -108,7 +96,7 @@ class _MineSettingPageState extends State<MineSettingPage> {
                   Visibility(
                     visible: false,
                     child: CommonListTile(
-                      title: S.of(context).setting_clear_cache,
+                      title: S.of(context).settingClearCache,
                       trailingType: TrailingType.arrow,
                       onTap: () {
                         Navigator.push(
@@ -135,10 +123,10 @@ class _MineSettingPageState extends State<MineSettingPage> {
                 onTap: () {
                   showCommonDialog(
                           context: context,
-                          title: S.of(context).mine_logout,
-                          content: S.of(context).logout_dialog_content,
-                          navigateContent: S.of(context).logout_dialog_disagree,
-                          positiveContent: S.of(context).logout_dialog_agree)
+                          title: S.of(context).mineLogout,
+                          content: S.of(context).logoutDialogContent,
+                          navigateContent: S.of(context).logoutDialogDisagree,
+                          positiveContent: S.of(context).logoutDialogAgree)
                       .then((value) {
                     if (value ?? false) {
                       IMKitClient.logoutIM().then((value) {
@@ -154,13 +142,13 @@ class _MineSettingPageState extends State<MineSettingPage> {
                   height: 40,
                   alignment: Alignment.center,
                   child: Text(
-                    S.of(context).mine_logout,
+                    S.of(context).mineLogout,
                     style:
                         const TextStyle(fontSize: 16, color: Color(0xffe6605c)),
                   ),
                 ),
               ),
-            )
+            ),
           ],
         ),
       ),

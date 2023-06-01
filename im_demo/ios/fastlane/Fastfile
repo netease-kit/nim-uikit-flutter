@@ -20,7 +20,7 @@ platform :ios do
       lane :build_enterprise do |options|
 
         update_app_identifier(
-          app_identifier: "com.netease.yunxin.app.flutter.im.imDemo",
+          app_identifier: "com.netease.yunxin.app.flutter.im",
           plist_path: "Runner/Info.plist",
         )
         gym(

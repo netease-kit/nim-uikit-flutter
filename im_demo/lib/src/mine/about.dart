@@ -2,12 +2,12 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/common_browse_page.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 
-import '../../generated/l10n.dart';
+import '../../l10n/S.dart';
 
 class AboutPage extends StatelessWidget {
   const AboutPage({Key? key}) : super(key: key);
@@ -36,7 +36,7 @@ class AboutPage extends StatelessWidget {
               height: 46,
             ),
             Text(
-              S.of(context).yunxin_name,
+              S.of(context).yunxinName,
               style: const TextStyle(
                   fontSize: 24, color: CommonColors.color_333333),
             ),
@@ -46,18 +46,19 @@ class AboutPage extends StatelessWidget {
             divider,
             ListTile(
               title: Text(
-                S.of(context).mine_version,
+                S.of(context).mineVersion,
                 style: _style,
               ),
+              // 如果引入package_info 则不需要手动修改此处，但是如果只为了版本号引入不值得
               trailing: Text(
-                'V1.0.0',
+                'V1.1.0',
                 style: _style,
               ),
             ),
             divider,
             ListTile(
               title: Text(
-                S.of(context).mine_product,
+                S.of(context).mineProduct,
                 style: _style,
               ),
               trailing: SvgPicture.asset(
@@ -70,7 +71,7 @@ class AboutPage extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                         builder: (context) => CommonBrowser(
-                            title: S.of(context).mine_about,
+                            title: S.of(context).mineAbout,
                             url: 'https://netease.im/m/')));
               },
             ),

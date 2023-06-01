@@ -23,6 +23,7 @@
 
     <uses-sdk tools:overrideLibrary="com.huawei.android.hms.base,com.huawei.android.hms.push"/>
     <!-- xiaomi push -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <permission
         android:name="com.netease.yunxin.app.flutter.im.permission.MIPUSH_RECEIVE"
         android:protectionLevel="signature"/>
@@ -41,9 +42,24 @@
         android:protectionLevel="signature"/>
     <uses-permission android:name="com.netease.yunxin.app.flutter.im.permission.C2D_MESSAGE"/>
 
+    <!--允许获取精确位置，精准定位必选-->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <!--允许获取粗略位置，粗略定位必选-->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!--用于申请调用A-GPS模块,卫星定位加速-->
+    <uses-permission android:name="android.permission.ACCESS_LOCATION_EXTRA_COMMANDS" />
+
+    <!--允许写设备缓存，用于问题排查-->
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+
+
     <application
         android:label="@string/app_name"
         android:name=".FlutterIMApplication"
+        android:usesCleartextTraffic="true"
+        android:allowNativeHeapPointerTagging="false"
         android:icon="@mipmap/ic_logo">
         <activity
             android:name=".MainActivity"
@@ -65,12 +81,20 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+
+            <intent-filter>
+                <action android:name="com.netease.yunxin.app.flutter.im.push"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- 配置高德定位Service -->
+        <service android:name="com.amap.api.location.APSService"/>
 
         <!-- 小米推送配置 -->
         <service

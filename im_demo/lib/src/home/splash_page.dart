@@ -7,13 +7,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:im_demo/src/config.dart';
 import 'package:im_demo/src/home/home_page.dart';
-import 'package:im_demo/src/home/welcome_page.dart';
 import 'package:nim_core/nim_core.dart';
-import 'package:provider/provider.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
+import 'dart:io';
+import 'dart:typed_data';
 
 class SplashPage extends StatefulWidget {
-  const SplashPage({Key? key}) : super(key: key);
+  final Uint8List? deviceToken;
+
+  const SplashPage({Key? key, this.deviceToken}) : super(key: key);
 
   @override
   State<StatefulWidget> createState() => _SplashState();
@@ -44,9 +46,22 @@ class _SplashState extends State<SplashPage> {
     _doInit(IMDemoConfig.AppKey);
   }
 
+  void updateAPNsToken() {
+    if (NimCore.instance.isInitialized &&
+        Platform.isIOS &&
+        widget.deviceToken != null) {
+      NimCore.instance.settingsService
+          .updateAPNSToken(widget.deviceToken!, null);
+    }
+  }
+
   /// init depends package for app
   void _doInit(String appKey) async {
-    var options = await NIMSDKOptionsConfig.getSDKOptions(appKey);
+
+    //如果使用自动登录可在初始化的时候传入loginInfo
+    var options =
+        await NIMSDKOptionsConfig.getSDKOptions(appKey);
+
     IMKitClient.init(appKey, options).then((success) {
       if (success) {
         startLogin();
@@ -67,6 +82,7 @@ class _SplashState extends State<SplashPage> {
         token: token))
         .then((value) {
       if(value){
+        updateAPNsToken();
         setState((){
           haveLogin = true;
         });

@@ -2,22 +2,34 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:im_demo/generated/l10n.dart';
-import 'package:im_demo/src/mine/mine_page.dart';
-import 'package:netease_common_ui/utils/color_utils.dart';
+import 'dart:convert';
+
+import 'package:flutter/services.dart';
+import 'package:netease_corekit_im/router/imkit_router_factory.dart';
+import 'package:netease_corekit_im/service_locator.dart';
+import 'package:netease_corekit_im/services/login/login_service.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_item.dart';
 import 'package:nim_chatkit_ui/view/input/actions.dart';
 import 'package:nim_chatkit_ui/view_model/chat_view_model.dart';
+import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:nim_contactkit/repo/contact_repo.dart';
 import 'package:nim_contactkit_ui/page/contact_page.dart';
 import 'package:nim_conversationkit/repo/conversation_repo.dart';
 import 'package:nim_conversationkit_ui/page/conversation_page.dart';
-import 'package:nim_contactkit/repo/contact_repo.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:im_demo/l10n/S.dart';
+import 'package:im_demo/src/mine/mine_page.dart';
 import 'package:nim_core/nim_core.dart';
 import 'package:provider/provider.dart';
+import 'package:yunxin_alog/yunxin_alog.dart';
+
+import '../config.dart';
+
+const channelName = "com.netease.yunxin.app.flutter.im/channel";
+const pushMethodName = "pushMessage";
 
 class HomePage extends StatefulWidget {
   final int pageIndex;
@@ -57,6 +69,39 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  Future<dynamic> _handleMethodCall(MethodCall call) async {
+    if (call.method == pushMethodName && call.arguments is Map) {
+      _dispatchMessage(call.arguments);
+    }
+  }
+
+  ///解析从Android端传递过来的消息，并分发
+  void _handleMessageFromNative() {
+    const channel = MethodChannel(channelName);
+
+    //注册回调，用于页面没有被销毁的时候的回调监听
+    channel.setMethodCallHandler((call) => _handleMethodCall(call));
+
+    //方法调用，用于页面被销毁时候的情况
+    channel.invokeMapMethod<String, dynamic>(pushMethodName).then((value) {
+      Alog.d(tag: 'HomePage', content: "Message from Android is = $value}");
+      _dispatchMessage(value);
+    });
+  }
+
+  //分发消息，跳转到聊天页面
+  void _dispatchMessage(Map? params) {
+    var sessionType = params?['sessionType'] as String?;
+    var sessionId = params?['sessionId'] as String?;
+    if (sessionType?.isNotEmpty == true && sessionId?.isNotEmpty == true) {
+      if (sessionType == 'p2p') {
+        goToP2pChat(context, sessionId!);
+      } else if (sessionType == 'team') {
+        goToTeamChat(context, sessionId!);
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -75,6 +120,10 @@ class _HomePageState extends State<HomePage> {
         );
       }
     };
+    ChatKitClient.instance.aMapIOSKey = IMDemoConfig.AMapIOS;
+    ChatKitClient.instance.aMapAndroidKey = IMDemoConfig.AMapAndroid;
+    //注册全局监听撤回消息
+    ChatKitClient.instance.registerRevokedMessage(messageRevokedStr: '此消息已撤回');
     ChatKitClient.instance.chatUIConfig = ChatUIConfig(moreActions: [
       ActionItem(
           type: 'custom',
@@ -87,11 +136,75 @@ class _HomePageState extends State<HomePage> {
                 sessionType: vm.sessionType,
                 content: '自定义消息');
             if (msg.isSuccess && msg.data != null) {
-              Fluttertoast.showToast(msg: '发送自定义消息！');
+              Fluttertoast.showToast(msg: '发送自定义消息！ ');
               vm.sendMessage(msg.data!);
             }
           }),
-    ], messageBuilder: messageBuilder);
+    ], messageBuilder: messageBuilder, getPushPayload: _getPushPayload);
+    _handleMessageFromNative();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    ChatKitClient.instance.unregisterRevokedMessage();
+  }
+
+  //获取pushPayload
+  Map<String, dynamic> _getPushPayload(NIMMessage message) {
+    Map<String, dynamic> pushPayload = Map();
+    var sessionId = message.sessionType == NIMSessionType.p2p
+        ? getIt<LoginService>().userInfo?.userId
+        : message.sessionId;
+    var sessionType =
+        message.sessionType == NIMSessionType.p2p ? "p2p" : "team";
+    // 添加 apns payload
+    // var alert = {
+    //   "title" : "your title",
+    //   "subtitle" : "your sub Title",
+    //   "body" : "your title"
+    // };
+    // var category = {"category" : "your category"};
+    // var apsField = {
+    //   "alert":alert,
+    //   "category":category
+    // };
+    // pushPayload["apsField"] = apsField;
+
+    // 添加oppo 的pushPayload
+    var oppoParam = {"sessionId": sessionId, "sessionType": sessionType};
+    var oppoField = {
+      "click_action_type": 4,
+      "click_action_activity": 'com.netease.yunxin.app.flutter.im.MainActivity',
+      "action_parameters": oppoParam
+    };
+    pushPayload["oppoField"] = oppoField;
+    // 添加vivo 推送参数
+
+    var vivoField = {
+      "pushMode": 0 //推送模式 0：正式推送；1：测试推送，不填默认为0
+    };
+
+    pushPayload["vivoField"] = vivoField;
+
+    //添加华为推送参数
+    var huaweiClickAction = {
+      'type': 1,
+      'action': 'com.netease.yunxin.app.flutter.im.push'
+    };
+
+    var config = {
+      'category': 'IM',
+      'data': jsonEncode({'sessionId': sessionId, 'sessionType': sessionType})
+    };
+    pushPayload['hwField'] = {
+      'click_action': huaweiClickAction,
+      'androidConfig': config
+    };
+    //添加通用的参数
+    pushPayload["sessionId"] = sessionId;
+    pushPayload["sessionType"] = sessionType;
+    return pushPayload;
   }
 
   Widget _getIcon(Widget tabIcon, {bool showRedPoint = false}) {
