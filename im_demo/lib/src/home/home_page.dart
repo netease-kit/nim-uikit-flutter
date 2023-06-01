@@ -123,7 +123,7 @@ class _HomePageState extends State<HomePage> {
     ChatKitClient.instance.aMapIOSKey = IMDemoConfig.AMapIOS;
     ChatKitClient.instance.aMapAndroidKey = IMDemoConfig.AMapAndroid;
     //注册全局监听撤回消息
-    ChatKitClient.instance.registerRevokedMessage(messageRevokedStr: '此消息已撤回');
+    ChatKitClient.instance.registerRevokedMessage();
     ChatKitClient.instance.chatUIConfig = ChatUIConfig(moreActions: [
       ActionItem(
           type: 'custom',
