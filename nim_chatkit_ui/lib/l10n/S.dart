@@ -17,6 +17,7 @@ class S {
       localizations = ChatKitClientLocalizations.of(context);
     }
     if (localizations == null) {
+      Intl.defaultLocale = 'zh';
       localizations = lookupChatKitClientLocalizations(
           Locale.fromSubtags(languageCode: Intl.getCurrentLocale()));
     }
