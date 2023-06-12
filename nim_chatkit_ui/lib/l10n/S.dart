@@ -2,10 +2,12 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import 'chat_localization/chat_kit_client_localizations.dart';
+import 'chat_localization/chat_kit_client_localizations_zh.dart';
 
 class S {
   static const LocalizationsDelegate<ChatKitClientLocalizations> delegate =
@@ -17,9 +19,12 @@ class S {
       localizations = ChatKitClientLocalizations.of(context);
     }
     if (localizations == null) {
-      Intl.defaultLocale = 'zh';
-      localizations = lookupChatKitClientLocalizations(
-          Locale.fromSubtags(languageCode: Intl.getCurrentLocale()));
+      var local = PlatformDispatcher.instance.locale;
+      try {
+        localizations = lookupChatKitClientLocalizations(local);
+      } catch (e) {
+        localizations = ChatKitClientLocalizationsZh();
+      }
     }
     return localizations;
   }

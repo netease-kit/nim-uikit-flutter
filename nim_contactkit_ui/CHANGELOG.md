@@ -1,5 +1,9 @@
 # NimContactKitUI ChangeLog
 
+## 1.1.1(Jun 12, 2023)
+### New Features
+* 适配Flutter 3.10.0 以上版本
+
 ## 1.1.0(Jun 1, 2023)
 ### New Features
 * 验证消息展示样式修改

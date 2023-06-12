@@ -3,10 +3,12 @@
 // found in the LICENSE file.
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import 'contact_localization/contact_kit_client_localizations.dart';
+import 'contact_localization/contact_kit_client_localizations_zh.dart';
 
 class S {
   static const LocalizationsDelegate<ContactKitClientLocalizations> delegate =
@@ -18,8 +20,12 @@ class S {
       localizations = ContactKitClientLocalizations.of(context);
     }
     if (localizations == null) {
-      localizations = lookupContactKitClientLocalizations(
-          Locale.fromSubtags(languageCode: Intl.getCurrentLocale()));
+      var local = PlatformDispatcher.instance.locale;
+      try {
+        localizations = lookupContactKitClientLocalizations(local);
+      } catch (e) {
+        localizations = ContactKitClientLocalizationsZh();
+      }
     }
     return localizations;
   }

@@ -133,15 +133,11 @@ class _ChatThumbViewState extends State<ChatThumbView> {
   Widget _imageBuilderForPicture() {
     String url = _getUrlForImage();
     String path = _getPathForImage();
-    if (path.isNotEmpty &&
-        (widget.message.messageDirection == NIMMessageDirection.outgoing ||
-            widget.message.attachmentStatus ==
-                NIMMessageAttachmentStatus.transferred)) {
+    File localFile = new File(path);
+    if (path.isNotEmpty && localFile.existsSync()) {
       return _localImage(path);
     }
-    if (url.isNotEmpty &&
-        widget.message.attachmentStatus ==
-            NIMMessageAttachmentStatus.transferred) {
+    if (url.isNotEmpty) {
       return _networkImage(url);
     }
     return _placeHolder(_getImageRatio());

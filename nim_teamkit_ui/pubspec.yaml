@@ -1,6 +1,6 @@
 name: nim_teamkit_ui
 description: Team UI base on TeamKit.
-version: 1.1.0
+version: 1.1.1
 homepage: https://github.com/netease-kit/nim-uikit-flutter
 # Remove this line if you wish to publish to pub.dev
 #publish_to: none
@@ -19,19 +19,19 @@ dependencies:
     ^1.1.0
 #    path: ../nim_teamkit
   netease_common_ui:
-    ^1.1.0
+    ^1.1.1
 #    path: ../../common/netease_common_ui
   netease_corekit_im:
     ^1.0.1
 #    path: ../../netease_corekit/netease_corekit_im
   netease_corekit:
-    ^1.1.0
+    ^1.1.1
 #    path: ../../netease_corekit/netease_corekit
+  nim_core: ^1.6.1
+  #    path: ../../nim_core/nim_core
   provider: ^6.0.0
   fluttertoast: ^8.0.9
-  nim_core: ^1.6.1
-#    path: ../../nim_core/nim_core
-  intl: ^0.17.0
+  intl: ^0.18.0
   flutter_svg: ^1.0.3
   connectivity_plus: ^2.3.6
 

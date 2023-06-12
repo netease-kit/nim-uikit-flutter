@@ -13,6 +13,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:netease_common_ui/widgets/platform_utils.dart';
 import 'package:nim_chatkit_ui/view/page/location_map_page.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
@@ -77,7 +78,6 @@ class _MorePanelState extends State<MorePanel> {
             package: kPackage,
           ),
           title: S.of(context).chatMessageMoreFile,
-          permissions: [Permission.storage],
           onTap: _onFileActionTap),
     ];
   }
@@ -94,6 +94,15 @@ class _MorePanelState extends State<MorePanel> {
   }
 
   _onFileActionTap(BuildContext context) async {
+    final permissionList;
+    if (Platform.isAndroid && await PlatformUtils.isAboveAndroidT()) {
+      permissionList = [Permission.manageExternalStorage];
+    } else {
+      permissionList = [Permission.storage];
+    }
+    if (!(await PermissionsHelper.requestPermission(permissionList))) {
+      return;
+    }
     FilePickerResult? result = await FilePicker.platform.pickFiles();
     final platformFile = result?.files.single;
     if (platformFile?.path != null) {

@@ -388,7 +388,7 @@ class _PersonalInfoPage extends StatelessWidget {
             ),
             InkWell(
               onTap: () {
-                Clipboard.setData(ClipboardData(text: userInfo.userId));
+                Clipboard.setData(ClipboardData(text: userInfo.userId ?? ''));
                 Fluttertoast.showToast(msg: S.of(context).actionCopySuccess);
               },
               child: Image.asset(

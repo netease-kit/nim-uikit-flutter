@@ -179,7 +179,7 @@ class ChatKitMessageAudioState extends State<ChatKitMessageAudioItem>
   }
 
   //监听权限
-  Future<bool> _requestPermission() async {
+  Future<bool?> _requestPermission() async {
     var status = await Permission.phone.request();
 
     switch (status) {
@@ -190,6 +190,8 @@ class ChatKitMessageAudioState extends State<ChatKitMessageAudioItem>
         return false;
       case PermissionStatus.granted:
         return true;
+      default:
+        return true;
     }
   }
 
@@ -198,7 +200,7 @@ class ChatKitMessageAudioState extends State<ChatKitMessageAudioItem>
     _phoneStateSub?.cancel();
     bool havePermission = true;
     if (Platform.isAndroid) {
-      havePermission = await _requestPermission();
+      havePermission = await _requestPermission() ?? true;
     }
     if (havePermission) {
       _phoneStateSub = PhoneState.phoneStateStream.listen((event) {

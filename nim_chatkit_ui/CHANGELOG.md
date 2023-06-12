@@ -1,5 +1,13 @@
 # NimChatKitUI ChangeLog
 
+## 1.1.1(Jun 12, 2023)
+### New Features
+* 适配Flutter 3.10.0 以上版本
+
+## 1.1.0+1(Jun 1, 2023)
+### New Features
+* 修复en_US资源找不到问题
+
 ## 1.1.0(Jun 1, 2023)
 ### New Features
 * 支持地理位置消息发送和展示

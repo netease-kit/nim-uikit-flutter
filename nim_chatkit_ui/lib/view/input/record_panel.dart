@@ -47,7 +47,7 @@ class _RecordPanelState extends State<RecordPanel> {
           color: Colors.transparent,
         );
       });
-      Overlay.of(context)!.insert(_overlayEntry!);
+      Overlay.of(context).insert(_overlayEntry!);
     }
   }
 

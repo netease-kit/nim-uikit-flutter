@@ -78,9 +78,12 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
         customActions!.onMessageCopy!(message)) {
       return true;
     }
-    Clipboard.setData(ClipboardData(text: message.nimMessage.content ?? ''));
-    Fluttertoast.showToast(msg: S.of().chatMessageCopySuccess);
-    return true;
+    if (message.nimMessage.content?.isNotEmpty == true) {
+      Clipboard.setData(ClipboardData(text: message.nimMessage.content!));
+      Fluttertoast.showToast(msg: S.of().chatMessageCopySuccess);
+      return true;
+    }
+    return false;
   }
 
   _scrollToIndex(String uuid) {
