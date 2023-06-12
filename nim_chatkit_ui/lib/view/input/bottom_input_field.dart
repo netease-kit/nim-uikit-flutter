@@ -13,6 +13,7 @@ import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/permission_request.dart';
+import 'package:netease_common_ui/widgets/platform_utils.dart';
 import 'package:netease_corekit_im/model/team_models.dart';
 import 'package:netease_corekit_im/service_locator.dart';
 import 'package:netease_corekit_im/services/login/login_service.dart';
@@ -158,8 +159,19 @@ class _BottomInputFieldState extends State<BottomInputField>
             showCancel: true)
         .then((value) async {
       if (value == 1 || value == 2) {
-        if (await PermissionsHelper.requestPermission(
-            Platform.isIOS ? [Permission.photos] : [Permission.storage])) {
+        final permissionList;
+        if (Platform.isIOS) {
+          permissionList = [Permission.photos];
+        } else if (Platform.isAndroid) {
+          if (await PlatformUtils.isAboveAndroidT()) {
+            permissionList = [Permission.photos, Permission.videos];
+          } else {
+            permissionList = [Permission.storage];
+          }
+        } else {
+          permissionList = [];
+        }
+        if (await PermissionsHelper.requestPermission(permissionList)) {
           if (value == 1) {
             _pickImage();
           } else if (value == 2) {
@@ -497,7 +509,7 @@ class _BottomInputFieldState extends State<BottomInputField>
 
   @override
   void didChangeMetrics() {
-    final bottomInset = WidgetsBinding.instance.window.viewInsets.bottom;
+    final bottomInset = View.of(context).viewInsets.bottom;
     final newValue = bottomInset > 0.0;
     if (newValue != _keyboardShow) {
       setState(() {

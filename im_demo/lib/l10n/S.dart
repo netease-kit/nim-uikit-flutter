@@ -2,10 +2,12 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import 'demo_localization/demo_kit_client_localizations.dart';
+import 'demo_localization/demo_kit_client_localizations_zh.dart';
 
 class S {
   static const LocalizationsDelegate<DemoKitClientLocalizations> delegate =
@@ -17,8 +19,12 @@ class S {
       localizations = DemoKitClientLocalizations.of(context);
     }
     if (localizations == null) {
-      localizations = lookupDemoKitClientLocalizations(
-          Locale.fromSubtags(languageCode: Intl.getCurrentLocale()));
+      var local = PlatformDispatcher.instance.locale;
+      try {
+        localizations = lookupDemoKitClientLocalizations(local);
+      } catch (e) {
+        localizations = DemoKitClientLocalizationsZh();
+      }
     }
     return localizations;
   }

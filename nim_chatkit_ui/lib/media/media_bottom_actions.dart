@@ -4,6 +4,7 @@
 
 import 'dart:io';
 
+import 'package:netease_common_ui/widgets/platform_utils.dart';
 import 'package:nim_chatkit/extension.dart';
 import 'package:netease_common_ui/widgets/permission_request.dart';
 import 'package:dio/dio.dart';
@@ -117,10 +118,15 @@ class MediaBottomActionOverlay extends StatelessWidget {
           child: Row(
             children: [
               IconButton(
-                onPressed: () {
-                  PermissionsHelper.requestPermission(Platform.isIOS
-                          ? [Permission.photosAddOnly]
-                          : [Permission.storage])
+                onPressed: () async {
+                  final permissionList;
+                  if (Platform.isAndroid &&
+                      await PlatformUtils.isAboveAndroidT()) {
+                    permissionList = [Permission.manageExternalStorage];
+                  } else {
+                    permissionList = [Permission.storage];
+                  }
+                  PermissionsHelper.requestPermission(permissionList)
                       .then((value) {
                     if (value) {
                       _saveFile(context);

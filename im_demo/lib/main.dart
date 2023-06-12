@@ -23,7 +23,6 @@ import 'package:nim_searchkit_ui/search_kit_client.dart';
 import 'package:nim_teamkit_ui/team_kit_client.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
 import 'dart:io';
-import 'dart:typed_data';
 
 void main() {
   SystemChrome.setSystemUIOverlayStyle(

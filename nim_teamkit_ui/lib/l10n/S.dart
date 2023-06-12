@@ -2,8 +2,10 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:nim_teamkit_ui/l10n/team_localization/team_kit_client_localizations_zh.dart';
 
 import 'team_localization/team_kit_client_localizations.dart';
 
@@ -17,8 +19,12 @@ class S {
       localizations = TeamKitClientLocalizations.of(context);
     }
     if (localizations == null) {
-      localizations = lookupTeamKitClientLocalizations(
-          Locale.fromSubtags(languageCode: Intl.getCurrentLocale()));
+      var local = PlatformDispatcher.instance.locale;
+      try {
+        localizations = lookupTeamKitClientLocalizations(local);
+      } catch (e) {
+        localizations = TeamKitClientLocalizationsZh();
+      }
     }
     return localizations;
   }

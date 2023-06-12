@@ -11,6 +11,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:nim_core/nim_core.dart';
 import 'package:video_player/video_player.dart';
+import 'package:phone_state/phone_state.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../chat_kit_client.dart';
 
@@ -27,6 +29,45 @@ class _VideoViewerState extends State<VideoViewer> with WidgetsBindingObserver {
   late VideoPlayerController _controller;
   bool _progressShow = true;
   Timer? _timer;
+  bool _isPlaying = true;
+  StreamSubscription? _phoneStateSub;
+
+  //监听权限
+  Future<bool?> _requestPermission() async {
+    var status = await Permission.phone.request();
+
+    switch (status) {
+      case PermissionStatus.denied:
+      case PermissionStatus.restricted:
+      case PermissionStatus.limited:
+      case PermissionStatus.permanentlyDenied:
+        return false;
+      case PermissionStatus.granted:
+        return true;
+      default:
+        return true;
+    }
+  }
+
+  //处理来电话播放器停止播放的操作
+  void _handlePhoneCall() async {
+    if (_phoneStateSub != null) {
+      return;
+    }
+    bool havePermission = true;
+    if (Platform.isAndroid) {
+      havePermission = await _requestPermission() ?? true;
+    }
+    if (havePermission) {
+      _phoneStateSub = PhoneState.phoneStateStream.listen((event) {
+        if (event != null && _isPlaying) {
+          _isPlaying = false;
+          _controller.pause();
+          setState(() {});
+        }
+      });
+    }
+  }
 
   void _playProgressAutoHide() {
     _timer?.cancel();
@@ -50,19 +91,31 @@ class _VideoViewerState extends State<VideoViewer> with WidgetsBindingObserver {
     _controller = VideoPlayerController.file(File(attachment.path!),
         videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
     _controller.addListener(() {
+      if (!_controller.value.isPlaying &&
+          _controller.value.position == _controller.value.duration) {
+        _controller.seekTo(Duration());
+        _isPlaying = false;
+      } else {
+        _handlePhoneCall();
+      }
       setState(() {});
     });
     _controller.setLooping(false);
     _controller.initialize().then((_) {
       setState(() {});
     });
+    _isPlaying = true;
     _controller.play();
     _playProgressAutoHide();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (AppLifecycleState.paused == state && _controller.value.isPlaying) {
+    // 添加 inactive 状态判断避免来电等状态
+    if ((AppLifecycleState.paused == state ||
+            AppLifecycleState.inactive == state) &&
+        _isPlaying) {
+      _isPlaying = false;
       _controller.pause();
       setState(() {});
     }
@@ -73,6 +126,8 @@ class _VideoViewerState extends State<VideoViewer> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _controller.dispose();
     _timer?.cancel();
+    _phoneStateSub?.cancel();
+    _phoneStateSub = null;
     super.dispose();
   }
 
@@ -101,9 +156,10 @@ class _VideoViewerState extends State<VideoViewer> with WidgetsBindingObserver {
           ),
         ),
         Visibility(
-          visible: !_controller.value.isPlaying,
+          visible: !_isPlaying,
           child: GestureDetector(
             onTap: () {
+              _isPlaying = true;
               _controller.play();
             },
             child: Center(
@@ -126,14 +182,16 @@ class _VideoViewerState extends State<VideoViewer> with WidgetsBindingObserver {
                 children: [
                   GestureDetector(
                     onTap: () {
-                      if (_controller.value.isPlaying) {
+                      if (_isPlaying) {
+                        _isPlaying = false;
                         _controller.pause();
                       } else {
+                        _isPlaying = true;
                         _controller.play();
                       }
                     },
                     child: SvgPicture.asset(
-                      _controller.value.isPlaying
+                      _isPlaying
                           ? 'images/ic_video_pause.svg'
                           : 'images/ic_video_resume.svg',
                       package: kPackage,
