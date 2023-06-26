@@ -78,6 +78,7 @@ class _MainAppState extends State<MainApp> {
     return ScreenUtilInit(
       designSize: const Size(375, 812),
       minTextAdapt: true,
+      useInheritedMediaQuery: true,
       builder: (context, child) {
         return MaterialApp(
           onGenerateTitle: (BuildContext context) => S.of(context).appName,
