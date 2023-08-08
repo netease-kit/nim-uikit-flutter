@@ -8,6 +8,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
@@ -119,6 +120,13 @@ class _BottomInputFieldState extends State<BottomInputField>
         moduleName: 'bottom input',
         content: 'pick video path:${video?.path}');
     if (video != null) {
+      var length = await video.length();
+      int overSize = ChatKitClient.instance.chatUIConfig.maxVideoSize ?? 200;
+      if (length > overSize * 1024 * 1024) {
+        Fluttertoast.showToast(
+            msg: S.of(context).chatMessageFileSizeOverLimit("$overSize"));
+        return;
+      }
       VideoPlayerController controller =
           VideoPlayerController.file(File(video.path));
       controller.initialize().then((value) {

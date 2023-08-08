@@ -174,11 +174,13 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
     if (message.nimMessage.sessionType == NIMSessionType.p2p) {
       return 1;
     } else {
-      if (message.ackCount > 0 || message.unAckCount > 0) {
+      if (message.ackCount > 0) {
         _teamAck = message.ackCount;
-        _teamUnAck = message.unAckCount;
-        _log('_getAllAck _teamUnAck:$_teamUnAck, _teamAck:$_teamAck');
       }
+      if (message.unAckCount > 0) {
+        _teamUnAck = message.unAckCount;
+      }
+      _log('_getAllAck _teamUnAck:$_teamUnAck, _teamAck:$_teamAck');
       return _teamAck + _teamUnAck;
     }
   }
@@ -487,7 +489,8 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
     var messageTime = DateTime.fromMillisecondsSinceEpoch(milliSecond);
     if (nowTime.year != messageTime.year) {
       return Intl.DateFormat('yyyy-MM-dd HH:mm').format(messageTime);
-    } else if (nowTime.day != messageTime.day) {
+    } else if (nowTime.month != messageTime.month ||
+        nowTime.day != messageTime.day) {
       return Intl.DateFormat('MM-dd HH:mm').format(messageTime);
     } else {
       return Intl.DateFormat('HH:mm').format(messageTime);

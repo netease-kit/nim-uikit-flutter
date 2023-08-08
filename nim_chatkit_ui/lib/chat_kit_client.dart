@@ -80,6 +80,17 @@ class ChatUIConfig {
 
   Map<String, dynamic> Function(NIMMessage message)? getPushPayload;
 
+  ///设置图片加载中的占位图
+  ///[aspectRatio] 图片宽高比
+  ///[width] 图片宽度
+  Widget Function(double aspectRatio, {double? width})? imagePlaceHolder;
+
+  ///视频消息最大size 单位M，不设置默认200
+  int? maxVideoSize;
+
+  ///文件消息最大size 单位M，不设置默认200
+  int? maxFileSize;
+
   ChatUIConfig(
       {this.showTeamMessageStatus,
       this.receiveMessageBg,
@@ -99,7 +110,10 @@ class ChatUIConfig {
       this.moreActions,
       this.messageBuilder,
       this.messageClickListener,
-      this.getPushPayload});
+      this.getPushPayload,
+      this.imagePlaceHolder,
+      this.maxVideoSize,
+      this.maxFileSize});
 }
 
 ///消息点击回调

@@ -1,5 +1,12 @@
 # NimSearchKitUI ChangeLog
 
+## 1.1.2(Aug 8, 2023)
+### Dependency Updates
+* 升级`nimcoe`到`1.7.0`
+* 升级`netease_corekit_im`到`1.1.2`
+* 升级`netease_corekit`到`1.1.2`
+* 升级`netease_common_ui`到`1.1.2`
+
 ## 1.1.1(Jun 12, 2023)
 ### New Features
 * 适配Flutter 3.10.0 以上版本

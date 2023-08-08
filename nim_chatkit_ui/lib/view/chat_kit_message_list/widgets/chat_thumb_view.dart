@@ -4,8 +4,8 @@
 
 import 'dart:io';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_core/nim_core.dart';
 
 class ChatThumbView extends StatefulWidget {
@@ -43,6 +43,11 @@ class _ChatThumbViewState extends State<ChatThumbView> {
   }
 
   Widget _placeHolder(double aspectRatio, {double? width}) {
+    final imagePlaceHolder =
+        ChatKitClient.instance.chatUIConfig.imagePlaceHolder;
+    if (imagePlaceHolder != null) {
+      return imagePlaceHolder.call(aspectRatio, width: width);
+    }
     return Container(
       width: width,
       child: AspectRatio(
@@ -88,16 +93,6 @@ class _ChatThumbViewState extends State<ChatThumbView> {
     );
   }
 
-  Widget _networkImage(String url) {
-    return getImage(CachedNetworkImage(
-      imageUrl: url,
-      cacheKey: url,
-      placeholder: (context, url) => _placeHolder(1),
-      fit: BoxFit.fitWidth,
-      fadeInDuration: const Duration(milliseconds: 0),
-    ));
-  }
-
   Widget _imageBuilder() {
     if (widget.message.messageAttachment is NIMImageAttachment) {
       return _imageBuilderForPicture();
@@ -112,8 +107,7 @@ class _ChatThumbViewState extends State<ChatThumbView> {
     if (_fileExistCheck(path)) {
       return _localImage(path);
     }
-    String url = _getUrlForVideo() ?? "";
-    return url.isNotEmpty ? _networkImage(url) : _placeHolder(_getImageRatio());
+    return _placeHolder(_getImageRatio());
   }
 
   String? _getPathForVideo() {
@@ -123,22 +117,10 @@ class _ChatThumbViewState extends State<ChatThumbView> {
     return "";
   }
 
-  String? _getUrlForVideo() {
-    if (widget.message.messageAttachment is NIMVideoAttachment) {
-      return (widget.message.messageAttachment as NIMVideoAttachment).thumbUrl;
-    }
-    return "";
-  }
-
   Widget _imageBuilderForPicture() {
-    String url = _getUrlForImage();
     String path = _getPathForImage();
-    File localFile = new File(path);
-    if (path.isNotEmpty && localFile.existsSync()) {
+    if (_fileExistCheck(path)) {
       return _localImage(path);
-    }
-    if (url.isNotEmpty) {
-      return _networkImage(url);
     }
     return _placeHolder(_getImageRatio());
   }
@@ -152,17 +134,9 @@ class _ChatThumbViewState extends State<ChatThumbView> {
     return "";
   }
 
-  String _getUrlForImage() {
-    if (widget.message.messageAttachment is NIMImageAttachment) {
-      NIMImageAttachment attachment =
-          widget.message.messageAttachment as NIMImageAttachment;
-      return attachment.url ?? attachment.thumbUrl ?? "";
-    }
-    return "";
-  }
-
   bool _fileExistCheck(String path) {
     bool exist = path.isNotEmpty && File(path).existsSync();
+    // 本地文件不存在，下载
     if (!exist) {
       NimCore.instance.messageService
           .downloadAttachment(message: widget.message, thumb: true);

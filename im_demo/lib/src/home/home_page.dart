@@ -75,7 +75,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  ///解析从Android端传递过来的消息，并分发
+  ///解析从Native端传递过来的消息，并分发
   void _handleMessageFromNative() {
     const channel = MethodChannel(channelName);
 
@@ -84,7 +84,7 @@ class _HomePageState extends State<HomePage> {
 
     //方法调用，用于页面被销毁时候的情况
     channel.invokeMapMethod<String, dynamic>(pushMethodName).then((value) {
-      Alog.d(tag: 'HomePage', content: "Message from Android is = $value}");
+      Alog.d(tag: 'HomePage', content: "Message from Native is = $value}");
       _dispatchMessage(value);
     });
   }

@@ -103,9 +103,10 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
       return;
     }
     final lastTimestamp = context
-        .read<ChatViewModel>()
-        .getAnchor(QueryDirection.QUERY_OLD)
-        .timestamp;
+            .read<ChatViewModel>()
+            .getAnchor(QueryDirection.QUERY_OLD)
+            ?.timestamp ??
+        DateTime.now().millisecondsSinceEpoch;
     if (anchor.timestamp >= lastTimestamp) {
       // in range
       findAnchor = null;
@@ -128,9 +129,7 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
           'scrollToAnchor: not found in ${list.length} items, load more -->> ');
       widget.scrollController
           .scrollToIndex(list.length, duration: Duration(milliseconds: 1));
-      if (context.read<ChatViewModel>().hasMoreForwardMessages) {
-        _loadMore();
-      }
+      _loadMore();
     }
   }
 
@@ -308,7 +307,9 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
 
   _loadMore() async {
     // load old
-    if (context.read<ChatViewModel>().messageList.isNotEmpty) {
+    if (context.read<ChatViewModel>().messageList.isNotEmpty &&
+        context.read<ChatViewModel>().hasMoreForwardMessages &&
+        !context.read<ChatViewModel>().isLoading) {
       Alog.d(
           tag: 'ChatKit',
           moduleName: 'ChatKitMessageList',
@@ -352,6 +353,30 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
       IMKitRouter.instance.routeObserver
           .subscribe(this, ModalRoute.of(context)!);
     });
+    _initScrollController();
+  }
+
+  //收到新消息后滑动到底部，对齐原生端交互
+  _scrollToBottom() {
+    _logI('_scrollToBottom');
+    if (widget.scrollController.hasClients) {
+      widget.scrollController.animateTo(
+        0,
+        duration: Duration(milliseconds: 300),
+        curve: Curves.ease,
+      );
+    }
+  }
+
+  _initScrollController() {
+    widget.scrollController.addListener(() {
+      if (widget.scrollController.position.pixels ==
+          widget.scrollController.position.maxScrollExtent) {
+        _logI('scrollController -->> load more');
+        _loadMore();
+      }
+    });
+    context.read<ChatViewModel>().scrollToEnd = _scrollToBottom;
   }
 
   @override
@@ -393,6 +418,7 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
                 controller: widget.scrollController,
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 addAutomaticKeepAlives: false,
+                addRepaintBoundaries: false,
                 shrinkWrap: true,
                 reverse: true,
                 itemCount: chatViewModel.messageList.length,
@@ -402,10 +428,6 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
                       index < chatViewModel.messageList.length - 1
                           ? chatViewModel.messageList[index + 1]
                           : null;
-                  if (index == chatViewModel.messageList.length - 1 &&
-                      chatViewModel.hasMoreForwardMessages) {
-                    _loadMore();
-                  }
                   return AutoScrollTag(
                     controller: widget.scrollController,
                     index: index,

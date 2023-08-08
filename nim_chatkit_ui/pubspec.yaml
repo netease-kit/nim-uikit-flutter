@@ -1,10 +1,10 @@
 name: nim_chatkit_ui
 description: Chat UI base on ChatKit.
-version: 1.1.1
+version: 1.1.2
 homepage: https://github.com/netease-kit/nim-uikit-flutter
 
 environment:
-  sdk: ">=2.16.1 <3.0.0"
+  sdk: ">=2.16.1 <4.0.0"
   flutter: ">=1.17.0"
 
 # Remove this line if you wish to publish to pub.dev
@@ -17,38 +17,38 @@ dependencies:
     sdk: flutter
 
   netease_common_ui:
-     ^1.1.1
+    ">=1.1.2 <1.2.0"
 #    path: ../../common/netease_common_ui
 
   netease_corekit_im:
-    ^1.1.0
+    ">=1.1.2 <1.2.0"
 #    path: ../../netease_corekit/netease_corekit_im
   netease_corekit:
-    ^1.1.1
+    ">=1.1.2 <1.2.0"
 #    path: ../../netease_corekit/netease_corekit
   nim_chatkit:
-    ^1.1.0
+    ">=1.1.2 <1.2.0"
 #    path: ../nim_chatkit
 
   scroll_to_index: ^3.0.1
-  image_picker: ^0.8.6+1
+  image_picker: ^1.0.1
   cached_network_image: ^3.2.0
   video_player: ^2.4.2
   photo_view: ^0.14.0
-  audioplayers: ^3.0.1
-  visibility_detector: ^0.2.2
-  image_gallery_saver: ^1.7.1
+  audioplayers: ^5.0.0
+  visibility_detector: ^0.4.0+2
+  image_gallery_saver: ^2.0.3
   fluttertoast: ^8.0.9
-  dio: ^4.0.6
+  dio: ^5.3.0
   super_tooltip: ^1.0.1
-  nim_core: ^1.6.1
+  nim_core: ^1.7.0
 #    path: ../../nim_core/nim_core
   intl: ^0.18.0
-  flutter_svg: ^1.0.3
+  flutter_svg: ^2.0.7
   provider: ^6.0.0
   permission_handler: ^10.3.0
   yunxin_alog: ^1.0.7
-  connectivity_plus: ^2.3.9
+  connectivity_plus: ^4.0.1
   path_provider: ^2.0.11
   collection: ^1.15.0
   file_picker: ^5.2.5
@@ -61,7 +61,7 @@ dependencies:
   url_launcher: ^6.1.10
   open_filex: ^4.3.2
   # 电话状态监听
-  phone_state: ^1.0.2
+  phone_state: ^1.0.3
 
 dev_dependencies:
   flutter_test:

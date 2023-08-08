@@ -139,17 +139,6 @@ class MediaBottomActionOverlay extends StatelessWidget {
                   package: kPackage,
                 ),
               ),
-              IconButton(
-                onPressed: () {
-                  // do nothing
-                },
-                padding: EdgeInsets.zero,
-                iconSize: 28,
-                icon: SvgPicture.asset(
-                  'images/ic_more_media.svg',
-                  package: kPackage,
-                ),
-              ),
             ],
           ),
         )

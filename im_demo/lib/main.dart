@@ -2,6 +2,7 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'package:flutter/gestures.dart';
 import 'package:im_demo/src/home/home_page.dart';
 import 'package:netease_corekit_im/router/imkit_router.dart';
 import 'package:netease_corekit_im/router/imkit_router_constants.dart';
@@ -21,7 +22,6 @@ import 'package:im_demo/src/mine/user_info_page.dart';
 import 'package:provider/provider.dart';
 import 'package:nim_searchkit_ui/search_kit_client.dart';
 import 'package:nim_teamkit_ui/team_kit_client.dart';
-import 'package:yunxin_alog/yunxin_alog.dart';
 import 'dart:io';
 
 void main() {
@@ -40,7 +40,6 @@ class MainApp extends StatefulWidget {
 class _MainAppState extends State<MainApp> {
   ///init all plugin here
   void _initPlugins() {
-    Alog.init(ALogLevel.verbose, '', 'logReport');
     ChatKitClient.init();
     TeamKitClient.init();
     ConversationKitClient.init();
@@ -71,6 +70,7 @@ class _MainAppState extends State<MainApp> {
     super.initState();
     _updateTokenIOS();
     _initPlugins();
+    GestureBinding.instance.resamplingEnabled = true;
   }
 
   @override

@@ -89,16 +89,16 @@ class ChatViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  int credibleTimestamp = -1;
   bool hasMoreForwardMessages = true;
   bool hasMoreNewerMessages = false;
+  bool isLoading = false;
 
   bool initListener = false;
   static const int messageLimit = 100;
 
   ChatViewModel(this.sessionId, this.sessionType, {this.showReadAck = true}) {
-    setChattingAccount();
-    setNIMMessageListener();
+    _setChattingAccount();
+    _setNIMMessageListener();
     if (sessionType == NIMSessionType.p2p) {
       getIt<ContactProvider>().getContact(sessionId).then((value) {
         contactInfo = value;
@@ -122,17 +122,24 @@ class ChatViewModel extends ChangeNotifier {
         notifyListeners();
       });
     }
-    initFetch(null);
+    _initFetch(null);
   }
 
   List<ChatMessage> _messageList = [];
 
-  List<ChatMessage> get messageList => _messageList.reversed.toList();
+  List<ChatMessage> get messageList => _messageList.toList();
 
-  NIMMessage getAnchor(QueryDirection direction) {
-    return direction == QueryDirection.QUERY_OLD
-        ? _messageList[0].nimMessage
-        : _messageList[_messageList.length - 1].nimMessage;
+  //收到消息后滚动到最下边的回调
+  void Function()? _scrollToEnd;
+
+  set scrollToEnd(void Function() scrollToEnd) {
+    _scrollToEnd = scrollToEnd;
+  }
+
+  NIMMessage? getAnchor(QueryDirection direction) {
+    return direction == QueryDirection.QUERY_NEW
+        ? _messageList.first.nimMessage
+        : _messageList.last.nimMessage;
   }
 
   set messageList(List<ChatMessage> value) {
@@ -152,7 +159,7 @@ class ChatViewModel extends ChangeNotifier {
             null;
   }
 
-  void setNIMMessageListener() {
+  void _setNIMMessageListener() {
     if (initListener) return;
     initListener = true;
     _logI('message init listener');
@@ -171,7 +178,8 @@ class ChatViewModel extends ChangeNotifier {
       }).toList();
       if (list.isNotEmpty) {
         var res = await ChatMessageRepo.fillUserInfo(list);
-        _insertMessages(res);
+        _insertMessages(res, toEnd: false);
+        _scrollToEnd?.call();
       }
     }));
     //message status change
@@ -179,11 +187,9 @@ class ChatViewModel extends ChangeNotifier {
         .add(ChatServiceObserverRepo.observeMsgStatus().listen((event) {
       _logI(
           'onMessageStatus ${event.uuid} status change -->> ${event.status}, ${event.attachmentStatus}');
-      if (_updateNimMessage(event) == false &&
-          event.messageDirection == NIMMessageDirection.outgoing &&
-          event.sessionId == sessionId) {
+      if (_updateNimMessage(event) == false && event.sessionId == sessionId) {
         //如果更新失败则添加
-        _insertMessages([ChatMessage(event)]);
+        _insertMessages([ChatMessage(event)], toEnd: false);
       }
     }));
 
@@ -250,7 +256,11 @@ class ChatViewModel extends ChangeNotifier {
     subscriptions
         .add(ChatServiceObserverRepo.observeRevokeMessage().listen((event) {
       _logI('received revokeMessage notify and save a local message');
-      _onMessageRevoked(ChatMessage(event.message!));
+      if (event.message != null) {
+        _onMessageRevoked(ChatMessage(event.message!));
+      } else {
+        _logI('received revokeMessage notify but message is null');
+      }
     }));
 
     subscriptions
@@ -264,30 +274,57 @@ class ChatViewModel extends ChangeNotifier {
     }));
   }
 
-  void _insertMessages(List<ChatMessage> messages) {
+  ///将消息插入列表，确保插入后的消息新消息在前，
+  ///[toEnd] true:插入到最后，false:插入到最前
+  void _insertMessages(List<ChatMessage> messages, {bool toEnd = true}) {
     if (messages.isEmpty) {
       return;
+    }
+    //如果第一条比最后一条旧，则反转,确保最新的消息在最前
+    bool needReverse = messages.first.nimMessage.timestamp <
+        messages.last.nimMessage.timestamp;
+    if (needReverse) {
+      messages = messages.reversed.toList();
     }
     if (_messageList.isEmpty) {
       _messageList.addAll(messages);
     } else {
-      //如果第一条比最后一条新，则反转
-      bool needReverse = messages.first.nimMessage.timestamp >
-          messages.last.nimMessage.timestamp;
-      if (needReverse) {
-        messages.reversed;
-      }
-      //获取第一条，结果为最老的消息
-      var oldestMsg = messages.first;
+      //获取第一条，结果为最新的消息
+      var lastMsg = messages.first;
       var index = 0;
-      for (int i = _messageList.length - 1; i >= 0; i--) {
-        if (_messageList[i].nimMessage.timestamp <
-            oldestMsg.nimMessage.timestamp) {
-          index = i + 1;
-          break;
+      if (toEnd) {
+        //如果最新消息比消息列表中最后一条消息还要旧，则插入到最后
+        if (lastMsg.nimMessage.timestamp <
+            _messageList.last.nimMessage.timestamp) {
+          index = _messageList.length;
+        } else {
+          //则从后遍历，插入到比自己新的消息之后的位置
+          for (int i = _messageList.length - 1; i >= 0; i--) {
+            //找到第一条比最新的消息更新的消息，插入到该消息后面
+            if (lastMsg.nimMessage.timestamp <
+                _messageList[i].nimMessage.timestamp) {
+              index = i + 1;
+              break;
+            }
+          }
+        }
+      } else if (lastMsg.nimMessage.timestamp <
+          _messageList.first.nimMessage.timestamp) {
+        //如果消息列表中的第一条消息比最新消息新，则从前遍历，插入到比自己旧的消息之前的位置
+        for (int i = 0; i < _messageList.length; i++) {
+          //找到第一条比最新的消息旧的消息，插入到该消息前面
+          if (lastMsg.nimMessage.timestamp >
+              _messageList[i].nimMessage.timestamp) {
+            index = i;
+            break;
+          }
         }
       }
+
+      _logD('insert message at $index to end:$toEnd');
       _messageList.insertAll(index, messages);
+      _messageList
+          .sort((a, b) => b.nimMessage.timestamp - a.nimMessage.timestamp);
     }
     notifyListeners();
   }
@@ -304,7 +341,7 @@ class ChatViewModel extends ChangeNotifier {
     ChatMessageRepo.sendCustomNotification(notification);
   }
 
-  void setChattingAccount() {
+  void _setChattingAccount() {
     _logI('setChattingAccount:$sessionId');
     ChatMessageRepo.setChattingAccount(sessionId, sessionType);
     if (Platform.isIOS) {
@@ -312,7 +349,7 @@ class ChatViewModel extends ChangeNotifier {
     }
   }
 
-  void clearChattingAccount() {
+  void _clearChattingAccount() {
     _logI('clearChattingAccount:$sessionId');
     if (Platform.isIOS) {
       ChatMessageRepo.clearSessionUnreadCount(sessionId, sessionType);
@@ -320,142 +357,114 @@ class ChatViewModel extends ChangeNotifier {
     ChatMessageRepo.clearChattingAccount();
   }
 
-  void initFetch(NIMMessage? anchor) async {
+  void _initFetch(NIMMessage? anchor) async {
     _logI('initFetch -->> anchor:${anchor?.content}');
     late NIMMessage message;
-    credibleTimestamp =
-        await ChatMessageRepo.queryRoamMsgTimestamps(sessionId, sessionType);
-    _logI('queryRoamMsgHasMoreTime -->> credibleTimestamp:$credibleTimestamp');
     hasMoreForwardMessages = true;
     if (anchor == null) {
       hasMoreNewerMessages = false;
-      var result = await MessageBuilder.createEmptyMessage(
-          sessionId: sessionId, sessionType: sessionType, timestamp: 0);
-      if (result.isSuccess && result.data != null) {
-        message = result.data!;
-        _fetchMoreMessage(message, QueryDirection.QUERY_OLD);
-      }
+      _fetchMoreMessageDynamic(
+          anchor: null, direction: QueryDirection.QUERY_OLD, isInit: true);
     } else {
       hasMoreNewerMessages = true;
       message = anchor;
-      fetchMessageListBothDirect(message);
+      _fetchMessageListBothDirect(message);
     }
   }
 
-  fetchMessageListBothDirect(NIMMessage anchor) {
+  _fetchMessageListBothDirect(NIMMessage anchor) {
     _logI('fetchMessageListBothDirect');
-    _fetchMoreMessage(anchor, QueryDirection.QUERY_OLD);
-    _fetchMoreMessage(anchor, QueryDirection.QUERY_NEW);
+    _fetchMoreMessageDynamic(
+        anchor: anchor, direction: QueryDirection.QUERY_OLD);
+    _fetchMoreMessageDynamic(
+        anchor: anchor, direction: QueryDirection.QUERY_NEW);
   }
 
   fetchMoreMessage(QueryDirection direction) {
-    _fetchMoreMessage(getAnchor(direction), direction);
+    _fetchMoreMessageDynamic(
+        anchor: getAnchor(direction), direction: direction);
   }
 
-  _fetchMoreMessage(NIMMessage anchor, QueryDirection direction) {
+  _fetchMoreMessageDynamic(
+      {NIMMessage? anchor,
+      QueryDirection direction = QueryDirection.QUERY_OLD,
+      bool isInit = false}) {
     _logI(
-        '_fetchMoreMessage anchor ${anchor.content}, ${anchor.timestamp}, $direction');
-    if (!_isMessageCredible(anchor)) {
-      _logI('fetchMoreMessage anchor is not credible');
-      if (direction == QueryDirection.QUERY_NEW) {
-        fetchMessageRemoteNewer(anchor);
+        '_fetchMoreMessageDynamic anchor ${anchor?.content}, time = ${anchor?.timestamp}, direction = $direction');
+
+    isLoading = true;
+    GetMessagesDynamicallyParam dynamicallyParam =
+        GetMessagesDynamicallyParam(sessionId, sessionType);
+    dynamicallyParam.limit = messageLimit;
+    dynamicallyParam.direction = direction == QueryDirection.QUERY_OLD
+        ? NIMGetMessageDirection.forward
+        : NIMGetMessageDirection.backward;
+    if (anchor != null) {
+      dynamicallyParam.anchorClientId = anchor.uuid;
+      dynamicallyParam.anchorServerId = anchor.serverId;
+      if (direction == QueryDirection.QUERY_OLD) {
+        dynamicallyParam.toTime = anchor.timestamp;
       } else {
-        fetchMessageRemoteOlder(anchor, false);
+        dynamicallyParam.fromTime = anchor.timestamp;
       }
-      return;
     }
-    _logI('fetch local anchor time:${anchor.timestamp}, direction:$direction');
-    ChatMessageRepo.getHistoryMessage(anchor, direction, messageLimit)
-        .then((value) {
-      if (value.isSuccess) {
-        List<ChatMessage>? list = value.data;
-        if (list == null || list.isEmpty) {
-          if (direction == QueryDirection.QUERY_OLD) {
-            _logI('fetch local no more messages -->> try remote');
-            fetchMessageRemoteOlder(anchor, true);
-          } else {
-            _onListFetchSuccess(list, direction);
-          }
-          return;
-        }
-        if (direction == QueryDirection.QUERY_OLD) {
-          var lastMsg =
-              list.last.nimMessage.timestamp > list.first.nimMessage.timestamp
-                  ? list.last
-                  : list.first;
-          if (_isMessageCredible(lastMsg.nimMessage)) {
-            _onListFetchSuccess(list, direction, isInit: anchor.timestamp == 0);
-          } else {
-            fetchMessageRemoteOlder(anchor, true);
-          }
-        } else {
-          _onListFetchSuccess(list, direction);
-        }
-      } else {
-        _onListFetchFailed(value.code, value.errorDetails);
-      }
-    });
-  }
-
-  fetchMessageRemoteNewer(NIMMessage anchor) {
-    _logI('fetch remote newer anchor time:${anchor.timestamp}');
-    ChatMessageRepo.fetchHistoryMessage(
-            anchor,
-            DateTime.now().millisecondsSinceEpoch,
-            messageLimit,
-            QueryDirection.QUERY_NEW)
-        .then((value) {
-      if (value.isSuccess) {
-        // no need to update credible time, because all messages behind this
-        _onListFetchSuccess(value.data, QueryDirection.QUERY_NEW);
-      } else {
-        _onListFetchFailed(value.code, value.errorDetails);
-      }
-    });
-  }
-
-  fetchMessageRemoteOlder(NIMMessage anchor, bool updateCredible) {
-    _logI(
-        'fetch remote old anchor time:${anchor.timestamp}, need update:$updateCredible');
-    ChatMessageRepo.fetchHistoryMessage(
-            anchor, 0, messageLimit, QueryDirection.QUERY_OLD)
+    //如果是Android端的初始化请求，则忽略更多信息的请求
+    bool ignoreMoreInfo = Platform.isAndroid && isInit;
+    ChatMessageRepo.getMessagesDynamically(dynamicallyParam,
+            enablePin: !ignoreMoreInfo, addUserInfo: !ignoreMoreInfo)
         .then((value) {
       if (value.isSuccess && value.data != null) {
-        var result = value.data!.reversed.toList();
-        if (updateCredible && result.length > 0) {
-          var lastMsg = result[result.length - 1].nimMessage;
-          credibleTimestamp = lastMsg.timestamp;
+        //如果是初始化，且是消息可信，则本地再获取历史消息，只针对Android
+        if (ignoreMoreInfo && value.data!.isReliable == true) {
+          _logD('getMessagesDynamically success, isInit and isReliable');
+          MessageBuilder.createEmptyMessage(
+                  sessionId: sessionId,
+                  sessionType: sessionType,
+                  timestamp: DateTime.now().millisecondsSinceEpoch)
+              .then((value) {
+            if (value.isSuccess && value.data != null) {
+              ChatMessageRepo.getHistoryMessage(
+                      value.data!, direction, messageLimit)
+                  .then((value) {
+                if (value.isSuccess && value.data != null) {
+                  _logI(
+                      'getHistoryMessage success, length = ${value.data?.length}');
+                  _onListFetchSuccess(value.data?.reversed.toList(), direction);
+                } else {
+                  _logI(
+                      'getHistoryMessage failed, code = ${value.code}, error = ${value.errorDetails}');
+                  _onListFetchFailed(value.code, value.errorDetails);
+                }
+              });
+            } else {
+              _logI(
+                  'createEmptyMessage failed, code = ${value.code}, error = ${value.errorDetails}');
+              _onListFetchFailed(value.code, value.errorDetails);
+            }
+          });
+        } else {
           _logI(
-              'updateCredible content:${lastMsg.content}, time:$credibleTimestamp');
-          ChatMessageRepo.updateRoamMsgTimestamps(lastMsg);
+              'getMessagesDynamically success, length = ${value.data?.messageList.length}');
+          _onListFetchSuccess(value.data!.messageList, direction);
         }
-        _onListFetchSuccess(result, QueryDirection.QUERY_OLD);
       } else {
+        _logI(
+            'getMessagesDynamically failed, code = ${value.code}, error = ${value.errorDetails}');
         _onListFetchFailed(value.code, value.errorDetails);
       }
     });
   }
 
-  bool _isMessageCredible(NIMMessage message) {
-    _logI(
-        'isMessageCredible -->> credibleTimestamp:$credibleTimestamp, msgTime:${message.timestamp}');
-    return credibleTimestamp <= 0 || message.timestamp >= credibleTimestamp;
-  }
-
-  _onListFetchSuccess(List<ChatMessage>? list, QueryDirection direction,
-      {bool isInit = false}) {
-    list = list
-        ?.where((element) =>
-            !_isFilterMessage(element.nimMessage) &&
-            !_updateNimMessage(element.nimMessage))
-        .toList();
-    _logI('onListFetchSuccess -->> size:${list?.length}, direction:$direction');
+  _onListFetchSuccess(List<ChatMessage>? list, QueryDirection direction) {
     if (direction == QueryDirection.QUERY_OLD) {
-      hasMoreForwardMessages = isInit ||
+      //先判断是否有更多，在过滤
+      hasMoreForwardMessages =
           (list != null && list.isNotEmpty && list.length >= messageLimit);
-      _logI('older forward has more:$hasMoreForwardMessages');
+      _logD(
+          'older forward has more:$hasMoreForwardMessages because list length =  ${list?.length}');
+      list = _successMessageFilter(list);
       if (list != null) {
-        _insertMessages(list);
+        _insertMessages(list, toEnd: true);
         if (list.isNotEmpty &&
             list[0].nimMessage.sessionType == NIMSessionType.p2p) {
           sendMessageP2PReceipt(list[list.length - 1].nimMessage);
@@ -463,15 +472,27 @@ class ChatViewModel extends ChangeNotifier {
       }
     } else {
       hasMoreNewerMessages = list != null && list.isNotEmpty;
+      list = _successMessageFilter(list);
       _logI('newer load has more:$hasMoreNewerMessages');
       if (list != null) {
-        _messageList.addAll(list);
+        _insertMessages(list, toEnd: false);
         notifyListeners();
       }
     }
+    isLoading = false;
+  }
+
+  //请求列表成功后过滤掉不需要添加的消息
+  List<ChatMessage>? _successMessageFilter(List<ChatMessage>? list) {
+    return list
+        ?.where((element) =>
+            !_isFilterMessage(element.nimMessage) &&
+            !_updateNimMessage(element.nimMessage))
+        .toList();
   }
 
   _onListFetchFailed(int code, String? errorMsg) {
+    isLoading = false;
     _logI('onListFetchFailed code:$code, msg:$errorMsg');
   }
 
@@ -623,7 +644,8 @@ class ChatViewModel extends ChangeNotifier {
     }
     var chatMessage = ChatMessage(message, replyMsg: replyMsg);
     if (resend == false) {
-      _messageList.add(chatMessage);
+      //发送消息插入到列表最前面
+      _messageList.insert(0, chatMessage);
       notifyListeners();
     } else {
       _onMessageSending(chatMessage);
@@ -668,7 +690,13 @@ class ChatViewModel extends ChangeNotifier {
     _logI('update nim message find $pos');
     if (pos >= 0) {
       _logI('update nim message at $pos');
-      _messageList[pos].nimMessage = nimMessage;
+      //如果列表中的附件已经是完成状态，而更新的文件是传输状态，则不更新
+      if (!(_messageList[pos].nimMessage.attachmentStatus ==
+              NIMMessageAttachmentStatus.transferred &&
+          nimMessage.attachmentStatus ==
+              NIMMessageAttachmentStatus.transferring)) {
+        _messageList[pos].nimMessage = nimMessage;
+      }
       notifyListeners();
       return true;
     }
@@ -719,15 +747,27 @@ class ChatViewModel extends ChangeNotifier {
     ChatMessageRepo.collectMessage(message);
   }
 
-  ///delete local message
+  ///delete message
   void deleteMessage(ChatMessage message) async {
     if (!await haveConnectivity()) {
       return;
     }
+
+    ///删除消息,如果失败则调用本地删除
     ChatMessageRepo.deleteMessage(message.nimMessage).then((value) {
-      _messageList.remove(message);
-      notifyListeners();
+      if (value.isSuccess) {
+        _onMessageDeleted(message);
+      } else {
+        ChatMessageRepo.deleteLocalMessage(message.nimMessage).then((value) {
+          _onMessageDeleted(message);
+        });
+      }
     });
+  }
+
+  void _onMessageDeleted(ChatMessage message) {
+    _messageList.remove(message);
+    notifyListeners();
   }
 
   ///撤回消息
@@ -823,9 +863,13 @@ class ChatViewModel extends ChangeNotifier {
     Alog.i(tag: 'ChatKit', moduleName: '$logTag $sessionId', content: content);
   }
 
+  void _logD(String content) {
+    Alog.d(tag: 'ChatKit', moduleName: '$logTag $sessionId', content: content);
+  }
+
   @override
   void dispose() {
-    clearChattingAccount();
+    _clearChattingAccount();
     for (var sub in subscriptions) {
       sub.cancel();
     }

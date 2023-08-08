@@ -106,7 +106,7 @@ class _MorePanelState extends State<MorePanel> {
     FilePickerResult? result = await FilePicker.platform.pickFiles();
     final platformFile = result?.files.single;
     if (platformFile?.path != null) {
-      final overSize = 200;
+      final overSize = ChatKitClient.instance.chatUIConfig.maxFileSize ?? 200;
       if (platformFile!.size > overSize * 1024 * 1024) {
         Fluttertoast.showToast(
             msg: S.of(context).chatMessageFileSizeOverLimit("$overSize"));

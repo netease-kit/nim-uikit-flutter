@@ -1,5 +1,5 @@
 PODS:
-  - AMap3DMap (9.6.2):
+  - AMap3DMap (9.7.0):
     - AMapFoundation (>= 1.8.0)
   - amap_flutter_location (0.0.1):
     - AMapLocation
@@ -61,30 +61,30 @@ PODS:
   - GCDWebServer (3.5.4):
     - GCDWebServer/Core (= 3.5.4)
   - GCDWebServer/Core (3.5.4)
-  - image_gallery_saver (1.5.0):
+  - image_gallery_saver (2.0.2):
     - Flutter
   - image_picker_ios (0.0.1):
     - Flutter
   - nim_core (1.4.7):
     - Flutter
-    - NIMSDK_LITE (~> 9.10.0)
+    - NIMSDK_LITE (~> 9.11.0)
     - YXAlog
-  - NIMSDK_LITE (9.10.1):
-    - NIMSDK_LITE/NOS (= 9.10.1)
-  - NIMSDK_LITE/NOS (9.10.1)
+  - NIMSDK_LITE (9.11.2):
+    - NIMSDK_LITE/NOS (= 9.11.2)
+  - NIMSDK_LITE/NOS (9.11.2)
   - open_filex (0.0.2):
     - Flutter
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
-  - permission_handler_apple (9.0.4):
+  - permission_handler_apple (9.1.0):
     - Flutter
-  - phone_state (1.0.2):
+  - phone_state (1.0.3):
     - Flutter
   - ReachabilitySwift (5.0.0)
-  - SDWebImage (5.15.7):
-    - SDWebImage/Core (= 5.15.7)
-  - SDWebImage/Core (5.15.7)
+  - SDWebImage (5.16.0):
+    - SDWebImage/Core (= 5.16.0)
+  - SDWebImage/Core (5.16.0)
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -189,14 +189,14 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/yunxin_alog/ios"
 
 SPEC CHECKSUMS:
-  AMap3DMap: 1d24615b754c2ac5a92258b59729e60a6d478205
+  AMap3DMap: dce25dd3e51e6b92109caa7d0c97fc6055830fb3
   amap_flutter_location: 44ff5beb64f42e0bf5feb402fe299dac0013af6f
   amap_flutter_map: 979e54d227cedac6c7504a2151bfbf3bcf96760a
   AMapFoundation: 9885c48fc3a78fdfb84a0299a2293e56ea3c9fec
   AMapLocation: 5248aec2455ebb5d104b367813c946430a2ee033
   audioplayers_darwin: 877d9a4d06331c5c374595e46e16453ac7eafa40
-  connectivity_plus: 413a8857dd5d9f1c399a39130850d02fe0feaf7e
-  device_info_plus: e5c5da33f982a436e103237c0c85f9031142abed
+  connectivity_plus: 07c49e96d7fc92bc9920617b83238c4d178b446a
+  device_info_plus: 7545d84d8d1b896cb16a4ff98c19f07ec4b298ea
   DKImagePickerController: b512c28220a2b8ac7419f21c491fc8534b7601ac
   DKPhotoGallery: fdfad5125a9fdda9cc57df834d49df790dbb4179
   file_picker: ce3938a0df3cc1ef404671531facef740d03f920
@@ -204,16 +204,16 @@ SPEC CHECKSUMS:
   fluttertoast: eb263d302cc92e04176c053d2385237e9f43fad0
   FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
   GCDWebServer: 2c156a56c8226e2d5c0c3f208a3621ccffbe3ce4
-  image_gallery_saver: 259eab68fb271cfd57d599904f7acdc7832e7ef2
-  image_picker_ios: 58b9c4269cb176f89acea5e5d043c9358f2d25f8
-  nim_core: 3e2874627186952567032446d24776108c5acc8f
-  NIMSDK_LITE: 5e118677d80c538124617cc417f4aeead236c08b
+  image_gallery_saver: cb43cc43141711190510e92c460eb1655cd343cb
+  image_picker_ios: 4a8aadfbb6dc30ad5141a2ce3832af9214a705b5
+  nim_core: f0406305d539f9e67ad4041c94a84fe5896e52e1
+  NIMSDK_LITE: 2c34ec060b2fb656d1c1eb15c2a434e66196e906
   open_filex: 6e26e659846ec990262224a12ef1c528bb4edbe4
   path_provider_foundation: c68054786f1b4f3343858c1e1d0caaded73f0be9
-  permission_handler_apple: 44366e37eaf29454a1e7b1b7d736c2cceaeb17ce
-  phone_state: a32989709fb2a95f342877a7966402df058a9519
+  permission_handler_apple: 8f116445eff3c0e7c65ad60f5fef5490aa94b4e4
+  phone_state: d0d36ac85a7cc06ed62e88343795ed5cd7e3d6c9
   ReachabilitySwift: 985039c6f7b23a1da463388634119492ff86c825
-  SDWebImage: 25bac438318faf37e35650619ebc288a9061d292
+  SDWebImage: 2aea163b50bfcb569a2726b6a754c54a4506fcf6
   shared_preferences_foundation: 986fc17f3d3251412d18b0265f9c64113a8c2472
   sqflite: 6d358c025f5b867b29ed92fc697fd34924e11904
   SwiftyGif: 93a1cc87bf3a51916001cf8f3d63835fb64c819f
