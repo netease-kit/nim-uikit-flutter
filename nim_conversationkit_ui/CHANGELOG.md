@@ -1,5 +1,16 @@
 # NimConversationKitUI ChangeLog
 
+## 1.1.2(Aug 8, 2023)
+### Dependency Updates
+* 升级`nimcoe`到`1.7.0`
+* 升级`netease_corekit_im`到`1.1.2`
+* 升级`netease_corekit`到`1.1.2`
+* 升级`netease_common_ui`到`1.1.2`
+* 升级`flutter_svg`到`2.0.7`
+* 升级`connectivity_plus`到`4.0.1`
+* 升级`flutter_slidable`到`3.0.0`
+
+
 ## 1.1.1(Jun 12, 2023)
 ### New Features
 * 适配Flutter 3.10.0 以上版本

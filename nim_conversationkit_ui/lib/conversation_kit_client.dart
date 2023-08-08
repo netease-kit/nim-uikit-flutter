@@ -154,7 +154,7 @@ class ConversationKitClient {
     );
     IMKitRouter.instance.registerRouter(
       RouterConstants.PATH_ADD_FRIEND_PAGE,
-      (context) => AddFriendPage(),
+      (context) => const AddFriendPage(),
     );
 
     XKitReporter()

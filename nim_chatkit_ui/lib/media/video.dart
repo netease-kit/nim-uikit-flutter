@@ -59,8 +59,8 @@ class _VideoViewerState extends State<VideoViewer> with WidgetsBindingObserver {
       havePermission = await _requestPermission() ?? true;
     }
     if (havePermission) {
-      _phoneStateSub = PhoneState.phoneStateStream.listen((event) {
-        if (event != null && _isPlaying) {
+      _phoneStateSub = PhoneState.stream.listen((event) {
+        if (_isPlaying) {
           _isPlaying = false;
           _controller.pause();
           setState(() {});

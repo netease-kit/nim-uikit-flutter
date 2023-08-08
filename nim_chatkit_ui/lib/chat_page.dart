@@ -76,6 +76,8 @@ class ChatPageState extends BaseState<ChatPage> {
 
   StreamSubscription? _teamDismissSub;
 
+  ChatUIConfig? chatUIConfig;
+
   void _setTyping(BuildContext context) {
     _typingTimer?.cancel();
     _remainTime = 5;
@@ -101,6 +103,7 @@ class ChatPageState extends BaseState<ChatPage> {
   @override
   void initState() {
     super.initState();
+    chatUIConfig = chatUIConfig ?? ChatKitClient.instance.chatUIConfig;
     autoController = AutoScrollController(
       viewportBoundaryGetter: () =>
           Rect.fromLTRB(0, 0, 0, MediaQuery.of(context).padding.bottom),
@@ -247,38 +250,35 @@ class ChatPageState extends BaseState<ChatPage> {
                           child: ChatKitMessageList(
                             scrollController: autoController,
                             popMenuAction: widget.customPopActions ??
-                                widget.chatUIConfig?.messageClickListener
-                                    ?.customPopActions,
+                                chatUIConfig
+                                    ?.messageClickListener?.customPopActions,
                             anchor: widget.anchor,
                             messageBuilder: widget.messageBuilder ??
-                                widget.chatUIConfig?.messageBuilder ??
-                                ChatKitClient
-                                    .instance.chatUIConfig.messageBuilder,
+                                chatUIConfig?.messageBuilder,
                             onTapAvatar: (String? userId,
                                 {bool isSelf = false}) {
                               if (widget.onTapAvatar != null &&
                                   widget.onTapAvatar!(userId, isSelf: isSelf)) {
                                 return true;
                               }
-                              if (widget.chatUIConfig?.messageClickListener
-                                          ?.onTapAvatar !=
+                              if (chatUIConfig
+                                          ?.messageClickListener?.onTapAvatar !=
                                       null &&
-                                  widget.chatUIConfig!.messageClickListener!
+                                  chatUIConfig!.messageClickListener!
                                       .onTapAvatar!(userId, isSelf: isSelf)) {
                                 return true;
                               }
                               defaultAvatarTap(userId, isSelf: isSelf);
                               return true;
                             },
-                            chatUIConfig: widget.chatUIConfig ??
-                                ChatKitClient.instance.chatUIConfig,
+                            chatUIConfig: chatUIConfig,
                             teamInfo: context.watch<ChatViewModel>().teamInfo,
                             onMessageItemClick: widget.onMessageItemClick ??
-                                widget.chatUIConfig?.messageClickListener
-                                    ?.onMessageItemClick,
+                                chatUIConfig
+                                    ?.messageClickListener?.onMessageItemClick,
                             onMessageItemLongClick:
                                 widget.onMessageItemLongClick ??
-                                    widget.chatUIConfig?.messageClickListener
+                                    chatUIConfig?.messageClickListener
                                         ?.onMessageItemLongClick,
                           ),
                         ),
@@ -287,8 +287,7 @@ class ChatPageState extends BaseState<ChatPage> {
                         scrollController: autoController,
                         sessionType: widget.sessionType,
                         hint: S.of(context).chatMessageSendHint(inputHint),
-                        chatUIConfig: widget.chatUIConfig ??
-                            ChatKitClient.instance.chatUIConfig,
+                        chatUIConfig: chatUIConfig,
                         key: _inputField,
                       )
                     ],

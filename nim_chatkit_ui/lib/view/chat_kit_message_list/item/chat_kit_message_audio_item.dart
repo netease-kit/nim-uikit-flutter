@@ -203,9 +203,8 @@ class ChatKitMessageAudioState extends State<ChatKitMessageAudioItem>
       havePermission = await _requestPermission() ?? true;
     }
     if (havePermission) {
-      _phoneStateSub = PhoneState.phoneStateStream.listen((event) {
-        if (event != null &&
-            ChatAudioPlayer.instance.isPlaying(widget.message.uuid!)) {
+      _phoneStateSub = PhoneState.stream.listen((event) {
+        if (ChatAudioPlayer.instance.isPlaying(widget.message.uuid!)) {
           _stopAudioPlay();
         }
       });
