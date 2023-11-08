@@ -109,7 +109,7 @@ class ContactKitClientLocalizationsEn extends ContactKitClientLocalizations {
 
   @override
   String contactApplyFrom(String user) {
-    return 'Friend apply from $user';
+    return 'Friend apply $user';
   }
 
   @override

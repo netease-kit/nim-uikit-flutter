@@ -202,6 +202,48 @@ abstract class ConversationKitClientLocalizations {
   /// In en, this message translates to:
   /// **'no chat'**
   String get conversationEmpty;
+
+  /// No description provided for @somebodyAitMe.
+  ///
+  /// In en, this message translates to:
+  /// **'[somebody @ me]'**
+  String get somebodyAitMe;
+
+  /// No description provided for @audioMessageType.
+  ///
+  /// In en, this message translates to:
+  /// **'[Audio]'**
+  String get audioMessageType;
+
+  /// No description provided for @imageMessageType.
+  ///
+  /// In en, this message translates to:
+  /// **'[Image]'**
+  String get imageMessageType;
+
+  /// No description provided for @videoMessageType.
+  ///
+  /// In en, this message translates to:
+  /// **'[Video]'**
+  String get videoMessageType;
+
+  /// No description provided for @locationMessageType.
+  ///
+  /// In en, this message translates to:
+  /// **'[Location]'**
+  String get locationMessageType;
+
+  /// No description provided for @fileMessageType.
+  ///
+  /// In en, this message translates to:
+  /// **'[File]'**
+  String get fileMessageType;
+
+  /// No description provided for @notificationMessageType.
+  ///
+  /// In en, this message translates to:
+  /// **'[Notification]'**
+  String get notificationMessageType;
 }
 
 class _ConversationKitClientLocalizationsDelegate

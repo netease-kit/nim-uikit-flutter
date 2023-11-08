@@ -32,7 +32,7 @@
   "teamQuitGroupTeamQuery": "是否退出讨论组？",
   "teamDismissAdvancedTeamQuery": "是否解散群聊？",
   "teamSave": "保存",
-  "teamSearchFriend": "搜索好友",
+  "teamSearchMember": "搜索成员",
   "teamNoPermission": "没有修改权限",
   "teamNameMustNotEmpty": "群名称不可为空"
 }

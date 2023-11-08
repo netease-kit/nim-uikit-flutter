@@ -1,5 +1,9 @@
 # NimContactKitUI ChangeLog
 
+## 1.2.0(Nov 8, 2023)
+### Bug Fixes
+* 优化缓存，提高性能
+
 ## 1.1.2(Aug 8, 2023)
 ### Dependency Updates
 * 升级`nimcoe`到`1.7.0`

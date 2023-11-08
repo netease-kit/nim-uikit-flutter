@@ -1,5 +1,10 @@
 # IMKit(Flutter) ChangeLog
 
+## 1.2.0(Nov 8, 2023)
+### New Features
+* 新增@功能
+* 新增标记列表
+
 ## 1.1.1(Jun 12, 2023)
 ### New Features
 * 适配Flutter 3.10.0 以上版本

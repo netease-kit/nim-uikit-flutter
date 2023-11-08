@@ -2,6 +2,7 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'package:netease_common_ui/utils/text_search.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:netease_common_ui/extension.dart';
 import 'package:netease_corekit_im/router/imkit_router_constants.dart';
@@ -14,8 +15,8 @@ import 'package:flutter_svg/svg.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/helper/chat_message_user_helper.dart';
 import 'package:nim_core/nim_core.dart';
 
-import 'chat_kit_client.dart';
-import 'l10n/S.dart';
+import '../../chat_kit_client.dart';
+import '../../l10n/S.dart';
 
 class ChatSearchPage extends StatefulWidget {
   const ChatSearchPage(this.teamId, {Key? key}) : super(key: key);
@@ -29,7 +30,7 @@ class ChatSearchPage extends StatefulWidget {
 class _ChatSearchPageState extends State<ChatSearchPage> {
   TextEditingController inputController = TextEditingController();
 
-  Widget _searchResultWidget(List<ChatMessage>? searchResult) {
+  Widget _searchResultWidget(List<ChatMessage>? searchResult, String keyword) {
     return searchResult == null || searchResult.isEmpty
         ? Column(
             children: [
@@ -63,7 +64,7 @@ class _ChatSearchPageState extends State<ChatSearchPage> {
                         'anchor': item.nimMessage
                       });
                 },
-                child: SearchItem(item),
+                child: SearchItem(item, keyword),
               );
             });
   }
@@ -82,7 +83,7 @@ class _ChatSearchPageState extends State<ChatSearchPage> {
                   keyword, widget.teamId, NIMSessionType.team),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.done) {
-                  return _searchResultWidget(snapshot.data);
+                  return _searchResultWidget(snapshot.data, keyword);
                 }
                 return Center(
                   child: CircularProgressIndicator(),
@@ -95,9 +96,11 @@ class _ChatSearchPageState extends State<ChatSearchPage> {
 }
 
 class SearchItem extends StatelessWidget {
-  const SearchItem(this.message, {Key? key}) : super(key: key);
+  const SearchItem(this.message, this.keyword, {Key? key}) : super(key: key);
 
   final ChatMessage message;
+
+  final String keyword;
 
   Future<String> _getUserName() async {
     if (message.nimMessage.sessionType == NIMSessionType.p2p) {
@@ -106,6 +109,12 @@ class SearchItem extends StatelessWidget {
       return getUserNickInTeam(
           message.nimMessage.sessionId!, message.nimMessage.fromAccount!);
     }
+  }
+
+  Widget _hitWidget(String content) {
+    TextStyle normalStyle = TextStyle(fontSize: 16, color: '#333333'.toColor());
+    TextStyle highStyle = TextStyle(fontSize: 16, color: '#337EFF'.toColor());
+    return TextSearcher.hitWidget(content, keyword, normalStyle, highStyle);
   }
 
   @override
@@ -150,13 +159,7 @@ class SearchItem extends StatelessWidget {
                 const SizedBox(
                   height: 6,
                 ),
-                Text(
-                  message.nimMessage.content ?? '',
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                  style: const TextStyle(
-                      fontSize: 13, color: CommonColors.color_999999),
-                ),
+                _hitWidget(message.nimMessage.content ?? ''),
               ],
             ),
           ),

@@ -79,7 +79,7 @@ class _TeamListPageState extends State<ContactKitTeamListPage> {
       },
       builder: (context, child) {
         List<NIMTeam> teams =
-            context.watch<TeamListViewModel>().teamList.reversed.toList();
+            context.watch<TeamListViewModel>().teamList.toList();
         return Scaffold(
           backgroundColor: Colors.white,
           appBar: AppBar(

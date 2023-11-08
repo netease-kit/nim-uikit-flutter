@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:netease_corekit_im/router/imkit_router_factory.dart';
 import 'package:netease_corekit_im/service_locator.dart';
 import 'package:netease_corekit_im/services/login/login_service.dart';
+import 'package:nim_chatkit_location/chatkit_location_provider_impl.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_item.dart';
 import 'package:nim_chatkit_ui/view/input/actions.dart';
@@ -16,6 +17,7 @@ import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:nim_contactkit/repo/contact_repo.dart';
 import 'package:nim_contactkit_ui/page/contact_page.dart';
 import 'package:nim_conversationkit/repo/conversation_repo.dart';
+import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
 import 'package:nim_conversationkit_ui/page/conversation_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -107,8 +109,20 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     currentIndex = widget.pageIndex;
     initUnread();
+    //注册撤回消息监听
+    ChatKitClient.instance.registerRevokedMessage();
+    //todo 如果需要使用位置消息设置，需要设置ChatKitLocationProviderImpl
+    ChatKitClient.instance.chatUIConfig.locationProvider =
+        ChatKitLocationProviderImpl.instance;
+    ChatKitLocationProviderImpl.instance.initLocationMap(
+        aMapAndroidKey: IMDemoConfig.AMapAndroid,
+        aMapIOSKey: IMDemoConfig.AMapIOS,
+        aMapWebKey: IMDemoConfig.AMapWeb);
+    ChatKitClient.instance.chatUIConfig.getPushPayload = _getPushPayload;
+    //处理native端传递过来的消息
+    _handleMessageFromNative();
 
-    // chat config
+    // todo 以下演示添加自定义消息发送，客户根据自己需求定制
     var messageBuilder = ChatKitMessageBuilder();
     messageBuilder.extendBuilder = {
       NIMMessageType.custom: (NIMMessage msg) {
@@ -120,11 +134,9 @@ class _HomePageState extends State<HomePage> {
         );
       }
     };
-    ChatKitClient.instance.aMapIOSKey = IMDemoConfig.AMapIOS;
-    ChatKitClient.instance.aMapAndroidKey = IMDemoConfig.AMapAndroid;
-    //注册全局监听撤回消息
-    ChatKitClient.instance.registerRevokedMessage();
-    ChatKitClient.instance.chatUIConfig = ChatUIConfig(moreActions: [
+
+    // chat config
+    ChatKitClient.instance.chatUIConfig.moreActions = [
       ActionItem(
           type: 'custom',
           icon: Icon(Icons.android_outlined),
@@ -140,8 +152,23 @@ class _HomePageState extends State<HomePage> {
               vm.sendMessage(msg.data!);
             }
           }),
-    ], messageBuilder: messageBuilder, getPushPayload: _getPushPayload);
-    _handleMessageFromNative();
+    ];
+
+    ChatKitClient.instance.chatUIConfig.messageBuilder = messageBuilder;
+
+    //如果需要自己设置的更多按钮覆盖默认的，请设置keepDefaultMoreAction = false
+    // 默认为true，表示保留默认的更多按钮，包括拍摄，位置，文件
+    ChatKitClient.instance.chatUIConfig.keepDefaultMoreAction = true;
+
+    //设置自定义消息在会话列表的展示
+    ConversationKitClient.instance.conversationUIConfig = ConversationUIConfig(
+        itemConfig: ConversationItemConfig(
+            lastMessageContentBuilder: (context, conversationInfo) {
+      if (conversationInfo.session.lastMessageType == NIMMessageType.custom) {
+        return S.of(context).customMessage;
+      }
+      return null;
+    }));
   }
 
   @override
@@ -182,7 +209,7 @@ class _HomePageState extends State<HomePage> {
     // 添加vivo 推送参数
 
     var vivoField = {
-      "pushMode": 0 //推送模式 0：正式推送；1：测试推送，不填默认为0
+      "pushMode": 1 //推送模式 0：正式推送；1：测试推送，不填默认为0
     };
 
     pushPayload["vivoField"] = vivoField;
@@ -310,7 +337,8 @@ class _HomePageState extends State<HomePage> {
           'assets/icon_session_selected.svg',
           width: 28,
           height: 28,
-          color: CommonColors.color_c5c9d2,
+          colorFilter:
+              ColorFilter.mode(CommonColors.color_c5c9d2, BlendMode.srcIn),
         ),
       ),
       NavigationBarData(
@@ -325,7 +353,8 @@ class _HomePageState extends State<HomePage> {
           'assets/icon_contact_unselected.svg',
           width: 28,
           height: 28,
-          color: CommonColors.color_c5c9d2,
+          colorFilter:
+              ColorFilter.mode(CommonColors.color_c5c9d2, BlendMode.srcIn),
         ),
       ),
       NavigationBarData(
@@ -340,7 +369,8 @@ class _HomePageState extends State<HomePage> {
           'assets/icon_my_selected.svg',
           width: 28,
           height: 28,
-          color: CommonColors.color_c5c9d2,
+          colorFilter:
+              ColorFilter.mode(CommonColors.color_c5c9d2, BlendMode.srcIn),
         ),
       ),
     ];

@@ -407,4 +407,10 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
 
   @override
   String get chatTeamBeRemovedContent => '该群聊已被解散';
+
+  @override
+  String get chatMessageSendFailedByBlackList => '对方已将您拉黑，消息发送失败';
+
+  @override
+  String get chatHaveNoPinMessage => '暂无标记消息';
 }

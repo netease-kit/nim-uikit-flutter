@@ -420,6 +420,12 @@ abstract class DemoKitClientLocalizations {
   /// In en, this message translates to:
   /// **'Set successfully'**
   String get settingSuccess;
+
+  /// No description provided for @customMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'[Custom Message]'**
+  String get customMessage;
 }
 
 class _DemoKitClientLocalizationsDelegate extends LocalizationsDelegate<DemoKitClientLocalizations> {

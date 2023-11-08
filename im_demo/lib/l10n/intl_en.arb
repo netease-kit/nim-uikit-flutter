@@ -67,5 +67,6 @@
   },
   "notUsable": "Feature not yet available",
   "settingFail": "Setting failed",
-  "settingSuccess": "Set successfully"
+  "settingSuccess": "Set successfully",
+  "customMessage": "[Custom Message]"
 }

@@ -9,6 +9,7 @@ import 'package:netease_corekit_im/model/team_models.dart';
 import 'package:netease_corekit_im/service_locator.dart';
 import 'package:netease_corekit_im/services/login/login_service.dart';
 import 'package:flutter/material.dart';
+import 'package:nim_core/nim_core.dart';
 import 'package:provider/provider.dart';
 
 import '../../l10n/S.dart';
@@ -89,11 +90,11 @@ class TeamKitMemberListPageState extends State<TeamKitMemberListPage> {
                       filled: true,
                       isCollapsed: true,
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 18, vertical: 8),
+                          horizontal: 18, vertical: 15),
                       border: _border(),
                       enabledBorder: _border(),
                       focusedBorder: _border(),
-                      hintText: S.of(context).teamSearchFriend,
+                      hintText: S.of(context).teamSearchMember,
                       hintStyle:
                           TextStyle(fontSize: 14, color: '#A6ADB6'.toColor()),
                       prefixIcon: const Icon(Icons.search)),
@@ -157,7 +158,19 @@ class TeamMemberListItemState extends State<TeamMemberListItem> {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(fontSize: 16, color: '#333333'.toColor()),
               ),
-            )
+            ),
+            if (widget.teamMember.teamInfo.type == TeamMemberType.owner)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                decoration: BoxDecoration(
+                    color: '#e0ecff'.toColor(),
+                    borderRadius: BorderRadius.circular(10)),
+                child: Text(
+                  S.of(context).teamOwner,
+                  style: TextStyle(fontSize: 12, color: '#337eff'.toColor()),
+                ),
+              )
           ],
         ),
       ),

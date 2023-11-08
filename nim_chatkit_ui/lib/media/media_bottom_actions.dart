@@ -122,7 +122,7 @@ class MediaBottomActionOverlay extends StatelessWidget {
                   final permissionList;
                   if (Platform.isAndroid &&
                       await PlatformUtils.isAboveAndroidT()) {
-                    permissionList = [Permission.manageExternalStorage];
+                    permissionList = [Permission.photos];
                   } else {
                     permissionList = [Permission.storage];
                   }

@@ -4,6 +4,7 @@
 
 import 'package:netease_corekit_im/service_locator.dart';
 import 'package:netease_corekit_im/services/contact/contact_provider.dart';
+import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
 import 'package:nim_core/nim_core.dart';
 
 extension MessageUserHelper on String {
@@ -46,17 +47,18 @@ extension MessageUserHelper on String {
 
 Future<String> getUserNickInTeam(String tId, String accId,
     {bool showAlias = true}) async {
-  var contactInfo = await getIt<ContactProvider>().getContact(accId);
-  if (showAlias && contactInfo?.friend?.alias?.isNotEmpty == true) {
-    return contactInfo!.friend!.alias!;
+  var teamUserInfo = NIMChatCache.instance.getTeamMember(accId, tId);
+  if (teamUserInfo != null) {
+    return teamUserInfo.getName(needAlias: showAlias);
   } else {
     var teamMember =
         await NimCore.instance.teamService.queryTeamMember(tId, accId);
     if (teamMember.data?.teamNick?.isNotEmpty == true) {
       return teamMember.data!.teamNick!;
     } else {
-      return contactInfo?.user.nick?.isNotEmpty == true
-          ? contactInfo!.user.nick!
+      var userInfo = await getIt<ContactProvider>().getContact(accId);
+      return userInfo?.user.nick?.isNotEmpty == true
+          ? userInfo!.user.nick!
           : accId;
     }
   }

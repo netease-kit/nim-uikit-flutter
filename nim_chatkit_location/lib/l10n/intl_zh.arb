@@ -1,0 +1,9 @@
+{
+  "@@locale": "zh",
+  "messageCancel": "取消",
+  "chatMessageSend": "发送",
+  "chatMessageAMapNotFound": "未检测到高德地图",
+  "chatMessageTencentMapNotFound": "未检测到腾讯地图",
+  "chatMessageAMap": "高德地图",
+  "chatMessageTencentMap": "腾讯地图"
+}

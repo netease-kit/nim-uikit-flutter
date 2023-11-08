@@ -3,12 +3,24 @@
 // found in the LICENSE file.
 
 import 'package:flutter/cupertino.dart';
+import 'package:netease_common_ui/ui/dialog.dart';
+import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_corekit_im/im_kit_client.dart';
+import 'package:netease_corekit_im/model/contact_info.dart';
+import 'package:netease_corekit_im/router/imkit_router_factory.dart';
+import 'package:netease_corekit_im/services/contact/contact_provider.dart';
 import 'package:netease_corekit_im/services/team/team_provider.dart';
 import 'package:nim_chatkit_ui/l10n/S.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/helper/chat_message_user_helper.dart';
 import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/login/login_service.dart';
+
 import 'package:nim_core/nim_core.dart';
+
+import '../widgets/chat_forward_dialog.dart';
+
+///定义转发方法
+typedef ForwardMessageFunction = Function(
+    String sessionId, NIMSessionType sessionType);
 
 class NotifyHelper {
   static Future<String> getNotificationText(NIMMessage message) async {
@@ -121,7 +133,7 @@ class NotifyHelper {
       String fromAccId, NIMMemberChangeAttachment attachment) async {
     var fromName = await getTeamMemberDisplayName(tid, fromAccId);
     var memberNames = await buildMemberListString(tid, attachment.targets!,
-        fromAccount: fromAccId);
+        fromAccount: fromAccId, needTeamNick: false);
     var team = (await NimCore.instance.teamService.queryTeam(tid)).data;
     if (team != null && !getIt<TeamProvider>().isGroupTeam(team)) {
       return S.of().chatAdviceTeamNotifyInvite(fromName, memberNames);
@@ -187,7 +199,8 @@ class NotifyHelper {
   static Future<String> buildAcceptInviteNotification(
       String tid, String from, NIMMemberChangeAttachment attachment) async {
     return S.of().chatTeamNotifyAcceptInvite(
-        await buildMemberListString(tid, attachment.targets!),
+        await buildMemberListString(tid, attachment.targets!,
+            needTeamNick: false),
         (await getTeamMemberDisplayName(tid, from)));
   }
 
@@ -203,20 +216,35 @@ class NotifyHelper {
   }
 
   static Future<String> buildMemberListString(String tid, List<String> members,
-      {String? fromAccount}) async {
+      {String? fromAccount, bool needTeamNick = true}) async {
     String memberList = '';
-    for (var member in members) {
-      if (fromAccount != member) {
-        var name = await getTeamMemberDisplayName(tid, member);
-        memberList = memberList + name + '、';
+    if (needTeamNick == false) {
+      var contactList = await getIt<ContactProvider>().fetchUserList(members);
+      for (var contact in contactList) {
+        if (fromAccount != contact.user.userId) {
+          if (contact.user.userId == IMKitClient.account()) {
+            memberList = memberList + S.of().chatMessageYou + '、';
+          } else {
+            memberList = memberList + contact.getName() + '、';
+          }
+        }
+      }
+    } else {
+      for (var member in members) {
+        if (fromAccount != member) {
+          var name = await getTeamMemberDisplayName(tid, member);
+          memberList = memberList + name + '、';
+        }
       }
     }
-    return memberList.substring(0, memberList.length - 1);
+    return memberList.endsWith('、')
+        ? memberList.substring(0, memberList.length - 1)
+        : memberList;
   }
 
   static Future<String> getTeamMemberDisplayName(
       String tid, String accId) async {
-    if (accId == getIt<LoginService>().userInfo!.userId) {
+    if (accId == IMKitClient.account()) {
       return S.of().chatMessageYou;
     }
     return getUserNickInTeam(tid, accId);
@@ -304,5 +332,83 @@ class ChatMessageHelper {
         break;
     }
     return brief;
+  }
+
+  ///显示转发选择框
+  static void showForwardMessageDialog(
+      BuildContext context, ForwardMessageFunction forwardMessage,
+      {List<String>? filterUser, required String sessionName}) {
+    // 转发
+    var style = const TextStyle(fontSize: 16, color: CommonColors.color_333333);
+    showBottomChoose<int>(context: context, actions: [
+      CupertinoActionSheetAction(
+        onPressed: () {
+          Navigator.pop(context, 2);
+        },
+        child: Text(
+          S.of(context).messageForwardToTeam,
+          style: style,
+        ),
+      ),
+      CupertinoActionSheetAction(
+        onPressed: () {
+          Navigator.pop(context, 1);
+        },
+        child: Text(
+          S.of(context).messageForwardToP2p,
+          style: style,
+        ),
+      )
+    ]).then((value) {
+      if (value == 1) {
+        _goContactSelector(context, forwardMessage,
+            filterUser: filterUser, sessionName: sessionName);
+      } else if (value == 2) {
+        _goTeamSelector(context, forwardMessage, sessionName: sessionName);
+      }
+    });
+  }
+
+  //转发到群
+  static void _goTeamSelector(
+    BuildContext context,
+    ForwardMessageFunction forwardMessage, {
+    required String sessionName,
+  }) {
+    String forwardStr = S.of(context).messageForwardMessageTips(sessionName);
+    goTeamListPage(context, selectorModel: true).then((result) {
+      if (result is NIMTeam) {
+        showChatForwardDialog(
+                context: context, contentStr: forwardStr, team: result)
+            .then((forward) {
+          if (forward == true) {
+            forwardMessage(result.id!, NIMSessionType.team);
+          }
+        });
+      }
+    });
+  }
+
+  //转发到个人
+  static void _goContactSelector(
+      BuildContext context, ForwardMessageFunction forwardMessage,
+      {required String sessionName, List<String>? filterUser}) {
+    String forwardStr = S.of(context).messageForwardMessageTips(sessionName);
+    goToContactSelector(context, filter: filterUser, returnContact: true)
+        .then((selectedUsers) {
+      if (selectedUsers is List<ContactInfo>) {
+        showChatForwardDialog(
+                context: context,
+                contentStr: forwardStr,
+                contacts: selectedUsers)
+            .then((result) {
+          if (result == true) {
+            for (var user in selectedUsers) {
+              forwardMessage(user.user.userId!, NIMSessionType.p2p);
+            }
+          }
+        });
+      }
+    });
   }
 }

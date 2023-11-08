@@ -31,7 +31,7 @@ class ChatAudioPlayer {
   //初始化设置播放器属性
   void _setupSpeaker() async {
     audioContextDefault = await _getAudioContext();
-    await AudioPlayer.global.setGlobalAudioContext(audioContextDefault!);
+    await AudioPlayer.global.setAudioContext(audioContextDefault!);
   }
 
   //获取播放器属性

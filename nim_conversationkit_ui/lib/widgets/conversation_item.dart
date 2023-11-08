@@ -20,9 +20,11 @@ bool isSupportMessageType(NIMMessageType? type) {
       type == NIMMessageType.notification ||
       type == NIMMessageType.tip ||
       type == NIMMessageType.file ||
-      type == NIMMessageType.custom ||
       type == NIMMessageType.location;
 }
+
+/// 会话列表Item的高度，设置到ListView中的itemExtent，提高性能
+final double conversationItemHeight = 62;
 
 class ConversationItem extends StatelessWidget {
   const ConversationItem(
@@ -35,6 +37,35 @@ class ConversationItem extends StatelessWidget {
   final ConversationInfo conversationInfo;
   final ConversationItemConfig config;
   final int index;
+
+  String _getLastMessageContent(BuildContext context) {
+    switch (conversationInfo.session.lastMessageType) {
+      case NIMMessageType.text:
+      case NIMMessageType.tip:
+        return conversationInfo.session.lastMessageContent ?? '';
+      case NIMMessageType.audio:
+        return S.of(context).audioMessageType;
+      case NIMMessageType.image:
+        return S.of(context).imageMessageType;
+      case NIMMessageType.video:
+        return S.of(context).videoMessageType;
+      case NIMMessageType.notification:
+        return S.of(context).notificationMessageType;
+      case NIMMessageType.file:
+        return S.of(context).fileMessageType;
+      case NIMMessageType.location:
+        return S.of(context).locationMessageType;
+      case NIMMessageType.custom:
+        var customLastMessageContent =
+            config.lastMessageContentBuilder?.call(context, conversationInfo);
+        if (customLastMessageContent != null) {
+          return customLastMessageContent;
+        }
+        return S.of(context).chatMessageNonsupportType;
+      default:
+        return S.of(context).chatMessageNonsupportType;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +83,7 @@ class ConversationItem extends StatelessWidget {
       avatarName = name;
     }
     return Container(
-      height: 62,
+      height: conversationItemHeight,
       padding: const EdgeInsets.symmetric(horizontal: 20),
       color:
           conversationInfo.isStickTop ? const Color(0xffededef) : Colors.white,
@@ -109,15 +140,25 @@ class ConversationItem extends StatelessWidget {
                         color: config.itemTitleColor),
                   ),
                 ),
-                Text(
-                  isSupportMessageType(conversationInfo.session.lastMessageType)
-                      ? (conversationInfo.session.lastMessageContent ?? '')
-                      : S.of(context).chatMessageNonsupportType,
+                Text.rich(
+                  TextSpan(children: [
+                    if (conversationInfo.haveBeenAit &&
+                        (conversationInfo.session.unreadCount ?? 0) > 0)
+                      TextSpan(
+                        text: S.of(context).somebodyAitMe,
+                        style: TextStyle(
+                            fontSize: config.itemContentSize,
+                            color: config.itemAitTextColor),
+                      ),
+                    TextSpan(
+                      text: _getLastMessageContent(context),
+                      style: TextStyle(
+                          fontSize: config.itemContentSize,
+                          color: config.itemContentColor),
+                    )
+                  ]),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
-                  style: TextStyle(
-                      fontSize: config.itemContentSize,
-                      color: config.itemContentColor),
                 ),
               ],
             ),

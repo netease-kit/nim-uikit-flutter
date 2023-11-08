@@ -58,7 +58,7 @@
   "contactIgnored": "已忽略",
   "contactExpired": "已过期",
   "contactReject": "拒绝",
-  "contactApplyFrom": "{user}添加您为好友",
+  "contactApplyFrom": "{user}好友申请",
   "@contactApplyFrom": {
     "placeholders": {
       "user": {

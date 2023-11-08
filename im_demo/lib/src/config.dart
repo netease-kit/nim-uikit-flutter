@@ -17,6 +17,9 @@ class IMDemoConfig {
 
   //高德IOS Key
   static const AMapIOS = 'your amap ios key';
+
+  //高德Web服务端 Key，用于生成静态图
+  static const AMapWeb = 'your amap web key';
 }
 
 class NIMSDKOptionsConfig {

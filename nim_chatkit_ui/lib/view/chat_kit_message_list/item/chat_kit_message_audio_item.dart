@@ -21,7 +21,10 @@ import '../../../media/audio_player.dart';
 class ChatKitMessageAudioItem extends StatefulWidget {
   final NIMMessage message;
 
-  const ChatKitMessageAudioItem({Key? key, required this.message})
+  final bool isPin;
+
+  const ChatKitMessageAudioItem(
+      {Key? key, required this.message, this.isPin = false})
       : super(key: key);
 
   @override
@@ -69,7 +72,8 @@ class ChatKitMessageAudioState extends State<ChatKitMessageAudioItem>
   }
 
   Widget _getAudioUI(NIMMessage message) {
-    if (message.messageDirection == NIMMessageDirection.outgoing) {
+    if (message.messageDirection == NIMMessageDirection.outgoing &&
+        !widget.isPin) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
@@ -256,14 +260,12 @@ class ChatKitMessageAudioState extends State<ChatKitMessageAudioItem>
           _startAudioPlay(widget.message);
         }
       },
-      child: SizedBox(
+      child: Container(
         width: _getWidth(widget.message),
-        child: Container(
-          color: Color.fromRGBO(0, 0, 0, 0.0),
-          padding:
-              const EdgeInsets.only(left: 16, top: 12, right: 16, bottom: 12),
-          child: _getAudioUI(widget.message),
-        ),
+        color: Color.fromRGBO(0, 0, 0, 0.0),
+        padding:
+            const EdgeInsets.only(left: 16, top: 12, right: 16, bottom: 12),
+        child: _getAudioUI(widget.message),
       ),
     );
   }

@@ -1,6 +1,6 @@
 {
   "@@locale": "zh",
-  "conversationTitle":"云信IM",
+  "conversationTitle": "云信IM",
   "createAdvancedTeamSuccess": "成功创建高级群",
   "stickTitle": "置顶",
   "cancelStickTitle": "取消置顶",
@@ -23,5 +23,12 @@
   "createGroupTeam": "创建讨论组",
   "createAdvancedTeam": "创建高级群",
   "chatMessageNonsupportType": "[当前版本暂不支持该消息体]",
-  "conversationEmpty": "暂无会话"
+  "conversationEmpty": "暂无会话",
+  "somebodyAitMe": "[有人@我]",
+  "audioMessageType": "[语音]",
+  "imageMessageType": "[图片]",
+  "videoMessageType": "[视频]",
+  "locationMessageType": "[位置]",
+  "fileMessageType": "[文件]",
+  "notificationMessageType": "[通知消息]"
 }

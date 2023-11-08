@@ -365,5 +365,7 @@
   "locationDeniedTips": "请在设置页面添加定位权限",
   "chatSpeakTooShort": "说话时间太短",
   "chatTeamBeRemovedTitle": "提醒",
-  "chatTeamBeRemovedContent": "该群聊已被解散"
+  "chatTeamBeRemovedContent": "该群聊已被解散",
+  "chatMessageSendFailedByBlackList":"对方已将您拉黑，消息发送失败",
+  "chatHaveNoPinMessage": "暂无标记消息"
 }

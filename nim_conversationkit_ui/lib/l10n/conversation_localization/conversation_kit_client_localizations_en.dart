@@ -62,4 +62,25 @@ class ConversationKitClientLocalizationsEn
 
   @override
   String get conversationEmpty => 'no chat';
+
+  @override
+  String get somebodyAitMe => '[somebody @ me]';
+
+  @override
+  String get audioMessageType => '[Audio]';
+
+  @override
+  String get imageMessageType => '[Image]';
+
+  @override
+  String get videoMessageType => '[Video]';
+
+  @override
+  String get locationMessageType => '[Location]';
+
+  @override
+  String get fileMessageType => '[File]';
+
+  @override
+  String get notificationMessageType => '[Notification]';
 }

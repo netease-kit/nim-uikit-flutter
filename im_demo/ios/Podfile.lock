@@ -67,28 +67,30 @@ PODS:
     - Flutter
   - nim_core (1.4.7):
     - Flutter
-    - NIMSDK_LITE (~> 9.11.0)
+    - NIMSDK_LITE (~> 9.13.0)
     - YXAlog
-  - NIMSDK_LITE (9.11.2):
-    - NIMSDK_LITE/NOS (= 9.11.2)
-  - NIMSDK_LITE/NOS (9.11.2)
+  - NIMSDK_LITE (9.13.1):
+    - NIMSDK_LITE/NOS (= 9.13.1)
+    - YXArtemis
+  - NIMSDK_LITE/NOS (9.13.1):
+    - YXArtemis
   - open_filex (0.0.2):
     - Flutter
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
-  - permission_handler_apple (9.1.0):
+  - permission_handler_apple (9.1.1):
     - Flutter
   - phone_state (1.0.3):
     - Flutter
   - ReachabilitySwift (5.0.0)
-  - SDWebImage (5.16.0):
-    - SDWebImage/Core (= 5.16.0)
-  - SDWebImage/Core (5.16.0)
+  - SDWebImage (5.18.3):
+    - SDWebImage/Core (= 5.18.3)
+  - SDWebImage/Core (5.18.3)
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
-  - sqflite (0.0.2):
+  - sqflite (0.0.3):
     - Flutter
     - FMDB (>= 2.7.5)
   - SwiftyGif (5.4.4)
@@ -103,6 +105,7 @@ PODS:
     - Flutter
     - YXAlog (~> 1.0.7)
   - YXAlog (1.0.7)
+  - YXArtemis (1.1.0)
 
 DEPENDENCIES:
   - amap_flutter_location (from `.symlinks/plugins/amap_flutter_location/ios`)
@@ -143,6 +146,7 @@ SPEC REPOS:
     - SwiftyGif
     - Toast
     - YXAlog
+    - YXArtemis
 
 EXTERNAL SOURCES:
   amap_flutter_location:
@@ -195,7 +199,7 @@ SPEC CHECKSUMS:
   AMapFoundation: 9885c48fc3a78fdfb84a0299a2293e56ea3c9fec
   AMapLocation: 5248aec2455ebb5d104b367813c946430a2ee033
   audioplayers_darwin: 877d9a4d06331c5c374595e46e16453ac7eafa40
-  connectivity_plus: 07c49e96d7fc92bc9920617b83238c4d178b446a
+  connectivity_plus: bf0076dd84a130856aa636df1c71ccaff908fa1d
   device_info_plus: 7545d84d8d1b896cb16a4ff98c19f07ec4b298ea
   DKImagePickerController: b512c28220a2b8ac7419f21c491fc8534b7601ac
   DKPhotoGallery: fdfad5125a9fdda9cc57df834d49df790dbb4179
@@ -206,16 +210,16 @@ SPEC CHECKSUMS:
   GCDWebServer: 2c156a56c8226e2d5c0c3f208a3621ccffbe3ce4
   image_gallery_saver: cb43cc43141711190510e92c460eb1655cd343cb
   image_picker_ios: 4a8aadfbb6dc30ad5141a2ce3832af9214a705b5
-  nim_core: f0406305d539f9e67ad4041c94a84fe5896e52e1
-  NIMSDK_LITE: 2c34ec060b2fb656d1c1eb15c2a434e66196e906
+  nim_core: 68f6b71c3b8fd2648312b1047878b709218d50f0
+  NIMSDK_LITE: 594799d792ec7ec2c1e48ff93ca1340c7b7fd2cb
   open_filex: 6e26e659846ec990262224a12ef1c528bb4edbe4
   path_provider_foundation: c68054786f1b4f3343858c1e1d0caaded73f0be9
-  permission_handler_apple: 8f116445eff3c0e7c65ad60f5fef5490aa94b4e4
+  permission_handler_apple: e76247795d700c14ea09e3a2d8855d41ee80a2e6
   phone_state: d0d36ac85a7cc06ed62e88343795ed5cd7e3d6c9
   ReachabilitySwift: 985039c6f7b23a1da463388634119492ff86c825
-  SDWebImage: 2aea163b50bfcb569a2726b6a754c54a4506fcf6
+  SDWebImage: 96e0c18ef14010b7485210e92fac888587ebb958
   shared_preferences_foundation: 986fc17f3d3251412d18b0265f9c64113a8c2472
-  sqflite: 6d358c025f5b867b29ed92fc697fd34924e11904
+  sqflite: 31f7eba61e3074736dff8807a9b41581e4f7f15a
   SwiftyGif: 93a1cc87bf3a51916001cf8f3d63835fb64c819f
   Toast: 91b396c56ee72a5790816f40d3a94dd357abc196
   url_launcher_ios: 08a3dfac5fb39e8759aeb0abbd5d9480f30fc8b4
@@ -223,7 +227,8 @@ SPEC CHECKSUMS:
   webview_flutter_wkwebview: b7e70ef1ddded7e69c796c7390ee74180182971f
   yunxin_alog: c5532d2a6ab378baef9927fcae5ab19fe36c1103
   YXAlog: ac9bab3aff1326caa72cc25aedc358bc8d4f1b31
+  YXArtemis: e9cedfafd67faff267c24f245063bac78c113e1c
 
-PODFILE CHECKSUM: 00e20c7153e855653982d5024af862d2719dfb2f
+PODFILE CHECKSUM: b2fab7bd54736d5b7eb1fe53350ce2d1346f64c8
 
 COCOAPODS: 1.11.2

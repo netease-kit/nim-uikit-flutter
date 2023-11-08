@@ -105,7 +105,7 @@ class TeamKitClientLocalizationsZh extends TeamKitClientLocalizations {
   String get teamSave => '保存';
 
   @override
-  String get teamSearchFriend => '搜索好友';
+  String get teamSearchMember => '搜索成员';
 
   @override
   String get teamNoPermission => '没有修改权限';

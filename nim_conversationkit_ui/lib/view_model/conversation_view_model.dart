@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
+import 'package:netease_corekit_im/im_kit_client.dart';
 import 'package:netease_corekit_im/services/message/message_provider.dart';
 import 'package:nim_conversationkit/extention.dart';
 import 'package:nim_conversationkit/model/conversation_info.dart';
@@ -12,8 +13,10 @@ import 'package:nim_conversationkit/repo/conversation_repo.dart';
 import 'package:netease_corekit_im/service_locator.dart';
 import 'package:netease_corekit_im/services/login/login_service.dart';
 import 'package:flutter/material.dart';
+import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
 import 'package:nim_core/nim_core.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
+import 'package:nim_conversationkit_ui/service/ait/ait_server.dart';
 
 class ConversationViewModel extends ChangeNotifier {
   final String modelName = 'ConversationViewModel';
@@ -166,6 +169,34 @@ class ConversationViewModel extends ChangeNotifier {
       _logI('onSyncStickTop');
       queryConversationList();
     }));
+
+    // ait observer
+    subscriptions.add(
+        AitServer.instance.onSessionAitUpdated.listen((AitSession? aitSession) {
+      final index = _conversationList.indexWhere(
+          (element) => element.session.sessionId == aitSession?.sessionId);
+      if (index > -1) {
+        _conversationList[index].haveBeenAit = aitSession!.isAit;
+        notifyListeners();
+      }
+    }));
+
+    //异步加载userInfo 回调
+    subscriptions
+        .add(ConversationRepo.instance.onUserInfoUpdated.listen((event) {
+      var sessionList = event as List<ConversationInfo>;
+      for (var session in sessionList) {
+        int index = _conversationList.indexWhere((element) =>
+            element.session.sessionType == NIMSessionType.p2p &&
+            element.session.sessionId == session.user?.userId);
+        if (index > -1) {
+          _conversationList[index].user = session.user;
+          _conversationList[index].friend = session.friend;
+          _conversationList[index].mute = session.mute;
+        }
+      }
+      notifyListeners();
+    }));
   }
 
   _addRemoveStickTop(String sessionId, bool add) {
@@ -233,14 +264,25 @@ class ConversationViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  _updateItem(ConversationInfo conversationInfo) {
+  _updateItem(ConversationInfo conversationInfo) async {
     int index = _conversationList
         .indexWhere((element) => element.isSame(conversationInfo));
     if (index > -1) {
+      if (conversationInfo.session.sessionType == NIMSessionType.team) {
+        bool haveBeenAit = _conversationList[index].haveBeenAit;
+        if ((conversationInfo.session.unreadCount ?? 0) <= 0) {
+          AitServer.instance
+              .clearAitMessage(conversationInfo.session.sessionId);
+          haveBeenAit = false;
+        }
+        if (haveBeenAit) {
+          conversationInfo.haveBeenAit = true;
+        }
+      }
       _conversationList.removeAt(index);
       int insertIndex = _searchComparatorIndex(conversationInfo);
       _logI(
-          'insertIndex:$insertIndex unread:${conversationInfo.session.unreadCount}');
+          'insertIndex:$insertIndex unread:${conversationInfo.session.unreadCount} haveBeenAit:${conversationInfo.haveBeenAit}');
       _conversationList.insert(insertIndex, conversationInfo);
     } else {
       int insertIndex = _searchComparatorIndex(conversationInfo);
@@ -262,19 +304,38 @@ class ConversationViewModel extends ChangeNotifier {
   void queryConversationList() async {
     final _resultData = await ConversationRepo.getSessionList(_comparator);
     if (_resultData != null) {
+      if (IMKitClient.enableAit) {
+        final myId = IMKitClient.account();
+        if (myId != null) {
+          final aitSessionList =
+              await AitServer.instance.getAllAitSession(myId);
+          _resultData.forEach((element) {
+            if (aitSessionList.contains(element.session.sessionId) &&
+                (element.session.unreadCount ?? 0) > 0) {
+              element.haveBeenAit = true;
+            }
+          });
+        }
+      }
       conversationList = _resultData;
     }
   }
 
-  void deleteConversation(ConversationInfo conversationInfo) async {
+  void deleteConversation(ConversationInfo conversationInfo,
+      {bool? clearMessageHistory}) async {
     if (!await haveConnectivity()) {
       return;
+    }
+    if (clearMessageHistory == null) {
+      clearMessageHistory = ConversationKitClient.instance.conversationUIConfig
+          .itemConfig.clearMessageWhenDeleteSession;
     }
     ConversationRepo.deleteSession(
             conversationInfo.session.sessionId,
             conversationInfo.session.sessionType,
             NIMSessionDeleteType.localAndRemote,
-            true)
+            true,
+            deleteHistory: clearMessageHistory)
         .then((value) {
       if (value.isSuccess) {
         _deleteItem(conversationInfo.session.sessionId,

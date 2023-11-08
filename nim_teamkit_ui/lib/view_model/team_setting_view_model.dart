@@ -9,6 +9,7 @@ import 'package:netease_corekit_im/model/team_models.dart';
 import 'package:netease_corekit_im/service_locator.dart';
 import 'package:netease_corekit_im/services/login/login_service.dart';
 import 'package:flutter/material.dart';
+import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
 import 'package:nim_core/nim_core.dart';
 import 'package:nim_teamkit/repo/team_repo.dart';
 
@@ -25,6 +26,8 @@ class TeamSettingViewModel extends ChangeNotifier {
   NIMTeamUpdateModeEnum? infoPrivilege;
   bool beInvitedNeedAgreed = false;
   String? myTeamNickName;
+  //搜索关键字
+  String? _searchKey;
 
   List<StreamSubscription> _teamSub = List.empty(growable: true);
 
@@ -45,7 +48,11 @@ class TeamSettingViewModel extends ChangeNotifier {
   }
 
   void requestTeamMembers(String teamId) async {
-    userInfoData = await TeamRepo.getMemberList(teamId);
+    //先从缓存中获取
+    userInfoData = NIMChatCache.instance.teamMembers;
+    if (userInfoData?.isNotEmpty != true) {
+      NIMChatCache.instance.fetchTeamMember(teamId);
+    }
     filterList = userInfoData;
     notifyListeners();
   }
@@ -54,30 +61,26 @@ class TeamSettingViewModel extends ChangeNotifier {
     _teamSub.add(TeamRepo.registerTeamUpdateObserver().listen((event) {
       for (var e in event) {
         if (e.id == teamWithMember?.team.id) {
-          // 这里iOS需要在回调之后请求，否则查询结果不对
-          if (teamWithMember?.team.memberCount != e.memberCount) {
-            requestTeamMembers(e.id!);
-          }
           teamWithMember?.team = e;
           notifyListeners();
         }
       }
     }));
 
-    _teamSub.add(
-        NimCore.instance.userService.onFriendAddedOrUpdated.listen((event) {
-      for (var e in event) {
-        for (var info in userInfoData!) {
-          if (info.userInfo?.userId == e.userId) {
-            info.alias = e.alias;
-          }
+    _teamSub.addAll([
+      NIMChatCache.instance.teamMembersNotifier.listen((event) {
+        userInfoData = event;
+        notifyListeners();
+        //更新完毕后重新排序,可能有新成员加入
+        if (_searchKey?.isNotEmpty == true) {
+          filterByText(_searchKey);
         }
-      }
-      notifyListeners();
-    }));
+      }),
+    ]);
   }
 
   void filterByText(String? filterStr) {
+    _searchKey = filterStr;
     if (filterStr == null || filterStr.isEmpty) {
       //过滤关键字为空时显示所有成员
       filterList = userInfoData;
@@ -198,11 +201,7 @@ class TeamSettingViewModel extends ChangeNotifier {
   }
 
   void addMembers(String teamId, List<String> members) {
-    TeamRepo.inviteUser(teamId, members).then((value) {
-      if (value.isSuccess && !beInvitedNeedAgreed) {
-        requestTeamMembers(teamId);
-      }
-    });
+    TeamRepo.inviteUser(teamId, members).then((value) {});
   }
 
   @override

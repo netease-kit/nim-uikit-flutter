@@ -19,8 +19,8 @@ import 'package:flutter/material.dart';
 import 'package:nim_core/nim_core.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
 
-import 'chat_kit_client.dart';
-import 'l10n/S.dart';
+import '../../chat_kit_client.dart';
+import '../../l10n/S.dart';
 
 class ChatSettingPage extends StatefulWidget {
   const ChatSettingPage(this.contactInfo, {Key? key}) : super(key: key);
@@ -123,6 +123,21 @@ class _ChatSettingPageState extends State<ChatSettingPage> {
         const TextStyle(color: CommonColors.color_333333, fontSize: 16);
     return Column(
       children: ListTile.divideTiles(context: context, tiles: [
+        ListTile(
+          title: Text(
+            S.of(context).chatMessageSignal,
+            style: style,
+          ),
+          trailing: const Icon(Icons.keyboard_arrow_right_outlined),
+          onTap: () {
+            Navigator.pushNamed(context, RouterConstants.PATH_CHAT_PIN_PAGE,
+                arguments: {
+                  'sessionId': userId,
+                  'sessionType': NIMSessionType.p2p,
+                  'chatTitle': widget.contactInfo.getName()
+                });
+          },
+        ),
         ListTile(
           title: Text(
             S.of(context).chatMessageOpenMessageNotice,

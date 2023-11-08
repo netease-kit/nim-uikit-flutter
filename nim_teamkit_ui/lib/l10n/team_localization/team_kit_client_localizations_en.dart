@@ -107,7 +107,7 @@ class TeamKitClientLocalizationsEn extends TeamKitClientLocalizations {
   String get teamSave => 'Save';
 
   @override
-  String get teamSearchFriend => 'Search friend';
+  String get teamSearchMember => 'Search Member';
 
   @override
   String get teamNoPermission => 'No Permission';

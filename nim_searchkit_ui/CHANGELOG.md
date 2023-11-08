@@ -1,5 +1,10 @@
 # NimSearchKitUI ChangeLog
 
+## 1.2.0(Nov 8, 2023)
+### Bug Fixes
+* 优化List请求，提高性能
+* 优化UI体验
+
 ## 1.1.2(Aug 8, 2023)
 ### Dependency Updates
 * 升级`nimcoe`到`1.7.0`

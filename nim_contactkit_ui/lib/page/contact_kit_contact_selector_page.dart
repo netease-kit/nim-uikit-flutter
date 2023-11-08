@@ -143,34 +143,35 @@ class _ContactSelectorState extends State<ContactKitSelectorPage> {
       body: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          if (selectedUser.isNotEmpty)
-            Expanded(
-              flex: 1,
-              child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: selectedUser.length,
-                  padding: EdgeInsets.only(left: 20),
-                  itemBuilder: (contact, index) {
-                    ContactInfo member = selectedUser[index];
-                    return InkWell(
-                      onTap: () {
-                        _removeSelectedUser(member);
-                      },
-                      child: Container(
-                        padding: EdgeInsets.only(
-                            top: 7, bottom: 9, left: 6, right: 5),
-                        child: Avatar(
-                          height: 42,
-                          width: 42,
-                          avatar: member.user.avatar,
-                          name: member.getName(),
-                          bgCode: AvatarColor.avatarColor(
-                              content: member.user.userId!),
+          Expanded(
+            flex: selectedUser.isEmpty ? 0 : 1,
+            child: selectedUser.isEmpty
+                ? Container()
+                : ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: selectedUser.length,
+                    padding: EdgeInsets.only(left: 20),
+                    itemBuilder: (contact, index) {
+                      ContactInfo member = selectedUser[index];
+                      return InkWell(
+                        onTap: () {
+                          _removeSelectedUser(member);
+                        },
+                        child: Container(
+                          padding: EdgeInsets.only(
+                              top: 7, bottom: 9, left: 6, right: 5),
+                          child: Avatar(
+                            height: 42,
+                            width: 42,
+                            avatar: member.user.avatar,
+                            name: member.getName(),
+                            bgCode: AvatarColor.avatarColor(
+                                content: member.user.userId!),
+                          ),
                         ),
-                      ),
-                    );
-                  }),
-            ),
+                      );
+                    }),
+          ),
           contacts.isNotEmpty
               ? Expanded(
                   flex: 10,

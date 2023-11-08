@@ -13,7 +13,10 @@ import '../../../view_model/chat_view_model.dart';
 class ChatKitMessageImageItem extends StatefulWidget {
   final NIMMessage message;
 
-  const ChatKitMessageImageItem({Key? key, required this.message})
+  final bool isPin;
+
+  const ChatKitMessageImageItem(
+      {Key? key, required this.message, this.isPin = false})
       : super(key: key);
 
   @override
@@ -40,13 +43,19 @@ class ChatKitMessageImageState extends State<ChatKitMessageImageItem> {
             bottomLeft: const Radius.circular(12),
             bottomRight: const Radius.circular(12)),
         onTap: () {
-          var messagesList = context
-              .read<ChatViewModel>()
-              .messageList
-              .where((element) =>
-                  element.nimMessage.messageAttachment is NIMImageAttachment)
-              .map((e) => e.nimMessage)
-              .toList();
+          List<NIMMessage> messagesList;
+          if (!widget.isPin) {
+            messagesList = context
+                .read<ChatViewModel>()
+                .messageList
+                .where((element) =>
+                    element.nimMessage.messageAttachment is NIMImageAttachment)
+                .map((e) => e.nimMessage)
+                .toList();
+          } else {
+            messagesList = [widget.message];
+          }
+
           Navigator.push(
               context,
               MaterialPageRoute(

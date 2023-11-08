@@ -2,17 +2,14 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'package:netease_common_ui/widgets/neListView/size_cache_widget.dart';
 import 'package:netease_corekit_im/router/imkit_router.dart';
 import 'package:nim_chatkit_ui/l10n/S.dart';
+import 'package:nim_chatkit_ui/view/chat_kit_message_list/helper/chat_message_helper.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
-import 'package:nim_chatkit_ui/view/chat_kit_message_list/widgets/chat_forward_dialog.dart';
 import 'package:collection/collection.dart';
-import 'package:netease_corekit_im/router/imkit_router_factory.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
-import 'package:netease_common_ui/utils/color_utils.dart';
-import 'package:netease_corekit_im/model/contact_info.dart';
 import 'package:netease_corekit_im/services/message/chat_message.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -36,6 +33,8 @@ class ChatKitMessageList extends StatefulWidget {
 
   final bool Function(String? userID, {bool isSelf})? onTapAvatar;
 
+  final bool Function(String? userID, {bool isSelf})? onAvatarLongPress;
+
   final PopMenuAction? popMenuAction;
 
   final NIMTeam? teamInfo;
@@ -54,6 +53,7 @@ class ChatKitMessageList extends StatefulWidget {
       this.teamInfo,
       this.chatUIConfig,
       this.onMessageItemClick,
+      this.onAvatarLongPress,
       this.onMessageItemLongClick})
       : super(key: key);
 
@@ -154,49 +154,6 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
     return true;
   }
 
-  void _goContactSelector(ChatMessage message) {
-    var filterUser =
-        context.read<ChatViewModel>().sessionType == NIMSessionType.p2p
-            ? [context.read<ChatViewModel>().sessionId]
-            : null;
-    var sessionName = context.read<ChatViewModel>().chatTitle;
-    String forwardStr = S.of(context).messageForwardMessageTips(sessionName);
-    goToContactSelector(context, filter: filterUser, returnContact: true)
-        .then((selectedUsers) {
-      if (selectedUsers is List<ContactInfo>) {
-        showChatForwardDialog(
-                context: context,
-                contentStr: forwardStr,
-                contacts: selectedUsers)
-            .then((result) {
-          if (result == true) {
-            for (var user in selectedUsers) {
-              context.read<ChatViewModel>().forwardMessage(
-                  message.nimMessage, user.user.userId!, NIMSessionType.p2p);
-            }
-          }
-        });
-      }
-    });
-  }
-
-  void _goTeamSelector(ChatMessage message) {
-    var sessionName = context.read<ChatViewModel>().chatTitle;
-    String forwardStr = S.of(context).messageForwardMessageTips(sessionName);
-    goTeamListPage(context, selectorModel: true).then((result) {
-      if (result is NIMTeam) {
-        showChatForwardDialog(
-                context: context, contentStr: forwardStr, team: result)
-            .then((forward) {
-          if (forward == true) {
-            context.read<ChatViewModel>().forwardMessage(
-                message.nimMessage, result.id!, NIMSessionType.team);
-          }
-        });
-      }
-    });
-  }
-
   bool _onMessageForward(ChatMessage message) {
     var customActions = widget.popMenuAction;
     if (customActions?.onMessageForward != null &&
@@ -204,33 +161,17 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
       return true;
     }
     // 转发
-    var style = const TextStyle(fontSize: 16, color: CommonColors.color_333333);
-    showBottomChoose<int>(context: context, actions: [
-      CupertinoActionSheetAction(
-        onPressed: () {
-          Navigator.pop(context, 2);
-        },
-        child: Text(
-          S.of(context).messageForwardToTeam,
-          style: style,
-        ),
-      ),
-      CupertinoActionSheetAction(
-        onPressed: () {
-          Navigator.pop(context, 1);
-        },
-        child: Text(
-          S.of(context).messageForwardToP2p,
-          style: style,
-        ),
-      )
-    ]).then((value) {
-      if (value == 1) {
-        _goContactSelector(message);
-      } else if (value == 2) {
-        _goTeamSelector(message);
-      }
-    });
+    var sessionName = context.read<ChatViewModel>().chatTitle;
+    var filterUser =
+        context.read<ChatViewModel>().sessionType == NIMSessionType.p2p
+            ? [context.read<ChatViewModel>().sessionId]
+            : null;
+    ChatMessageHelper.showForwardMessageDialog(context,
+        (sessionId, sessionType) {
+      context
+          .read<ChatViewModel>()
+          .forwardMessage(message.nimMessage, sessionId, sessionType);
+    }, filterUser: filterUser, sessionName: sessionName);
     return true;
   }
 
@@ -414,42 +355,44 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
           children: [
             Align(
               alignment: Alignment.topCenter,
-              child: ListView.builder(
-                controller: widget.scrollController,
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                addAutomaticKeepAlives: false,
-                addRepaintBoundaries: false,
-                shrinkWrap: true,
-                reverse: true,
-                itemCount: chatViewModel.messageList.length,
-                itemBuilder: (context, index) {
-                  ChatMessage message = chatViewModel.messageList[index];
-                  ChatMessage? lastMessage =
-                      index < chatViewModel.messageList.length - 1
-                          ? chatViewModel.messageList[index + 1]
-                          : null;
-                  return AutoScrollTag(
-                    controller: widget.scrollController,
-                    index: index,
-                    key: ValueKey(message.nimMessage.uuid),
-                    highlightColor: Colors.black.withOpacity(0.1),
-                    child: ChatKitMessageItem(
+              child: SizeCacheWidget(
+                child: ListView.builder(
+                  controller: widget.scrollController,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  addAutomaticKeepAlives: false,
+                  shrinkWrap: true,
+                  reverse: true,
+                  itemCount: chatViewModel.messageList.length,
+                  itemBuilder: (context, index) {
+                    ChatMessage message = chatViewModel.messageList[index];
+                    ChatMessage? lastMessage =
+                        index < chatViewModel.messageList.length - 1
+                            ? chatViewModel.messageList[index + 1]
+                            : null;
+                    return AutoScrollTag(
+                      controller: widget.scrollController,
+                      index: index,
                       key: ValueKey(message.nimMessage.uuid),
-                      chatMessage: message,
-                      messageBuilder: widget.messageBuilder,
-                      lastMessage: lastMessage,
-                      popMenuAction:
-                          getDefaultPopMenuActions(widget.popMenuAction),
-                      scrollToIndex: _scrollToIndex,
-                      onTapFailedMessage: _resendMessage,
-                      onTapAvatar: widget.onTapAvatar,
-                      chatUIConfig: widget.chatUIConfig,
-                      teamInfo: widget.teamInfo,
-                      onMessageItemClick: widget.onMessageItemClick,
-                      onMessageItemLongClick: widget.onMessageItemLongClick,
-                    ),
-                  );
-                },
+                      highlightColor: Colors.black.withOpacity(0.1),
+                      child: ChatKitMessageItem(
+                        key: ValueKey(message.nimMessage.uuid),
+                        chatMessage: message,
+                        messageBuilder: widget.messageBuilder,
+                        lastMessage: lastMessage,
+                        popMenuAction:
+                            getDefaultPopMenuActions(widget.popMenuAction),
+                        scrollToIndex: _scrollToIndex,
+                        onTapFailedMessage: _resendMessage,
+                        onTapAvatar: widget.onTapAvatar,
+                        onAvatarLongPress: widget.onAvatarLongPress,
+                        chatUIConfig: widget.chatUIConfig,
+                        teamInfo: widget.teamInfo,
+                        onMessageItemClick: widget.onMessageItemClick,
+                        onMessageItemLongClick: widget.onMessageItemLongClick,
+                      ),
+                    );
+                  },
+                ),
               ),
             )
           ],

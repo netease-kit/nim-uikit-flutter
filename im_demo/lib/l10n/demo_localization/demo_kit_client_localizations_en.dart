@@ -175,4 +175,7 @@ class DemoKitClientLocalizationsEn extends DemoKitClientLocalizations {
 
   @override
   String get settingSuccess => 'Set successfully';
+
+  @override
+  String get customMessage => '[Custom Message]';
 }

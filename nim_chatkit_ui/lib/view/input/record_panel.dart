@@ -146,9 +146,11 @@ class _RecordPanelState extends State<RecordPanel> {
                     package: kPackage,
                     width: 36,
                     height: 36,
-                    color: _recordOnPressed
-                        ? const Color(0x7fffffff)
-                        : Colors.white,
+                    colorFilter: ColorFilter.mode(
+                        _recordOnPressed
+                            ? const Color(0x7fffffff)
+                            : Colors.white,
+                        BlendMode.srcIn),
                   ),
                 ),
               ),

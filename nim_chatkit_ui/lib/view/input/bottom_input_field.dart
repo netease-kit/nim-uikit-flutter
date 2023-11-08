@@ -10,15 +10,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/permission_request.dart';
 import 'package:netease_common_ui/widgets/platform_utils.dart';
+import 'package:netease_corekit_im/model/ait/ait_contacts_model.dart';
 import 'package:netease_corekit_im/model/team_models.dart';
 import 'package:netease_corekit_im/service_locator.dart';
 import 'package:netease_corekit_im/services/login/login_service.dart';
 import 'package:netease_corekit_im/services/message/chat_message.dart';
+import 'package:nim_chatkit_ui/view/ait/ait_manager.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/helper/chat_message_helper.dart';
 import 'package:nim_chatkit_ui/view/input/emoji_panel.dart';
 import 'package:nim_core/nim_core.dart';
@@ -27,6 +28,7 @@ import 'package:provider/provider.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 import 'package:video_player/video_player.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
+import 'package:nim_chatkit_ui/view/chat_kit_message_list/helper/chat_message_user_helper.dart';
 
 import '../../chat_kit_client.dart';
 import '../../l10n/S.dart';
@@ -55,6 +57,8 @@ class BottomInputField extends StatefulWidget {
 
 class _BottomInputFieldState extends State<BottomInputField>
     with WidgetsBindingObserver {
+  static const String blank = ' ';
+
   late TextEditingController inputController;
   late ScrollController _scrollController;
   late FocusNode _focusNode;
@@ -63,7 +67,6 @@ class _BottomInputFieldState extends State<BottomInputField>
   final ImagePicker _picker = ImagePicker();
 
   String inputText = '';
-  Map<String, UserInfoWithTeam?> aitMemberMap = {};
 
   bool mute = false;
   bool _keyboardShow = false;
@@ -72,11 +75,19 @@ class _BottomInputFieldState extends State<BottomInputField>
   /// none, input, record, emoji, more
   String _currentType = ActionConstants.none;
 
+  AitManager? _aitManager;
+
   hideAllPanel() {
     _focusNode.unfocus();
     setState(() {
       _currentType = ActionConstants.none;
     });
+  }
+
+  addMention(String accId) {
+    if (_viewModel.sessionType == NIMSessionType.team) {
+      _addAitMember(accId, reAdd: true);
+    }
   }
 
   _onRecordActionTap(BuildContext context) {
@@ -108,7 +119,12 @@ class _BottomInputFieldState extends State<BottomInputField>
             tag: 'ChatKit',
             moduleName: 'bottom input',
             content: 'pick image path:${image.path}');
-        _viewModel.sendImageMessage(image.path, len);
+
+        String? imageType;
+        if (image.path.lastIndexOf('.') + 1 < image.path.length) {
+          imageType = image.path.substring(image.path.lastIndexOf('.') + 1);
+        }
+        _viewModel.sendImageMessage(image.path, len, imageType: imageType);
       }
     }
   }
@@ -210,7 +226,9 @@ class _BottomInputFieldState extends State<BottomInputField>
       package: kPackage,
       width: 24,
       height: 24,
-      color: selected ? CommonColors.color_337eff : CommonColors.color_656a72,
+      colorFilter: ColorFilter.mode(
+          selected ? CommonColors.color_337eff : CommonColors.color_656a72,
+          BlendMode.srcIn),
     );
   }
 
@@ -239,6 +257,17 @@ class _BottomInputFieldState extends State<BottomInputField>
           icon: _actionIcon('images/ic_more.svg', ActionConstants.more),
           onTap: _onMoreActionTap),
     ];
+  }
+
+  List<ActionItem> _getInputActions() {
+    final List<ActionItem> inputActions = [];
+    if (widget.chatUIConfig?.keepDefaultInputAction == true) {
+      inputActions.addAll(_defaultInputActions());
+    }
+    if (widget.chatUIConfig?.inputActions?.isNotEmpty == true) {
+      inputActions.addAll(widget.chatUIConfig!.inputActions!);
+    }
+    return inputActions;
   }
 
   double _getPanelHeight() {
@@ -299,6 +328,27 @@ class _BottomInputFieldState extends State<BottomInputField>
     return Container();
   }
 
+  //将指定用户添加到@列表中
+  //[account]  用户id
+  //[reAdd]  是否重新添加，如果为true，不管是否已经在列表中，都会添加
+  void _addAitMember(String account, {bool reAdd = false}) async {
+    if (_viewModel.teamInfo == null) {
+      return;
+    }
+    String name = await getUserNickInTeam(_viewModel.teamInfo!.id!, account,
+        showAlias: false);
+    //已经在ait列表中，不再添加
+    if (!reAdd && _aitManager?.haveBeAit(account) == true) {
+      return;
+    }
+    _aitManager?.addAitWithText(account, '@$name$blank', inputText.length);
+    String text = '$inputText@$name$blank';
+    inputController.text = text;
+    inputController.selection =
+        TextSelection.fromPosition(TextPosition(offset: text.length));
+    inputText = text;
+  }
+
   void _handleReplyAit() {
     ChatMessage? replyMsg = _viewModel.replyMessage;
     if (widget.sessionType == NIMSessionType.team &&
@@ -306,122 +356,77 @@ class _BottomInputFieldState extends State<BottomInputField>
         replyMsg.fromUser?.userId != null &&
         replyMsg.fromUser?.userId != getIt<LoginService>().userInfo?.userId) {
       String account = replyMsg.fromUser!.userId!;
-      NimCore.instance.teamService
-          .queryTeamMember(_viewModel.teamInfo!.id!, account)
-          .then((res) {
-        if (res.isSuccess && res.data != null) {
-          NIMTeamMember member = res.data!;
-          String? name = member.teamNick;
-          if (name == null || name.isEmpty) {
-            name = replyMsg.fromUser?.nick ?? account;
-          }
-          if (aitMemberMap.containsKey('@$name')) {
-            return;
-          }
-          aitMemberMap['@$name'] = UserInfoWithTeam(replyMsg.fromUser, member);
-          String text = '$inputText@$name ';
-          inputController.text = text;
-          inputController.selection =
-              TextSelection.fromPosition(TextPosition(offset: text.length));
-          inputText = text;
-        }
-      });
+      _addAitMember(account);
     }
   }
 
-  void _handleAitText(String value, List<UserInfoWithTeam>? member) {
+  void _handleAitText() {
+    String value = inputController.text;
     if (widget.sessionType != NIMSessionType.team) {
       inputText = value;
       return;
     }
     int len = value.length;
-    if (inputText.length > len) {
+    //光标位置
+    final int endIndex = inputController.selection.baseOffset;
+    if (inputText.length > len && _aitManager?.haveAitMember() == true) {
       // delete
-      Map<String, UserInfoWithTeam?> map = {};
-      var matches = RegExp('@([^@\\s]*)').allMatches(value);
-      matches.forEach((element) {
-        String? name = element.group(0);
-        if (name != null && aitMemberMap.containsKey(name)) {
-          map[name] = aitMemberMap[name];
+      //删除的长度
+      var deleteLen = inputText.length - len;
+      var deletedAit =
+          _aitManager?.deleteAitWithText(value, endIndex, deleteLen);
+      if (deletedAit != null) {
+        //删除前判断长度，解决奔溃问题，
+        //复现路径：发送消息@信息在最后，然后撤回，重新编辑，在删除
+        if (deletedAit.segments[0].end - deleteLen < value.length) {
+          inputController.text =
+              value.substring(0, deletedAit.segments[0].start) +
+                  value.substring(deletedAit.segments[0].end - deleteLen);
+        } else {
+          inputController.text =
+              value.substring(0, deletedAit.segments[0].start);
         }
-      });
-      aitMemberMap = map;
-    } else if (value[len - 1] == '@' && inputText.length < len) {
-      // @
-      showModalBottomSheet(
-          context: context,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(8), topRight: Radius.circular(8))),
-          builder: (context) {
-            return Column(
-              children: [
-                SizedBox(
-                  height: 48,
-                  child: Stack(
-                    alignment: Alignment.centerLeft,
-                    children: [
-                      IconButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                          icon: Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            color: CommonColors.color_999999,
-                          )),
-                      Align(
-                          alignment: Alignment.center,
-                          child: Text(S.of(context).chatMessageAitContactTitle))
-                    ],
-                  ),
-                ),
-                ListTile(
-                  leading: SvgPicture.asset(
-                    'images/ic_team_all.svg',
-                    package: kPackage,
-                    height: 42,
-                    width: 42,
-                  ),
-                  title: Text(S.of(context).chatTeamAitAll),
-                  onTap: () {
-                    Navigator.pop(context, 'all');
-                  },
-                ),
-                if (member != null)
-                  Expanded(
-                      child: ListView.builder(
-                          itemCount: member.length,
-                          itemBuilder: (context, index) {
-                            var user = member[index];
-                            return ListTile(
-                              leading: Avatar(
-                                avatar: user.getAvatar(),
-                                name: user.getName(
-                                    needAlias: false, needTeamNick: false),
-                                height: 42,
-                                width: 42,
-                              ),
-                              title: Text(user.getName()),
-                              onTap: () {
-                                Navigator.pop(context, user);
-                              },
-                            );
-                          }))
-              ],
-            );
-          }).then((select) {
-        if (select == 'all') {
-          aitMemberMap['@${S.of(context).chatTeamAitAll}'] = null;
-          inputController.text = "$value${S.of(context).chatTeamAitAll} ";
-          inputText = inputController.text;
-        } else if (select is UserInfoWithTeam) {
-          // @列表需要展示用户备注，@结果不需要
-          String name = select.getName(needAlias: false);
-          aitMemberMap['@$name'] = select;
-          inputController.text = "$value$name ";
-          inputText = inputController.text;
-        }
-      });
+        inputController.selection = TextSelection.fromPosition(
+            TextPosition(offset: deletedAit.segments[0].start));
+        inputText = inputController.text;
+        return;
+      }
+    } else if (inputText.length < len) {
+      // @ 弹出选择框
+
+      if (endIndex > 0 && value[endIndex - 1] == '@') {
+        _aitManager?.selectMember(context).then((select) {
+          if (select == AitContactsModel.accountAll) {
+            final String allStr = S.of(context).chatTeamAitAll;
+            _aitManager?.addAitWithText(AitContactsModel.accountAll,
+                '@${S.of(context).chatTeamAitAll}$blank', endIndex - 1);
+            inputController.text =
+                '${value.substring(0, endIndex)}$allStr$blank${value.substring(endIndex)}';
+            inputController.selection = TextSelection.fromPosition(
+                TextPosition(offset: endIndex + allStr.length + 1));
+            inputText = inputController.text;
+          } else if (select is UserInfoWithTeam) {
+            // @列表需要展示用户备注，@结果不需要
+            String name = select.getName(needAlias: false);
+            //add to aitManager
+            _aitManager?.addAitWithText(
+                select.teamInfo.account!, '@$name$blank', endIndex - 1);
+            inputController.text =
+                '${value.substring(0, endIndex)}$name$blank${value.substring(endIndex)}';
+            inputController.selection = TextSelection.fromPosition(
+                TextPosition(offset: endIndex + name.length + 1));
+            inputText = inputController.text;
+          }
+        });
+        inputText = value;
+        return;
+      } else if (_aitManager?.haveAitMember() == true) {
+        //光标位置
+        var endIndex = inputController.selection.baseOffset;
+        //新增长度
+        var addLen = len - inputText.length;
+        _aitManager?.addTextWithoutAit(value, endIndex, addLen);
+      }
     }
     inputText = value;
   }
@@ -431,24 +436,21 @@ class _BottomInputFieldState extends State<BottomInputField>
     if (text.isNotEmpty) {
       List<String>? pushList;
       if (widget.sessionType == NIMSessionType.team) {
-        pushList = [];
-        if (aitMemberMap.containsKey('@${S.of(context).chatTeamAitAll}')) {
-          // ait all
-          pushList.add('ACCOUNT_ALL');
-        } else {
-          aitMemberMap.values.forEach((element) {
-            if (element != null && element.userInfo != null) {
-              pushList!.add(element.userInfo!.userId!);
-            }
-          });
+        if (_aitManager?.aitContactsModel != null) {
+          pushList = _aitManager!.getPushList();
         }
       }
-      _viewModel.sendTextMessage(text,
-          replyMsg: _viewModel.replyMessage?.nimMessage, pushList: pushList);
+      _viewModel.sendTextMessage(
+        text,
+        replyMsg: _viewModel.replyMessage?.nimMessage,
+        pushList: pushList,
+        aitContactsModel: _aitManager?.aitContactsModel,
+      );
       _viewModel.replyMessage = null;
-      aitMemberMap.clear();
+      // aitMemberMap.clear();
       inputController.clear();
       inputText = '';
+      _aitManager?.cleanAit();
     }
     _scrollToBottom();
   }
@@ -470,7 +472,18 @@ class _BottomInputFieldState extends State<BottomInputField>
     if (_viewModel.reeditMessage != null &&
         _viewModel.reeditMessage!.reeditMessage?.isNotEmpty == true) {
       _focusNode.requestFocus();
-      inputController.text = _viewModel.reeditMessage!.reeditMessage!;
+      //由于发送消息的时候回吧Text中的空格trim
+      //判断如果是@信息在最后则补充空格
+      var needBlank = false;
+      if (_viewModel.reeditMessage?.aitContactsModel != null) {
+        _aitManager?.forkAit(_viewModel.reeditMessage!.aitContactsModel!);
+        if (_aitManager?.aitEnd(_viewModel.reeditMessage!.reeditMessage!) ==
+            true) {
+          needBlank = true;
+        }
+      }
+      inputController.text =
+          _viewModel.reeditMessage!.reeditMessage! + (needBlank ? blank : '');
       inputController.selection = TextSelection.fromPosition(TextPosition(
           offset: _viewModel.reeditMessage!.reeditMessage!.length));
       inputText = inputController.text;
@@ -486,15 +499,30 @@ class _BottomInputFieldState extends State<BottomInputField>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     inputController = TextEditingController();
+    _viewModel = context.read<ChatViewModel>();
     inputController.addListener(() {
       if (_viewModel.sessionType == NIMSessionType.p2p) {
         _viewModel.sendInputNotification(inputController.text.isNotEmpty);
+      } else if (inputText == inputController.text &&
+          _aitManager?.haveAitMember() == true) {
+        //处理移动光标的问题
+        var index = inputController.selection.baseOffset;
+        var indexMoved = _aitManager?.resetAitCursor(index);
+        if (indexMoved != null && indexMoved != index) {
+          if (indexMoved > inputController.text.length) {
+            indexMoved = inputController.text.length;
+          }
+          inputController.selection =
+              TextSelection.fromPosition(TextPosition(offset: indexMoved));
+        }
       }
     });
     _scrollController = ScrollController();
     _focusNode = FocusNode();
-    _viewModel = context.read<ChatViewModel>();
     _viewModel.addListener(onViewModelChange);
+    if (widget.sessionType == NIMSessionType.team) {
+      _aitManager = AitManager(_viewModel.sessionId);
+    }
   }
 
   @override
@@ -512,6 +540,7 @@ class _BottomInputFieldState extends State<BottomInputField>
     WidgetsBinding.instance.removeObserver(this);
     _focusNode.dispose();
     _viewModel.removeListener(onViewModelChange);
+    _aitManager?.dispose();
     super.dispose();
   }
 
@@ -623,8 +652,7 @@ class _BottomInputFieldState extends State<BottomInputField>
                             color: CommonColors.color_333333, fontSize: 16),
                         textInputAction: TextInputAction.send,
                         onChanged: (value) {
-                          _handleAitText(value,
-                              context.read<ChatViewModel>().userInfoTeam);
+                          _handleAitText();
                         },
                         onEditingComplete: _sendTextMessage,
                         enabled: !mute,
@@ -641,7 +669,7 @@ class _BottomInputFieldState extends State<BottomInputField>
                     ),
                   )
                 : Row(
-                    children: _defaultInputActions()
+                    children: _getInputActions()
                         .map((action) => Expanded(
                                 child: InputTextAction(
                               action: action,
