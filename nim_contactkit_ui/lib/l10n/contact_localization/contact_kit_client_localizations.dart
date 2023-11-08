@@ -284,7 +284,7 @@ abstract class ContactKitClientLocalizations {
   /// No description provided for @contactApplyFrom.
   ///
   /// In en, this message translates to:
-  /// **'Friend apply from {user}'**
+  /// **'Friend apply {user}'**
   String contactApplyFrom(String user);
 
   /// No description provided for @contactSomeoneInviteYourJoinTeam.

@@ -32,7 +32,7 @@
   "teamQuitGroupTeamQuery": "Do you want to leave the Team Group chat?",
   "teamDismissAdvancedTeamQuery": "Disband the Team chat?",
   "teamSave": "Save",
-  "teamSearchFriend": "Search friend",
+  "teamSearchMember": "Search Member",
   "teamNoPermission": "No Permission",
   "teamNameMustNotEmpty": "Team name must not empty"
 }

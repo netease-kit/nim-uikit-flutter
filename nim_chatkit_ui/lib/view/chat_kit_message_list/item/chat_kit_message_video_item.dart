@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:netease_common_ui/widgets/neListView/frame_separate_widget.dart';
 import 'package:nim_chatkit/extension.dart';
 import 'package:nim_chatkit/repo/chat_service_observer_repo.dart';
 import 'package:nim_chatkit_ui/media/audio_player.dart';
@@ -43,6 +44,20 @@ class _ChatKitMessageVideoState extends State<ChatKitMessageVideoItem> {
       return sec.formatTimeMMSS();
     }
     return '';
+  }
+
+  Size _getVideoSize() {
+    if (attachment.width != null && attachment.height != null) {
+      var ratio = attachment.width! / attachment.height!;
+      double rat;
+      if (ratio > 1) {
+        rat = attachment.width! / 190;
+      } else {
+        rat = attachment.height! / 190;
+      }
+      return Size(attachment.width! / rat, attachment.height! / rat);
+    }
+    return Size(110, 190);
   }
 
   Widget _buildLoading() {
@@ -164,42 +179,52 @@ class _ChatKitMessageVideoState extends State<ChatKitMessageVideoItem> {
       NimCore.instance.messageService
           .downloadAttachment(message: widget.message, thumb: true);
     }
-    return GestureDetector(
-      onTap: _videoOnTap,
-      child: Stack(
-        children: [
-          ChatThumbView(
-              message: widget.message,
-              radius: const BorderRadius.all(Radius.circular(12))),
-          Positioned.fill(
-            child: Visibility(
-              visible: path.isNotEmpty,
-              child: Center(
-                child: _buildLoading(),
-              ),
-            ),
-          ),
-          Visibility(
-            visible: path.isNotEmpty && attachment.duration != null,
-            child: Positioned(
-                right: 6,
-                bottom: 6,
-                child: Container(
-                  decoration: const BoxDecoration(
-                      borderRadius: BorderRadius.all(Radius.circular(4)),
-                      color: Color(0x99000000)),
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 1, horizontal: 2),
-                    child: Text(
-                      _videoDuration(),
-                      style: const TextStyle(color: Colors.white, fontSize: 10),
-                    ),
-                  ),
-                )),
-          )
-        ],
+    return FrameSeparateWidget.builder(
+      id: widget.message.uuid,
+      placeHolder: Container(
+        width: _getVideoSize().width,
+        height: _getVideoSize().height,
       ),
+      builder: (context) {
+        return GestureDetector(
+          onTap: _videoOnTap,
+          child: Stack(
+            children: [
+              ChatThumbView(
+                  message: widget.message,
+                  radius: const BorderRadius.all(Radius.circular(12))),
+              Positioned.fill(
+                child: Visibility(
+                  visible: path.isNotEmpty,
+                  child: Center(
+                    child: _buildLoading(),
+                  ),
+                ),
+              ),
+              Visibility(
+                visible: path.isNotEmpty && attachment.duration != null,
+                child: Positioned(
+                    right: 6,
+                    bottom: 6,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                          borderRadius: BorderRadius.all(Radius.circular(4)),
+                          color: Color(0x99000000)),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 1, horizontal: 2),
+                        child: Text(
+                          _videoDuration(),
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 10),
+                        ),
+                      ),
+                    )),
+              )
+            ],
+          ),
+        );
+      },
     );
   }
 }

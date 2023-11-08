@@ -10,11 +10,13 @@ import 'package:netease_corekit_im/router/imkit_router.dart';
 import 'package:netease_corekit_im/router/imkit_router_constants.dart';
 import 'package:netease_corekit_im/services/message/chat_message.dart';
 import 'package:nim_chatkit/chatkit_client_repo.dart';
+import 'package:nim_chatkit/chatkit_location_provider.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
+import 'package:nim_chatkit_ui/view/page/chat_pin_page.dart';
 import 'package:nim_core/nim_core.dart';
 
-import 'chat_page.dart';
-import 'chat_search_page.dart';
+import 'view/page/chat_page.dart';
+import 'view/page/chat_search_page.dart';
 import 'l10n/S.dart';
 import 'view/chat_kit_message_list/item/chat_kit_message_item.dart';
 import 'view/input/actions.dart';
@@ -39,6 +41,9 @@ class ChatUIConfig {
 
   ///文本消息字体颜色
   Color? messageTextColor;
+
+  ///文本消息链接颜色，包括@用户显示的颜色
+  Color? messageLinkColor;
 
   ///文本消息字体大小
   double? messageTextSize;
@@ -73,6 +78,12 @@ class ChatUIConfig {
   ///更多面板自定义按钮
   List<ActionItem>? moreActions;
 
+  ///自定义输入框功能按钮
+  List<ActionItem>? inputActions;
+
+  ///保留默认的输入框功能按钮
+  bool keepDefaultInputAction = true;
+
   ///自定义消息构建
   ChatKitMessageBuilder? messageBuilder;
 
@@ -91,29 +102,42 @@ class ChatUIConfig {
   ///文件消息最大size 单位M，不设置默认200
   int? maxFileSize;
 
-  ChatUIConfig(
-      {this.showTeamMessageStatus,
-      this.receiveMessageBg,
-      this.selfMessageBg,
-      this.showP2pMessageStatus,
-      this.signalBgColor,
-      this.timeTextColor,
-      this.timeTextSize,
-      this.messageTextSize,
-      this.messageTextColor,
-      this.userNickTextSize,
-      this.userNickColor,
-      this.avatarCornerRadius,
-      this.enableMessageLongPress = true,
-      this.popMenuConfig,
-      this.keepDefaultMoreAction = true,
-      this.moreActions,
-      this.messageBuilder,
-      this.messageClickListener,
-      this.getPushPayload,
-      this.imagePlaceHolder,
-      this.maxVideoSize,
-      this.maxFileSize});
+  ///定位消息提供者
+  ChatKitLocationProvider? locationProvider;
+
+  ///被@的消息点击回调
+  ///[account] 被@的用户id
+  ///[text] @的文本
+  Function(String account, String text)? onTapAitLink;
+
+  ChatUIConfig({
+    this.showTeamMessageStatus,
+    this.receiveMessageBg,
+    this.selfMessageBg,
+    this.showP2pMessageStatus,
+    this.signalBgColor,
+    this.timeTextColor,
+    this.timeTextSize,
+    this.messageTextSize,
+    this.messageTextColor,
+    this.userNickTextSize,
+    this.userNickColor,
+    this.avatarCornerRadius,
+    this.enableMessageLongPress = true,
+    this.popMenuConfig,
+    this.keepDefaultMoreAction = true,
+    this.moreActions,
+    this.messageBuilder,
+    this.messageClickListener,
+    this.getPushPayload,
+    this.imagePlaceHolder,
+    this.maxVideoSize,
+    this.locationProvider,
+    this.onTapAitLink,
+    this.maxFileSize,
+    this.keepDefaultInputAction = true,
+    this.inputActions,
+  });
 }
 
 ///消息点击回调
@@ -177,12 +201,6 @@ class ChatKitClient {
   ///消息发送之前的回调，可使用其添加扩展
   NIMMessageAction? messageAction;
 
-  ///高德地图Android 端的可以
-  String? aMapAndroidKey;
-
-  ///高德地图iOS端的可以
-  String? aMapIOSKey;
-
   ChatKitClient._();
 
   static final ChatKitClient instance = ChatKitClient._();
@@ -218,6 +236,17 @@ class ChatKitClient {
         RouterConstants.PATH_CHAT_SEARCH_PAGE,
         (context) => ChatSearchPage(
             IMKitRouter.getArgumentFormMap<String>(context, 'teamId')!));
+
+    IMKitRouter.instance.registerRouter(
+        RouterConstants.PATH_CHAT_PIN_PAGE,
+        (context) => ChatPinPage(
+              sessionId:
+                  IMKitRouter.getArgumentFormMap<String>(context, 'sessionId')!,
+              sessionType: IMKitRouter.getArgumentFormMap<NIMSessionType>(
+                  context, 'sessionType')!,
+              chatTitle:
+                  IMKitRouter.getArgumentFormMap<String>(context, 'chatTitle')!,
+            ));
 
     XKitReporter().register(moduleName: 'ChatUIKit', moduleVersion: '1.1.0');
   }

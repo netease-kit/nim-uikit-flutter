@@ -54,8 +54,9 @@ class ConversationPopMenuButton extends StatelessWidget {
                   Map<String, String> map = Map();
                   map[RouterConstants.keyTeamCreatedTip] =
                       S.of(context).createAdvancedTeamSuccess;
-                  getIt<MessageProvider>()
-                      .sendTeamTipWithoutUnread(teamResult.team!.id!, map);
+                  getIt<MessageProvider>().sendTeamTipWithoutUnread(
+                      teamResult.team!.id!, map,
+                      time: teamResult.team!.createTime as int?);
                 }
                 Future.delayed(Duration(milliseconds: 200), () {
                   goToTeamChat(context, teamResult.team!.id!);

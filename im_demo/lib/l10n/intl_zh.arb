@@ -67,5 +67,6 @@
   },
   "notUsable": "功能暂未开放",
   "settingFail": "设置失败",
-  "settingSuccess": "设置成功"
+  "settingSuccess": "设置成功",
+  "customMessage": "[自定义消息]"
 }

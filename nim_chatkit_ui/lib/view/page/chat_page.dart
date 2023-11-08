@@ -4,12 +4,14 @@
 
 import 'dart:async';
 
-import 'package:amap_flutter_location/amap_flutter_location.dart';
 import 'package:netease_common_ui/base/base_state.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
+import 'package:netease_corekit_im/router/imkit_router.dart';
 import 'package:netease_corekit_im/service_locator.dart';
 import 'package:netease_corekit_im/services/login/login_service.dart';
-import 'package:nim_chatkit_ui/chat_setting_page.dart';
+import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
+import 'package:nim_chatkit/repo/chat_message_repo.dart';
+import 'package:nim_chatkit_ui/view/page/chat_setting_page.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/chat_kit_message_list.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_item.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
@@ -25,10 +27,10 @@ import 'package:nim_core/nim_core.dart';
 import 'package:provider/provider.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
-import 'chat_kit_client.dart';
-import 'l10n/S.dart';
-import 'media/audio_player.dart';
-import 'view/input/bottom_input_field.dart';
+import '../../chat_kit_client.dart';
+import '../../l10n/S.dart';
+import '../../media/audio_player.dart';
+import '../input/bottom_input_field.dart';
 
 class ChatPage extends StatefulWidget {
   final String sessionId;
@@ -66,7 +68,7 @@ class ChatPage extends StatefulWidget {
   State<StatefulWidget> createState() => ChatPageState();
 }
 
-class ChatPageState extends BaseState<ChatPage> {
+class ChatPageState extends BaseState<ChatPage> with RouteAware {
   late AutoScrollController autoController;
   final GlobalKey<dynamic> _inputField = GlobalKey();
 
@@ -92,7 +94,7 @@ class ChatPageState extends BaseState<ChatPage> {
     });
   }
 
-  void defaultAvatarTap(String? userId, {bool isSelf = false}) {
+  void _defaultAvatarTap(String? userId, {bool isSelf = false}) {
     if (isSelf) {
       gotoMineInfoPage(context);
     } else {
@@ -100,10 +102,29 @@ class ChatPageState extends BaseState<ChatPage> {
     }
   }
 
+  bool _defaultAvatarLongPress(String? userID, {bool isSelf = false}) {
+    if (!isSelf) {
+      _inputField.currentState.addMention(userID!);
+      return true;
+    }
+    return false;
+  }
+
+  ///设置正在聊天的账号
+  void _setChattingAccount() {
+    ChatMessageRepo.setChattingAccount(widget.sessionId, widget.sessionType);
+  }
+
+  ///清除正在聊天的账号
+  void _clearChattingAccount() {
+    ChatMessageRepo.clearChattingAccountWithId(
+        widget.sessionId, widget.sessionType);
+  }
+
   @override
   void initState() {
     super.initState();
-    chatUIConfig = chatUIConfig ?? ChatKitClient.instance.chatUIConfig;
+    chatUIConfig = widget.chatUIConfig ?? ChatKitClient.instance.chatUIConfig;
     autoController = AutoScrollController(
       viewportBoundaryGetter: () =>
           Rect.fromLTRB(0, 0, 0, MediaQuery.of(context).padding.bottom),
@@ -111,15 +132,6 @@ class ChatPageState extends BaseState<ChatPage> {
     );
     //初始化语音播放器
     ChatAudioPlayer.instance.initAudioPlayer();
-    //高德定位初始化
-    if (ChatKitClient.instance.aMapAndroidKey?.isNotEmpty == true &&
-        ChatKitClient.instance.aMapIOSKey?.isNotEmpty == true) {
-      //由于个人信息保护法的实施，请务必确保调用SDK任何接口前先调用更新隐私合规updatePrivacyShow、updatePrivacyAgree两个接口
-      AMapFlutterLocation.updatePrivacyAgree(true);
-      AMapFlutterLocation.updatePrivacyShow(true, true);
-      AMapFlutterLocation.setApiKey(ChatKitClient.instance.aMapAndroidKey!,
-          ChatKitClient.instance.aMapIOSKey!);
-    }
     ChatKitClient.instance.registerRevokedMessage();
     if (widget.sessionType == NIMSessionType.team) {
       _teamDismissSub =
@@ -132,6 +144,11 @@ class ChatPageState extends BaseState<ChatPage> {
         }
       });
     }
+    _setChattingAccount();
+    Future.delayed(Duration.zero, () {
+      IMKitRouter.instance.routeObserver
+          .subscribe(this, ModalRoute.of(context)!);
+    });
   }
 
   bool _isTeamDisMessageNotify(NIMMessage msg) {
@@ -173,11 +190,30 @@ class ChatPageState extends BaseState<ChatPage> {
     _typingTimer?.cancel();
     ChatAudioPlayer.instance.release();
     _teamDismissSub?.cancel();
+    _clearChattingAccount();
+    IMKitRouter.instance.routeObserver.unsubscribe(this);
     super.dispose();
   }
 
   @override
+  void didPopNext() {
+    if (NIMChatCache.instance.currentChatSession?.sessionId !=
+            widget.sessionId ||
+        NIMChatCache.instance.currentChatSession?.sessionType !=
+            widget.sessionType) {
+      _setChattingAccount();
+    }
+    super.didPopNext();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (NIMChatCache.instance.currentChatSession?.sessionId !=
+            widget.sessionId ||
+        NIMChatCache.instance.currentChatSession?.sessionType !=
+            widget.sessionType) {
+      _setChattingAccount();
+    }
     return ChangeNotifierProvider(
         create: (context) =>
             ChatViewModel(widget.sessionId, widget.sessionType),
@@ -224,7 +260,13 @@ class ChatPageState extends BaseState<ChatPage> {
                         } else if (widget.sessionType == NIMSessionType.team) {
                           Navigator.pushNamed(
                               context, RouterConstants.PATH_TEAM_SETTING_PAGE,
-                              arguments: {'teamId': widget.sessionId});
+                              arguments: {
+                                'teamId': widget.sessionId
+                              }).then((value) {
+                            if (value == true) {
+                              Navigator.pop(context);
+                            }
+                          });
                         }
                       },
                       icon: SvgPicture.asset(
@@ -268,9 +310,10 @@ class ChatPageState extends BaseState<ChatPage> {
                                       .onTapAvatar!(userId, isSelf: isSelf)) {
                                 return true;
                               }
-                              defaultAvatarTap(userId, isSelf: isSelf);
+                              _defaultAvatarTap(userId, isSelf: isSelf);
                               return true;
                             },
+                            onAvatarLongPress: _defaultAvatarLongPress,
                             chatUIConfig: chatUIConfig,
                             teamInfo: context.watch<ChatViewModel>().teamInfo,
                             onMessageItemClick: widget.onMessageItemClick ??

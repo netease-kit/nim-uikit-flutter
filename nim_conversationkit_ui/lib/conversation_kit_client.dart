@@ -4,11 +4,13 @@
 
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_corekit/report/xkit_report.dart';
+import 'package:netease_corekit_im/im_kit_client.dart';
 import 'package:netease_corekit_im/router/imkit_router.dart';
 import 'package:netease_corekit_im/router/imkit_router_constants.dart';
 import 'package:nim_conversationkit/conversationkit_client_repo.dart';
 import 'package:nim_conversationkit/model/conversation_info.dart';
 import 'package:flutter/material.dart';
+import 'package:nim_conversationkit_ui/service/ait/ait_server.dart';
 
 import 'l10n/S.dart';
 import 'page/add_friend_page.dart';
@@ -24,6 +26,9 @@ typedef ConversationAvatarLongClick = bool Function(
     ConversationInfo data, int position);
 typedef ConversationItemBuilder = Widget Function(
     ConversationInfo data, int position);
+
+typedef ConversationLastMessageContentBuilder = String? Function(
+    BuildContext context, ConversationInfo data);
 
 const String kPackage = 'nim_conversationkit_ui';
 
@@ -87,6 +92,9 @@ class ConversationItemConfig {
   /// 会话时间的字体颜色
   final Color itemDateColor;
 
+  /// 会话@标记字体颜色
+  final Color itemAitTextColor;
+
   /// 会话时间的字体大小
   final double itemDateSize;
 
@@ -105,12 +113,19 @@ class ConversationItemConfig {
   /// 自定义会话item组件，会替换掉默认的item
   final ConversationItemBuilder? customItemBuilder;
 
+  /// 自定义会话最后一条消息内容
+  final ConversationLastMessageContentBuilder? lastMessageContentBuilder;
+
+  ///是否在删除会话的时候同步删除消息
+  final bool clearMessageWhenDeleteSession;
+
   const ConversationItemConfig(
       {this.itemTitleColor = CommonColors.color_333333,
       this.itemTitleSize = 16,
       this.itemContentColor = CommonColors.color_999999,
       this.itemContentSize = 13,
       this.itemDateColor = CommonColors.color_cccccc,
+      this.itemAitTextColor = Colors.red,
       this.itemDateSize = 12,
       this.avatarCornerRadius = 21,
       this.itemClick,
@@ -118,7 +133,9 @@ class ConversationItemConfig {
       this.avatarClick,
       this.avatarLongClick,
       this.conversationComparator,
-      this.customItemBuilder});
+      this.customItemBuilder,
+      this.lastMessageContentBuilder,
+      this.clearMessageWhenDeleteSession = false});
 }
 
 class ConversationUIConfig {
@@ -141,6 +158,7 @@ class ConversationKitClient {
     return S.delegate;
   }
 
+  /// 初始化
   static init() {
     ConversationKitClientRepo.init();
     IMKitRouter.instance.registerRouter(
@@ -159,5 +177,10 @@ class ConversationKitClient {
 
     XKitReporter()
         .register(moduleName: 'ConversationUIKit', moduleVersion: '1.1.0');
+
+    if (IMKitClient.enableAit) {
+      //初始化@消息服务
+      AitServer.instance.initListener();
+    }
   }
 }

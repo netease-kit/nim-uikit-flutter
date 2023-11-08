@@ -175,4 +175,7 @@ class DemoKitClientLocalizationsZh extends DemoKitClientLocalizations {
 
   @override
   String get settingSuccess => '设置成功';
+
+  @override
+  String get customMessage => '[自定义消息]';
 }

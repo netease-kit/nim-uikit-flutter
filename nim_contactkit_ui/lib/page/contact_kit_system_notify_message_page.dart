@@ -114,6 +114,9 @@ class _SystemNotifyPageState
       );
     }
 
+    var nameTextStyle = TextStyle(
+        fontSize: widget.listConfig?.nameTextSize ?? 14,
+        color: widget.listConfig?.nameTextColor ?? CommonColors.color_333333);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
       decoration: unread ? BoxDecoration(color: '#ededef'.toColor()) : null,
@@ -159,17 +162,24 @@ class _SystemNotifyPageState
                           child: Container(
                         alignment: Alignment.centerLeft,
                         padding: const EdgeInsets.only(left: 12),
-                        child: Text(
-                          getHeadMessageText(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
                               user?.nick?.isNotEmpty == true
                                   ? user!.nick!
                                   : message.fromAccount!,
-                              team?.name),
-                          style: TextStyle(
-                              fontSize: widget.listConfig?.nameTextSize ?? 14,
-                              color: widget.listConfig?.nameTextColor ??
-                                  CommonColors.color_333333),
-                          overflow: TextOverflow.ellipsis,
+                              style: nameTextStyle,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                            Text(
+                              getHeadMessageText('', team?.name),
+                              style: nameTextStyle,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
+                            )
+                          ],
                         ),
                       )),
                     ],

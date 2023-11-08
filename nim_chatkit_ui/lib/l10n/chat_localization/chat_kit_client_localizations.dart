@@ -766,6 +766,18 @@ abstract class ChatKitClientLocalizations {
   /// In en, this message translates to:
   /// **'This group is disbanded'**
   String get chatTeamBeRemovedContent;
+
+  /// No description provided for @chatMessageSendFailedByBlackList.
+  ///
+  /// In en, this message translates to:
+  /// **'Send failed, you are in the blacklist'**
+  String get chatMessageSendFailedByBlackList;
+
+  /// No description provided for @chatHaveNoPinMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No pinned message'**
+  String get chatHaveNoPinMessage;
 }
 
 class _ChatKitClientLocalizationsDelegate

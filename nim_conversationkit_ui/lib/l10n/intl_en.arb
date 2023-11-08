@@ -23,5 +23,12 @@
   "createGroupTeam": "create group team",
   "createAdvancedTeam": "create advanced team",
   "chatMessageNonsupportType": "[Nonsupport message type]",
-  "conversationEmpty": "no chat"
+  "conversationEmpty": "no chat",
+  "somebodyAitMe": "[somebody @ me]",
+  "audioMessageType": "[Audio]",
+  "imageMessageType": "[Image]",
+  "videoMessageType": "[Video]",
+  "locationMessageType": "[Location]",
+  "fileMessageType": "[File]",
+  "notificationMessageType": "[Notification]"
 }

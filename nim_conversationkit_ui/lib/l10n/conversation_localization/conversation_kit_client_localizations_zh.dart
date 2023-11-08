@@ -61,4 +61,25 @@ class ConversationKitClientLocalizationsZh
 
   @override
   String get conversationEmpty => '暂无会话';
+
+  @override
+  String get somebodyAitMe => '[有人@我]';
+
+  @override
+  String get audioMessageType => '[语音]';
+
+  @override
+  String get imageMessageType => '[图片]';
+
+  @override
+  String get videoMessageType => '[视频]';
+
+  @override
+  String get locationMessageType => '[位置]';
+
+  @override
+  String get fileMessageType => '[文件]';
+
+  @override
+  String get notificationMessageType => '[通知消息]';
 }

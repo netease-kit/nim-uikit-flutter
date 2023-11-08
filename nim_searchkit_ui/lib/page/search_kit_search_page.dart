@@ -28,6 +28,18 @@ class SearchKitGlobalSearchPage extends StatefulWidget {
 }
 
 class _SearchKitGlobalState extends State<SearchKitGlobalSearchPage> {
+  @override
+  initState() {
+    super.initState();
+    SearchRepo.instance.initListener();
+  }
+
+  @override
+  dispose() {
+    super.dispose();
+    SearchRepo.instance.releaseListener();
+  }
+
   Future<List<SearchInfo>> _search(String text) async {
     return [
       ...(await SearchRepo.instance.searchFriend(text)),

@@ -365,5 +365,7 @@
   "locationDeniedTips": "Please give your location permission",
   "chatSpeakTooShort": "Talk too short",
   "chatTeamBeRemovedTitle": "Tip",
-  "chatTeamBeRemovedContent": "This group is disbanded"
+  "chatTeamBeRemovedContent": "This group is disbanded",
+  "chatMessageSendFailedByBlackList": "Send failed, you are in the blacklist",
+  "chatHaveNoPinMessage": "No pinned message"
 }

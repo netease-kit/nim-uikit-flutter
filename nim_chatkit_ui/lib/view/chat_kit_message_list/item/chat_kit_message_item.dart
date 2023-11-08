@@ -2,15 +2,21 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart' as Intl;
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/progress_ring.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_common_ui/utils/string_utils.dart';
+import 'package:netease_corekit_im/model/team_models.dart';
 import 'package:netease_corekit_im/service_locator.dart';
+import 'package:netease_corekit_im/services/contact/contact_provider.dart';
 import 'package:netease_corekit_im/services/login/login_service.dart';
 import 'package:netease_corekit_im/services/message/chat_message.dart';
+import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
 import 'package:netease_corekit_im/services/team/team_provider.dart';
 import 'package:nim_chatkit/message/message_reply_info.dart';
 import 'package:nim_chatkit/message/message_revoke_info.dart';
@@ -21,7 +27,6 @@ import 'package:nim_chatkit_ui/view/chat_kit_message_list/helper/chat_message_us
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_audio_item.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_file_item.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_image_item.dart';
-import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_location_item.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_nonsupport_item.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_notify_item.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_tips_item.dart';
@@ -67,6 +72,8 @@ class ChatKitMessageItem extends StatefulWidget {
 
   final bool Function(String? userID, {bool isSelf})? onTapAvatar;
 
+  final bool Function(String? userID, {bool isSelf})? onAvatarLongPress;
+
   final void Function(ChatMessage message)? onTapFailedMessage;
 
   final Function(String messageId) scrollToIndex;
@@ -90,6 +97,7 @@ class ChatKitMessageItem extends StatefulWidget {
       this.teamInfo,
       this.chatUIConfig,
       this.onMessageItemClick,
+      this.onAvatarLongPress,
       this.onMessageItemLongClick})
       : super(key: key);
 
@@ -102,12 +110,16 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
 
   static const maxReceiptNum = 100;
 
+  final subscriptions = <StreamSubscription>[];
+
   //重新编辑展示时间
   static const reeditTime = 2 * 60 * 1000;
 
   int _teamAck = 0;
 
   int _teamUnAck = 0;
+
+  int _teamAllAck = 0;
 
   late UserAvatarInfo _userAvatarInfo = widget
       .chatMessage.nimMessage.fromAccount!
@@ -177,11 +189,16 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
       if (message.ackCount > 0) {
         _teamAck = message.ackCount;
       }
-      if (message.unAckCount > 0) {
+      if (_teamAllAck == 0 ||
+          message.ackCount + message.unAckCount == _teamAllAck) {
         _teamUnAck = message.unAckCount;
       }
-      _log('_getAllAck _teamUnAck:$_teamUnAck, _teamAck:$_teamAck');
-      return _teamAck + _teamUnAck;
+      _log(
+          '_getAllAck _teamUnAck:$_teamUnAck, _teamAck:$_teamAck _teamAllAck:$_teamAllAck');
+      if (_teamAllAck == 0) {
+        _teamAllAck = _teamAck + _teamUnAck;
+      }
+      return _teamAllAck;
     }
   }
 
@@ -295,8 +312,7 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
           return messageItemBuilder!.textMessageBuilder!(message.nimMessage);
         }
         return ChatKitMessageTextItem(
-            text: message.nimMessage.content!,
-            chatUIConfig: widget.chatUIConfig);
+            message: message.nimMessage, chatUIConfig: widget.chatUIConfig);
       case NIMMessageType.audio:
         if (messageItemBuilder?.audioMessageBuilder != null) {
           return messageItemBuilder!.audioMessageBuilder!(message.nimMessage);
@@ -337,7 +353,11 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
           return messageItemBuilder!.locationMessageBuilder!
               .call(message.nimMessage);
         }
-        return ChatKitMessageLocationItem(message: message.nimMessage);
+        if (widget.chatUIConfig?.locationProvider != null) {
+          return widget.chatUIConfig!.locationProvider!
+              .buildLocationItem(widget.chatMessage.nimMessage);
+        }
+        return ChatKitMessageNonsupportItem();
       default:
         if (messageItemBuilder?.extendBuilder != null) {
           if (messageItemBuilder
@@ -531,24 +551,75 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
       ChatMessageRepo.fetchTeamMessageReceiptDetail(
               widget.chatMessage.nimMessage)
           .then((value) {
+        _teamAck = value?.ackAccountList?.length ?? 0;
+        _teamUnAck = value?.unAckAccountList?.length ?? 0;
+        _teamAllAck = _teamAck + _teamUnAck;
+        _log('fetchTeamMessageReceiptDetail ${value?.toMap()}');
         if (mounted) {
-          _log('mounted fetchTeamMessageReceiptDetail ${value?.toMap()}');
-          setState(() {
-            _teamAck = value?.ackAccountList?.length ?? 0;
-            _teamUnAck = value?.unAckAccountList?.length ?? 0;
-          });
+          setState(() {});
         }
       });
     }
+    subscriptions
+        .add(NIMChatCache.instance.teamMembersNotifier.listen((members) {
+      if (members is List<UserInfoWithTeam>) {
+        for (var member in members) {
+          if (member.teamInfo.account ==
+              widget.chatMessage.nimMessage.fromAccount) {
+            if (mounted) {
+              setState(() {});
+            }
+          }
+        }
+      }
+    }));
+    var userInfoUpdated = getIt<ContactProvider>().onContactInfoUpdated;
+    if (userInfoUpdated != null) {
+      subscriptions.add(userInfoUpdated.listen((event) {
+        if (event != null &&
+            event.user.userId == widget.chatMessage.nimMessage.fromAccount) {
+          if (mounted) {
+            setState(() {});
+          }
+        }
+      }));
+    }
   }
 
-  Widget _getPinText(String content, {TextStyle? style}) {
+  Widget _getSingleMiddleEllipsisText(String? data,
+      {TextStyle? style, String? userName}) {
+    String info = data ?? "";
+    final TextPainter textPainter = TextPainter(
+        text: TextSpan(text: info, style: style),
+        maxLines: 1,
+        textDirection: TextDirection.ltr)
+      ..layout(minWidth: 0, maxWidth: double.infinity);
+    //超出的宽度,多计算上头像占位
+    final exceedWidth =
+        (textPainter.size.width - (getMaxWidth(false) - 50)).toInt();
+    if (exceedWidth > 0 && userName?.isNotEmpty == true) {
+      //每一个字符的宽度
+      final pre = textPainter.width / info.length;
+      //多余出来的字符个数
+      final exceedLength = exceedWidth ~/ pre;
+      final nameLen = userName!.length;
+      final index = nameLen - exceedLength - 1;
+      if (index > 0) {
+        info =
+            "${info.subStringWithoutEmoji(0, index)}...${info.subStringWithoutEmoji(nameLen)}";
+      }
+    }
     return Text(
-      content,
-      textWidthBasis: TextWidthBasis.parent,
+      info,
+      maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: style,
     );
+  }
+
+  Widget _getPinText(String content, {TextStyle? style, String? userName}) {
+    return _getSingleMiddleEllipsisText(content,
+        style: style, userName: userName);
   }
 
   String _getPintContent(String? userName) {
@@ -561,19 +632,14 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
             );
   }
 
-  bool _isPinContentTooLong(String content, {TextStyle? style}) {
-    final TextPainter textPainter = TextPainter(
-        text: TextSpan(text: content, style: style),
-        maxLines: 1,
-        textDirection: TextDirection.ltr)
-      ..layout(minWidth: 0, maxWidth: double.infinity);
-    return textPainter.size.width > getMaxWidth(false);
-  }
-
   @override
   void dispose() {
     _popMenu?.clean();
     _popMenu = null;
+    for (var sub in subscriptions) {
+      sub.cancel();
+    }
+    subscriptions.clear();
     super.dispose();
   }
 
@@ -624,6 +690,14 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
                                     if (widget.onTapAvatar != null) {
                                       widget.onTapAvatar!(widget
                                           .chatMessage.nimMessage.fromAccount);
+                                    }
+                                  },
+                                  onLongPress: () {
+                                    if (widget.onAvatarLongPress != null) {
+                                      widget.onAvatarLongPress!.call(
+                                          widget.chatMessage.nimMessage
+                                              .fromAccount,
+                                          isSelf: isSelf());
                                     }
                                   },
                                   child: Avatar(
@@ -761,24 +835,11 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
                                                     SvgPicture.asset(
                                                         'images/ic_message_pin.svg',
                                                         package: kPackage),
-                                                    (isSelf() &&
-                                                            !_isPinContentTooLong(
-                                                                _getPintContent(
-                                                                    snapshot
-                                                                        .data),
-                                                                style:
-                                                                    pinTextStyle))
-                                                        ? _getPinText(
-                                                            _getPintContent(
-                                                                snapshot.data),
-                                                            style: pinTextStyle)
-                                                        : Expanded(
-                                                            child: _getPinText(
-                                                                _getPintContent(
-                                                                    snapshot
-                                                                        .data),
-                                                                style:
-                                                                    pinTextStyle))
+                                                    _getPinText(
+                                                        _getPintContent(
+                                                            snapshot.data),
+                                                        style: pinTextStyle,
+                                                        userName: snapshot.data)
                                                   ],
                                                 ));
                                           })

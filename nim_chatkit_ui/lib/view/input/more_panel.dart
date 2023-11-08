@@ -14,11 +14,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:netease_common_ui/widgets/platform_utils.dart';
-import 'package:nim_chatkit_ui/view/page/location_map_page.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
+import 'package:nim_chatkit/location.dart';
 
 import '../../chat_kit_client.dart';
 import '../../l10n/S.dart';
@@ -61,16 +61,18 @@ class _MorePanelState extends State<MorePanel> {
           title: S.of(context).chatMessageMoreShoot,
           permissions: [Permission.camera],
           onTap: _onShootActionTap),
-      ActionItem(
-          type: ActionConstants.location,
-          icon: SvgPicture.asset(
-            'images/ic_location.svg',
-            package: kPackage,
-          ),
-          title: S.of(context).chatMessageMoreLocation,
-          permissions: [Permission.locationWhenInUse],
-          onTap: _onLocationActionTap,
-          deniedTip: S.of(context).locationDeniedTips),
+      //如果没有配置locationProvider,则不显示位置按钮
+      if (ChatKitClient.instance.chatUIConfig.locationProvider != null)
+        ActionItem(
+            type: ActionConstants.location,
+            icon: SvgPicture.asset(
+              'images/ic_location.svg',
+              package: kPackage,
+            ),
+            title: S.of(context).chatMessageMoreLocation,
+            permissions: [Permission.locationWhenInUse],
+            onTap: _onLocationActionTap,
+            deniedTip: S.of(context).locationDeniedTips),
       ActionItem(
           type: ActionConstants.file,
           icon: SvgPicture.asset(
@@ -84,10 +86,10 @@ class _MorePanelState extends State<MorePanel> {
 
   //点击位置按钮,跳转到地图页面
   _onLocationActionTap(BuildContext context) {
-    Navigator.push(context, MaterialPageRoute(builder: (context) {
-      return LocationMapPage(needLocate: true);
-    })).then((location) {
-      if (location != null) {
+    ChatKitClient.instance.chatUIConfig.locationProvider
+        ?.goToLocationMapPage(context, needLocate: true)
+        .then((location) {
+      if (location != null && location is LocationInfo) {
         context.read<ChatViewModel>().sendLocationMessage(location);
       }
     });
@@ -96,7 +98,7 @@ class _MorePanelState extends State<MorePanel> {
   _onFileActionTap(BuildContext context) async {
     final permissionList;
     if (Platform.isAndroid && await PlatformUtils.isAboveAndroidT()) {
-      permissionList = [Permission.manageExternalStorage];
+      permissionList = [Permission.photos];
     } else {
       permissionList = [Permission.storage];
     }

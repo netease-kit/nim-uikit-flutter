@@ -58,7 +58,7 @@
   "contactIgnored": "Ignored",
   "contactExpired": "Expired",
   "contactReject": "Reject",
-  "contactApplyFrom": "Friend apply from {user}",
+  "contactApplyFrom": "Friend apply {user}",
   "@contactApplyFrom": {
     "placeholders": {
       "user": {

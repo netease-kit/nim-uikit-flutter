@@ -58,8 +58,6 @@ class ContactListViewState extends State<ContactListView> {
   ContactListConfig? get listConfig => widget.config?.contactListConfig;
 
   Widget _buildItem(BuildContext context, ContactInfo contact, bool select) {
-    final onSelectedMemberItemChange =
-        widget.onSelectedMemberItemChange ?? widget.config?.contactItemSelect;
     List<Widget> item = [];
     if (widget.config != null && widget.config!.contactItemBuilder != null) {
       item.add(widget.config!.contactItemBuilder!(contact));
@@ -98,20 +96,7 @@ class ContactListViewState extends State<ContactListView> {
               // 选择框
               child: CheckBoxButton(
                 isChecked: widget.selectedUser?.contains(contact) == true,
-                onChanged: (isChecked) {
-                  if (isChecked &&
-                      widget.selectedUser != null &&
-                      widget.maxSelectNum != null &&
-                      widget.selectedUser!.length >= widget.maxSelectNum!) {
-                    Fluttertoast.showToast(
-                        msg: S.of(context).contactSelectAsMost);
-                    return;
-                  }
-                  if (onSelectedMemberItemChange != null) {
-                    onSelectedMemberItemChange(isChecked, contact);
-                  }
-                  setState(() {});
-                },
+                clickable: false,
               ),
             ),
           ...item
@@ -202,6 +187,12 @@ class ContactListViewState extends State<ContactListView> {
     }
     final topListItemBuilder =
         widget.topListItemBuilder ?? widget.config?.topListItemBuilder;
+
+    final selectable = listConfig?.showSelector ?? widget.isCanSelectMemberItem;
+
+    final onSelectedMemberItemChange =
+        widget.onSelectedMemberItemChange ?? widget.config?.contactItemSelect;
+
     return AZListViewContainer(
         memberList: items,
         isShowIndexBar: listConfig?.showIndexBar ?? true,
@@ -233,11 +224,26 @@ class ContactListViewState extends State<ContactListView> {
                   )
               ],
             );
-          } else if (listConfig?.showSelector ?? widget.isCanSelectMemberItem) {
-            return _buildItem(context, showItem, true);
           } else {
             return InkWell(
               onTap: () {
+                if (selectable) {
+                  final isChecked =
+                      widget.selectedUser?.contains(showItem) != true;
+                  if (isChecked &&
+                      widget.selectedUser != null &&
+                      widget.maxSelectNum != null &&
+                      widget.selectedUser!.length >= widget.maxSelectNum!) {
+                    Fluttertoast.showToast(
+                        msg: S.of(context).contactSelectAsMost);
+                    return;
+                  }
+                  if (onSelectedMemberItemChange != null) {
+                    onSelectedMemberItemChange(isChecked, showItem);
+                  }
+                  setState(() {});
+                  return;
+                }
                 bool handle = false;
                 if (widget.config?.contactItemClick != null) {
                   handle = widget.config!.contactItemClick!(index, showItem);
@@ -249,7 +255,7 @@ class ContactListViewState extends State<ContactListView> {
                   }));
                 }
               },
-              child: _buildItem(context, showItem, false),
+              child: _buildItem(context, showItem, selectable),
             );
           }
         });

@@ -20,8 +20,8 @@ import 'package:nim_chatkit/location.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
 
-import '../../chat_kit_client.dart';
-import '../../l10n/S.dart';
+import 'chat_kit_location.dart';
+import 'l10n/S.dart';
 
 class LocationMapPage extends StatefulWidget {
   //显示中心定位位置
@@ -34,7 +34,11 @@ class LocationMapPage extends StatefulWidget {
   final bool showOpenMap;
 
   const LocationMapPage(
-      {this.locationInfo, this.needLocate = false, this.showOpenMap = false});
+      {Key? key,
+      this.locationInfo,
+      this.needLocate = false,
+      this.showOpenMap = false})
+      : super(key: key);
 
   @override
   State<StatefulWidget> createState() => LocationMapPageState();
@@ -43,7 +47,7 @@ class LocationMapPage extends StatefulWidget {
 class LocationMapPageState extends State<LocationMapPage> {
   //高德默认的位置
   CameraPosition _position =
-      CameraPosition(target: LatLng(39.909187, 116.397451), zoom: 18);
+      const CameraPosition(target: LatLng(39.909187, 116.397451), zoom: 18);
 
   AMapFlutterLocation? _location;
 
@@ -83,15 +87,16 @@ class LocationMapPageState extends State<LocationMapPage> {
 
   Future<BitmapDescriptor> _getMarkerIcon() {
     return BitmapDescriptor.fromAssetImage(
-        ImageConfiguration(size: Size(24, 40)), 'images/2x/ic_my_location.png',
-        package: kPackage);
+        const ImageConfiguration(size: Size(24, 40)),
+        'images/ic_my_location.png',
+        package: ChatKitLocation.kPackage);
   }
 
   void _initLocate() async {
-    if (ChatKitClient.instance.aMapAndroidKey != null &&
-        ChatKitClient.instance.aMapIOSKey != null) {
-      AMapFlutterLocation.setApiKey(ChatKitClient.instance.aMapAndroidKey!,
-          ChatKitClient.instance.aMapIOSKey!);
+    if (ChatKitLocation.instance.aMapAndroidKey != null &&
+        ChatKitLocation.instance.aMapIOSKey != null) {
+      AMapFlutterLocation.setApiKey(ChatKitLocation.instance.aMapAndroidKey!,
+          ChatKitLocation.instance.aMapIOSKey!);
       _location = AMapFlutterLocation();
       _locationSub = _location?.onLocationChanged().listen((event) async {
         var longitude = (event['longitude'] is double)
@@ -116,7 +121,7 @@ class LocationMapPageState extends State<LocationMapPage> {
   void _updateMarker(double latitude, double longitude) async {
     var icon = await _getMarkerIcon();
     Marker marker = Marker(position: LatLng(latitude, longitude), icon: icon);
-    _markers = Set<Marker>.of([marker]);
+    _markers = <Marker>{marker};
     if (mounted) {
       setState(() {});
     }
@@ -158,10 +163,11 @@ class LocationMapPageState extends State<LocationMapPage> {
                 }
               },
               child: Container(
-                padding: EdgeInsets.symmetric(vertical: 7, horizontal: 16),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 7, horizontal: 16),
                 decoration: BoxDecoration(
                     color: '#337EFF'.toColor(),
-                    borderRadius: BorderRadius.all(Radius.circular(4))),
+                    borderRadius: const BorderRadius.all(Radius.circular(4))),
                 child: Text(S.of(context).chatMessageSend,
                     style: TextStyle(
                       fontSize: 16,
@@ -181,7 +187,7 @@ class LocationMapPageState extends State<LocationMapPage> {
           },
           icon: SvgPicture.asset(
             'images/ic_map_back.svg',
-            package: kPackage,
+            package: ChatKitLocation.kPackage,
           ),
         ),
       );
@@ -267,9 +273,9 @@ class LocationMapPageState extends State<LocationMapPage> {
         children: [
           AMapWidget(
             apiKey: AMapApiKey(
-                androidKey: ChatKitClient.instance.aMapAndroidKey,
-                iosKey: ChatKitClient.instance.aMapIOSKey),
-            privacyStatement: AMapPrivacyStatement(
+                androidKey: ChatKitLocation.instance.aMapAndroidKey,
+                iosKey: ChatKitLocation.instance.aMapIOSKey),
+            privacyStatement: const AMapPrivacyStatement(
                 hasShow: true, hasAgree: true, hasContains: true),
             onMapCreated: onMapCreated,
             initialCameraPosition: _position,
@@ -284,15 +290,15 @@ class LocationMapPageState extends State<LocationMapPage> {
                 left: 0,
                 right: 0,
                 child: Container(
-                  padding:
-                      EdgeInsets.only(top: 10, left: 12, right: 12, bottom: 10),
-                  constraints: BoxConstraints(maxHeight: 70),
+                  padding: const EdgeInsets.only(
+                      top: 10, left: 12, right: 12, bottom: 10),
+                  constraints: const BoxConstraints(maxHeight: 70),
                   color: '#ffffff'.toColor(),
                   child: Stack(
                     children: [
                       Positioned(
                           child: Padding(
-                        padding: EdgeInsets.only(right: 50),
+                        padding: const EdgeInsets.only(right: 50),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -318,7 +324,7 @@ class LocationMapPageState extends State<LocationMapPage> {
                             onPressed: _showMapSelector,
                             icon: SvgPicture.asset(
                               'images/ic_jump_to_map.svg',
-                              package: kPackage,
+                              package: ChatKitLocation.kPackage,
                             )),
                       )
                     ],

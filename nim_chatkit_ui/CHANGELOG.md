@@ -1,5 +1,16 @@
 # NimChatKitUI ChangeLog
 
+## 1.2.0(Nov 8, 2023)
+### New Features
+* 新增@功能
+* 新增标记列表
+* 位置消息接入方式变更
+* 图片消息支持gif格式
+
+### Bug Fixes
+* 修复信息同步问题
+* 优化缓存，提高性能
+
 ## 1.1.2(Aug 8, 2023)
 ### Dependency Updates
 * 升级`nimcoe`到`1.7.0`

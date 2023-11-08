@@ -239,13 +239,26 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
   Widget _setting(BuildContext context, NIMTeam team) {
     return Column(
       children: ListTile.divideTiles(context: context, tiles: [
-        // ListTile(
-        //   title: Text(
-        //     S.of(context).teamMark,
-        //     style: style,
-        //   ),
-        //   trailing: const Icon(Icons.keyboard_arrow_right_outlined),
-        // ),
+        ListTile(
+          title: Text(
+            S.of(context).teamMark,
+            style: style,
+          ),
+          trailing: const Icon(Icons.keyboard_arrow_right_outlined),
+          onTap: () {
+            Navigator.pushNamed(context, RouterConstants.PATH_CHAT_PIN_PAGE,
+                arguments: {
+                  'sessionId': widget.teamId,
+                  'sessionType': NIMSessionType.team,
+                  'chatTitle': context
+                          .read<TeamSettingViewModel>()
+                          .teamWithMember
+                          ?.team
+                          .name ??
+                      '',
+                });
+          },
+        ),
         ListTile(
           title: Text(
             S.of(context).teamHistory,
@@ -486,7 +499,7 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
                   context
                       .read<TeamSettingViewModel>()
                       .configStick(widget.teamId, false);
-                  Navigator.popUntil(context, ModalRoute.withName('/'));
+                  Navigator.pop(context, true);
                 }
               });
             } else if (action == 2) {
@@ -495,7 +508,7 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
                   .dismissTeam(widget.teamId)
                   .then((value) {
                 if (value) {
-                  Navigator.popUntil(context, ModalRoute.withName('/'));
+                  Navigator.pop(context, true);
                 }
               });
             }

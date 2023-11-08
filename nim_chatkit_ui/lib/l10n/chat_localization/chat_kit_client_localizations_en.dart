@@ -410,4 +410,11 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
 
   @override
   String get chatTeamBeRemovedContent => 'This group is disbanded';
+
+  @override
+  String get chatMessageSendFailedByBlackList =>
+      'Send failed, you are in the blacklist';
+
+  @override
+  String get chatHaveNoPinMessage => 'No pinned message';
 }

@@ -1,5 +1,10 @@
 # NimTeamKitUI ChangeLog
 
+## 1.2.0(Nov 8, 2023)
+### Bug Fixes
+* 新增群成员列表排序
+* 新增群组排序
+
 ## 1.1.2(Aug 8, 2023)
 ### Dependency Updates
 * 升级`nimcoe`到`1.7.0`

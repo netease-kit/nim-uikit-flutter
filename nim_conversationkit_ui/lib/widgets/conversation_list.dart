@@ -36,6 +36,7 @@ class _ConversationListState extends State<ConversationList> {
         ? SlidableAutoCloseBehavior(
             child: ListView.builder(
                 itemCount: conversationList.length,
+                itemExtent: conversationItemHeight,
                 itemBuilder: (context, index) {
                   ConversationInfo conversationInfo = conversationList[index];
                   return Slidable(
@@ -95,7 +96,9 @@ class _ConversationListState extends State<ConversationList> {
                           onPressed: (context) {
                             context
                                 .read<ConversationViewModel>()
-                                .deleteConversation(conversationInfo);
+                                .deleteConversation(conversationInfo,
+                                    clearMessageHistory: widget
+                                        .config.clearMessageWhenDeleteSession);
                           },
                           backgroundColor: CommonColors.color_a8abb6,
                           foregroundColor: Colors.white,

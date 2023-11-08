@@ -109,7 +109,7 @@ class ContactKitClientLocalizationsZh extends ContactKitClientLocalizations {
 
   @override
   String contactApplyFrom(String user) {
-    return '$user添加您为好友';
+    return '$user好友申请';
   }
 
   @override

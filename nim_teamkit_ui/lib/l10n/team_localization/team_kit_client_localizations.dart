@@ -293,11 +293,11 @@ abstract class TeamKitClientLocalizations {
   /// **'Save'**
   String get teamSave;
 
-  /// No description provided for @teamSearchFriend.
+  /// No description provided for @teamSearchMember.
   ///
   /// In en, this message translates to:
-  /// **'Search friend'**
-  String get teamSearchFriend;
+  /// **'Search Member'**
+  String get teamSearchMember;
 
   /// No description provided for @teamNoPermission.
   ///

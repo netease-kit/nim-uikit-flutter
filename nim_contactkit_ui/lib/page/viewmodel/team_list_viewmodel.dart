@@ -17,6 +17,7 @@ class TeamListViewModel extends ChangeNotifier {
     ContactRepo.getTeamList().then((value) {
       if (value.isSuccess && value.data != null) {
         teamList = value.data!;
+        teamList.sort((a, b) => b.createTime.compareTo(a.createTime));
         notifyListeners();
       }
     });
@@ -36,8 +37,12 @@ class TeamListViewModel extends ChangeNotifier {
         .add(NimCore.instance.teamService.onTeamListUpdate.listen((event) {
       for (var team in event) {
         int index = teamList.indexWhere((element) => element.id == team.id);
-        if (index >= 0) {
-          teamList[index] = team;
+        if (team.isMyTeam == true) {
+          if (index >= 0) {
+            teamList[index] = team;
+          } else {
+            teamList.insert(0, team);
+          }
         }
       }
       notifyListeners();
