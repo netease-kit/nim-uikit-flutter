@@ -164,13 +164,13 @@
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
-
+        <!--   todo Vivo 推送配置-->
         <meta-data
             android:name="com.vivo.push.api_key"
-            android:value="496dab64d277a004ac9f5d8b0f53f951"/>
+            android:value="yourVivoPushApiKey"/>
         <meta-data
             android:name="com.vivo.push.app_id"
-            android:value="105579057"/>
+            android:value="yourVivoPushAppId"/>
 
         <receiver android:name="com.netease.nimlib.mixpush.vivo.VivoPushReceiver"
             android:exported="true">
