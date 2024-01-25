@@ -2,14 +2,15 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/background.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:netease_common_ui/widgets/update_text_info_page.dart';
-import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:netease_corekit_im/service_locator.dart';
+import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
 import 'package:netease_corekit_im/services/team/team_provider.dart';
 import 'package:nim_core/nim_core.dart';
 import 'package:nim_teamkit/repo/team_repo.dart';
@@ -44,6 +45,15 @@ class _TeamKitTeamInfoState extends State<TeamKitTeamInfoPage> {
     }
     return TeamRepo.updateTeamName(widget.team.id!, name).then((value) {
       _updatedName = name;
+      if (!value) {
+        if (!NIMChatCache.instance.hasPrivilegeToModify()) {
+          Fluttertoast.showToast(
+              msg: S.of(context).teamPermissionDeny, gravity: ToastGravity.TOP);
+        } else {
+          Fluttertoast.showToast(
+              msg: S.of(context).teamSettingFailed, gravity: ToastGravity.TOP);
+        }
+      }
       return value;
     });
   }
@@ -52,6 +62,13 @@ class _TeamKitTeamInfoState extends State<TeamKitTeamInfoPage> {
     return TeamRepo.updateTeamIntroduce(widget.team.id!, introduce)
         .then((result) {
       _updatedIntroduce = introduce;
+      if (!result) {
+        if (!NIMChatCache.instance.hasPrivilegeToModify()) {
+          Fluttertoast.showToast(msg: S.of(context).teamPermissionDeny);
+        } else {
+          Fluttertoast.showToast(msg: S.of(context).teamSettingFailed);
+        }
+      }
       return result;
     });
   }
@@ -75,13 +92,14 @@ class _TeamKitTeamInfoState extends State<TeamKitTeamInfoPage> {
             children: [
               InkWell(
                 onTap: () {
-                  if (!widget.hasPrivilegeToUpdateInfo) {
+                  if (!NIMChatCache.instance.hasPrivilegeToModify()) {
                     Fluttertoast.showToast(msg: S.of(context).teamNoPermission);
                     return;
                   }
 
                   Navigator.push(context, MaterialPageRoute(builder: (context) {
-                    return TeamKitAvatarEditorPage(team: widget.team);
+                    return TeamKitAvatarEditorPage(
+                        team: widget.team, avatar: avatar);
                   })).then((value) {
                     if (value?.isNotEmpty == true) {
                       setState(() {
@@ -132,10 +150,6 @@ class _TeamKitTeamInfoState extends State<TeamKitTeamInfoPage> {
               ),
               InkWell(
                 onTap: () {
-                  if (!widget.hasPrivilegeToUpdateInfo) {
-                    Fluttertoast.showToast(msg: S.of(context).teamNoPermission);
-                    return;
-                  }
                   Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -143,7 +157,8 @@ class _TeamKitTeamInfoState extends State<TeamKitTeamInfoPage> {
                                 title: S.of(context).teamNameTitle,
                                 content: _updatedName ?? widget.team.name,
                                 maxLength: 30,
-                                privilege: true,
+                                privilege: NIMChatCache.instance
+                                    .hasPrivilegeToModify(),
                                 onSave: _updateName,
                                 leading: Text(
                                   S.of(context).teamCancel,
@@ -181,12 +196,6 @@ class _TeamKitTeamInfoState extends State<TeamKitTeamInfoPage> {
               if (!getIt<TeamProvider>().isGroupTeam(widget.team))
                 InkWell(
                   onTap: () {
-                    if (!widget.hasPrivilegeToUpdateInfo) {
-                      Fluttertoast.showToast(
-                          msg: S.of(context).teamNoPermission);
-                      return;
-                    }
-
                     Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -195,7 +204,8 @@ class _TeamKitTeamInfoState extends State<TeamKitTeamInfoPage> {
                                   content: _updatedIntroduce ??
                                       widget.team.introduce,
                                   maxLength: 100,
-                                  privilege: true,
+                                  privilege: NIMChatCache.instance
+                                      .hasPrivilegeToModify(),
                                   onSave: _updateIntroduce,
                                   leading: Text(
                                     S.of(context).teamCancel,

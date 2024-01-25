@@ -2,12 +2,13 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:nim_chatkit_ui/l10n/S.dart';
-import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
-import 'package:netease_common_ui/utils/color_utils.dart';
-import 'package:netease_corekit_im/services/message/chat_message.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_corekit_im/services/message/chat_message.dart';
+import 'package:nim_chatkit/message/message_helper.dart';
+import 'package:nim_chatkit_ui/l10n/S.dart';
+import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
 import 'package:nim_core/nim_core.dart';
 import 'package:super_tooltip/super_tooltip.dart';
 
@@ -98,9 +99,15 @@ class ChatKitMessagePopMenu {
   }
 
   bool _showCopy(ChatUIConfig? config, ChatMessage message) {
-    if (config?.popMenuConfig?.enableCopy != false &&
-        message.nimMessage.messageType == NIMMessageType.text) {
-      return true;
+    if (config?.popMenuConfig?.enableCopy != false) {
+      if (message.nimMessage.messageType == NIMMessageType.text) {
+        return true;
+      }
+      var multiLineMap =
+          MessageHelper.parseMultiLineMessage(message.nimMessage);
+      if (multiLineMap != null) {
+        return true;
+      }
     }
     return false;
   }
@@ -151,13 +158,6 @@ class ChatKitMessagePopMenu {
           "id": _messageHavePined(message) ? cancelPinMessageId : pinMessageId,
           "icon": "images/ic_chat_pin.svg"
         },
-      // if (config?.popMenuConfig?.enableMultiSelect != false &&
-      //     _enableStatus(message))
-      //   {
-      //     "label": S.of(context).chatMessageActionMultiSelect,
-      //     "id": multiSelectId,
-      //     "icon": "images/ic_chat_select.svg"
-      //   },
       // if (config?.popMenuConfig?.enableCollect != false &&
       //     _enableStatus(message))
       //   {
@@ -170,6 +170,12 @@ class ChatKitMessagePopMenu {
           "label": S.of(context).chatMessageActionDelete,
           "id": deleteMessageId,
           "icon": "images/ic_chat_delete.svg"
+        },
+      if (config?.popMenuConfig?.enableMultiSelect != false)
+        {
+          "label": S.of(context).chatMessageActionMultiSelect,
+          "id": multiSelectId,
+          "icon": "images/ic_chat_select.svg"
         },
       if (shouldShowRevokeAction &&
           config?.popMenuConfig?.enableRevoke != false &&

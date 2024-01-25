@@ -3,5 +3,5 @@
 <!-- found in the LICENSE file. -->
 
 <resources>
-    <string name="app_name">云信IM</string>
+    <string name="app_name">云信IM(flutter)</string>
 </resources>

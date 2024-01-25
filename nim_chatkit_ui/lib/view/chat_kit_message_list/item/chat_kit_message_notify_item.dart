@@ -2,10 +2,11 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:nim_chatkit_ui/view/chat_kit_message_list/helper/chat_message_helper.dart';
-import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:flutter/widgets.dart';
+import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:nim_core/nim_core.dart';
+
+import '../../../helper/chat_message_helper.dart';
 
 class ChatKitMessageNotificationItem extends StatefulWidget {
   final NIMMessage message;
@@ -28,8 +29,7 @@ class ChatKitMessageNotificationState
         builder: (context, snap) {
           return Text(
             snap.data ?? '',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            maxLines: null,
             style: TextStyle(fontSize: 12, color: '#999999'.toColor()),
           );
         },

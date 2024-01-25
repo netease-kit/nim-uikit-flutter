@@ -244,6 +244,18 @@ abstract class ConversationKitClientLocalizations {
   /// In en, this message translates to:
   /// **'[Notification]'**
   String get notificationMessageType;
+
+  /// No description provided for @tipMessageType.
+  ///
+  /// In en, this message translates to:
+  /// **'[Tip]'**
+  String get tipMessageType;
+
+  /// No description provided for @chatHistoryBrief.
+  ///
+  /// In en, this message translates to:
+  /// **'[Chat history]'**
+  String get chatHistoryBrief;
 }
 
 class _ConversationKitClientLocalizationsDelegate

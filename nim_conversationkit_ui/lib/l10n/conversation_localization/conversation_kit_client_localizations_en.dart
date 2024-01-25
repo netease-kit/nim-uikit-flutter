@@ -83,4 +83,10 @@ class ConversationKitClientLocalizationsEn
 
   @override
   String get notificationMessageType => '[Notification]';
+
+  @override
+  String get tipMessageType => '[Tip]';
+
+  @override
+  String get chatHistoryBrief => '[Chat history]';
 }

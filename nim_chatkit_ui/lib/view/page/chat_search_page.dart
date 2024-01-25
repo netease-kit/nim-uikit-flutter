@@ -2,17 +2,17 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:netease_common_ui/utils/text_search.dart';
-import 'package:nim_chatkit/repo/chat_message_repo.dart';
-import 'package:netease_common_ui/extension.dart';
-import 'package:netease_corekit_im/router/imkit_router_constants.dart';
-import 'package:netease_common_ui/ui/avatar.dart';
-import 'package:netease_common_ui/utils/color_utils.dart';
-import 'package:netease_common_ui/widgets/search_page.dart';
-import 'package:netease_corekit_im/services/message/chat_message.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:nim_chatkit_ui/view/chat_kit_message_list/helper/chat_message_user_helper.dart';
+import 'package:netease_common_ui/extension.dart';
+import 'package:netease_common_ui/ui/avatar.dart';
+import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_common_ui/utils/text_search.dart';
+import 'package:netease_common_ui/widgets/search_page.dart';
+import 'package:netease_corekit_im/router/imkit_router_constants.dart';
+import 'package:netease_corekit_im/services/message/chat_message.dart';
+import 'package:nim_chatkit/repo/chat_message_repo.dart';
+import 'package:nim_chatkit_ui/helper/chat_message_user_helper.dart';
 import 'package:nim_core/nim_core.dart';
 
 import '../../chat_kit_client.dart';
@@ -27,11 +27,22 @@ class ChatSearchPage extends StatefulWidget {
   State<ChatSearchPage> createState() => _ChatSearchPageState();
 }
 
-class _ChatSearchPageState extends State<ChatSearchPage> {
-  TextEditingController inputController = TextEditingController();
+class ChatSearchResult extends StatelessWidget {
+  final List<ChatMessage>? searchResult;
+  final String keyword;
 
-  Widget _searchResultWidget(List<ChatMessage>? searchResult, String keyword) {
-    return searchResult == null || searchResult.isEmpty
+  final String teamId;
+
+  ChatSearchResult(
+      {this.searchResult,
+      required this.keyword,
+      Key? key,
+      required this.teamId})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return searchResult == null || searchResult?.isEmpty == true
         ? Column(
             children: [
               const SizedBox(
@@ -51,15 +62,15 @@ class _ChatSearchPageState extends State<ChatSearchPage> {
             ],
           )
         : ListView.builder(
-            itemCount: searchResult.length,
+            itemCount: searchResult!.length,
             itemBuilder: (context, index) {
-              ChatMessage item = searchResult[index];
+              ChatMessage item = searchResult![index];
               return InkWell(
                 onTap: () {
                   Navigator.pushNamedAndRemoveUntil(context,
                       RouterConstants.PATH_CHAT_PAGE, ModalRoute.withName('/'),
                       arguments: {
-                        'sessionId': widget.teamId,
+                        'sessionId': teamId,
                         'sessionType': NIMSessionType.team,
                         'anchor': item.nimMessage
                       });
@@ -68,6 +79,10 @@ class _ChatSearchPageState extends State<ChatSearchPage> {
               );
             });
   }
+}
+
+class _ChatSearchPageState extends State<ChatSearchPage> {
+  TextEditingController inputController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +98,11 @@ class _ChatSearchPageState extends State<ChatSearchPage> {
                   keyword, widget.teamId, NIMSessionType.team),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.done) {
-                  return _searchResultWidget(snapshot.data, keyword);
+                  return ChatSearchResult(
+                    keyword: keyword,
+                    teamId: widget.teamId,
+                    searchResult: snapshot.data,
+                  );
                 }
                 return Center(
                   child: CircularProgressIndicator(),

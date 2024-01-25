@@ -114,4 +114,78 @@ class TeamKitClientLocalizationsEn extends TeamKitClientLocalizations {
 
   @override
   String get teamNameMustNotEmpty => 'Team name must not empty';
+
+  @override
+  String get teamManage => 'Team Manage';
+
+  @override
+  String get teamAitPermission => 'Who can @all';
+
+  @override
+  String get teamManager => 'Team Manager';
+
+  @override
+  String get teamAddManagers => 'Add Managers';
+
+  @override
+  String get teamOwnerManager => 'Owner Add Manager';
+
+  @override
+  String get teamMemberRemove => 'Remove';
+
+  @override
+  String get teamRemoveConfirm => 'Sure to remove';
+
+  @override
+  String get teamRemoveConfirmContent =>
+      'This Member will lost Manager Promise after remove';
+
+  @override
+  String get teamSettingFailed => 'Setting failed';
+
+  @override
+  String get teamMsgAitAllPrivilegeIsAll => '@All privilege update to all';
+
+  @override
+  String get teamMsgAitAllPrivilegeIsOwner =>
+      '@All privilege update to owner and manager';
+
+  @override
+  String get teamManagers => 'Managers';
+
+  @override
+  String get teamSelectMembers => 'Select members';
+
+  @override
+  String teamManagerLimit(String number) {
+    return 'The number of managers cannot exceed $number';
+  }
+
+  @override
+  String get teamNoOperatePermission => 'No operate permission';
+
+  @override
+  String get teamManagerEmpty => 'No manager';
+
+  @override
+  String get teamMemberRemoveContent =>
+      'This member will leave this team after remove';
+
+  @override
+  String get teamMemberRemoveFailed => 'Remove failed';
+
+  @override
+  String get teamManagerManagers => 'Manager managers';
+
+  @override
+  String get teamMemberSelect => 'Select member';
+
+  @override
+  String get teamPermissionDeny => 'you have no permission';
+
+  @override
+  String get teamManagerRemoveFailed => 'Remove failed';
+
+  @override
+  String get teamMemberEmpty => 'No member';
 }

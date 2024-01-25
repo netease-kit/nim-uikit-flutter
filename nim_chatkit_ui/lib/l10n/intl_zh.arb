@@ -75,6 +75,7 @@
   "chatMessageBriefLocation": "[地理位置]",
   "chatMessageBriefFile": "[文件]",
   "chatMessageBriefCustom": "[自定义消息]",
+  "chatMessageBriefChatHistory": "[聊天记录]",
   "chatSetting": "聊天设置",
   "chatMessageSignal": "标记",
   "chatMessageOpenMessageNotice": "开启消息提醒",
@@ -367,5 +368,60 @@
   "chatTeamBeRemovedTitle": "提醒",
   "chatTeamBeRemovedContent": "该群聊已被解散",
   "chatMessageSendFailedByBlackList":"对方已将您拉黑，消息发送失败",
-  "chatHaveNoPinMessage": "暂无标记消息"
+  "chatHaveNoPinMessage": "暂无标记消息",
+  "chatMessageMergeForward": "合并转发",
+    "chatMessageItemsForward": "逐条转发",
+  "chatMessageMergedTitle": "{user}的消息",
+  "@chatMessageMergedTitle": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "chatMessageChatHistory": "聊天记录",
+  "chatMessagePostScript": "留言",
+  "chatMessageMergeMessageError": "系统异常，转发失败",
+  "chatMessageInputTitle": "请输入标题",
+  "chatMessageNotSupportEmptyMessage": "不支持发送空消息",
+  "chatMessageMergedForwardLimitOut": "合并转发限制{number}条消息",
+  "@chatMessageMergedForwardLimitOut": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "chatMessageForwardOneByOneLimitOut": "逐条转发限制{number}条消息",
+  "@chatMessageForwardOneByOneLimitOut": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "messageForwardMessageOneByOneTips": "[逐条转发]{user}的会话记录",
+  "@messageForwardMessageOneByOneTips": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "messageForwardMessageMergedTips": "[合并转发]{user}的会话记录",
+  "@messageForwardMessageMergedTips": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "chatMessageHaveMessageCantForward": "存在不可转发的消息体",
+  "chatMessageInfoError": "信息获取失败",
+  "chatMessageMergeDepthOut": "存在超出合并限制的消息，无法合并转发，是否去除后发送?",
+  "chatMessageExitMessageCannotForward": "存在不可转发的消息体",
+  "chatTeamPermissionInviteOnlyOwnerAndManagers": "群主和管理员",
+  "chatTeamPermissionUpdateOnlyOwnerAndManagers": "群主和管理员",
+    "chatTeamHaveBeenKick": "您已被移除群聊",
+    "chatMessageHaveCannotForwardMessages": "存在不可转发的消息体，是否去除后发送？"
 }

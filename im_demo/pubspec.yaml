@@ -15,7 +15,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 1.2.0
+version: 9.7.0
 
 environment:
   sdk: ">=2.16.1 <4.0.0"
@@ -32,16 +32,6 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-
-  netease_corekit_im:
-    ">=1.2.0 <1.3.0"
-#    path: ../../netease_corekit/netease_corekit_im
-  netease_common_ui:
-    ">=1.2.0 <1.3.0"
-#    path: ../../common/netease_common_ui
-  nim_conversationkit:
-    ">=1.2.0 <1.3.0"
-#    path: ../nim_conversationkit
   nim_conversationkit_ui:
     path: ../nim_conversationkit_ui
   nim_chatkit_ui:
@@ -55,18 +45,15 @@ dependencies:
 #  地理位置消息支持
   nim_chatkit_location:
     path: ../nim_chatkit_location
-  nim_core:
-    ^1.7.3
-#    path: ../../nim_core/nim_core
   yunxin_alog: ^2.0.0
-  fluttertoast: ^8.1.2
+  fluttertoast: ^8.2.4
     #  高德定位
   amap_flutter_location: ^3.0.0
     #  高德地图
   amap_flutter_map: ^3.0.0
   permission_handler: ^11.0.1
   # 网图加载
-  cached_network_image: ^3.2.3
+  cached_network_image: ^3.3.1
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

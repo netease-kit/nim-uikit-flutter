@@ -25,4 +25,10 @@ class SearchKitClientLocalizationsEn extends SearchKitClientLocalizations {
 
   @override
   String get searchEmptyTips => 'This user not exist';
+
+  @override
+  String get searchTeamLeave => 'Leave Team';
+
+  @override
+  String get searchTeamDismissOrLeave => 'Dismiss or leave team';
 }

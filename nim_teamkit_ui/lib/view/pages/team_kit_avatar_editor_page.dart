@@ -2,15 +2,17 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:netease_common_ui/extension.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/background.dart';
 import 'package:netease_common_ui/ui/photo.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
+import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
 import 'package:nim_core/nim_core.dart';
 import 'package:nim_teamkit/model/team_default_icon.dart';
 import 'package:nim_teamkit/repo/team_repo.dart';
@@ -21,7 +23,9 @@ import '../../team_kit_client.dart';
 class TeamKitAvatarEditorPage extends StatefulWidget {
   final NIMTeam team;
 
-  const TeamKitAvatarEditorPage({Key? key, required this.team})
+  final String? avatar;
+
+  const TeamKitAvatarEditorPage({Key? key, required this.team, this.avatar})
       : super(key: key);
 
   @override
@@ -56,14 +60,13 @@ class TeamKitAvatarEditorState extends State<TeamKitAvatarEditorPage> {
   @override
   Widget build(BuildContext context) {
     return TransparentScaffold(
-      leading: TextButton(
+      leading: IconButton(
         onPressed: () {
           Navigator.pop(context);
         },
-        child: Text(
-          S.of(context).teamCancel,
-          style: TextStyle(fontSize: 16, color: '#666666'.toColor()),
-        ),
+        icon: Text(S.of(context).teamCancel,
+            style: TextStyle(fontSize: 16, color: '#666666'.toColor()),
+            maxLines: 1),
       ),
       title: S.of(context).teamUpdateIcon,
       centerTitle: true,
@@ -76,6 +79,15 @@ class TeamKitAvatarEditorState extends State<TeamKitAvatarEditorPage> {
               if (photoAvatar != null) {
                 TeamRepo.updateTeamIcon(widget.team.id!, photoAvatar!)
                     .then((value) {
+                  if (!value) {
+                    if (!NIMChatCache.instance.hasPrivilegeToModify()) {
+                      Fluttertoast.showToast(
+                          msg: S.of(context).teamPermissionDeny);
+                    } else {
+                      Fluttertoast.showToast(
+                          msg: S.of(context).teamSettingFailed);
+                    }
+                  }
                   Navigator.pop(context, photoAvatar!);
                 });
               }
@@ -102,7 +114,8 @@ class TeamKitAvatarEditorState extends State<TeamKitAvatarEditorPage> {
                         Avatar(
                           width: 80,
                           height: 80,
-                          avatar: photoAvatar ?? widget.team.icon,
+                          avatar: photoAvatar ??
+                              (widget.avatar ?? widget.team.icon),
                           name: widget.team.name,
                         ),
                         Align(

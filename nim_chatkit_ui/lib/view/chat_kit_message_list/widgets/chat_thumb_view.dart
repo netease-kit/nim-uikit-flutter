@@ -12,12 +12,18 @@ import 'package:nim_core/nim_core.dart';
 
 class ChatThumbView extends StatefulWidget {
   const ChatThumbView(
-      {Key? key, required this.message, required this.radius, this.onTap})
+      {Key? key,
+      required this.message,
+      required this.radius,
+      this.onTap,
+      this.thumbFromRemote = false})
       : super(key: key);
 
   final NIMMessage message;
   final BorderRadius radius;
   final Function()? onTap;
+
+  final bool thumbFromRemote;
 
   @override
   State<StatefulWidget> createState() => _ChatThumbViewState();
@@ -123,6 +129,9 @@ class _ChatThumbViewState extends State<ChatThumbView> {
     if (_fileExistCheck(path)) {
       return _localImage(path);
     }
+    if (widget.thumbFromRemote && _getUrlForVideo().isNotEmpty) {
+      return _networkImage(_getUrlForVideo());
+    }
     return _placeHolder(_getImageRatio());
   }
 
@@ -147,6 +156,7 @@ class _ChatThumbViewState extends State<ChatThumbView> {
       return _localImage(path);
     }
     if (_isGif() ||
+        widget.thumbFromRemote ||
         (widget.message.attachmentStatus !=
                 NIMMessageAttachmentStatus.transferred ||
             widget.message.attachmentStatus !=
@@ -182,6 +192,15 @@ class _ChatThumbViewState extends State<ChatThumbView> {
       NIMImageAttachment attachment =
           widget.message.messageAttachment as NIMImageAttachment;
       return attachment.url ?? attachment.thumbUrl ?? "";
+    }
+    return "";
+  }
+
+  String _getUrlForVideo() {
+    if (widget.message.messageAttachment is NIMVideoAttachment) {
+      NIMVideoAttachment attachment =
+          widget.message.messageAttachment as NIMVideoAttachment;
+      return attachment.thumbUrl ?? "";
     }
     return "";
   }

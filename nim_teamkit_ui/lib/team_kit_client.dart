@@ -13,6 +13,9 @@ import 'view/pages/team_kit_setting_page.dart';
 const String kPackage = 'nim_teamkit_ui';
 
 class TeamKitClient {
+  /// 群管理员数量限制
+  int? teamManagerLimit;
+
   static get delegate {
     return S.delegate;
   }
@@ -25,5 +28,14 @@ class TeamKitClient {
             IMKitRouter.getArgumentFormMap<String>(context, 'teamId')!));
 
     XKitReporter().register(moduleName: 'TeamUIKit', moduleVersion: '1.1.0');
+  }
+
+  TeamKitClient._();
+
+  static TeamKitClient? _instance;
+
+  static TeamKitClient get instance {
+    _instance ??= TeamKitClient._();
+    return _instance!;
   }
 }

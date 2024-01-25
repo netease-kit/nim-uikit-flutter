@@ -13,9 +13,12 @@ import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_corekit_im/services/message/chat_message.dart';
+import 'package:nim_chatkit/message/message_helper.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
-import 'package:nim_chatkit_ui/view/chat_kit_message_list/helper/chat_message_helper.dart';
-import 'package:nim_chatkit_ui/view/chat_kit_message_list/helper/chat_message_user_helper.dart';
+import 'package:nim_chatkit_ui/chat_kit_client.dart';
+import 'package:nim_chatkit_ui/helper/chat_message_helper.dart';
+import 'package:nim_chatkit_ui/helper/chat_message_user_helper.dart';
+import 'package:nim_chatkit_ui/l10n/S.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_audio_item.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_file_item.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_image_item.dart';
@@ -25,9 +28,10 @@ import 'package:nim_chatkit_ui/view_model/chat_pin_view_model.dart';
 import 'package:nim_core/nim_core.dart';
 import 'package:provider/provider.dart';
 
-import '../../../../chat_kit_client.dart';
-import '../../../../l10n/S.dart';
+import '../../../../helper/merge_message_helper.dart';
 import '../chat_kit_message_item.dart';
+import '../chat_kit_message_merged_item.dart';
+import '../chat_kit_message_multi_line_text_item.dart';
 import '../chat_kit_message_text_item.dart';
 
 class ChatKitPinMessageItem extends StatefulWidget {
@@ -104,7 +108,8 @@ class _ChatKitPinMessageItemState extends State<ChatKitPinMessageItem> {
         }
         return ChatKitMessageImageItem(
           message: message.nimMessage,
-          isPin: true,
+          showOneImage: true,
+          showDirection: false,
         );
       case NIMMessageType.video:
         if (messageItemBuilder?.videoMessageBuilder != null) {
@@ -128,6 +133,36 @@ class _ChatKitPinMessageItemState extends State<ChatKitPinMessageItem> {
         }
         return ChatKitMessageNonsupportItem();
       default:
+        if (message.nimMessage.messageType == NIMMessageType.custom) {
+          var mergedMessage =
+              MergeMessageHelper.parseMergeMessage(message.nimMessage);
+          var multiLineMap =
+              MessageHelper.parseMultiLineMessage(message.nimMessage);
+          var multiLineTitle = multiLineMap?[ChatMessage.keyMultiLineTitle];
+          var multiLineBody = multiLineMap?[ChatMessage.keyMultiLineBody];
+          if (mergedMessage != null) {
+            if (messageItemBuilder?.mergedMessageBuilder != null) {
+              return messageItemBuilder!.mergedMessageBuilder!
+                  .call(message.nimMessage);
+            }
+            return ChatKitMessageMergedItem(
+              message: message.nimMessage,
+              mergedMessage: mergedMessage,
+              chatUIConfig: widget.chatUIConfig,
+              showMargin: false,
+              diffDirection: false,
+            );
+          } else if (multiLineTitle != null) {
+            return ChatKitMessageMultiLineItem(
+              message: message.nimMessage,
+              chatUIConfig: widget.chatUIConfig,
+              title: multiLineTitle,
+              body: multiLineBody,
+              titleMaxLines: 1,
+              bodyMaxLines: 2,
+            );
+          }
+        }
         if (messageItemBuilder?.extendBuilder != null) {
           if (messageItemBuilder
                   ?.extendBuilder![message.nimMessage.messageType] !=
@@ -160,7 +195,8 @@ class _ChatKitPinMessageItemState extends State<ChatKitPinMessageItem> {
   }
 
   //操作弹框
-  void _showOptionDialog(BuildContext context) {
+  void _showOptionDialog(BuildContext context, ChatMessage optionMsg) {
+    final message = optionMsg;
     var style = const TextStyle(fontSize: 16, color: CommonColors.color_333333);
     //将弹框的context 回调出来，解决弹框显示后Item remove的问题
     BuildContext? buildContext;
@@ -192,7 +228,7 @@ class _ChatKitPinMessageItemState extends State<ChatKitPinMessageItem> {
                   S.of(context).chatMessageActionCopy,
                   style: style,
                 )),
-          if (_showForward(widget.chatUIConfig, widget.chatMessage))
+          if (_showForward(widget.chatUIConfig, message))
             CupertinoActionSheetAction(
                 onPressed: () {
                   if (mounted) {
@@ -210,15 +246,14 @@ class _ChatKitPinMessageItemState extends State<ChatKitPinMessageItem> {
           buildContext = context;
         }).then((value) {
       if (value == 1) {
-        context.read<ChatPinViewModel>().removePinMessage(widget.chatMessage);
+        context.read<ChatPinViewModel>().removePinMessage(message);
       } else if (value == 2) {
         if (mounted) {
-          Clipboard.setData(
-              ClipboardData(text: widget.chatMessage.nimMessage.content!));
+          Clipboard.setData(ClipboardData(text: message.nimMessage.content!));
           Fluttertoast.showToast(msg: S.of().chatMessageCopySuccess);
         }
       } else if (value == 3) {
-        _showForwardMessageDialog();
+        _showForwardMessageDialog(message);
       }
     });
   }
@@ -232,10 +267,10 @@ class _ChatKitPinMessageItemState extends State<ChatKitPinMessageItem> {
     return false;
   }
 
-  void _showForwardMessageDialog() {
-    final NIMMessage msg = widget.chatMessage.nimMessage;
-    ChatMessageHelper.showForwardMessageDialog(context,
-        (sessionId, sessionType) {
+  void _showForwardMessageDialog(ChatMessage message) {
+    final NIMMessage msg = message.nimMessage;
+    ChatMessageHelper.showForwardMessageDialog(context, (sessionId, sessionType,
+            {String? postScript, bool? isLastUser}) {
       if (mounted) {
         context
             .read<ChatPinViewModel>()
@@ -252,6 +287,10 @@ class _ChatKitPinMessageItemState extends State<ChatKitPinMessageItem> {
             });
           }
         });
+      }
+      if (postScript?.isNotEmpty == true) {
+        ChatMessageRepo.sendTextMessageWithMessageAck(
+            sessionId: sessionId, sessionType: sessionType, text: postScript!);
       }
     },
         filterUser:
@@ -326,7 +365,7 @@ class _ChatKitPinMessageItemState extends State<ChatKitPinMessageItem> {
                                 package: kPackage,
                               ),
                               onTap: () {
-                                _showOptionDialog(context);
+                                _showOptionDialog(context, widget.chatMessage);
                               },
                             ))
                       ],

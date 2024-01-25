@@ -82,4 +82,10 @@ class ConversationKitClientLocalizationsZh
 
   @override
   String get notificationMessageType => '[通知消息]';
+
+  @override
+  String get tipMessageType => '[提醒消息]';
+
+  @override
+  String get chatHistoryBrief => '[聊天记录]';
 }

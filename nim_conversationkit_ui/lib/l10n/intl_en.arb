@@ -30,5 +30,7 @@
   "videoMessageType": "[Video]",
   "locationMessageType": "[Location]",
   "fileMessageType": "[File]",
-  "notificationMessageType": "[Notification]"
+  "notificationMessageType": "[Notification]",
+  "tipMessageType": "[Tip]",
+  "chatHistoryBrief": "[Chat history]"
 }

@@ -2,15 +2,17 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/extension.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/widgets/unread_message.dart';
+import 'package:netease_corekit_im/model/custom_type_constant.dart';
+import 'package:netease_corekit_im/services/message/chat_message.dart';
 import 'package:nim_conversationkit/model/conversation_info.dart';
 import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:nim_core/nim_core.dart';
 import 'package:nim_conversationkit_ui/l10n/S.dart';
+import 'package:nim_core/nim_core.dart';
 
 bool isSupportMessageType(NIMMessageType? type) {
   return type == NIMMessageType.text ||
@@ -39,10 +41,16 @@ class ConversationItem extends StatelessWidget {
   final int index;
 
   String _getLastMessageContent(BuildContext context) {
+    var configMessageContent =
+        config.lastMessageContentBuilder?.call(context, conversationInfo);
+    if (configMessageContent?.isNotEmpty == true) {
+      return configMessageContent!;
+    }
     switch (conversationInfo.session.lastMessageType) {
       case NIMMessageType.text:
-      case NIMMessageType.tip:
         return conversationInfo.session.lastMessageContent ?? '';
+      case NIMMessageType.tip:
+        return S.of(context).tipMessageType;
       case NIMMessageType.audio:
         return S.of(context).audioMessageType;
       case NIMMessageType.image:
@@ -57,14 +65,37 @@ class ConversationItem extends StatelessWidget {
         return S.of(context).locationMessageType;
       case NIMMessageType.custom:
         var customLastMessageContent =
-            config.lastMessageContentBuilder?.call(context, conversationInfo);
-        if (customLastMessageContent != null) {
-          return customLastMessageContent;
+            _getCustomLastMessageBrief(context, conversationInfo);
+        if (customLastMessageContent?.isNotEmpty == true) {
+          return customLastMessageContent!;
         }
         return S.of(context).chatMessageNonsupportType;
       default:
         return S.of(context).chatMessageNonsupportType;
     }
+  }
+
+  String? _getCustomLastMessageBrief(
+      BuildContext context, ConversationInfo conversationInfo) {
+    if (conversationInfo.session.lastMessageAttachment
+        is NIMCustomMessageAttachment) {
+      var data = (conversationInfo.session.lastMessageAttachment
+              as NIMCustomMessageAttachment)
+          .data;
+      if (data?[CustomMessageKey.type] ==
+          CustomMessageType.customMergeMessageType) {
+        return S.of(context).chatHistoryBrief;
+      }
+      if (data?[CustomMessageKey.type] ==
+          CustomMessageType.customMultiLineMessageType) {
+        var dataMap = data?[CustomMessageKey.data] as Map?;
+        var title = dataMap?[ChatMessage.keyMultiLineTitle] as String?;
+        if (title != null) {
+          return title;
+        }
+      }
+    }
+    return null;
   }
 
   @override

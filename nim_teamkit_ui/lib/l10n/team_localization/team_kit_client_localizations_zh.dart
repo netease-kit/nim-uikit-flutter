@@ -57,10 +57,10 @@ class TeamKitClientLocalizationsZh extends TeamKitClientLocalizations {
   String get teamMute => '群禁言';
 
   @override
-  String get teamInviteOtherPermission => '邀请他人权限';
+  String get teamInviteOtherPermission => '谁可以添加群成员';
 
   @override
-  String get teamUpdateInfoPermission => '群资料修改权限';
+  String get teamUpdateInfoPermission => '谁可以编辑群信息';
 
   @override
   String get teamNeedAgreedWhenBeInvitedPermission => '是否需要被邀请者同意';
@@ -112,4 +112,75 @@ class TeamKitClientLocalizationsZh extends TeamKitClientLocalizations {
 
   @override
   String get teamNameMustNotEmpty => '群名称不可为空';
+
+  @override
+  String get teamManage => '群管理';
+
+  @override
+  String get teamAitPermission => '谁可以@所有人';
+
+  @override
+  String get teamManager => '管理员';
+
+  @override
+  String get teamAddManagers => '添加管理员';
+
+  @override
+  String get teamOwnerManager => '群主和管理员';
+
+  @override
+  String get teamMemberRemove => '移除';
+
+  @override
+  String get teamRemoveConfirm => '是否移除';
+
+  @override
+  String get teamRemoveConfirmContent => '移除后该成员将无管理权限';
+
+  @override
+  String get teamSettingFailed => '设置失败';
+
+  @override
+  String get teamMsgAitAllPrivilegeIsAll => '@所有人权限更新为所有人';
+
+  @override
+  String get teamMsgAitAllPrivilegeIsOwner => '@所有人权限更新为群主和管理员';
+
+  @override
+  String get teamManagers => '群管理员';
+
+  @override
+  String get teamSelectMembers => '请选择成员';
+
+  @override
+  String teamManagerLimit(String number) {
+    return '最多只能设置$number个管理员';
+  }
+
+  @override
+  String get teamNoOperatePermission => '您暂无操作权限';
+
+  @override
+  String get teamManagerEmpty => '暂无群管理人员';
+
+  @override
+  String get teamMemberRemoveContent => '移除后该成员将离开当前群聊';
+
+  @override
+  String get teamMemberRemoveFailed => '移除失败';
+
+  @override
+  String get teamManagerManagers => '管理管理员';
+
+  @override
+  String get teamMemberSelect => '人员选择';
+
+  @override
+  String get teamPermissionDeny => '您暂无权限操作';
+
+  @override
+  String get teamManagerRemoveFailed => '管理员移除失败';
+
+  @override
+  String get teamMemberEmpty => '暂无成员';
 }

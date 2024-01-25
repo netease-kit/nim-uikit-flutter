@@ -2,12 +2,13 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
+import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/search_page.dart';
 import 'package:netease_corekit_im/model/contact_info.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:netease_corekit_im/router/imkit_router_factory.dart';
 import 'package:nim_core/nim_core.dart';
 import 'package:nim_searchkit/model/friend_search_info.dart';
@@ -148,7 +149,18 @@ class _SearchKitGlobalState extends State<SearchKitGlobalSearchPage> {
       NIMTeam team = (currentItem as TeamSearchInfo).team;
       return InkWell(
         onTap: () {
-          goToTeamChat(context, team.id!);
+          NimCore.instance.teamService.queryTeam(team.id!).then((value) {
+            if (value.isSuccess &&
+                value.data != null &&
+                value.data!.isMyTeam == true) {
+              goToTeamChat(context, team.id!);
+            } else {
+              showCommonDialog(
+                  context: context,
+                  title: S.of(context).searchTeamLeave,
+                  content: S.of(context).searchTeamDismissOrLeave);
+            }
+          });
         },
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,

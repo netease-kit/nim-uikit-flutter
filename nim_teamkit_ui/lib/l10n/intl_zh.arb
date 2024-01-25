@@ -16,8 +16,8 @@
   "teamMessageTip": "开启消息提醒",
   "teamSessionPin": "聊天置顶",
   "teamMute": "群禁言",
-  "teamInviteOtherPermission": "邀请他人权限",
-  "teamUpdateInfoPermission": "群资料修改权限",
+  "teamInviteOtherPermission": "谁可以添加群成员",
+  "teamUpdateInfoPermission": "谁可以编辑群信息",
   "teamNeedAgreedWhenBeInvitedPermission": "是否需要被邀请者同意",
   "teamAdvancedDismiss": "解散群聊",
   "teamAdvancedQuit": "退出群聊",
@@ -34,5 +34,35 @@
   "teamSave": "保存",
   "teamSearchMember": "搜索成员",
   "teamNoPermission": "没有修改权限",
-  "teamNameMustNotEmpty": "群名称不可为空"
+  "teamNameMustNotEmpty": "群名称不可为空",
+  "teamManage": "群管理",
+  "teamAitPermission": "谁可以@所有人",
+  "teamManager": "管理员",
+  "teamAddManagers": "添加管理员",
+  "teamOwnerManager": "群主和管理员",
+  "teamMemberRemove": "移除",
+  "teamRemoveConfirm": "是否移除",
+    "teamRemoveConfirmContent": "移除后该成员将无管理权限",
+  "teamSettingFailed": "设置失败",
+  "teamMsgAitAllPrivilegeIsAll": "@所有人权限更新为所有人",
+  "teamMsgAitAllPrivilegeIsOwner": "@所有人权限更新为群主和管理员",
+  "teamManagers": "群管理员",
+  "teamSelectMembers": "请选择成员",
+  "teamManagerLimit": "最多只能设置{number}个管理员",
+  "@teamManagerLimit": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "teamNoOperatePermission": "您暂无操作权限",
+  "teamManagerEmpty": "暂无群管理人员",
+  "teamMemberRemoveContent": "移除后该成员将离开当前群聊",
+    "teamMemberRemoveFailed": "移除失败",
+  "teamManagerManagers": "管理管理员",
+  "teamMemberSelect": "人员选择",
+  "teamPermissionDeny": "您暂无权限操作",
+    "teamManagerRemoveFailed": "管理员移除失败",
+  "teamMemberEmpty": "暂无成员"
 }

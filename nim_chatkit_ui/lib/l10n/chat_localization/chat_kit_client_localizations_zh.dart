@@ -158,6 +158,9 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
   String get chatMessageBriefCustom => '[自定义消息]';
 
   @override
+  String get chatMessageBriefChatHistory => '[聊天记录]';
+
+  @override
   String get chatSetting => '聊天设置';
 
   @override
@@ -413,4 +416,74 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
 
   @override
   String get chatHaveNoPinMessage => '暂无标记消息';
+
+  @override
+  String get chatMessageMergeForward => '合并转发';
+
+  @override
+  String get chatMessageItemsForward => '逐条转发';
+
+  @override
+  String chatMessageMergedTitle(String user) {
+    return '$user的消息';
+  }
+
+  @override
+  String get chatMessageChatHistory => '聊天记录';
+
+  @override
+  String get chatMessagePostScript => '留言';
+
+  @override
+  String get chatMessageMergeMessageError => '系统异常，转发失败';
+
+  @override
+  String get chatMessageInputTitle => '请输入标题';
+
+  @override
+  String get chatMessageNotSupportEmptyMessage => '不支持发送空消息';
+
+  @override
+  String chatMessageMergedForwardLimitOut(String number) {
+    return '合并转发限制$number条消息';
+  }
+
+  @override
+  String chatMessageForwardOneByOneLimitOut(String number) {
+    return '逐条转发限制$number条消息';
+  }
+
+  @override
+  String messageForwardMessageOneByOneTips(String user) {
+    return '[逐条转发]$user的会话记录';
+  }
+
+  @override
+  String messageForwardMessageMergedTips(String user) {
+    return '[合并转发]$user的会话记录';
+  }
+
+  @override
+  String get chatMessageHaveMessageCantForward => '存在不可转发的消息体';
+
+  @override
+  String get chatMessageInfoError => '信息获取失败';
+
+  @override
+  String get chatMessageMergeDepthOut => '存在超出合并限制的消息，无法合并转发，是否去除后发送?';
+
+  @override
+  String get chatMessageExitMessageCannotForward => '存在不可转发的消息体';
+
+  @override
+  String get chatTeamPermissionInviteOnlyOwnerAndManagers => '群主和管理员';
+
+  @override
+  String get chatTeamPermissionUpdateOnlyOwnerAndManagers => '群主和管理员';
+
+  @override
+  String get chatTeamHaveBeenKick => '您已被移除群聊';
+
+  @override
+  String get chatMessageHaveCannotForwardMessages => '存在不可转发的消息体，是否去除后发送？';
 }

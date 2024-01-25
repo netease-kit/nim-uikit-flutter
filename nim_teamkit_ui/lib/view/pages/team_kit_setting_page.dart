@@ -2,9 +2,12 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/background.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
@@ -17,9 +20,11 @@ import 'package:netease_corekit_im/router/imkit_router_constants.dart';
 import 'package:netease_corekit_im/router/imkit_router_factory.dart';
 import 'package:netease_corekit_im/service_locator.dart';
 import 'package:netease_corekit_im/services/login/login_service.dart';
+import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
 import 'package:netease_corekit_im/services/team/team_provider.dart';
 import 'package:nim_core/nim_core.dart';
 import 'package:nim_teamkit_ui/l10n/S.dart';
+import 'package:nim_teamkit_ui/view/pages/team_kit_manage_page.dart';
 import 'package:nim_teamkit_ui/view/pages/team_kit_member_list_page.dart';
 import 'package:nim_teamkit_ui/view/pages/team_kit_team_info_page.dart';
 import 'package:provider/provider.dart';
@@ -40,17 +45,6 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
   TextStyle style =
       const TextStyle(color: CommonColors.color_333333, fontSize: 16);
 
-  //是否有权限邀请其他人
-  bool _hasPrivilegeToInvite(TeamWithMember teamWithMember) {
-    var team = teamWithMember.team;
-    var teamMember = teamWithMember.teamMember;
-    return (team.teamInviteMode == NIMTeamInviteModeEnum.all) ||
-        (!getIt<TeamProvider>().isGroupTeam(team) &&
-            (teamMember?.type == TeamMemberType.owner ||
-                teamMember?.type == TeamMemberType.manager)) ||
-        getIt<TeamProvider>().isGroupTeam(team);
-  }
-
   //是否有权限修改群信息
   bool _hasPrivilegeToModify(TeamWithMember teamWithMember) {
     var team = teamWithMember.team;
@@ -66,7 +60,7 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
       List<UserInfoWithTeam>? list) {
     var team = teamWithMember.team;
 
-    bool hasPrivilegeToInvite = _hasPrivilegeToInvite(teamWithMember);
+    bool hasPrivilegeToInvite = NIMChatCache.instance.hasPrivilegeToInvite();
 
     int _getListCount() {
       var count = list?.length ?? 0;
@@ -215,9 +209,24 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
                           .then((contacts) {
                         if (contacts is List<ContactInfo> &&
                             contacts.isNotEmpty) {
-                          context.read<TeamSettingViewModel>().addMembers(
-                              team.id!,
-                              contacts.map((e) => e.user.userId!).toList());
+                          if (NIMChatCache.instance.hasPrivilegeToInvite()) {
+                            context
+                                .read<TeamSettingViewModel>()
+                                .addMembers(
+                                    team.id!,
+                                    contacts
+                                        .map((e) => e.user.userId!)
+                                        .toList())
+                                .then((value) {
+                              if (value.isSuccess != true) {
+                                Fluttertoast.showToast(
+                                    msg: S.of(context).teamSettingFailed);
+                              }
+                            });
+                          } else {
+                            Fluttertoast.showToast(
+                                msg: S.of(context).teamNoOperatePermission);
+                          }
                         }
                       });
                     },
@@ -236,7 +245,7 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
     );
   }
 
-  Widget _setting(BuildContext context, NIMTeam team) {
+  Widget _setting(BuildContext context, TeamWithMember teamMember) {
     return Column(
       children: ListTile.divideTiles(context: context, tiles: [
         ListTile(
@@ -250,12 +259,7 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
                 arguments: {
                   'sessionId': widget.teamId,
                   'sessionType': NIMSessionType.team,
-                  'chatTitle': context
-                          .read<TeamSettingViewModel>()
-                          .teamWithMember
-                          ?.team
-                          .name ??
-                      '',
+                  'chatTitle': teamMember.team.name ?? '',
                 });
           },
         ),
@@ -270,70 +274,116 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
                 arguments: {'teamId': widget.teamId});
           },
         ),
-        ListTile(
-          title: Text(
-            S.of(context).teamMessageTip,
-            style: style,
+        if (getIt<TeamProvider>().isGroupTeam(teamMember.team)) ...[
+          ListTile(
+            title: Text(
+              S.of(context).teamMessageTip,
+              style: style,
+            ),
+            trailing: CupertinoSwitch(
+              activeColor: CommonColors.color_337eff,
+              onChanged: (bool value) {
+                context
+                    .read<TeamSettingViewModel>()
+                    .muteTeam(teamMember.team.id!, !value);
+              },
+              value: context.read<TeamSettingViewModel>().messageTip,
+            ),
           ),
-          trailing: CupertinoSwitch(
-            activeColor: CommonColors.color_337eff,
-            onChanged: (bool value) {
-              context.read<TeamSettingViewModel>().muteTeam(team.id!, !value);
+          ListTile(
+            title: Text(
+              S.of(context).teamSessionPin,
+              style: style,
+            ),
+            trailing: CupertinoSwitch(
+              activeColor: CommonColors.color_337eff,
+              onChanged: (bool value) {
+                context
+                    .read<TeamSettingViewModel>()
+                    .configStick(teamMember.team.id!, value);
+              },
+              value: context.read<TeamSettingViewModel>().isStick,
+            ),
+          )
+        ],
+        if (!getIt<TeamProvider>().isGroupTeam(teamMember.team)) ...[
+          ListTile(
+            title: Text(
+              S.of(context).teamMessageTip,
+              style: style,
+            ),
+            trailing: CupertinoSwitch(
+              activeColor: CommonColors.color_337eff,
+              onChanged: (bool value) {
+                context
+                    .read<TeamSettingViewModel>()
+                    .muteTeam(teamMember.team.id!, !value);
+              },
+              value: context.read<TeamSettingViewModel>().messageTip,
+            ),
+          ),
+          ListTile(
+            title: Text(
+              S.of(context).teamSessionPin,
+              style: style,
+            ),
+            trailing: CupertinoSwitch(
+              activeColor: CommonColors.color_337eff,
+              onChanged: (bool value) {
+                context
+                    .read<TeamSettingViewModel>()
+                    .configStick(teamMember.team.id!, value);
+              },
+              value: context.read<TeamSettingViewModel>().isStick,
+            ),
+          ),
+          ListTile(
+            title: Text(
+              S.of(context).teamMyNicknameTitle,
+              style: style,
+            ),
+            trailing: const Icon(Icons.keyboard_arrow_right_outlined),
+            onTap: () {
+              var teamNick =
+                  context.read<TeamSettingViewModel>().myTeamNickName;
+              Future<bool> _updateNick(nickname) async {
+                var result = await context
+                    .read<TeamSettingViewModel>()
+                    .updateNickname(
+                        teamMember.team.id!, (nickname as String).trim());
+                if (!result) {
+                  Fluttertoast.showToast(msg: S.of(context).teamSettingFailed);
+                }
+                return result;
+              }
+
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => UpdateTextInfoPage(
+                            title: S.of(context).teamMyNicknameTitle,
+                            content: teamNick,
+                            maxLength: 30,
+                            privilege: true,
+                            onSave: _updateNick,
+                            leading: Text(
+                              S.of(context).teamCancel,
+                              style: const TextStyle(
+                                  fontSize: 16,
+                                  color: CommonColors.color_666666),
+                            ),
+                            sureStr: S.of(context).teamSave,
+                          )));
             },
-            value: context.read<TeamSettingViewModel>().messageTip,
           ),
-        ),
-        ListTile(
-          title: Text(
-            S.of(context).teamSessionPin,
-            style: style,
-          ),
-          trailing: CupertinoSwitch(
-            activeColor: CommonColors.color_337eff,
-            onChanged: (bool value) {
-              context.read<TeamSettingViewModel>().configStick(team.id!, value);
-            },
-            value: context.read<TeamSettingViewModel>().isStick,
-          ),
-        ),
+        ]
       ]).toList(),
     );
   }
 
-  Widget _teamMute(BuildContext context, TeamWithMember teamWithMember) {
+  Widget _teamManage(BuildContext context, TeamWithMember teamWithMember) {
     return Column(
       children: ListTile.divideTiles(context: context, tiles: [
-        ListTile(
-          title: Text(
-            S.of(context).teamMyNicknameTitle,
-            style: style,
-          ),
-          trailing: const Icon(Icons.keyboard_arrow_right_outlined),
-          onTap: () {
-            var teamNick = context.read<TeamSettingViewModel>().myTeamNickName;
-            Future<bool> _updateNick(nickname) {
-              return context.read<TeamSettingViewModel>().updateNickname(
-                  teamWithMember.team.id!, (nickname as String).trim());
-            }
-
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => UpdateTextInfoPage(
-                          title: S.of(context).teamMyNicknameTitle,
-                          content: teamNick,
-                          maxLength: 30,
-                          privilege: true,
-                          onSave: _updateNick,
-                          leading: Text(
-                            S.of(context).teamCancel,
-                            style: const TextStyle(
-                                fontSize: 16, color: CommonColors.color_666666),
-                          ),
-                          sureStr: S.of(context).teamSave,
-                        )));
-          },
-        ),
         Visibility(
           visible: teamWithMember.teamMember?.type == TeamMemberType.owner,
           child: ListTile(
@@ -352,108 +402,23 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
             ),
           ),
         ),
-      ]).toList(),
-    );
-  }
-
-  void _showTeamIdentifyDialog(ValueChanged<int?> onChoose) {
-    var style = const TextStyle(fontSize: 16, color: CommonColors.color_333333);
-    showBottomChoose(
-            context: context,
-            actions: [
-              CupertinoActionSheetAction(
-                onPressed: () {
-                  Navigator.pop(context, 1);
-                },
-                child: Text(
-                  S.of(context).teamAllMember,
-                  style: style,
-                ),
-              ),
-              CupertinoActionSheetAction(
-                onPressed: () {
-                  Navigator.pop(context, 0);
-                },
-                child: Text(
-                  S.of(context).teamOwner,
-                  style: style,
-                ),
-              ),
-            ],
-            showCancel: true)
-        .then((value) => onChoose(value));
-  }
-
-  Widget _invitation(BuildContext context, NIMTeam team) {
-    return Column(
-      children: ListTile.divideTiles(context: context, tiles: [
-        ListTile(
-          title: Text(
-            S.of(context).teamInviteOtherPermission,
-            style: style,
-          ),
-          subtitle: Text(
-            context.read<TeamSettingViewModel>().invitePrivilege ==
-                    NIMTeamInviteModeEnum.all
-                ? S.of(context).teamAllMember
-                : S.of(context).teamOwner,
-            style:
-                const TextStyle(fontSize: 14, color: CommonColors.color_999999),
-          ),
-          trailing: const Icon(Icons.keyboard_arrow_right_outlined),
-          onTap: () {
-            _showTeamIdentifyDialog((value) {
-              if (value != null) {
-                context.read<TeamSettingViewModel>().updateInvitePrivilege(
-                    team.id!,
-                    value == 1
-                        ? NIMTeamInviteModeEnum.all
-                        : NIMTeamInviteModeEnum.manager);
-              }
-            });
-          },
-        ),
-        ListTile(
-          title: Text(
-            S.of(context).teamUpdateInfoPermission,
-            style: style,
-          ),
-          subtitle: Text(
-            context.read<TeamSettingViewModel>().infoPrivilege ==
-                    NIMTeamUpdateModeEnum.all
-                ? S.of(context).teamAllMember
-                : S.of(context).teamOwner,
-            style:
-                const TextStyle(fontSize: 14, color: CommonColors.color_999999),
-          ),
-          trailing: const Icon(Icons.keyboard_arrow_right_outlined),
-          onTap: () {
-            _showTeamIdentifyDialog((value) {
-              if (value != null) {
-                context.read<TeamSettingViewModel>().updateInfoPrivilege(
-                    team.id!,
-                    value == 1
-                        ? NIMTeamUpdateModeEnum.all
-                        : NIMTeamUpdateModeEnum.manager);
-              }
-            });
-          },
-        ),
-        ListTile(
-          title: Text(
-            S.of(context).teamNeedAgreedWhenBeInvitedPermission,
-            style: style,
-          ),
-          trailing: CupertinoSwitch(
-            activeColor: CommonColors.color_337eff,
-            onChanged: (bool value) {
-              context
-                  .read<TeamSettingViewModel>()
-                  .updateBeInviteMode(team.id!, value);
+        if (!getIt<TeamProvider>().isGroupTeam(teamWithMember.team) &&
+            (NIMChatCache.instance.myTeamRole() == TeamMemberType.owner ||
+                NIMChatCache.instance.myTeamRole() == TeamMemberType.manager))
+          ListTile(
+            title: Text(
+              S.of(context).teamManage,
+              style: style,
+            ),
+            trailing: const Icon(Icons.keyboard_arrow_right_outlined),
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) {
+                return TeamKitManagerPage(
+                  team: teamWithMember.team,
+                );
+              }));
             },
-            value: context.read<TeamSettingViewModel>().beInvitedNeedAgreed,
           ),
-        ),
       ]).toList(),
     );
   }
@@ -531,6 +496,15 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
   }
 
   @override
+  void initState() {
+    //ios 端需要重新获取群成员
+    if (Platform.isIOS) {
+      NIMChatCache.instance.fetchTeamMember(widget.teamId);
+    }
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return TransparentScaffold(
       title: S.of(context).teamSettingTitle,
@@ -563,25 +537,14 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
                           height: 16,
                         ),
                         CardBackground(
-                            child: _setting(context, teamWithMember.team)),
+                            child: _setting(context, teamWithMember)),
                         Visibility(
                             visible: !getIt<TeamProvider>()
                                 .isGroupTeam(teamWithMember.team),
                             child: Padding(
                               padding: const EdgeInsets.only(top: 16),
                               child: CardBackground(
-                                  child: _teamMute(context, teamWithMember)),
-                            )),
-                        Visibility(
-                            visible: !getIt<TeamProvider>()
-                                    .isGroupTeam(teamWithMember.team) &&
-                                teamWithMember.teamMember?.type ==
-                                    TeamMemberType.owner,
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 16),
-                              child: CardBackground(
-                                  child: _invitation(
-                                      context, teamWithMember.team)),
+                                  child: _teamManage(context, teamWithMember)),
                             )),
                         const SizedBox(
                           height: 16,

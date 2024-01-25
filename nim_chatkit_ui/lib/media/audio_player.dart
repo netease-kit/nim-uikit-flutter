@@ -58,15 +58,15 @@ class ChatAudioPlayer {
   }
 
   Future<bool> play(
-      String id,
-      Source source, {
-        required StopAction stopAction,
-        double? volume,
-        double? balance,
-        AudioContext? ctx,
-        Duration? position,
-        PlayerMode? mode,
-      }) async {
+    String id,
+    Source source, {
+    required StopAction stopAction,
+    double? volume,
+    double? balance,
+    AudioContext? ctx,
+    Duration? position,
+    PlayerMode? mode,
+  }) async {
     _setupSpeaker();
     //回掉之前的停止操作
     _stopAction?.call();

@@ -1,5 +1,15 @@
 # NimChatKitUI ChangeLog
 
+## 9.7.0(Jan 25, 2024)
+### New Features
+* 新增合并转发和多选功能
+* 新增群管理
+* 新增换行消息
+
+## 1.2.0+1(Nov 13, 2023)
+### Bug Fixes
+* 解决鸿蒙4.0 切换扬声器和听筒的问题
+
 ## 1.2.0(Nov 8, 2023)
 ### New Features
 * 新增@功能

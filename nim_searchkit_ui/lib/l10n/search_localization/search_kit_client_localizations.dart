@@ -136,6 +136,18 @@ abstract class SearchKitClientLocalizations {
   /// In en, this message translates to:
   /// **'This user not exist'**
   String get searchEmptyTips;
+
+  /// No description provided for @searchTeamLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave Team'**
+  String get searchTeamLeave;
+
+  /// No description provided for @searchTeamDismissOrLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss or leave team'**
+  String get searchTeamDismissOrLeave;
 }
 
 class _SearchKitClientLocalizationsDelegate

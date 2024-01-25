@@ -1,6 +1,6 @@
 name: nim_chatkit_location
 description: Chat UI base on ChatKit.
-version: 1.2.0
+version: 9.7.0
 homepage: https://github.com/netease-kit/nim-uikit-flutter
 
 environment:
@@ -17,23 +17,23 @@ dependencies:
     sdk: flutter
 
   netease_common_ui:
-        ">=1.2.0 <1.3.0"
+        ">=9.7.0 <10.0.0"
 #    path: ../../common/netease_common_ui
 
   netease_corekit_im:
-        ">=1.2.0 <1.3.0"
+        ">=9.7.0 <10.0.0"
 #    path: ../../netease_corekit/netease_corekit_im
   netease_corekit:
         ">=1.2.0 <1.3.0"
 #    path: ../../netease_corekit/netease_corekit
   nim_chatkit:
-        ">=1.2.0 <1.3.0"
+        ">=9.7.0 <10.0.0"
 #    path: ../nim_chatkit
 
-  cached_network_image: ^3.2.0
-  fluttertoast: ^8.0.9
-  nim_core: ^1.7.3
-  #    path: ../../nim_core/nim_core
+  cached_network_image: ^3.3.1
+  fluttertoast: ^8.2.4
+  nim_core: ^1.7.4
+#      path: ../../nim_core/nim_core
   intl: ^0.18.0
   flutter_svg: ^2.0.7
   yunxin_alog: ^2.0.0

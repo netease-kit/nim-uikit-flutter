@@ -2,8 +2,8 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:netease_common_ui/widgets/permission_request.dart';
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/widgets/permission_request.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class ActionItem {
@@ -15,12 +15,15 @@ class ActionItem {
   //权限拒绝后的提示
   String? deniedTip;
 
+  bool enable;
+
   ActionItem(
       {required this.type,
       required this.icon,
       this.title,
       this.onTap,
       this.permissions,
+      this.enable = true,
       this.deniedTip});
 }
 
