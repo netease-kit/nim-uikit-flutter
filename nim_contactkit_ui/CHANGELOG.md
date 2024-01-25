@@ -1,5 +1,11 @@
 # NimContactKitUI ChangeLog
 
+## 9.7.0(Jan 25, 2024)
+### New Features
+* 新增合并转发和多选功能
+* 新增群管理
+* 新增换行消息
+
 ## 1.2.0(Nov 8, 2023)
 ### Bug Fixes
 * 优化缓存，提高性能

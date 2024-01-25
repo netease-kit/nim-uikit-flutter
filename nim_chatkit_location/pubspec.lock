@@ -77,26 +77,26 @@ packages:
     dependency: "direct main"
     description:
       name: cached_network_image
-      sha256: f98972704692ba679db144261172a8e20feb145636c617af0eb4022132a6797f
+      sha256: "28ea9690a8207179c319965c13cd8df184d5ee721ae2ce60f398ced1219cea1f"
       url: "https://pub.dev"
     source: hosted
-    version: "3.3.0"
+    version: "3.3.1"
   cached_network_image_platform_interface:
     dependency: transitive
     description:
       name: cached_network_image_platform_interface
-      sha256: "56aa42a7a01e3c9db8456d9f3f999931f1e05535b5a424271e9a38cabf066613"
+      sha256: "9e90e78ae72caa874a323d78fa6301b3fb8fa7ea76a8f96dc5b5bf79f283bf2f"
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.0"
+    version: "4.0.0"
   cached_network_image_web:
     dependency: transitive
     description:
       name: cached_network_image_web
-      sha256: "759b9a9f8f6ccbb66c185df805fac107f05730b1dab9c64626d1008cca532257"
+      sha256: "42a835caa27c220d1294311ac409a43361088625a4f23c820b006dd9bffb3316"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.0"
+    version: "1.1.1"
   characters:
     dependency: transitive
     description:
@@ -329,10 +329,10 @@ packages:
     dependency: "direct main"
     description:
       name: fluttertoast
-      sha256: "474f7d506230897a3cd28c965ec21c5328ae5605fc9c400cd330e9e9d6ac175c"
+      sha256: dfdde255317af381bfc1c486ed968d5a43a2ded9c931e87cbecd88767d6a71c1
       url: "https://pub.dev"
     source: hosted
-    version: "8.2.2"
+    version: "8.2.4"
   get_it:
     dependency: transitive
     description:
@@ -501,14 +501,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.0"
+  netease_common:
+    dependency: transitive
+    description:
+      name: netease_common
+      sha256: "28dd98105b2cca6d79f2243a3d93dd6873a82ea637d82c4751a0045f429d3467"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.4"
   netease_common_ui:
     dependency: "direct main"
     description:
       name: netease_common_ui
-      sha256: f493e82b64bf2c2152f01bcf9fe7a4cbb654b2bdc733a65f58b918c30d129e38
+      sha256: "3aec237bef2c9ac8a682c3c6b3148e36e88246a5a1337e1bbc9dcc40496e1e7b"
       url: "https://pub.dev"
     source: hosted
-    version: "1.2.0"
+    version: "9.7.0"
   netease_corekit:
     dependency: "direct main"
     description:
@@ -521,26 +529,26 @@ packages:
     dependency: "direct main"
     description:
       name: netease_corekit_im
-      sha256: "3111031037b001422b3db828847cbcb1bfa674c8f2e5e459682dd5b49a41a30f"
+      sha256: ea0dd75686eea8e3692872c380d11358917ed49044f3f0691b18890db5b9934e
       url: "https://pub.dev"
     source: hosted
-    version: "1.2.0"
+    version: "9.7.0"
   nim_chatkit:
     dependency: "direct main"
     description:
       name: nim_chatkit
-      sha256: "7947205a57b5ace20b120a40f4c55bebbdee46f1ba7d8a67e5b615374ba1dfba"
+      sha256: "13c8ea01c88cd36094d585a2a93e2c2fa62903b53c2433c61c9bc81be3ceebed"
       url: "https://pub.dev"
     source: hosted
-    version: "1.2.0"
+    version: "9.7.0"
   nim_core:
     dependency: "direct main"
     description:
       name: nim_core
-      sha256: "1258c6b4a36df39816f534a77d0af5b7707c687a8057883d4a80f3425d4c11d2"
+      sha256: "88a9416cde5e815b0de34d253b2aac3adbf9c7450fbafed1b8039067157e4044"
       url: "https://pub.dev"
     source: hosted
-    version: "1.7.3"
+    version: "1.7.4"
   nim_core_macos:
     dependency: transitive
     description:
@@ -553,10 +561,10 @@ packages:
     dependency: transitive
     description:
       name: nim_core_platform_interface
-      sha256: d010cad5ef9d8ed208f780217e50382d02e20375229c99f97dd2aceef17dcd53
+      sha256: "159d70a4692153b333d950855193337f140f6b4800224474ab5a915d62feabcd"
       url: "https://pub.dev"
     source: hosted
-    version: "1.7.0"
+    version: "1.7.4"
   nim_core_web:
     dependency: transitive
     description:

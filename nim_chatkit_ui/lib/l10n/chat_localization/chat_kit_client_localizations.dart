@@ -383,6 +383,12 @@ abstract class ChatKitClientLocalizations {
   /// **'[Custom Message]'**
   String get chatMessageBriefCustom;
 
+  /// No description provided for @chatMessageBriefChatHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'[Chat History]'**
+  String get chatMessageBriefChatHistory;
+
   /// No description provided for @chatSetting.
   ///
   /// In en, this message translates to:
@@ -778,6 +784,126 @@ abstract class ChatKitClientLocalizations {
   /// In en, this message translates to:
   /// **'No pinned message'**
   String get chatHaveNoPinMessage;
+
+  /// No description provided for @chatMessageMergeForward.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge Forward'**
+  String get chatMessageMergeForward;
+
+  /// No description provided for @chatMessageItemsForward.
+  ///
+  /// In en, this message translates to:
+  /// **'Items Forward'**
+  String get chatMessageItemsForward;
+
+  /// No description provided for @chatMessageMergedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{user}History Message'**
+  String chatMessageMergedTitle(String user);
+
+  /// No description provided for @chatMessageChatHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat History'**
+  String get chatMessageChatHistory;
+
+  /// No description provided for @chatMessagePostScript.
+  ///
+  /// In en, this message translates to:
+  /// **'Post Script'**
+  String get chatMessagePostScript;
+
+  /// No description provided for @chatMessageMergeMessageError.
+  ///
+  /// In en, this message translates to:
+  /// **'System Error，Forward Error'**
+  String get chatMessageMergeMessageError;
+
+  /// No description provided for @chatMessageInputTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Input Title'**
+  String get chatMessageInputTitle;
+
+  /// No description provided for @chatMessageNotSupportEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Not support empty message'**
+  String get chatMessageNotSupportEmptyMessage;
+
+  /// No description provided for @chatMessageMergedForwardLimitOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge message limit{number}'**
+  String chatMessageMergedForwardLimitOut(String number);
+
+  /// No description provided for @chatMessageForwardOneByOneLimitOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Forward message one by one limit{number}'**
+  String chatMessageForwardOneByOneLimitOut(String number);
+
+  /// No description provided for @messageForwardMessageOneByOneTips.
+  ///
+  /// In en, this message translates to:
+  /// **'[Forward One by One]{user}Chat History'**
+  String messageForwardMessageOneByOneTips(String user);
+
+  /// No description provided for @messageForwardMessageMergedTips.
+  ///
+  /// In en, this message translates to:
+  /// **'[Merged Forward]{user}Chat History'**
+  String messageForwardMessageMergedTips(String user);
+
+  /// No description provided for @chatMessageHaveMessageCantForward.
+  ///
+  /// In en, this message translates to:
+  /// **'There are messages that cannot be forwarded'**
+  String get chatMessageHaveMessageCantForward;
+
+  /// No description provided for @chatMessageInfoError.
+  ///
+  /// In en, this message translates to:
+  /// **'Message info error'**
+  String get chatMessageInfoError;
+
+  /// No description provided for @chatMessageMergeDepthOut.
+  ///
+  /// In en, this message translates to:
+  /// **'The message exceeds the merging limit and cannot be forwarded as is. Should it be sent without merging?'**
+  String get chatMessageMergeDepthOut;
+
+  /// No description provided for @chatMessageExitMessageCannotForward.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit message cannot be forwarded'**
+  String get chatMessageExitMessageCannotForward;
+
+  /// No description provided for @chatTeamPermissionInviteOnlyOwnerAndManagers.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner and managers'**
+  String get chatTeamPermissionInviteOnlyOwnerAndManagers;
+
+  /// No description provided for @chatTeamPermissionUpdateOnlyOwnerAndManagers.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner and managers'**
+  String get chatTeamPermissionUpdateOnlyOwnerAndManagers;
+
+  /// No description provided for @chatTeamHaveBeenKick.
+  ///
+  /// In en, this message translates to:
+  /// **'You have been kicked'**
+  String get chatTeamHaveBeenKick;
+
+  /// No description provided for @chatMessageHaveCannotForwardMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'There are messages that cannot be forwarded'**
+  String get chatMessageHaveCannotForwardMessages;
 }
 
 class _ChatKitClientLocalizationsDelegate

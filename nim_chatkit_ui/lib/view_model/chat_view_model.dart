@@ -5,23 +5,29 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
+import 'package:collection/collection.dart';
+import 'package:flutter/widgets.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_corekit_im/im_kit_client.dart';
 import 'package:netease_corekit_im/model/ait/ait_contacts_model.dart';
-import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
-import 'package:nim_chatkit/location.dart';
-import 'package:nim_chatkit/message/message_reply_info.dart';
-import 'package:nim_chatkit/message/message_revoke_info.dart';
-import 'package:nim_chatkit/repo/chat_message_repo.dart';
-import 'package:nim_chatkit/repo/chat_service_observer_repo.dart';
 import 'package:netease_corekit_im/model/contact_info.dart';
 import 'package:netease_corekit_im/repo/config_repo.dart';
 import 'package:netease_corekit_im/service_locator.dart';
 import 'package:netease_corekit_im/services/contact/contact_provider.dart';
 import 'package:netease_corekit_im/services/login/login_service.dart';
 import 'package:netease_corekit_im/services/message/chat_message.dart';
-import 'package:flutter/widgets.dart';
+import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
+import 'package:nim_chatkit/chatkit_client_repo.dart';
+import 'package:nim_chatkit/location.dart';
+import 'package:nim_chatkit/message/message_reply_info.dart';
+import 'package:nim_chatkit/message/message_revoke_info.dart';
+import 'package:nim_chatkit/repo/chat_message_repo.dart';
+import 'package:nim_chatkit/repo/chat_service_observer_repo.dart';
+import 'package:nim_chatkit_ui/helper/chat_message_helper.dart';
+import 'package:nim_chatkit_ui/helper/merge_message_helper.dart';
 import 'package:nim_core/nim_core.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
 
@@ -43,6 +49,10 @@ class ChatViewModel extends ChangeNotifier {
 
   ///only for p2p
   bool isTyping = false;
+
+  ///当消息列表中的数据少于这个值的时候自动拉取更多消息
+  ///用于批量删除和删除回调
+  final int _autoFetchMessageSize = 15;
 
   set receiptTime(int value) {
     _receiptTime = value;
@@ -96,6 +106,24 @@ class ChatViewModel extends ChangeNotifier {
   bool initListener = false;
   static const int messageLimit = 100;
 
+  //是否是多选状态
+  bool _isMultiSelected = false;
+
+  bool get isMultiSelected => _isMultiSelected;
+
+  set isMultiSelected(bool value) {
+    _isMultiSelected = value;
+    if (!value) {
+      _selectedMessages.clear();
+    }
+    notifyListeners();
+  }
+
+  //多选状态下选中的消息
+  List<NIMMessage> _selectedMessages = [];
+
+  List<NIMMessage> get selectedMessages => _selectedMessages.toList();
+
   ChatViewModel(this.sessionId, this.sessionType, {this.showReadAck = true}) {
     _setNIMMessageListener();
     if (sessionType == NIMSessionType.p2p) {
@@ -141,13 +169,19 @@ class ChatViewModel extends ChangeNotifier {
   final subscriptions = <StreamSubscription>[];
 
   bool _isFilterMessage(NIMMessage message) {
-    // 过滤被邀请人相关通知消息
-    return message.messageType == NIMMessageType.notification &&
-        message.messageAttachment is NIMUpdateTeamAttachment &&
-        (message.messageAttachment as NIMUpdateTeamAttachment)
-                .updatedFields
-                .updatedBeInviteMode !=
-            null;
+    if (message.messageType == NIMMessageType.notification &&
+        message.messageAttachment is NIMUpdateTeamAttachment) {
+      var attachment = message.messageAttachment as NIMUpdateTeamAttachment;
+      // 过滤被邀请人相关通知消息
+      if (attachment.updatedFields.updatedBeInviteMode != null) {
+        return true;
+      }
+      // 过滤群信息扩展参数变更通知消息
+      if (attachment.updatedFields.updatedExtension != null) {
+        return true;
+      }
+    }
+    return false;
   }
 
   void _setNIMMessageListener() {
@@ -186,6 +220,23 @@ class ChatViewModel extends ChangeNotifier {
       if (_updateNimMessage(event) == false && event.sessionId == sessionId) {
         //如果更新失败则添加
         _insertMessages([ChatMessage(event)], toEnd: false);
+      }
+    }));
+
+    subscriptions
+        .add(ChatServiceObserverRepo.observeMessageDelete().listen((event) {
+      if (event.isNotEmpty) {
+        for (var msg in event) {
+          if (msg.sessionId == sessionId && msg.sessionType == sessionType) {
+            _messageList.remove(ChatMessage(msg));
+            _selectedMessages.removeWhere((e) => e.uuid == msg.uuid);
+          }
+        }
+        if (_messageList.length < _autoFetchMessageSize &&
+            hasMoreForwardMessages) {
+          fetchMoreMessage(QueryDirection.QUERY_OLD);
+        }
+        notifyListeners();
       }
     }));
 
@@ -437,8 +488,7 @@ class ChatViewModel extends ChangeNotifier {
   _onListFetchSuccess(List<ChatMessage>? list, QueryDirection direction) {
     if (direction == QueryDirection.QUERY_OLD) {
       //先判断是否有更多，在过滤
-      hasMoreForwardMessages =
-          (list != null && list.isNotEmpty && list.length >= messageLimit);
+      hasMoreForwardMessages = (list != null && list.isNotEmpty);
       _logD(
           'older forward has more:$hasMoreForwardMessages because list length =  ${list?.length}');
       list = _successMessageFilter(list);
@@ -503,6 +553,36 @@ class ChatViewModel extends ChangeNotifier {
     }
   }
 
+  ///是否是被选中的消息
+  bool isSelectedMessage(NIMMessage message) {
+    return _selectedMessages
+            .firstWhereOrNull((element) => element.uuid == message.uuid) !=
+        null;
+  }
+
+  ///添加选中的消息
+  void addSelectedMessage(NIMMessage message) {
+    if (isSelectedMessage(message)) {
+      return;
+    }
+    _selectedMessages.add(message);
+    notifyListeners();
+  }
+
+  ///移除选中的消息
+  void removeSelectedMessage(NIMMessage message) {
+    _selectedMessages.removeWhere((element) => element.uuid == message.uuid);
+    notifyListeners();
+  }
+
+  ///移除选中的消息
+  void removeSelectedMessages(List<NIMMessage> messages) {
+    for (var msg in messages) {
+      _selectedMessages.removeWhere((element) => element.uuid == msg.uuid);
+    }
+    notifyListeners();
+  }
+
   void _updateMessagePin(NIMMessagePin messagePin, {bool delete = false}) {
     for (int i = 0; i < _messageList.length; i++) {
       if (_isSameMessage(_messageList[i].nimMessage, messagePin)) {
@@ -516,29 +596,44 @@ class ChatViewModel extends ChangeNotifier {
   void sendTextMessage(String text,
       {NIMMessage? replyMsg,
       List<String>? pushList,
-      AitContactsModel? aitContactsModel}) {
-    var aitMap = aitContactsModel?.toMap();
+      AitContactsModel? aitContactsModel,
+      String? title}) async {
+    var aitMap;
 
-    MessageBuilder.createTextMessage(
-      sessionId: sessionId,
-      sessionType: sessionType,
-      text: text,
-    ).then((value) {
-      if (value.isSuccess && value.data != null) {
-        if (sessionType == NIMSessionType.team &&
-            pushList != null &&
-            pushList.isNotEmpty) {
-          value.data!.memberPushOption = NIMMemberPushOption(
-              forcePushContent: value.data!.content, forcePushList: pushList);
-        }
-        if (aitMap != null) {
-          value.data!.remoteExtension = {
-            ChatMessage.keyAitMsg: aitMap,
-          };
-        }
-        sendMessage(value.data!, replyMsg: replyMsg);
+    if (aitContactsModel?.aitBlocks.isNotEmpty == true) {
+      aitMap = aitContactsModel?.toMap();
+    }
+
+    var customData =
+        ChatMessageHelper.getMultiLineMessageMap(title: title, content: text);
+
+    var msgBuildResult = (title?.isNotEmpty == true)
+        ? (await MessageBuilder.createCustomMessage(
+            sessionId: sessionId,
+            sessionType: sessionType,
+            attachment: NIMCustomMessageAttachment(data: customData)))
+        : (await MessageBuilder.createTextMessage(
+            sessionId: sessionId,
+            sessionType: sessionType,
+            text: text,
+          ));
+    if (msgBuildResult.isSuccess && msgBuildResult.data != null) {
+      if (sessionType == NIMSessionType.team &&
+          pushList != null &&
+          pushList.isNotEmpty) {
+        msgBuildResult.data!.memberPushOption = NIMMemberPushOption(
+            forcePushContent: title ?? text, forcePushList: pushList);
       }
-    });
+      if (title?.isNotEmpty == true) {
+        msgBuildResult.data!.pushContent = title;
+      }
+      if (aitMap != null) {
+        msgBuildResult.data!.remoteExtension = {
+          ChatMessage.keyAitMsg: aitMap,
+        };
+      }
+      sendMessage(msgBuildResult.data!, replyMsg: replyMsg);
+    }
   }
 
   void sendAudioMessage(String filePath, int fileSize, int duration,
@@ -725,15 +820,173 @@ class ChatViewModel extends ChangeNotifier {
     return false;
   }
 
-  void forwardMessage(
-      NIMMessage message, String sessionId, NIMSessionType sessionType) async {
+  ///合并转发
+  ///[exitMultiMode] 是否退出多选模式
+  ///[postScript] 转发后的附言
+  ///[sessionId] 转发的目标会话id
+  ///[sessionType] 转发的目标会话类型
+  ///[errorToast] 转发失败的提示
+  void mergedMessageForward(String sessionId, NIMSessionType sessionType,
+      {String? postScript,
+      String? errorToast,
+      bool exitMultiMode = true}) async {
     if (await haveConnectivity()) {
+      _selectedMessages.removeWhere((element) =>
+          element.status == NIMMessageStatus.fail ||
+          element.status == NIMMessageStatus.sending);
+      _selectedMessages.sort((a, b) => a.timestamp - b.timestamp);
+      MergeMessageHelper.createMergedMessage(
+              selectedMessages, sessionId, sessionType)
+          .then((value) async {
+        if (value.isSuccess && value.data != null) {
+          value.data!.messageAck = await ConfigRepo.getShowReadStatus();
+          ChatMessageRepo.sendMessage(message: value.data!).then((value) {
+            if (value.code == ChatMessageRepo.errorInBlackList) {
+              ChatMessageRepo.saveTipsMessage(sessionId, sessionType,
+                  S.of().chatMessageSendFailedByBlackList);
+            }
+            if (postScript?.isNotEmpty == true) {
+              ChatMessageRepo.sendTextMessageWithMessageAck(
+                  sessionId: sessionId,
+                  sessionType: sessionType,
+                  text: postScript!);
+            }
+          });
+        } else {
+          _logI(
+              'createMergedMessage failed, code = ${value.code}, error = ${value.errorDetails}');
+          if (errorToast?.isNotEmpty == true) {
+            Fluttertoast.showToast(msg: errorToast!);
+          }
+        }
+        if (exitMultiMode) {
+          isMultiSelected = false;
+        }
+        notifyListeners();
+      });
+    }
+  }
+
+  bool filterForwardMessage(bool Function(NIMMessage) filter) {
+    var oldLength = _selectedMessages.length;
+    _selectedMessages.removeWhere((element) => filter(element));
+    notifyListeners();
+    return oldLength > _selectedMessages.length;
+  }
+
+  ///逐条转发
+  ///[exitMultiMode] 是否退出多选模式
+  ///[postScript] 转发后的附言
+  ///[sessionId] 转发的目标会话id
+  ///[sessionType] 转发的目标会话类型
+  void forwardMessageOneByOne(String sessionId, NIMSessionType sessionType,
+      {String? postScript, bool exitMultiMode = true}) async {
+    if (!await haveConnectivity()) {
+      return;
+    }
+    _selectedMessages.removeWhere((element) =>
+        element.status == NIMMessageStatus.fail ||
+        element.status == NIMMessageStatus.sending);
+    for (var element in _selectedMessages) {
+      forwardMessage(element, sessionId, sessionType);
+    }
+    if (postScript?.isNotEmpty == true) {
+      ChatMessageRepo.sendTextMessageWithMessageAck(
+              sessionId: sessionId, sessionType: sessionType, text: postScript!)
+          .then((msgSend) {
+        if (msgSend.code == ChatMessageRepo.errorInBlackList) {
+          ChatMessageRepo.saveTipsMessage(
+              sessionId, sessionType, S.of().chatMessageSendFailedByBlackList);
+        }
+      });
+    }
+    if (exitMultiMode) {
+      isMultiSelected = false;
+    }
+    notifyListeners();
+  }
+
+  ///逐条删除
+  void deleteMessageOneByOne() async {
+    if (!await haveConnectivity()) {
+      return;
+    }
+
+    if (_selectedMessages.length < 100) {
+      _deleteMsgList(_selectedMessages);
+    } else {
+      //远端删除消息，每次最多删除99条
+      int i = 0;
+      int j = 99;
+      final deleteMessage = List.of(_selectedMessages);
+      while (i < deleteMessage.length && j <= deleteMessage.length) {
+        //异步操作防止触发频控
+        await _deleteMsgList(
+            deleteMessage.sublist(i, min(j, deleteMessage.length)));
+        i = j;
+        j = min(j + 99, deleteMessage.length);
+      }
+    }
+  }
+
+  //批量删除消息
+  //如果是本地消息，则直接删除本地消息
+  //如果是远程消息，则删除远程消息
+  Future<void> _deleteMsgList(List<NIMMessage> deleteMsgList) async {
+    var localMessage = deleteMsgList
+        .where((element) =>
+            element.status == NIMMessageStatus.fail ||
+            (element.serverId ?? 0) <= 0)
+        .toList();
+    if (localMessage.isNotEmpty) {
+      await ChatMessageRepo.deleteLocalMessageList(localMessage);
+      var uuidList = localMessage.map((e) => e.uuid).toList();
+      _messageList.removeWhere((e) => uuidList.contains(e.nimMessage.uuid));
+    }
+
+    var remoteMessage = deleteMsgList
+        .where((element) =>
+            element.status == NIMMessageStatus.success ||
+            (element.serverId ?? 0) > 0)
+        .toList();
+    if (remoteMessage.isNotEmpty) {
+      var remoteResult = await ChatMessageRepo.deleteMessageList(remoteMessage);
+      if (remoteResult.isSuccess) {
+        var uuidList = remoteMessage.map((e) => e.uuid).toList();
+        _messageList.removeWhere((e) => uuidList.contains(e.nimMessage.uuid));
+      }
+    }
+    isMultiSelected = false;
+    notifyListeners();
+    if (_messageList.length < _autoFetchMessageSize && hasMoreForwardMessages) {
+      fetchMoreMessage(QueryDirection.QUERY_OLD);
+    }
+  }
+
+  void forwardMessage(
+      NIMMessage message, String sessionId, NIMSessionType sessionType,
+      {String? postScript}) async {
+    if (await haveConnectivity()) {
+      message.messageAck = await ConfigRepo.getShowReadStatus();
       ChatMessageRepo.forwardMessage(message, sessionId, sessionType)
           .then((value) {
         if (value.code == ChatMessageRepo.errorInBlackList) {
           ChatMessageRepo.saveTipsMessage(
               sessionId, sessionType, S.of().chatMessageSendFailedByBlackList);
         }
+        if (postScript?.isNotEmpty == true) {
+          ChatMessageRepo.sendTextMessageWithMessageAck(
+                  sessionId: sessionId,
+                  sessionType: sessionType,
+                  text: postScript!)
+              .then((msgSend) {
+            if (msgSend.code == ChatMessageRepo.errorInBlackList) {
+              ChatMessageRepo.saveTipsMessage(sessionId, sessionType,
+                  S.of().chatMessageSendFailedByBlackList);
+            }
+          });
+        }
+        notifyListeners();
       });
     }
   }
@@ -809,49 +1062,17 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   void _onMessageRevoked(ChatMessage revokedMsg) async {
-    RevokedMessageInfo? revokedMessageInfo =
-        RevokedMessageInfo.getRevokedMessage(revokedMsg.nimMessage);
-    //创建一条特殊的占位消息
-    MessageBuilder.createTextMessage(
-            sessionId: revokedMsg.nimMessage.sessionId!,
-            sessionType: revokedMsg.nimMessage.sessionType!,
-            text: S.of().chatMessageHaveBeenRevoked)
-        .then((msgResult) {
-      if (msgResult.isSuccess && msgResult.data != null) {
-        //设置撤回标识
-        if (msgResult.data!.localExtension != null) {
-          msgResult.data!.localExtension![ChatMessage.keyRevokeMsg] = true;
-          msgResult.data!.localExtension![ChatMessage.keyRevokeMsgContent] =
-              revokedMessageInfo?.toMap();
-        } else {
-          msgResult.data!.localExtension = {
-            ChatMessage.keyRevokeMsg: true,
-            ChatMessage.keyRevokeMsgContent: revokedMessageInfo?.toMap()
-          };
-        }
-        msgResult.data!.fromAccount = revokedMsg.nimMessage.fromAccount;
-        msgResult.data!.messageDirection =
-            revokedMsg.nimMessage.fromAccount == IMKitClient.account()
-                ? NIMMessageDirection.outgoing
-                : NIMMessageDirection.received;
-        msgResult.data!.config =
-            NIMCustomMessageConfig(enableUnreadCount: false);
-        //将占位消息插入到本地
-        NimCore.instance.messageService
-            .saveMessageToLocalEx(
-                message: msgResult.data!, time: revokedMsg.nimMessage.timestamp)
-            .then((savedMsg) {
-          //找到位置，跟新
-          if (savedMsg.isSuccess && savedMsg.data != null) {
-            int pos = _messageList.indexOf(revokedMsg);
-            if (pos >= 0) {
-              _messageList[pos] = ChatMessage(savedMsg.data!);
-              notifyListeners();
-            }
-          }
-        });
+    final localMessage = await ChatKitClientRepo.instance
+        .onMessageRevoked(revokedMsg, S.of().chatMessageHaveBeenRevoked);
+    if (localMessage.isSuccess && localMessage.data != null) {
+      int pos = _messageList.indexOf(revokedMsg);
+      if (pos >= 0) {
+        _messageList[pos] = ChatMessage(localMessage.data!);
+        _selectedMessages.removeWhere(
+            (element) => element.uuid == revokedMsg.nimMessage.uuid);
+        notifyListeners();
       }
-    });
+    }
   }
 
   void sendMessageP2PReceipt(NIMMessage message) {

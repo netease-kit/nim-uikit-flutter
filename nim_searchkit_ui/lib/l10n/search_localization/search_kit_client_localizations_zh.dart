@@ -25,4 +25,10 @@ class SearchKitClientLocalizationsZh extends SearchKitClientLocalizations {
 
   @override
   String get searchEmptyTips => '该用户不存在';
+
+  @override
+  String get searchTeamLeave => '离开群聊';
+
+  @override
+  String get searchTeamDismissOrLeave => '您已被移除群聊或群聊已解散';
 }

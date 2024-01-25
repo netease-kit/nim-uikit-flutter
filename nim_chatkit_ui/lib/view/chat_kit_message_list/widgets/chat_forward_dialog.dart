@@ -2,19 +2,28 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_common_ui/widgets/text_untils.dart';
 import 'package:netease_corekit_im/model/contact_info.dart';
-import 'package:flutter/material.dart';
 import 'package:nim_core/nim_core.dart';
 
 import '../../../l10n/S.dart';
 
-Future<bool?> showChatForwardDialog(
+///弹出转发消息的对话框
+///[context] 上下文
+///[contentStr] 转发的消息内容
+///[contacts] 转发的联系人
+///[team] 转发的群组
+Future<ForwardResult?> showChatForwardDialog(
     {required BuildContext context,
     required String contentStr,
     List<ContactInfo>? contacts,
     NIMTeam? team}) async {
+  TextEditingController _inputControl = TextEditingController();
+
   Widget _getTargetUser() {
     if (team != null) {
       return Row(children: [
@@ -88,7 +97,7 @@ Future<bool?> showChatForwardDialog(
     return Container();
   }
 
-  Widget _getContent() {
+  Widget _getContent(double width) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -103,19 +112,30 @@ Future<bool?> showChatForwardDialog(
         Container(
           padding: EdgeInsets.only(left: 12, right: 12, top: 7, bottom: 9),
           color: '#F2F4F5'.toColor(),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  contentStr,
-                  style: TextStyle(fontSize: 14, color: '#333333'.toColor()),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              )
-            ],
-          ),
-        )
+          height: 38,
+          width: width,
+          child: getSingleMiddleEllipsisText(contentStr,
+              endLen: 5,
+              style: TextStyle(fontSize: 14, color: '#333333'.toColor())),
+        ),
+        Container(
+            margin: EdgeInsets.only(top: 12),
+            child: CupertinoTextField(
+              controller: _inputControl,
+              placeholder: S.of(context).chatMessagePostScript,
+              placeholderStyle: TextStyle(
+                  color: '#A6ADB6'.toColor(),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400),
+              style: TextStyle(
+                  color: '#333333'.toColor(),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400),
+              decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: '#A6ADB6'.toColor())),
+            ))
       ],
     );
   }
@@ -123,35 +143,63 @@ Future<bool?> showChatForwardDialog(
   return showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          content: _getContent(),
-          actions: [
-            Row(
-              children: [
-                Expanded(
-                    child: TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                        },
-                        child: Text(
-                          S.of(context).messageCancel,
-                          style: const TextStyle(
-                              fontSize: 17, color: CommonColors.color_666666),
-                        ))),
-                Expanded(
-                    child: TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pop(true);
-                        },
-                        child: Text(
-                          S.of(context).chatMessageSend,
-                          style: const TextStyle(
-                              fontSize: 17, color: CommonColors.color_007aff),
-                        ))),
-              ],
-            )
-          ],
-        );
+        double dialogWidth = MediaQuery.of(context).size.width;
+        return SimpleDialog(
+            backgroundColor: Colors.white,
+            contentPadding: EdgeInsets.zero,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10.0),
+            ),
+            children: [
+              Padding(
+                padding: EdgeInsets.all(14),
+                child: _getContent(dialogWidth - 28),
+              ),
+              Container(height: 1, color: '#E1E6E8'.toColor()),
+              SizedBox(
+                height: 50,
+                child: Row(
+                  children: [
+                    Expanded(
+                        child: TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pop<ForwardResult>(
+                                  ForwardResult(result: false));
+                            },
+                            child: Text(
+                              S.of(context).messageCancel,
+                              style: const TextStyle(
+                                  fontSize: 17,
+                                  color: CommonColors.color_666666),
+                            ))),
+                    Container(
+                      width: 1,
+                      height: 50,
+                      color: '#E1E6E8'.toColor(),
+                    ),
+                    Expanded(
+                        child: TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pop<ForwardResult>(
+                                  ForwardResult(
+                                      result: true,
+                                      postScript: _inputControl.text));
+                            },
+                            child: Text(
+                              S.of(context).chatMessageSend,
+                              style: const TextStyle(
+                                  fontSize: 17,
+                                  color: CommonColors.color_007aff),
+                            ))),
+                  ],
+                ),
+              ),
+            ]);
       });
+}
+
+class ForwardResult {
+  bool result; //是否转发
+  String? postScript; //附言
+  ForwardResult({required this.result, this.postScript});
 }

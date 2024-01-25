@@ -19,7 +19,9 @@ extension MessageUserHelper on String {
   }
 
   Future<String?> getAvatar() async {
-    return getIt<ContactProvider>().getContact(this).then((value) {
+    return getIt<ContactProvider>()
+        .getContact(this, needFriend: false)
+        .then((value) {
       if (value != null) {
         return value.user.avatar;
       } else {
@@ -53,10 +55,12 @@ Future<String> getUserNickInTeam(String tId, String accId,
   } else {
     var teamMember =
         await NimCore.instance.teamService.queryTeamMember(tId, accId);
-    if (teamMember.data?.teamNick?.isNotEmpty == true) {
+    var userInfo = await getIt<ContactProvider>().getContact(accId);
+    if (showAlias && userInfo?.friend?.alias?.isNotEmpty == true) {
+      return userInfo!.friend!.alias!;
+    } else if (teamMember.data?.teamNick?.isNotEmpty == true) {
       return teamMember.data!.teamNick!;
     } else {
-      var userInfo = await getIt<ContactProvider>().getContact(accId);
       return userInfo?.user.nick?.isNotEmpty == true
           ? userInfo!.user.nick!
           : accId;

@@ -15,11 +15,11 @@ import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_
 import 'package:nim_chatkit_ui/view/page/chat_pin_page.dart';
 import 'package:nim_core/nim_core.dart';
 
-import 'view/page/chat_page.dart';
-import 'view/page/chat_search_page.dart';
 import 'l10n/S.dart';
 import 'view/chat_kit_message_list/item/chat_kit_message_item.dart';
 import 'view/input/actions.dart';
+import 'view/page/chat_page.dart';
+import 'view/page/chat_search_page.dart';
 
 typedef NIMMessageAction = Future Function(NIMMessage message);
 
@@ -96,6 +96,9 @@ class ChatUIConfig {
   ///[width] 图片宽度
   Widget Function(double aspectRatio, {double? width})? imagePlaceHolder;
 
+  ///是否展示头像
+  bool? Function(NIMMessage message)? isShowAvatar;
+
   ///视频消息最大size 单位M，不设置默认200
   int? maxVideoSize;
 
@@ -110,34 +113,44 @@ class ChatUIConfig {
   ///[text] @的文本
   Function(String account, String text)? onTapAitLink;
 
-  ChatUIConfig({
-    this.showTeamMessageStatus,
-    this.receiveMessageBg,
-    this.selfMessageBg,
-    this.showP2pMessageStatus,
-    this.signalBgColor,
-    this.timeTextColor,
-    this.timeTextSize,
-    this.messageTextSize,
-    this.messageTextColor,
-    this.userNickTextSize,
-    this.userNickColor,
-    this.avatarCornerRadius,
-    this.enableMessageLongPress = true,
-    this.popMenuConfig,
-    this.keepDefaultMoreAction = true,
-    this.moreActions,
-    this.messageBuilder,
-    this.messageClickListener,
-    this.getPushPayload,
-    this.imagePlaceHolder,
-    this.maxVideoSize,
-    this.locationProvider,
-    this.onTapAitLink,
-    this.maxFileSize,
-    this.keepDefaultInputAction = true,
-    this.inputActions,
-  });
+  ///消息简要展示,将会显示在被回复的消息，合并转发之后的消息，以及推送内容
+  ///[message] 消息
+  String? Function(NIMMessage message)? getMessageBrief;
+
+  ///展示时间的消息间隔，单位ms，默认5分钟
+  int showTimeInterval;
+
+  ChatUIConfig(
+      {this.showTeamMessageStatus,
+      this.receiveMessageBg,
+      this.selfMessageBg,
+      this.showP2pMessageStatus,
+      this.signalBgColor,
+      this.timeTextColor,
+      this.timeTextSize,
+      this.messageTextSize,
+      this.messageTextColor,
+      this.userNickTextSize,
+      this.userNickColor,
+      this.avatarCornerRadius,
+      this.enableMessageLongPress = true,
+      this.popMenuConfig,
+      this.keepDefaultMoreAction = true,
+      this.moreActions,
+      this.messageBuilder,
+      this.messageClickListener,
+      this.getPushPayload,
+      this.imagePlaceHolder,
+      this.maxVideoSize,
+      this.locationProvider,
+      this.onTapAitLink,
+      this.maxFileSize,
+      this.keepDefaultInputAction = true,
+      this.inputActions,
+      this.getMessageBrief,
+      this.showTimeInterval = 5 * 60 * 1000,
+      this.isShowAvatar,
+      this.messageLinkColor});
 }
 
 ///消息点击回调
@@ -150,10 +163,13 @@ class MessageClickListener {
 
   bool Function(String? userID, {bool isSelf})? onTapAvatar;
 
+  bool Function(String? userID, {bool isSelf})? onLongPressAvatar;
+
   MessageClickListener(
       {this.onMessageItemLongClick,
       this.onMessageItemClick,
       this.customPopActions,
+      this.onLongPressAvatar,
       this.onTapAvatar});
 }
 

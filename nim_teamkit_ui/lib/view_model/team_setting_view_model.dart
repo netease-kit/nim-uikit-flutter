@@ -4,20 +4,23 @@
 
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_corekit_im/model/team_models.dart';
 import 'package:netease_corekit_im/service_locator.dart';
 import 'package:netease_corekit_im/services/login/login_service.dart';
-import 'package:flutter/material.dart';
 import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
 import 'package:nim_core/nim_core.dart';
 import 'package:nim_teamkit/repo/team_repo.dart';
 
 class TeamSettingViewModel extends ChangeNotifier {
+  //当前用户在群里的身份
   TeamWithMember? teamWithMember;
   List<UserInfoWithTeam>? userInfoData;
 
   List<UserInfoWithTeam>? filterList;
+
+  List<UserInfoWithTeam> selectedList = List.empty(growable: true);
 
   bool messageTip = true;
   bool isStick = false;
@@ -70,13 +73,47 @@ class TeamSettingViewModel extends ChangeNotifier {
     _teamSub.addAll([
       NIMChatCache.instance.teamMembersNotifier.listen((event) {
         userInfoData = event;
-        notifyListeners();
         //更新完毕后重新排序,可能有新成员加入
         if (_searchKey?.isNotEmpty == true) {
           filterByText(_searchKey);
         }
+        //移除选择列表中不存在的成员
+        if (selectedList.isNotEmpty) {
+          var allMembers =
+              userInfoData?.map((e) => e.teamInfo.account).toList();
+          selectedList.removeWhere(
+              (element) => !allMembers!.contains(element.teamInfo.account));
+        }
+        notifyListeners();
       }),
     ]);
+  }
+
+  void addSelected(UserInfoWithTeam userInfoWithTeam) {
+    selectedList.add(userInfoWithTeam);
+    notifyListeners();
+  }
+
+  void removeSelected(UserInfoWithTeam userInfoWithTeam) {
+    selectedList.remove(userInfoWithTeam);
+    notifyListeners();
+  }
+
+  bool isSelected(UserInfoWithTeam userInfoWithTeam) {
+    return selectedList.contains(userInfoWithTeam);
+  }
+
+  void addTeamManager(String tid, List<String> accounts) {
+    TeamRepo.addTeamManager(tid, accounts).then((value) {});
+  }
+
+  Future<NIMResult<List<NIMTeamMember>>> removeTeamManager(
+      String tid, String accId) {
+    return TeamRepo.removeTeamManager(tid, [accId]);
+  }
+
+  Future<NIMResult<void>> removeTeamMember(String tid, String accId) {
+    return TeamRepo.removeTeamMembers(tid, [accId]);
   }
 
   void filterByText(String? filterStr) {
@@ -200,8 +237,9 @@ class TeamSettingViewModel extends ChangeNotifier {
     });
   }
 
-  void addMembers(String teamId, List<String> members) {
-    TeamRepo.inviteUser(teamId, members).then((value) {});
+  Future<NIMResult<List<String>>> addMembers(
+      String teamId, List<String> members) {
+    return TeamRepo.inviteUser(teamId, members);
   }
 
   @override

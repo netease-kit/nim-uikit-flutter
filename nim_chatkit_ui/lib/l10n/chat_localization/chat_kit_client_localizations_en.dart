@@ -160,6 +160,9 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
   String get chatMessageBriefCustom => '[Custom Message]';
 
   @override
+  String get chatMessageBriefChatHistory => '[Chat History]';
+
+  @override
   String get chatSetting => 'Chat setting';
 
   @override
@@ -417,4 +420,80 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
 
   @override
   String get chatHaveNoPinMessage => 'No pinned message';
+
+  @override
+  String get chatMessageMergeForward => 'Merge Forward';
+
+  @override
+  String get chatMessageItemsForward => 'Items Forward';
+
+  @override
+  String chatMessageMergedTitle(String user) {
+    return '${user}History Message';
+  }
+
+  @override
+  String get chatMessageChatHistory => 'Chat History';
+
+  @override
+  String get chatMessagePostScript => 'Post Script';
+
+  @override
+  String get chatMessageMergeMessageError => 'System Error，Forward Error';
+
+  @override
+  String get chatMessageInputTitle => 'Input Title';
+
+  @override
+  String get chatMessageNotSupportEmptyMessage => 'Not support empty message';
+
+  @override
+  String chatMessageMergedForwardLimitOut(String number) {
+    return 'Merge message limit$number';
+  }
+
+  @override
+  String chatMessageForwardOneByOneLimitOut(String number) {
+    return 'Forward message one by one limit$number';
+  }
+
+  @override
+  String messageForwardMessageOneByOneTips(String user) {
+    return '[Forward One by One]${user}Chat History';
+  }
+
+  @override
+  String messageForwardMessageMergedTips(String user) {
+    return '[Merged Forward]${user}Chat History';
+  }
+
+  @override
+  String get chatMessageHaveMessageCantForward =>
+      'There are messages that cannot be forwarded';
+
+  @override
+  String get chatMessageInfoError => 'Message info error';
+
+  @override
+  String get chatMessageMergeDepthOut =>
+      'The message exceeds the merging limit and cannot be forwarded as is. Should it be sent without merging?';
+
+  @override
+  String get chatMessageExitMessageCannotForward =>
+      'Exit message cannot be forwarded';
+
+  @override
+  String get chatTeamPermissionInviteOnlyOwnerAndManagers =>
+      'Owner and managers';
+
+  @override
+  String get chatTeamPermissionUpdateOnlyOwnerAndManagers =>
+      'Owner and managers';
+
+  @override
+  String get chatTeamHaveBeenKick => 'You have been kicked';
+
+  @override
+  String get chatMessageHaveCannotForwardMessages =>
+      'There are messages that cannot be forwarded';
 }

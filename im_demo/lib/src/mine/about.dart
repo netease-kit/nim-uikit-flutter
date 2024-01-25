@@ -51,7 +51,7 @@ class AboutPage extends StatelessWidget {
               ),
               // 如果引入package_info 则不需要手动修改此处，但是如果只为了版本号引入不值得
               trailing: Text(
-                'V1.2.0',
+                'V9.7.0',
                 style: _style,
               ),
             ),

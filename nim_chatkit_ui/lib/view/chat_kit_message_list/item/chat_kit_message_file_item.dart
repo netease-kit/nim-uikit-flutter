@@ -5,14 +5,16 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit/repo/chat_service_observer_repo.dart';
 import 'package:nim_chatkit_ui/media/audio_player.dart';
 import 'package:nim_core/nim_core.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
 
 import '../../../chat_kit_client.dart';
@@ -138,7 +140,11 @@ const support_type_map_android = {
 class ChatKitMessageFileItem extends StatefulWidget {
   final NIMMessage message;
 
-  const ChatKitMessageFileItem({Key? key, required this.message})
+  ///独立的文件，比如合并转发后的文件
+  final bool independentFile;
+
+  const ChatKitMessageFileItem(
+      {Key? key, required this.message, this.independentFile = false})
       : super(key: key);
 
   @override
@@ -161,6 +167,7 @@ class ChatKitMessageFileState extends State<ChatKitMessageFileItem> {
   @override
   void initState() {
     super.initState();
+
     processStreamSub =
         ChatServiceObserverRepo.observeAttachmentProgress().listen((event) {
       if (event.id == widget.message.uuid) {
@@ -262,26 +269,48 @@ class ChatKitMessageFileState extends State<ChatKitMessageFileItem> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        if (attachment.path == null || !File(attachment.path!).existsSync()) {
+      onTap: () async {
+        String filePath;
+        if (widget.independentFile) {
+          var directory;
+          if (Platform.isIOS) {
+            directory = await getApplicationDocumentsDirectory();
+          } else {
+            directory = await getExternalStorageDirectory();
+          }
+          filePath =
+              '${directory?.path}/${widget.message.uuid}/${attachment.displayName}';
+        } else {
+          filePath = attachment.path ?? '';
+        }
+        if (!File(filePath).existsSync()) {
           processValue = 0.0;
-          ChatMessageRepo.downloadAttachment(
-                  message: widget.message, thumb: false)
-              .then((value) => {
-                    Alog.d(
-                        tag: 'ChatKitMessageFileItem',
-                        content: 'downloadAttachment result is $value')
-                  });
+          if (widget.independentFile) {
+            Dio().download(attachment.url!, filePath,
+                onReceiveProgress: (count, total) {
+              processValue = count / total;
+              processVisible = (processValue ?? 0) < 1.0;
+              setState(() {});
+            });
+          } else {
+            ChatMessageRepo.downloadAttachment(
+                    message: widget.message, thumb: false)
+                .then((value) => {
+                      Alog.d(
+                          tag: 'ChatKitMessageFileItem',
+                          content: 'downloadAttachment result is $value')
+                    });
+          }
         } else {
           if (_needAudioFocus()) {
             ChatAudioPlayer.instance.stopAll();
           }
           if (Platform.isAndroid) {
-            OpenFilex.open(attachment.path,
+            OpenFilex.open(filePath,
                 type: support_type_map_android[
                     attachment.extension?.toLowerCase()]);
           } else {
-            OpenFilex.open(attachment.path);
+            OpenFilex.open(filePath);
           }
         }
       },

@@ -5,5 +5,7 @@
   "searchSearchFriend": "Friend",
   "searchSearchNormalTeam": "Normal team",
   "searchSearchAdvanceTeam": "Advance Team",
-  "searchEmptyTips": "This user not exist"
+  "searchEmptyTips": "This user not exist",
+  "searchTeamLeave": "Leave Team",
+  "searchTeamDismissOrLeave": "Dismiss or leave team"
 }

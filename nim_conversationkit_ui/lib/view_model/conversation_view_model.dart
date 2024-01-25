@@ -4,19 +4,19 @@
 
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_corekit_im/im_kit_client.dart';
+import 'package:netease_corekit_im/service_locator.dart';
+import 'package:netease_corekit_im/services/login/login_service.dart';
 import 'package:netease_corekit_im/services/message/message_provider.dart';
 import 'package:nim_conversationkit/extention.dart';
 import 'package:nim_conversationkit/model/conversation_info.dart';
 import 'package:nim_conversationkit/repo/conversation_repo.dart';
-import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/login/login_service.dart';
-import 'package:flutter/material.dart';
 import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
+import 'package:nim_conversationkit_ui/service/ait/ait_server.dart';
 import 'package:nim_core/nim_core.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
-import 'package:nim_conversationkit_ui/service/ait/ait_server.dart';
 
 class ConversationViewModel extends ChangeNotifier {
   final String modelName = 'ConversationViewModel';
@@ -181,6 +181,16 @@ class ConversationViewModel extends ChangeNotifier {
       }
     }));
 
+    // all read observer for ios
+    subscriptions.add(
+        NimCore.instance.messageService.allMessagesReadForIOS.listen((event) {
+      _logI('allMessagesReadForIOS');
+      _conversationList.forEach((element) {
+        element.session.unreadCount = 0;
+      });
+      notifyListeners();
+    }));
+
     //异步加载userInfo 回调
     subscriptions
         .add(ConversationRepo.instance.onUserInfoUpdated.listen((event) {
@@ -284,11 +294,24 @@ class ConversationViewModel extends ChangeNotifier {
       _logI(
           'insertIndex:$insertIndex unread:${conversationInfo.session.unreadCount} haveBeenAit:${conversationInfo.haveBeenAit}');
       _conversationList.insert(insertIndex, conversationInfo);
-    } else {
+    } else if (_isMySession(conversationInfo)) {
       int insertIndex = _searchComparatorIndex(conversationInfo);
       _conversationList.insert(insertIndex, conversationInfo);
     }
     notifyListeners();
+  }
+
+  /// 是否是我的会话,如果不是则不展示
+  /// p2p 一定是我的会话
+  /// team 有可能不是我的会话
+  bool _isMySession(ConversationInfo conversationInfo) {
+    if (conversationInfo.session.sessionType == NIMSessionType.p2p) {
+      return true;
+    }
+    if (conversationInfo.session.sessionType == NIMSessionType.team) {
+      return conversationInfo.team?.isMyTeam == true;
+    }
+    return true;
   }
 
   _deleteItem(String sessionId, NIMSessionType sessionType) {
@@ -350,7 +373,11 @@ class ConversationViewModel extends ChangeNotifier {
           session.lastMessageAttachment as NIMTeamNotificationAttachment;
       var accId = getIt<LoginService>().userInfo?.userId;
       return notify.type == NIMTeamNotificationTypes.dismissTeam ||
-          notify.type == NIMTeamNotificationTypes.kickMember ||
+          (notify.type == NIMTeamNotificationTypes.kickMember &&
+              (notify as NIMMemberChangeAttachment?)
+                      ?.targets
+                      ?.contains(accId) ==
+                  true) ||
           (notify.type == NIMTeamNotificationTypes.leaveTeam &&
               session.senderAccount == accId);
     }

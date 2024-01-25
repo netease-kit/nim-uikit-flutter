@@ -5,5 +5,7 @@
   "searchSearchFriend": "好友",
   "searchSearchNormalTeam": "讨论组",
   "searchSearchAdvanceTeam": "高级群",
-  "searchEmptyTips": "该用户不存在"
+  "searchEmptyTips": "该用户不存在",
+    "searchTeamLeave": "离开群聊",
+    "searchTeamDismissOrLeave": "您已被移除群聊或群聊已解散"
 }

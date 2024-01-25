@@ -4,7 +4,13 @@
 
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:im_demo/l10n/S.dart';
+import 'package:im_demo/src/mine/mine_page.dart';
+import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_corekit_im/router/imkit_router_factory.dart';
 import 'package:netease_corekit_im/service_locator.dart';
 import 'package:netease_corekit_im/services/login/login_service.dart';
@@ -13,17 +19,11 @@ import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_item.dart';
 import 'package:nim_chatkit_ui/view/input/actions.dart';
 import 'package:nim_chatkit_ui/view_model/chat_view_model.dart';
-import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:nim_contactkit/repo/contact_repo.dart';
 import 'package:nim_contactkit_ui/page/contact_page.dart';
 import 'package:nim_conversationkit/repo/conversation_repo.dart';
 import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
 import 'package:nim_conversationkit_ui/page/conversation_page.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:im_demo/l10n/S.dart';
-import 'package:im_demo/src/mine/mine_page.dart';
 import 'package:nim_core/nim_core.dart';
 import 'package:provider/provider.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
@@ -164,11 +164,12 @@ class _HomePageState extends State<HomePage> {
     ConversationKitClient.instance.conversationUIConfig = ConversationUIConfig(
         itemConfig: ConversationItemConfig(
             lastMessageContentBuilder: (context, conversationInfo) {
-      if (conversationInfo.session.lastMessageType == NIMMessageType.custom) {
-        return S.of(context).customMessage;
-      }
-      return null;
-    }));
+              if (conversationInfo.session.lastMessageType == NIMMessageType.custom &&
+                  conversationInfo.session.lastMessageAttachment == null) {
+                return S.of(context).customMessage;
+              }
+              return null;
+            }));
   }
 
   @override

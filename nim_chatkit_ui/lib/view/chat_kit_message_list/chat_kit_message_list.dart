@@ -2,23 +2,24 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:netease_common_ui/widgets/neListView/size_cache_widget.dart';
-import 'package:netease_corekit_im/router/imkit_router.dart';
-import 'package:nim_chatkit_ui/l10n/S.dart';
-import 'package:nim_chatkit_ui/view/chat_kit_message_list/helper/chat_message_helper.dart';
-import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
 import 'package:collection/collection.dart';
-import 'package:netease_common_ui/ui/dialog.dart';
-import 'package:netease_corekit_im/services/message/chat_message.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:netease_common/netease_common.dart';
+import 'package:netease_common_ui/ui/dialog.dart';
+import 'package:netease_common_ui/widgets/neListView/size_cache_widget.dart';
+import 'package:netease_corekit_im/router/imkit_router.dart';
+import 'package:netease_corekit_im/services/message/chat_message.dart';
+import 'package:nim_chatkit/message/message_helper.dart';
+import 'package:nim_chatkit_ui/l10n/S.dart';
+import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
 import 'package:nim_core/nim_core.dart';
 import 'package:provider/provider.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
-import 'package:yunxin_alog/yunxin_alog.dart';
 
 import '../../chat_kit_client.dart';
+import '../../helper/chat_message_helper.dart';
 import '../../view_model/chat_view_model.dart';
 import 'item/chat_kit_message_item.dart';
 
@@ -78,15 +79,24 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
         customActions!.onMessageCopy!(message)) {
       return true;
     }
-    if (message.nimMessage.content?.isNotEmpty == true) {
+    if (message.nimMessage.messageType == NIMMessageType.text &&
+        message.nimMessage.content?.isNotEmpty == true) {
       Clipboard.setData(ClipboardData(text: message.nimMessage.content!));
+      Fluttertoast.showToast(msg: S.of().chatMessageCopySuccess);
+      return true;
+    }
+    var multiLineMap = MessageHelper.parseMultiLineMessage(message.nimMessage);
+    if (multiLineMap != null) {
+      var title = multiLineMap[ChatMessage.keyMultiLineTitle] as String;
+      var content = multiLineMap[ChatMessage.keyMultiLineBody];
+      Clipboard.setData(ClipboardData(text: content ?? title));
       Fluttertoast.showToast(msg: S.of().chatMessageCopySuccess);
       return true;
     }
     return false;
   }
 
-  _scrollToIndex(String uuid) {
+  _scrollToMessageByUUID(String uuid) {
     var index = context
         .read<ChatViewModel>()
         .messageList
@@ -166,11 +176,11 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
         context.read<ChatViewModel>().sessionType == NIMSessionType.p2p
             ? [context.read<ChatViewModel>().sessionId]
             : null;
-    ChatMessageHelper.showForwardMessageDialog(context,
-        (sessionId, sessionType) {
-      context
-          .read<ChatViewModel>()
-          .forwardMessage(message.nimMessage, sessionId, sessionType);
+    ChatMessageHelper.showForwardMessageDialog(context, (sessionId, sessionType,
+        {String? postScript, bool? isLastUser}) {
+      context.read<ChatViewModel>().forwardMessage(
+          message.nimMessage, sessionId, sessionType,
+          postScript: postScript);
     }, filterUser: filterUser, sessionName: sessionName);
     return true;
   }
@@ -190,7 +200,9 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
   }
 
   bool _onMessageMultiSelect(ChatMessage message) {
-    ///todo implement
+    context.read<ChatViewModel>().isMultiSelected = true;
+    context.read<ChatViewModel>().addSelectedMessage(message.nimMessage);
+    hideKeyboard();
     return true;
   }
 
@@ -381,7 +393,7 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
                         lastMessage: lastMessage,
                         popMenuAction:
                             getDefaultPopMenuActions(widget.popMenuAction),
-                        scrollToIndex: _scrollToIndex,
+                        scrollToIndex: _scrollToMessageByUUID,
                         onTapFailedMessage: _resendMessage,
                         onTapAvatar: widget.onTapAvatar,
                         onAvatarLongPress: widget.onAvatarLongPress,

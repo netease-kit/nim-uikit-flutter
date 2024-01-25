@@ -75,6 +75,7 @@
   "chatMessageBriefLocation": "[Location]",
   "chatMessageBriefFile": "[File]",
   "chatMessageBriefCustom": "[Custom Message]",
+  "chatMessageBriefChatHistory": "[Chat History]",
   "chatSetting": "Chat setting",
   "chatMessageSignal": "Message mark",
   "chatMessageOpenMessageNotice": "Open message notice",
@@ -367,5 +368,60 @@
   "chatTeamBeRemovedTitle": "Tip",
   "chatTeamBeRemovedContent": "This group is disbanded",
   "chatMessageSendFailedByBlackList": "Send failed, you are in the blacklist",
-  "chatHaveNoPinMessage": "No pinned message"
+  "chatHaveNoPinMessage": "No pinned message",
+  "chatMessageMergeForward": "Merge Forward",
+  "chatMessageItemsForward": "Items Forward",
+  "chatMessageMergedTitle": "{user}History Message",
+  "@chatMessageMergedTitle": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "chatMessageChatHistory": "Chat History",
+  "chatMessagePostScript": "Post Script",
+  "chatMessageMergeMessageError": "System Error，Forward Error",
+  "chatMessageInputTitle": "Input Title",
+  "chatMessageNotSupportEmptyMessage": "Not support empty message",
+  "chatMessageMergedForwardLimitOut": "Merge message limit{number}",
+  "@chatMessageMergedForwardLimitOut": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "chatMessageForwardOneByOneLimitOut": "Forward message one by one limit{number}",
+  "@chatMessageForwardOneByOneLimitOut": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "messageForwardMessageOneByOneTips": "[Forward One by One]{user}Chat History",
+  "@messageForwardMessageOneByOneTips": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "messageForwardMessageMergedTips": "[Merged Forward]{user}Chat History",
+  "@messageForwardMessageMergedTips": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "chatMessageHaveMessageCantForward": "There are messages that cannot be forwarded",
+  "chatMessageInfoError": "Message info error",
+  "chatMessageMergeDepthOut": "The message exceeds the merging limit and cannot be forwarded as is. Should it be sent without merging?",
+  "chatMessageExitMessageCannotForward": "Exit message cannot be forwarded",
+  "chatTeamPermissionInviteOnlyOwnerAndManagers": "Owner and managers",
+  "chatTeamPermissionUpdateOnlyOwnerAndManagers": "Owner and managers",
+  "chatTeamHaveBeenKick": "You have been kicked",
+  "chatMessageHaveCannotForwardMessages": "There are messages that cannot be forwarded"
 }

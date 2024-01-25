@@ -95,7 +95,18 @@ class ChatPinViewModel extends ChangeNotifier {
             break;
           }
         }
-      })
+      }),
+      ChatServiceObserverRepo.observeMessageDelete().listen((event) {
+        if (event.isNotEmpty) {
+          for (var msg in event) {
+            if (msg.sessionId == sessionId && msg.sessionType == sessionType) {
+              _pinnedMessages.remove(ChatMessage(msg));
+              isEmpty = _pinnedMessages.isEmpty;
+            }
+          }
+          notifyListeners();
+        }
+      }),
     ]);
   }
 

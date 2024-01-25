@@ -7,13 +7,13 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:audioplayers/audioplayers.dart';
-import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_corekit_im/router/imkit_router.dart';
 import 'package:nim_core/nim_core.dart';
-import 'package:phone_state/phone_state.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:phone_state/phone_state.dart';
 
 import '../../../chat_kit_client.dart';
 import '../../../media/audio_player.dart';
@@ -55,7 +55,7 @@ class ChatKitMessageAudioState extends State<ChatKitMessageAudioItem>
 
   double _getWidth(NIMMessage message) {
     int dur = _getAudioLen(message);
-    double baseLen = 77.0;
+    double baseLen = 78.0;
     double maxLen = 265.0;
     if (dur <= 2) {
       return baseLen;
@@ -225,6 +225,7 @@ class ChatKitMessageAudioState extends State<ChatKitMessageAudioItem>
       if (value != null) {
         var attachment = widget.message.messageAttachment as NIMAudioAttachment;
         var durLast = attachment.duration! - value.inMilliseconds;
+        isPlaying = true;
         _startPlayAni(durLast);
       }
     });

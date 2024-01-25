@@ -2,9 +2,9 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:netease_corekit_im/router/imkit_router_constants.dart';
-import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:flutter/widgets.dart';
+import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_corekit_im/router/imkit_router_constants.dart';
 import 'package:nim_core/nim_core.dart';
 
 class ChatKitMessageTipsItem extends StatefulWidget {
@@ -33,8 +33,7 @@ class ChatKitMessageTipsState extends State<ChatKitMessageTipsItem> {
       padding: const EdgeInsets.only(left: 16, top: 12, right: 16, bottom: 8),
       child: Text(
         _getTips(widget.message),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+        maxLines: null,
         style: TextStyle(fontSize: 12, color: '#999999'.toColor()),
       ),
     );

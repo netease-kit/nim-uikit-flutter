@@ -310,6 +310,144 @@ abstract class TeamKitClientLocalizations {
   /// In en, this message translates to:
   /// **'Team name must not empty'**
   String get teamNameMustNotEmpty;
+
+  /// No description provided for @teamManage.
+  ///
+  /// In en, this message translates to:
+  /// **'Team Manage'**
+  String get teamManage;
+
+  /// No description provided for @teamAitPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'Who can @all'**
+  String get teamAitPermission;
+
+  /// No description provided for @teamManager.
+  ///
+  /// In en, this message translates to:
+  /// **'Team Manager'**
+  String get teamManager;
+
+  /// No description provided for @teamAddManagers.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Managers'**
+  String get teamAddManagers;
+
+  /// No description provided for @teamOwnerManager.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner Add Manager'**
+  String get teamOwnerManager;
+
+  /// No description provided for @teamMemberRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get teamMemberRemove;
+
+  /// No description provided for @teamRemoveConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Sure to remove'**
+  String get teamRemoveConfirm;
+
+  /// No description provided for @teamRemoveConfirmContent.
+  ///
+  /// In en, this message translates to:
+  /// **'This Member will lost Manager Promise after remove'**
+  String get teamRemoveConfirmContent;
+
+  /// No description provided for @teamSettingFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Setting failed'**
+  String get teamSettingFailed;
+
+  /// No description provided for @teamMsgAitAllPrivilegeIsAll.
+  ///
+  /// In en, this message translates to:
+  /// **'@All privilege update to all'**
+  String get teamMsgAitAllPrivilegeIsAll;
+
+  /// No description provided for @teamMsgAitAllPrivilegeIsOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'@All privilege update to owner and manager'**
+  String get teamMsgAitAllPrivilegeIsOwner;
+
+  /// No description provided for @teamManagers.
+  ///
+  /// In en, this message translates to:
+  /// **'Managers'**
+  String get teamManagers;
+
+  /// No description provided for @teamSelectMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Select members'**
+  String get teamSelectMembers;
+
+  /// No description provided for @teamManagerLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'The number of managers cannot exceed {number}'**
+  String teamManagerLimit(String number);
+
+  /// No description provided for @teamNoOperatePermission.
+  ///
+  /// In en, this message translates to:
+  /// **'No operate permission'**
+  String get teamNoOperatePermission;
+
+  /// No description provided for @teamManagerEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No manager'**
+  String get teamManagerEmpty;
+
+  /// No description provided for @teamMemberRemoveContent.
+  ///
+  /// In en, this message translates to:
+  /// **'This member will leave this team after remove'**
+  String get teamMemberRemoveContent;
+
+  /// No description provided for @teamMemberRemoveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove failed'**
+  String get teamMemberRemoveFailed;
+
+  /// No description provided for @teamManagerManagers.
+  ///
+  /// In en, this message translates to:
+  /// **'Manager managers'**
+  String get teamManagerManagers;
+
+  /// No description provided for @teamMemberSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Select member'**
+  String get teamMemberSelect;
+
+  /// No description provided for @teamPermissionDeny.
+  ///
+  /// In en, this message translates to:
+  /// **'you have no permission'**
+  String get teamPermissionDeny;
+
+  /// No description provided for @teamManagerRemoveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove failed'**
+  String get teamManagerRemoveFailed;
+
+  /// No description provided for @teamMemberEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No member'**
+  String get teamMemberEmpty;
 }
 
 class _TeamKitClientLocalizationsDelegate

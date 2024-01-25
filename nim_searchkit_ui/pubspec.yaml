@@ -1,6 +1,6 @@
 name: nim_searchkit_ui
 description: Search UI base on SearchKit.
-version: 1.2.0
+version: 9.7.0
 homepage: https://github.com/netease-kit/nim-uikit-flutter
 # Remove this line if you wish to publish to pub.dev
 #publish_to: none
@@ -16,18 +16,18 @@ dependencies:
     sdk: flutter
 
   netease_common_ui:
-    ">=1.2.0 <1.3.0"
+    ">=9.7.0 <10.0.0"
 #    path: ../../common/netease_common_ui
   nim_searchkit:
-    ">=1.2.0 <1.3.0"
+    ">=9.7.0 <10.0.0"
 #    path: ../nim_searchkit
   netease_corekit_im:
-    ">=1.2.0 <1.3.0"
+    ">=9.7.0 <10.0.0"
 #    path: ../../netease_corekit/netease_corekit_im
   netease_corekit:
     ">=1.2.0 <1.3.0"
 #    path: ../../netease_corekit/netease_corekit
-  nim_core: ^1.7.3
+  nim_core: ^1.7.4
 #    path: ../../nim_core/nim_core
   intl: ^0.18.0
   flutter_svg: ^2.0.7

@@ -11,6 +11,7 @@ import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/progress_ring.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/string_utils.dart';
+import 'package:netease_common_ui/widgets/radio_button.dart';
 import 'package:netease_corekit_im/model/team_models.dart';
 import 'package:netease_corekit_im/service_locator.dart';
 import 'package:netease_corekit_im/services/contact/contact_provider.dart';
@@ -18,15 +19,18 @@ import 'package:netease_corekit_im/services/login/login_service.dart';
 import 'package:netease_corekit_im/services/message/chat_message.dart';
 import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
 import 'package:netease_corekit_im/services/team/team_provider.dart';
+import 'package:nim_chatkit/message/message_helper.dart';
 import 'package:nim_chatkit/message/message_reply_info.dart';
 import 'package:nim_chatkit/message/message_revoke_info.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
+import 'package:nim_chatkit_ui/chat_kit_client.dart';
+import 'package:nim_chatkit_ui/helper/chat_message_helper.dart';
+import 'package:nim_chatkit_ui/helper/chat_message_user_helper.dart';
 import 'package:nim_chatkit_ui/l10n/S.dart';
-import 'package:nim_chatkit_ui/view/chat_kit_message_list/helper/chat_message_helper.dart';
-import 'package:nim_chatkit_ui/view/chat_kit_message_list/helper/chat_message_user_helper.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_audio_item.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_file_item.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_image_item.dart';
+import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_merged_item.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_nonsupport_item.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_notify_item.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_tips_item.dart';
@@ -34,13 +38,14 @@ import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_message_pop_menu.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
 import 'package:nim_chatkit_ui/view/page/chat_message_ack_page.dart';
+import 'package:nim_chatkit_ui/view_model/chat_view_model.dart';
 import 'package:nim_core/nim_core.dart';
 import 'package:provider/provider.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
 
-import '../../../chat_kit_client.dart';
-import '../../../view_model/chat_view_model.dart';
+import '../../../helper/merge_message_helper.dart';
+import 'chat_kit_message_multi_line_text_item.dart';
 import 'chat_kit_message_text_item.dart';
 
 typedef ChatMessageItemBuilder = Widget Function(NIMMessage message);
@@ -54,6 +59,7 @@ class ChatKitMessageBuilder {
   ChatMessageItemBuilder? tipsMessageBuilder;
   ChatMessageItemBuilder? fileMessageBuilder;
   ChatMessageItemBuilder? locationMessageBuilder;
+  ChatMessageItemBuilder? mergedMessageBuilder;
   Map<NIMMessageType, ChatMessageItemBuilder?>? extendBuilder;
 }
 
@@ -106,7 +112,7 @@ class ChatKitMessageItem extends StatefulWidget {
 }
 
 class ChatKitMessageItemState extends State<ChatKitMessageItem> {
-  static const showTimeInterval = 5 * 60 * 1000;
+  int showTimeInterval = ChatKitClient.instance.chatUIConfig.showTimeInterval;
 
   static const maxReceiptNum = 100;
 
@@ -205,7 +211,7 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   double getMaxWidth(isSelect) {
     final size = MediaQuery.of(context).size;
     final width = size.width;
-    return width - (isSelect ? 130 : 110);
+    return width - (isSelect ? 135 : 110);
   }
 
   bool showNickname() {
@@ -224,7 +230,6 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   bool _showReeditText(RevokedMessageInfo? revokedMessageInfo) {
     var message = widget.chatMessage;
     return isSelf() &&
-        message.nimMessage.messageType == NIMMessageType.text &&
         revokedMessageInfo != null &&
         DateTime.now().millisecondsSinceEpoch - message.nimMessage.timestamp <
             reeditTime;
@@ -359,6 +364,31 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
         }
         return ChatKitMessageNonsupportItem();
       default:
+        if (message.nimMessage.messageType == NIMMessageType.custom) {
+          var mergedMessage =
+              MergeMessageHelper.parseMergeMessage(message.nimMessage);
+          var multiLineMap =
+              MessageHelper.parseMultiLineMessage(message.nimMessage);
+          var multiLineTitle = multiLineMap?[ChatMessage.keyMultiLineTitle];
+          var multiLineBody = multiLineMap?[ChatMessage.keyMultiLineBody];
+          if (mergedMessage != null) {
+            if (messageItemBuilder?.mergedMessageBuilder != null) {
+              return messageItemBuilder!.mergedMessageBuilder!
+                  .call(message.nimMessage);
+            }
+            return ChatKitMessageMergedItem(
+                message: message.nimMessage,
+                mergedMessage: mergedMessage,
+                chatUIConfig: widget.chatUIConfig);
+          } else if (multiLineTitle != null) {
+            return ChatKitMessageMultiLineItem(
+              message: message.nimMessage,
+              chatUIConfig: widget.chatUIConfig,
+              title: multiLineTitle,
+              body: multiLineBody,
+            );
+          }
+        }
         if (messageItemBuilder?.extendBuilder != null) {
           if (messageItemBuilder
                   ?.extendBuilder![message.nimMessage.messageType] !=
@@ -429,6 +459,10 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
     } else if (_showMsgAck(message)) {
       return InkWell(
         onTap: () {
+          ///多选模式下不可点击
+          if (context.read<ChatViewModel>().isMultiSelected) {
+            return;
+          }
           _log('click $_teamUnAck');
           if (message.nimMessage.sessionType == NIMSessionType.team &&
               _teamUnAck != 0) {
@@ -500,6 +534,11 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   }
 
   bool _hideAvatarMessage(ChatMessage message) {
+    var configShowAvatar =
+        widget.chatUIConfig?.isShowAvatar?.call(message.nimMessage);
+    if (configShowAvatar != null) {
+      return configShowAvatar;
+    }
     return message.nimMessage.messageType == NIMMessageType.notification ||
         message.nimMessage.messageType == NIMMessageType.tip;
   }
@@ -589,6 +628,7 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   Widget _getSingleMiddleEllipsisText(String? data,
       {TextStyle? style, String? userName}) {
     String info = data ?? "";
+    bool isMultiSelect = context.watch<ChatViewModel>().isMultiSelected;
     final TextPainter textPainter = TextPainter(
         text: TextSpan(text: info, style: style),
         maxLines: 1,
@@ -596,7 +636,7 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
       ..layout(minWidth: 0, maxWidth: double.infinity);
     //超出的宽度,多计算上头像占位
     final exceedWidth =
-        (textPainter.size.width - (getMaxWidth(false) - 50)).toInt();
+        (textPainter.size.width - (getMaxWidth(isMultiSelect) - 50)).toInt();
     if (exceedWidth > 0 && userName?.isNotEmpty == true) {
       //每一个字符的宽度
       final pre = textPainter.width / info.length;
@@ -632,6 +672,32 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
             );
   }
 
+  Widget _getSelectWidget(bool isSelectModel, ChatViewModel chatViewModel) {
+    if (isSelectModel) {
+      if (!widget.chatMessage.isRevoke) {
+        return Container(
+          width: 18,
+          margin: const EdgeInsets.only(right: 8, top: 10),
+          child: CheckBoxButton(
+            isChecked:
+                chatViewModel.isSelectedMessage(widget.chatMessage.nimMessage),
+            onChanged: (value) {
+              if (value) {
+                chatViewModel.addSelectedMessage(widget.chatMessage.nimMessage);
+              } else {
+                chatViewModel
+                    .removeSelectedMessage(widget.chatMessage.nimMessage);
+              }
+            },
+          ),
+        );
+      } else {
+        return Container(width: 25);
+      }
+    }
+    return Container();
+  }
+
   @override
   void dispose() {
     _popMenu?.clean();
@@ -648,6 +714,8 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
     var screenWidth = MediaQuery.of(context).size.width;
 
     var pinTextStyle = TextStyle(color: '#3EAF96'.toColor(), fontSize: 11);
+
+    var chatViewModel = context.watch<ChatViewModel>();
     return VisibilityDetector(
       key: widget.key!,
       child: Column(
@@ -670,8 +738,10 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
                   color: _getBgColor(),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
+                      _getSelectWidget(
+                          chatViewModel.isMultiSelected, chatViewModel),
                       FutureBuilder<UserAvatarInfo>(
                         future: _getUserInfo(
                             widget.chatMessage.nimMessage.fromAccount!),
@@ -757,13 +827,15 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
                                               left: isSelf() ? 8 : 0),
                                           decoration: _getMessageDecoration(),
                                           constraints: BoxConstraints(
-                                              maxWidth: getMaxWidth(false)),
+                                              maxWidth: getMaxWidth(
+                                                  chatViewModel
+                                                      .isMultiSelected)),
                                           child: Builder(
                                             builder: (context) {
                                               return GestureDetector(
                                                 child: IgnorePointer(
-                                                  ///todo ignoring for multiSelect
-                                                  ignoring: false,
+                                                  ignoring: chatViewModel
+                                                      .isMultiSelected,
                                                   child: widget
                                                           .chatMessage.isRevoke
                                                       ? _buildRevokedMessage(
@@ -823,8 +895,9 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
                                           builder: (context, snapshot) {
                                             return Container(
                                                 constraints: BoxConstraints(
-                                                    maxWidth:
-                                                        getMaxWidth(false)),
+                                                    maxWidth: getMaxWidth(
+                                                        chatViewModel
+                                                            .isMultiSelected)),
                                                 child: Row(
                                                   crossAxisAlignment:
                                                       CrossAxisAlignment.center,

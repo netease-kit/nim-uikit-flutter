@@ -1,13 +1,11 @@
-# kit.nim_chatkit_location
+# nim_chatkit_location
 
-提供位置消息功能实现（包含UI）
+A new Flutter project.
 
-### Declaring dependencies
-如需添加 ChatKitUI 的依赖项，您必须将 pub 库添加到项目中。
+## Getting Started
 
-在应用或模块的 `pubspec.yaml` 文件中添加所需工件的依赖项：
+For help getting started with Flutter development, view the online
+[documentation](https://flutter.dev/).
 
-```
-dependencies:
-  nim_chatkit_location: ^1.0.0
-```
+For instructions integrating Flutter modules to your existing applications,
+see the [add-to-app documentation](https://flutter.dev/docs/development/add-to-app).

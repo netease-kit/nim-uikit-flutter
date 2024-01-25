@@ -57,8 +57,8 @@ class AitManager {
   bool aitEnd(String text) {
     int len = text.length;
     for (var element in _aitContactsModel.aitBlocks.values) {
-      for (var segment in element.segments) {
-        if (segment.start < len && segment.end >= len) {
+      for (AitSegment segment in element.segments) {
+        if (segment.start < len && segment.endIndex >= len) {
           return true;
         }
       }
@@ -112,10 +112,10 @@ class AitManager {
 
   ///光标移动到@后自动到后面
   int resetAitCursor(int baseIndex) {
-    for (var element in _aitContactsModel.aitBlocks.values) {
-      for (var segment in element.segments) {
-        if (segment.start < baseIndex && segment.end > baseIndex) {
-          return segment.end;
+    for (AitMsg element in _aitContactsModel.aitBlocks.values) {
+      for (AitSegment segment in element.segments) {
+        if (segment.start < baseIndex && segment.endIndex + 1 > baseIndex) {
+          return segment.endIndex + 1;
         }
       }
     }
@@ -164,18 +164,19 @@ class AitManager {
                       ],
                     ),
                   ),
-                  ListTile(
-                    leading: SvgPicture.asset(
-                      'images/ic_team_all.svg',
-                      package: kPackage,
-                      height: 42,
-                      width: 42,
+                  if (NIMChatCache.instance.haveAitAllPrivilege())
+                    ListTile(
+                      leading: SvgPicture.asset(
+                        'images/ic_team_all.svg',
+                        package: kPackage,
+                        height: 42,
+                        width: 42,
+                      ),
+                      title: Text(S.of(context).chatTeamAitAll),
+                      onTap: () {
+                        Navigator.pop(context, AitContactsModel.accountAll);
+                      },
                     ),
-                    title: Text(S.of(context).chatTeamAitAll),
-                    onTap: () {
-                      Navigator.pop(context, AitContactsModel.accountAll);
-                    },
-                  ),
                   if (_teamMembers?.isNotEmpty == true)
                     Expanded(
                         child: ListView.builder(
@@ -190,7 +191,11 @@ class AitManager {
                                   height: 42,
                                   width: 42,
                                 ),
-                                title: Text(user.getName()),
+                                title: Text(
+                                  user.getName(),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                                 onTap: () {
                                   Navigator.pop(context, user);
                                 },
