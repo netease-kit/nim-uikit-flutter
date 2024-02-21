@@ -7,6 +7,7 @@ import 'package:intl/intl.dart' as Intl;
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_corekit_im/services/message/chat_message.dart';
+import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
 import 'package:nim_chatkit/message/merge_message.dart';
 import 'package:nim_chatkit/message/message_helper.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
@@ -104,15 +105,11 @@ class _ChatKitMergedMessageItemState extends State<ChatKitMergedMessageItem> {
         );
 
       case NIMMessageType.location:
-        if (messageItemBuilder?.locationMessageBuilder != null) {
+      default:
+        if (message.messageType == NIMMessageType.location &&
+            messageItemBuilder?.locationMessageBuilder != null) {
           return messageItemBuilder!.locationMessageBuilder!.call(message);
         }
-        if (widget.chatUIConfig?.locationProvider != null) {
-          return widget.chatUIConfig!.locationProvider!
-              .buildLocationItem(widget.message);
-        }
-        return ChatKitMessageNonsupportItem();
-      default:
         if (message.messageType == NIMMessageType.custom) {
           var mergedMessage = MergeMessageHelper.parseMergeMessage(message);
           if (mergedMessage != null) {
@@ -139,6 +136,15 @@ class _ChatKitMergedMessageItemState extends State<ChatKitMergedMessageItem> {
             );
           }
         }
+
+        ///插件消息
+        Widget? pluginBuilder = NimPluginCoreKit()
+            .messageBuilderPool
+            .buildMessageContent(context, message);
+        if (pluginBuilder != null) {
+          return pluginBuilder;
+        }
+
         if (messageItemBuilder?.extendBuilder != null) {
           if (messageItemBuilder?.extendBuilder![message.messageType] != null) {
             return messageItemBuilder!

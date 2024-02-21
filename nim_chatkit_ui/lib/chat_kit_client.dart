@@ -10,7 +10,6 @@ import 'package:netease_corekit_im/router/imkit_router.dart';
 import 'package:netease_corekit_im/router/imkit_router_constants.dart';
 import 'package:netease_corekit_im/services/message/chat_message.dart';
 import 'package:nim_chatkit/chatkit_client_repo.dart';
-import 'package:nim_chatkit/chatkit_location_provider.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
 import 'package:nim_chatkit_ui/view/page/chat_pin_page.dart';
 import 'package:nim_core/nim_core.dart';
@@ -105,9 +104,6 @@ class ChatUIConfig {
   ///文件消息最大size 单位M，不设置默认200
   int? maxFileSize;
 
-  ///定位消息提供者
-  ChatKitLocationProvider? locationProvider;
-
   ///被@的消息点击回调
   ///[account] 被@的用户id
   ///[text] @的文本
@@ -142,7 +138,6 @@ class ChatUIConfig {
       this.getPushPayload,
       this.imagePlaceHolder,
       this.maxVideoSize,
-      this.locationProvider,
       this.onTapAitLink,
       this.maxFileSize,
       this.keepDefaultInputAction = true,

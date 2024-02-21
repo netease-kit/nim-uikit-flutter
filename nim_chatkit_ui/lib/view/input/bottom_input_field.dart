@@ -43,6 +43,7 @@ class BottomInputField extends StatefulWidget {
       {Key? key,
       required this.scrollController,
       required this.sessionType,
+      required this.sessionId,
       this.hint,
       this.chatUIConfig})
       : super(key: key);
@@ -51,6 +52,7 @@ class BottomInputField extends StatefulWidget {
   final NIMSessionType sessionType;
   final AutoScrollController scrollController;
   final ChatUIConfig? chatUIConfig;
+  final String sessionId;
 
   @override
   State<StatefulWidget> createState() => _BottomInputFieldState();
@@ -99,7 +101,9 @@ class _BottomInputFieldState extends State<BottomInputField>
     }
   }
 
-  _onRecordActionTap(BuildContext context) {
+  _onRecordActionTap(
+      BuildContext context, String sessionId, NIMSessionType sessionType,
+      {NIMMessageSender? messageSender}) {
     if (_currentType == ActionConstants.record) {
       _currentType = ActionConstants.none;
     } else {
@@ -109,7 +113,9 @@ class _BottomInputFieldState extends State<BottomInputField>
     setState(() {});
   }
 
-  _onEmojiActionTap(BuildContext context) {
+  _onEmojiActionTap(
+      BuildContext context, String sessionId, NIMSessionType sessionType,
+      {NIMMessageSender? messageSender}) {
     if (_titleFocusNode.hasFocus) {
       return;
     }
@@ -168,7 +174,9 @@ class _BottomInputFieldState extends State<BottomInputField>
     }
   }
 
-  _onImageActionTap(BuildContext context) {
+  _onImageActionTap(
+      BuildContext context, String sessionId, NIMSessionType sessionType,
+      {NIMMessageSender? messageSender}) {
     var style = const TextStyle(fontSize: 16, color: CommonColors.color_333333);
     showBottomChoose<int>(
             context: context,
@@ -221,7 +229,9 @@ class _BottomInputFieldState extends State<BottomInputField>
   // _onFileActionTap() {
   // }
 
-  _onMoreActionTap(BuildContext context) {
+  _onMoreActionTap(
+      BuildContext context, String sessionId, NIMSessionType sessionType,
+      {NIMMessageSender? messageSender}) {
     if (_currentType == ActionConstants.more) {
       _currentType = ActionConstants.none;
     } else {
@@ -315,6 +325,8 @@ class _BottomInputFieldState extends State<BottomInputField>
       return MorePanel(
         moreActions: widget.chatUIConfig?.moreActions,
         keepDefault: widget.chatUIConfig?.keepDefaultMoreAction ?? true,
+        sessionId: widget.sessionId,
+        sessionType: widget.sessionType,
       );
     }
     if (_currentType == ActionConstants.emoji) {
@@ -901,7 +913,11 @@ class _BottomInputFieldState extends State<BottomInputField>
                           onTap: () {
                             _scrollToBottom();
                             if (action.enable && action.onTap != null) {
-                              action.onTap!(context);
+                              action.onTap!(
+                                  context, widget.sessionId, widget.sessionType,
+                                  messageSender: (message) {
+                                _viewModel.sendMessage(message);
+                              });
                             }
                           },
                         )))

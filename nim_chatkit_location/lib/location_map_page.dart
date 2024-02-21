@@ -99,6 +99,12 @@ class LocationMapPageState extends State<LocationMapPage> {
           ChatKitLocation.instance.aMapIOSKey!);
       _location = AMapFlutterLocation();
       _locationSub = _location?.onLocationChanged().listen((event) async {
+        if (event['longitude'] == null || event['latitude'] == null) {
+          Alog.e(
+              tag: 'LocationMapPageState',
+              content: 'locate error ${event.toString()} ');
+          return;
+        }
         var longitude = (event['longitude'] is double)
             ? event['longitude'] as double
             : double.parse(event['longitude'] as String);
