@@ -13,6 +13,7 @@ import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_corekit_im/services/message/chat_message.dart';
+import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
 import 'package:nim_chatkit/message/message_helper.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
@@ -123,16 +124,12 @@ class _ChatKitPinMessageItemState extends State<ChatKitPinMessageItem> {
         return ChatKitMessageFileItem(message: message.nimMessage);
 
       case NIMMessageType.location:
-        if (messageItemBuilder?.locationMessageBuilder != null) {
+      default:
+        if (message.nimMessage.messageType == NIMMessageType.location &&
+            messageItemBuilder?.locationMessageBuilder != null) {
           return messageItemBuilder!.locationMessageBuilder!
               .call(message.nimMessage);
         }
-        if (widget.chatUIConfig?.locationProvider != null) {
-          return widget.chatUIConfig!.locationProvider!
-              .buildLocationItem(widget.chatMessage.nimMessage);
-        }
-        return ChatKitMessageNonsupportItem();
-      default:
         if (message.nimMessage.messageType == NIMMessageType.custom) {
           var mergedMessage =
               MergeMessageHelper.parseMergeMessage(message.nimMessage);
@@ -163,6 +160,15 @@ class _ChatKitPinMessageItemState extends State<ChatKitPinMessageItem> {
             );
           }
         }
+
+        ///插件消息
+        Widget? pluginBuilder = NimPluginCoreKit()
+            .messageBuilderPool
+            .buildMessageContent(context, message.nimMessage);
+        if (pluginBuilder != null) {
+          return pluginBuilder;
+        }
+
         if (messageItemBuilder?.extendBuilder != null) {
           if (messageItemBuilder
                   ?.extendBuilder![message.nimMessage.messageType] !=

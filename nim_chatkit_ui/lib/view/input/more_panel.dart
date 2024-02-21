@@ -5,20 +5,21 @@
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:netease_common_ui/ui/dialog.dart';
-import 'package:netease_common_ui/utils/color_utils.dart';
-import 'package:netease_common_ui/widgets/permission_request.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:netease_common_ui/ui/dialog.dart';
+import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_common_ui/widgets/permission_request.dart';
 import 'package:netease_common_ui/widgets/platform_utils.dart';
+import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
+import 'package:nim_core/nim_core.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
-import 'package:nim_chatkit/location.dart';
 
 import '../../chat_kit_client.dart';
 import '../../l10n/S.dart';
@@ -26,11 +27,20 @@ import '../../view_model/chat_view_model.dart';
 import 'actions.dart';
 
 class MorePanel extends StatefulWidget {
-  const MorePanel({Key? key, this.moreActions, this.keepDefault = true})
+  const MorePanel(
+      {Key? key,
+      required this.sessionId,
+      required this.sessionType,
+      this.moreActions,
+      this.keepDefault = true})
       : super(key: key);
 
   final bool keepDefault;
   final List<ActionItem>? moreActions;
+
+  final String sessionId;
+
+  final NIMSessionType sessionType;
 
   @override
   State<StatefulWidget> createState() => _MorePanelState();
@@ -51,7 +61,7 @@ class _MorePanelState extends State<MorePanel> {
   }
 
   List<ActionItem> _defaultMoreActions() {
-    return [
+    final List<ActionItem> defaultActions = [
       ActionItem(
           type: ActionConstants.shoot,
           icon: SvgPicture.asset(
@@ -61,18 +71,6 @@ class _MorePanelState extends State<MorePanel> {
           title: S.of(context).chatMessageMoreShoot,
           permissions: [Permission.camera],
           onTap: _onShootActionTap),
-      //如果没有配置locationProvider,则不显示位置按钮
-      if (ChatKitClient.instance.chatUIConfig.locationProvider != null)
-        ActionItem(
-            type: ActionConstants.location,
-            icon: SvgPicture.asset(
-              'images/ic_location.svg',
-              package: kPackage,
-            ),
-            title: S.of(context).chatMessageMoreLocation,
-            permissions: [Permission.locationWhenInUse],
-            onTap: _onLocationActionTap,
-            deniedTip: S.of(context).locationDeniedTips),
       ActionItem(
           type: ActionConstants.file,
           icon: SvgPicture.asset(
@@ -82,20 +80,24 @@ class _MorePanelState extends State<MorePanel> {
           title: S.of(context).chatMessageMoreFile,
           onTap: _onFileActionTap),
     ];
+    var pluginActions = NimPluginCoreKit()
+        .itemPool
+        .getMoreActions()
+        .where((action) => action.enable?.call(widget.sessionType) != false)
+        .map((e) => ActionItem(
+            type: e.type,
+            icon: e.icon,
+            title: e.title,
+            permissions: e.permissions,
+            deniedTip: e.deniedTip,
+            onTap: e.onTap));
+    defaultActions.addAll(pluginActions);
+    return defaultActions;
   }
 
-  //点击位置按钮,跳转到地图页面
-  _onLocationActionTap(BuildContext context) {
-    ChatKitClient.instance.chatUIConfig.locationProvider
-        ?.goToLocationMapPage(context, needLocate: true)
-        .then((location) {
-      if (location != null && location is LocationInfo) {
-        context.read<ChatViewModel>().sendLocationMessage(location);
-      }
-    });
-  }
-
-  _onFileActionTap(BuildContext context) async {
+  _onFileActionTap(
+      BuildContext context, String sessionId, NIMSessionType sessionType,
+      {NIMMessageSender? messageSender}) async {
     final permissionList;
     if (Platform.isAndroid && await PlatformUtils.isAboveAndroidT()) {
       permissionList = [Permission.photos];
@@ -122,7 +124,9 @@ class _MorePanelState extends State<MorePanel> {
     }
   }
 
-  _onShootActionTap(BuildContext context) {
+  _onShootActionTap(
+      BuildContext context, String sessionId, NIMSessionType sessionType,
+      {NIMMessageSender? messageSender}) {
     var style = const TextStyle(fontSize: 16, color: CommonColors.color_333333);
     showBottomChoose<int>(
             context: context,
@@ -199,7 +203,14 @@ class _MorePanelState extends State<MorePanel> {
       int end = start + pageSize > moreActions.length
           ? moreActions.length
           : start + pageSize;
-      pages.add(MoreActionPage(actions: moreActions.sublist(start, end)));
+      pages.add(MoreActionPage(
+        actions: moreActions.sublist(start, end),
+        sessionId: widget.sessionId,
+        sessionType: widget.sessionType,
+        messageSender: (message) {
+          context.read<ChatViewModel>().sendMessage(message);
+        },
+      ));
     }
     return PageView(
       children: pages,
@@ -209,9 +220,21 @@ class _MorePanelState extends State<MorePanel> {
 }
 
 class MoreActionPage extends StatelessWidget {
-  const MoreActionPage({Key? key, required this.actions}) : super(key: key);
+  const MoreActionPage({
+    Key? key,
+    required this.actions,
+    required this.sessionId,
+    required this.sessionType,
+    this.messageSender,
+  }) : super(key: key);
 
   final List<ActionItem> actions;
+
+  final String sessionId;
+
+  final NIMSessionType sessionType;
+
+  final NIMMessageSender? messageSender;
 
   @override
   Widget build(BuildContext context) {
@@ -224,7 +247,11 @@ class MoreActionPage extends StatelessWidget {
           spacing: (sw - 56 * 4 - 16 * 2) / 3,
           runSpacing: 16,
           children: actions.map((action) {
-            return MoreItemAction(action: action);
+            return MoreItemAction(
+                action: action,
+                sessionId: sessionId,
+                sessionType: sessionType,
+                messageSender: messageSender);
           }).toList(),
         ),
       ),
@@ -233,9 +260,21 @@ class MoreActionPage extends StatelessWidget {
 }
 
 class MoreItemAction extends StatelessWidget {
-  const MoreItemAction({Key? key, required this.action}) : super(key: key);
+  const MoreItemAction(
+      {Key? key,
+      required this.action,
+      required this.sessionId,
+      required this.sessionType,
+      this.messageSender})
+      : super(key: key);
 
   final ActionItem action;
+
+  final String sessionId;
+
+  final NIMSessionType sessionType;
+
+  final NIMMessageSender? messageSender;
 
   @override
   Widget build(BuildContext context) {
@@ -248,13 +287,15 @@ class MoreItemAction extends StatelessWidget {
                           deniedTip: action.deniedTip)
                       .then((value) {
                     if (value && action.onTap != null) {
-                      action.onTap!(context);
+                      action.onTap!(context, sessionId, sessionType,
+                          messageSender: messageSender);
                     }
                   });
                 }
               : () {
                   if (action.onTap != null) {
-                    action.onTap!(context);
+                    action.onTap!(context, sessionId, sessionType,
+                        messageSender: messageSender);
                   }
                 },
           child: Container(

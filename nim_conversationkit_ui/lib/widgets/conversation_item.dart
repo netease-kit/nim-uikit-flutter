@@ -9,6 +9,7 @@ import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/widgets/unread_message.dart';
 import 'package:netease_corekit_im/model/custom_type_constant.dart';
 import 'package:netease_corekit_im/services/message/chat_message.dart';
+import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
 import 'package:nim_conversationkit/model/conversation_info.dart';
 import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
 import 'package:nim_conversationkit_ui/l10n/S.dart';
@@ -68,6 +69,13 @@ class ConversationItem extends StatelessWidget {
             _getCustomLastMessageBrief(context, conversationInfo);
         if (customLastMessageContent?.isNotEmpty == true) {
           return customLastMessageContent!;
+        }
+        //插件消息
+        var pluginLastContent = NimPluginCoreKit()
+            .conversationPool
+            .buildConversationLastText(conversationInfo.session);
+        if (pluginLastContent != null) {
+          return pluginLastContent;
         }
         return S.of(context).chatMessageNonsupportType;
       default:

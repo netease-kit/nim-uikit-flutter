@@ -587,6 +587,7 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
                               child: BottomInputField(
                                 scrollController: autoController,
                                 sessionType: widget.sessionType,
+                                sessionId: widget.sessionId,
                                 hint: S
                                     .of(context)
                                     .chatMessageSendHint(inputHint),

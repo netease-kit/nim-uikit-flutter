@@ -5,5 +5,7 @@
   "chatMessageAMapNotFound": "未检测到高德地图",
   "chatMessageTencentMapNotFound": "未检测到腾讯地图",
   "chatMessageAMap": "高德地图",
-  "chatMessageTencentMap": "腾讯地图"
+  "chatMessageTencentMap": "腾讯地图",
+  "locationDeniedTips": "请在设置页面添加定位权限",
+    "locationTitle": "位置"
 }

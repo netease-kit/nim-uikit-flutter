@@ -14,21 +14,16 @@ import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_corekit_im/router/imkit_router_factory.dart';
 import 'package:netease_corekit_im/service_locator.dart';
 import 'package:netease_corekit_im/services/login/login_service.dart';
-import 'package:nim_chatkit_location/chatkit_location_provider_impl.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_item.dart';
 import 'package:nim_chatkit_ui/view/input/actions.dart';
-import 'package:nim_chatkit_ui/view_model/chat_view_model.dart';
 import 'package:nim_contactkit/repo/contact_repo.dart';
 import 'package:nim_contactkit_ui/page/contact_page.dart';
 import 'package:nim_conversationkit/repo/conversation_repo.dart';
 import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
 import 'package:nim_conversationkit_ui/page/conversation_page.dart';
 import 'package:nim_core/nim_core.dart';
-import 'package:provider/provider.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
-
-import '../config.dart';
 
 const channelName = "com.netease.yunxin.app.flutter.im/channel";
 const pushMethodName = "pushMessage";
@@ -111,13 +106,7 @@ class _HomePageState extends State<HomePage> {
     initUnread();
     //注册撤回消息监听
     ChatKitClient.instance.registerRevokedMessage();
-    //todo 如果需要使用位置消息设置，需要设置ChatKitLocationProviderImpl
-    ChatKitClient.instance.chatUIConfig.locationProvider =
-        ChatKitLocationProviderImpl.instance;
-    ChatKitLocationProviderImpl.instance.initLocationMap(
-        aMapAndroidKey: IMDemoConfig.AMapAndroid,
-        aMapIOSKey: IMDemoConfig.AMapIOS,
-        aMapWebKey: IMDemoConfig.AMapWeb);
+    //设置pushPayload
     ChatKitClient.instance.chatUIConfig.getPushPayload = _getPushPayload;
     //处理native端传递过来的消息
     _handleMessageFromNative();
@@ -141,15 +130,16 @@ class _HomePageState extends State<HomePage> {
           type: 'custom',
           icon: Icon(Icons.android_outlined),
           title: "自定义",
-          onTap: (BuildContext context) async {
-            var vm = context.read<ChatViewModel>();
+          onTap: (BuildContext context, String sessionId,
+              NIMSessionType sessionType,
+              {NIMMessageSender? messageSender}) async {
             var msg = await MessageBuilder.createCustomMessage(
-                sessionId: vm.sessionId,
-                sessionType: vm.sessionType,
+                sessionId: sessionId,
+                sessionType: sessionType,
                 content: '自定义消息');
             if (msg.isSuccess && msg.data != null) {
               Fluttertoast.showToast(msg: '发送自定义消息！ ');
-              vm.sendMessage(msg.data!);
+              messageSender?.call(msg.data!);
             }
           }),
     ];
@@ -164,12 +154,12 @@ class _HomePageState extends State<HomePage> {
     ConversationKitClient.instance.conversationUIConfig = ConversationUIConfig(
         itemConfig: ConversationItemConfig(
             lastMessageContentBuilder: (context, conversationInfo) {
-              if (conversationInfo.session.lastMessageType == NIMMessageType.custom &&
-                  conversationInfo.session.lastMessageAttachment == null) {
-                return S.of(context).customMessage;
-              }
-              return null;
-            }));
+      if (conversationInfo.session.lastMessageType == NIMMessageType.custom &&
+          conversationInfo.session.lastMessageAttachment == null) {
+        return S.of(context).customMessage;
+      }
+      return null;
+    }));
   }
 
   @override

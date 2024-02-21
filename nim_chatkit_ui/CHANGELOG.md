@@ -1,5 +1,10 @@
 # NimChatKitUI ChangeLog
 
+## 9.7.1(Feb 21, 2024)
+### New Features
+* 地图位置消息插件化实现
+* 支持插件化扩展
+
 ## 9.7.0(Jan 25, 2024)
 ### New Features
 * 新增合并转发和多选功能
