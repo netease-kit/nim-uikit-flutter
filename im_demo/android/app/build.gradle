@@ -120,8 +120,8 @@ dependencies {
     implementation 'com.huawei.hms:push:6.5.0.300'
     implementation "com.huawei.agconnect:agconnect-core:1.6.5.300"
     //高德地图功能
-    implementation 'com.amap.api:3dmap:latest.integration'
+    implementation 'com.amap.api:3dmap:9.8.3'
     //搜索功能
-    implementation 'com.amap.api:search:latest.integration'
+    implementation 'com.amap.api:search:9.7.0'
 
 }
