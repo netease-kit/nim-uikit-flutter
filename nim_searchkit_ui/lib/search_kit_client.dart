@@ -22,6 +22,6 @@ class SearchKitClient {
     IMKitRouter.instance.registerRouter(RouterConstants.PATH_GLOBAL_SEARCH_PAGE,
         (context) => const SearchKitGlobalSearchPage());
 
-    XKitReporter().register(moduleName: 'SearchUIKit', moduleVersion: '1.1.0');
+    XKitReporter().register(moduleName: 'SearchUIKit', moduleVersion: '9.7.2');
   }
 }

@@ -2,8 +2,6 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-
-
 import 'chat_kit_client_localizations.dart';
 
 /// The translations for English (`en`).
@@ -19,7 +17,8 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
   String get chatPressedToSpeak => 'Pressed to speak';
 
   @override
-  String get chatMessageVoiceIn => 'Release to send, hold and swipe to an empty area to cancel';
+  String get chatMessageVoiceIn =>
+      'Release to send, hold and swipe to an empty area to cancel';
 
   @override
   String get chatMessagePickPhoto => 'Pick photo';
@@ -112,7 +111,8 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
   String get chatMessageRevokeConfirm => 'Revoke this message?';
 
   @override
-  String get chatMessageHaveBeenRevokedOrDelete => 'this message have been revoked or deleted';
+  String get chatMessageHaveBeenRevokedOrDelete =>
+      'this message have been revoked or deleted';
 
   @override
   String chatMessagePinMessage(String userName) {
@@ -272,7 +272,8 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
   String get chatTeamVerifyUpdateAsNeedNoVerify => 'update as need no verify';
 
   @override
-  String get chatTeamVerifyUpdateAsDisallowAnyoneJoin => 'update as disallow anyone join';
+  String get chatTeamVerifyUpdateAsDisallowAnyoneJoin =>
+      'update as disallow anyone join';
 
   @override
   String chatTeamNotifyUpdateExtension(String name) {
@@ -295,7 +296,8 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
   }
 
   @override
-  String chatTeamModifyResourcePermissionUpdate(String user, String permission) {
+  String chatTeamModifyResourcePermissionUpdate(
+      String user, String permission) {
     return '$user had updated team resource permission: \"$permission\"';
   }
 
@@ -413,7 +415,8 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
   String get chatTeamBeRemovedContent => 'This group is disbanded';
 
   @override
-  String get chatMessageSendFailedByBlackList => 'Send failed, you are in the blacklist';
+  String get chatMessageSendFailedByBlackList =>
+      'Send failed, you are in the blacklist';
 
   @override
   String get chatHaveNoPinMessage => 'No pinned message';
@@ -465,26 +468,32 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
   }
 
   @override
-  String get chatMessageHaveMessageCantForward => 'There are messages that cannot be forwarded';
+  String get chatMessageHaveMessageCantForward =>
+      'There are messages that cannot be forwarded';
 
   @override
   String get chatMessageInfoError => 'Message info error';
 
   @override
-  String get chatMessageMergeDepthOut => 'The message exceeds the merging limit and cannot be forwarded as is. Should it be sent without merging?';
+  String get chatMessageMergeDepthOut =>
+      'The message exceeds the merging limit and cannot be forwarded as is. Should it be sent without merging?';
 
   @override
-  String get chatMessageExitMessageCannotForward => 'Exit message cannot be forwarded';
+  String get chatMessageExitMessageCannotForward =>
+      'Exit message cannot be forwarded';
 
   @override
-  String get chatTeamPermissionInviteOnlyOwnerAndManagers => 'Owner and managers';
+  String get chatTeamPermissionInviteOnlyOwnerAndManagers =>
+      'Owner and managers';
 
   @override
-  String get chatTeamPermissionUpdateOnlyOwnerAndManagers => 'Owner and managers';
+  String get chatTeamPermissionUpdateOnlyOwnerAndManagers =>
+      'Owner and managers';
 
   @override
   String get chatTeamHaveBeenKick => 'You have been kicked';
 
   @override
-  String get chatMessageHaveCannotForwardMessages => 'There are messages that cannot be forwarded';
+  String get chatMessageHaveCannotForwardMessages =>
+      'There are messages that cannot be forwarded';
 }

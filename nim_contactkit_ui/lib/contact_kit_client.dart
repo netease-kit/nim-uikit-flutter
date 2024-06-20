@@ -2,10 +2,10 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'package:flutter/material.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_corekit/report/xkit_report.dart';
 import 'package:netease_corekit_im/model/contact_info.dart';
-import 'package:flutter/material.dart';
 import 'package:netease_corekit_im/router/imkit_router.dart';
 import 'package:netease_corekit_im/router/imkit_router_constants.dart';
 import 'package:nim_contactkit/contactkit_client_repo.dart';
@@ -178,6 +178,6 @@ class ContactKitClient {
       (context) => ContactKitSystemNotifyMessagePage(),
     );
 
-    XKitReporter().register(moduleName: 'ContactUIKit', moduleVersion: '1.1.0');
+    XKitReporter().register(moduleName: 'ContactUIKit', moduleVersion: '9.7.2');
   }
 }

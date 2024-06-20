@@ -1,6 +1,6 @@
 name: nim_chatkit_ui
 description: Chat UI base on ChatKit.
-version: 9.7.1
+version: 9.7.2
 homepage: https://github.com/netease-kit/nim-uikit-flutter
 
 environment:
@@ -21,17 +21,17 @@ dependencies:
 #    path: ../../common/netease_common_ui
 
   netease_corekit_im:
-    ">=9.7.1 <10.0.0"
+    ">=9.7.2 <10.0.0"
 #    path: ../../netease_corekit/netease_corekit_im
   netease_corekit:
-    ">=1.2.0 <1.3.0"
+    ">=1.2.1 <1.3.0"
 #    path: ../../netease_corekit/netease_corekit
   nim_chatkit:
-    ">=9.7.0 <10.0.0"
+    ">=9.7.2 <10.0.0"
 #    path: ../nim_chatkit
   netease_plugin_core_kit:
     ^9.7.1
-  #    path: ../../plugin/netease_plugin_core_kit
+#      path: ../../plugin/netease_plugin_core_kit
 
   netease_common: ^1.0.4
 #    path: ../../common/common
