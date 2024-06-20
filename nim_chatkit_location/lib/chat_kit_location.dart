@@ -18,7 +18,7 @@ import 'l10n/S.dart';
 class ChatKitLocation {
   static const String kPackage = 'nim_chatkit_location';
 
-  static const String _kVersion = '1.0.0';
+  static const String _kVersion = '9.7.2';
 
   static const String _kName = 'ChatKitLocation';
 

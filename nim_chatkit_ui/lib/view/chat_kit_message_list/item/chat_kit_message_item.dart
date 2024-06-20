@@ -873,12 +873,15 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
                                                         : null,
                                                 onLongPress: () {
                                                   //long press
-                                                  if (widget.onMessageItemLongClick ==
-                                                          null ||
-                                                      widget.onMessageItemLongClick!(
-                                                              widget
-                                                                  .chatMessage) !=
-                                                          true) {
+                                                  if (widget.chatUIConfig
+                                                              ?.enableMessageLongPress ==
+                                                          true &&
+                                                      (widget.onMessageItemLongClick ==
+                                                              null ||
+                                                          widget.onMessageItemLongClick!(
+                                                                  widget
+                                                                      .chatMessage) !=
+                                                              true)) {
                                                     if (!widget
                                                         .chatMessage.isRevoke) {
                                                       _onLongPress(context);

@@ -64,15 +64,18 @@ import 'chat_kit_client_localizations_zh.dart';
 /// be consistent with the languages listed in the ChatKitClientLocalizations.supportedLocales
 /// property.
 abstract class ChatKitClientLocalizations {
-  ChatKitClientLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  ChatKitClientLocalizations(String locale)
+      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
   static ChatKitClientLocalizations? of(BuildContext context) {
-    return Localizations.of<ChatKitClientLocalizations>(context, ChatKitClientLocalizations);
+    return Localizations.of<ChatKitClientLocalizations>(
+        context, ChatKitClientLocalizations);
   }
 
-  static const LocalizationsDelegate<ChatKitClientLocalizations> delegate = _ChatKitClientLocalizationsDelegate();
+  static const LocalizationsDelegate<ChatKitClientLocalizations> delegate =
+      _ChatKitClientLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -84,7 +87,8 @@ abstract class ChatKitClientLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
     delegate,
     GlobalMaterialLocalizations.delegate,
     GlobalCupertinoLocalizations.delegate,
@@ -902,34 +906,36 @@ abstract class ChatKitClientLocalizations {
   String get chatMessageHaveCannotForwardMessages;
 }
 
-class _ChatKitClientLocalizationsDelegate extends LocalizationsDelegate<ChatKitClientLocalizations> {
+class _ChatKitClientLocalizationsDelegate
+    extends LocalizationsDelegate<ChatKitClientLocalizations> {
   const _ChatKitClientLocalizationsDelegate();
 
   @override
   Future<ChatKitClientLocalizations> load(Locale locale) {
-    return SynchronousFuture<ChatKitClientLocalizations>(lookupChatKitClientLocalizations(locale));
+    return SynchronousFuture<ChatKitClientLocalizations>(
+        lookupChatKitClientLocalizations(locale));
   }
 
   @override
-  bool isSupported(Locale locale) => <String>['en', 'zh'].contains(locale.languageCode);
+  bool isSupported(Locale locale) =>
+      <String>['en', 'zh'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_ChatKitClientLocalizationsDelegate old) => false;
 }
 
 ChatKitClientLocalizations lookupChatKitClientLocalizations(Locale locale) {
-
-
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'en': return ChatKitClientLocalizationsEn();
-    case 'zh': return ChatKitClientLocalizationsZh();
+    case 'en':
+      return ChatKitClientLocalizationsEn();
+    case 'zh':
+      return ChatKitClientLocalizationsZh();
   }
 
   throw FlutterError(
-    'ChatKitClientLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-    'an issue with the localizations generation tool. Please file an issue '
-    'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.'
-  );
+      'ChatKitClientLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+      'an issue with the localizations generation tool. Please file an issue '
+      'on GitHub with a reproducible sample app and the gen-l10n configuration '
+      'that was used.');
 }

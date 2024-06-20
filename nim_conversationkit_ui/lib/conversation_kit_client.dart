@@ -2,6 +2,7 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'package:flutter/material.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_corekit/report/xkit_report.dart';
 import 'package:netease_corekit_im/im_kit_client.dart';
@@ -9,7 +10,6 @@ import 'package:netease_corekit_im/router/imkit_router.dart';
 import 'package:netease_corekit_im/router/imkit_router_constants.dart';
 import 'package:nim_conversationkit/conversationkit_client_repo.dart';
 import 'package:nim_conversationkit/model/conversation_info.dart';
-import 'package:flutter/material.dart';
 import 'package:nim_conversationkit_ui/service/ait/ait_server.dart';
 
 import 'l10n/S.dart';
@@ -176,7 +176,7 @@ class ConversationKitClient {
     );
 
     XKitReporter()
-        .register(moduleName: 'ConversationUIKit', moduleVersion: '1.1.0');
+        .register(moduleName: 'ConversationUIKit', moduleVersion: '9.7.2');
 
     if (IMKitClient.enableAit) {
       //初始化@消息服务

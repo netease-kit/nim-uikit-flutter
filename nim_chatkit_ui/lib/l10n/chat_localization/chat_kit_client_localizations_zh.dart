@@ -2,8 +2,6 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-
-
 import 'chat_kit_client_localizations.dart';
 
 /// The translations for Chinese (`zh`).
@@ -295,7 +293,8 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
   }
 
   @override
-  String chatTeamModifyResourcePermissionUpdate(String user, String permission) {
+  String chatTeamModifyResourcePermissionUpdate(
+      String user, String permission) {
     return '$user 更新了群权限\"群资料修改权限\"为\"$permission\"';
   }
 

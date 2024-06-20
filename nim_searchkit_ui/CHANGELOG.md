@@ -1,5 +1,9 @@
 # NimSearchKitUI ChangeLog
 
+## 9.7.2(Jun 20, 2024)
+### Bug fix
+* 修复上报数据版本号问题
+
 ## 9.7.0(Jan 25, 2024)
 ### New Features
 * 新增合并转发和多选功能

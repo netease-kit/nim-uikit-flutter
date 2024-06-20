@@ -2,12 +2,11 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-
-
 import 'chat_kit_location_client_localizations.dart';
 
 /// The translations for English (`en`).
-class ChatKitLocationClientLocalizationsEn extends ChatKitLocationClientLocalizations {
+class ChatKitLocationClientLocalizationsEn
+    extends ChatKitLocationClientLocalizations {
   ChatKitLocationClientLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override

@@ -1,5 +1,9 @@
 # NimConversationKitUI ChangeLog
 
+## 9.7.2(Jun 20, 2024)
+### Bug fix
+* 修复上报数据版本号问题
+
 ## 9.7.1(Feb 21, 2024)
 ### New Features
 * 支持插件化扩展
