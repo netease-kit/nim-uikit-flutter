@@ -176,7 +176,7 @@ class ConversationKitClient {
     );
 
     XKitReporter()
-        .register(moduleName: 'ConversationUIKit', moduleVersion: '9.7.2');
+        .register(moduleName: 'ConversationUIKit', moduleVersion: '9.7.3');
 
     if (IMKitClient.enableAit) {
       //初始化@消息服务

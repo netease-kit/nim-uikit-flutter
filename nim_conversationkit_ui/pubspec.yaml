@@ -1,6 +1,6 @@
 name: nim_conversationkit_ui
 description: Conversation UI base on ConversationKit.
-version: 9.7.2
+version: 9.7.3
 homepage: https://github.com/netease-kit/nim-uikit-flutter
 
 environment:
@@ -17,13 +17,13 @@ dependencies:
     sdk: flutter
 
   netease_common_ui:
-    ">=9.7.0 <10.0.0"
+    ">=9.7.3 <10.0.0"
 #    path: ../../common/netease_common_ui
   nim_conversationkit:
-    ">=9.7.2 <10.0.0"
+    ">=9.7.3 <10.0.0"
 #    path: ../nim_conversationkit
   netease_corekit_im:
-    ">=9.7.2 <10.0.0"
+    ">=9.7.3 <10.0.0"
 #    path: ../../netease_corekit/netease_corekit_im
   netease_corekit:
     ">=1.2.1 <1.3.0"
@@ -35,11 +35,11 @@ dependencies:
 #      path: ../../plugin/netease_plugin_core_kit
   path_provider: ^2.0.11
   sqflite: ^2.3.0
-  intl: ^0.18.0
+  intl: ^0.19.0
   flutter_svg: ^2.0.7
   provider: ^6.0.0
   yunxin_alog: ^2.0.0
-  connectivity_plus: ^5.0.0
+  connectivity_plus: ^6.0.2
   flutter_slidable: ^3.0.0
 
 dev_dependencies:

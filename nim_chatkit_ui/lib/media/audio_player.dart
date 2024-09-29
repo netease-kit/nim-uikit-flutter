@@ -54,7 +54,8 @@ class ChatAudioPlayer {
             category: isSpeakerphoneOn
                 ? AVAudioSessionCategory.playback
                 : AVAudioSessionCategory.playAndRecord,
-            options: [AVAudioSessionOptions.mixWithOthers]));
+            options: Set<AVAudioSessionOptions>.from(
+                [AVAudioSessionOptions.mixWithOthers])));
   }
 
   Future<bool> play(

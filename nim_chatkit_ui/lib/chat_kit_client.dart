@@ -259,6 +259,6 @@ class ChatKitClient {
                   IMKitRouter.getArgumentFormMap<String>(context, 'chatTitle')!,
             ));
 
-    XKitReporter().register(moduleName: 'ChatUIKit', moduleVersion: '9.7.2');
+    XKitReporter().register(moduleName: 'ChatUIKit', moduleVersion: '9.7.3');
   }
 }

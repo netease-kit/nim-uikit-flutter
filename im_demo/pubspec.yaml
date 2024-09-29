@@ -32,19 +32,19 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  nim_conversationkit_ui:
-    path: ../nim_conversationkit_ui
-  nim_chatkit_ui:
-    path: ../nim_chatkit_ui
-  nim_teamkit_ui:
-    path: ../nim_teamkit_ui
-  nim_contactkit_ui:
-    path: ../nim_contactkit_ui
-  nim_searchkit_ui:
-    path: ../nim_searchkit_ui
+  nim_conversationkit_ui: ^9.7.2
+#    path: ../nim_conversationkit_ui
+  nim_chatkit_ui: ^9.7.2
+#    path: ../nim_chatkit_ui
+  nim_teamkit_ui: ^9.7.2
+#    path: ../nim_teamkit_ui
+  nim_contactkit_ui: ^9.7.2
+#    path: ../nim_contactkit_ui
+  nim_searchkit_ui: ^9.7.2
+#    path: ../nim_searchkit_ui
 #  地理位置消息支持
-  nim_chatkit_location:
-    path: ../nim_chatkit_location
+  nim_chatkit_location: ^9.7.2
+#    path: ../nim_chatkit_location
   yunxin_alog: ^2.0.0
   fluttertoast: ^8.2.4
   permission_handler: ^11.0.1

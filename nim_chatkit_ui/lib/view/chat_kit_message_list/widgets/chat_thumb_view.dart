@@ -230,11 +230,16 @@ class _ChatThumbViewState extends State<ChatThumbView> {
 
   bool _fileExistCheck(String path) {
     bool exist = path.isNotEmpty && File(path).existsSync();
+    //localPath置为无效
+    if (!exist) {
+      _localPath = '';
+    }
     // 本地文件不存在，下载
     // gif图片不下载缩略图
     // 如果已经下载完成或者失败，不重新下载
     if (!exist &&
         !_isGif() &&
+        _getUrlForVideo().isNotEmpty &&
         !(widget.message.attachmentStatus ==
                 NIMMessageAttachmentStatus.transferred ||
             widget.message.attachmentStatus ==

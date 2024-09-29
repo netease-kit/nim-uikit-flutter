@@ -27,7 +27,7 @@ class TeamKitClient {
         (context) => TeamSettingPage(
             IMKitRouter.getArgumentFormMap<String>(context, 'teamId')!));
 
-    XKitReporter().register(moduleName: 'TeamUIKit', moduleVersion: '9.7.2');
+    XKitReporter().register(moduleName: 'TeamUIKit', moduleVersion: '9.7.3');
   }
 
   TeamKitClient._();
