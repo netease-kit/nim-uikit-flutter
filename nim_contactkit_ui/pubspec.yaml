@@ -1,6 +1,6 @@
 name: nim_contactkit_ui
 description: Contact UI base on ContactKit.
-version: 9.7.2
+version: 9.7.3
 homepage: https://github.com/netease-kit/nim-uikit-flutter
 # Remove this line if you wish to publish to pub.dev
 #publish_to: none
@@ -16,26 +16,26 @@ dependencies:
     sdk: flutter
 
   nim_contactkit:
-    ">=9.7.2 <10.0.0"
+    ">=9.7.3 <10.0.0"
 #    path: ../nim_contactkit
   netease_corekit_im:
-    ">=9.7.2 <10.0.0"
+    ">=9.7.3 <10.0.0"
 #    path: ../../netease_corekit/netease_corekit_im
   netease_corekit:
     ">=1.2.1 <1.3.0"
 #    path: ../../netease_corekit/netease_corekit
   netease_common_ui:
-    ">=9.7.0 <10.0.0"
+    ">=9.7.3 <10.0.0"
 #    path: ../../common/netease_common_ui
-  azlistview: ^2.0.0
+  azlistview_plus: ^3.0.0
   provider: ^6.0.0
   lpinyin: ^2.0.3
   pull_to_refresh: ^2.0.0
   nim_core: ^1.7.4
 #    path: ../../nim_core/nim_core
-  intl: ^0.18.0
+  intl: ^0.19.0
   yunxin_alog: ^2.0.0
-  connectivity_plus: ^5.0.0
+  connectivity_plus: ^6.0.2
   fluttertoast: ^8.2.4
   flutter_svg: ^2.0.7
 

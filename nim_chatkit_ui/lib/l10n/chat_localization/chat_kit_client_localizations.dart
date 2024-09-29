@@ -12,6 +12,8 @@ import 'package:intl/intl.dart' as intl;
 import 'chat_kit_client_localizations_en.dart';
 import 'chat_kit_client_localizations_zh.dart';
 
+// ignore_for_file: type=lint
+
 /// Callers can lookup localized strings with an instance of ChatKitClientLocalizations
 /// returned by `ChatKitClientLocalizations.of(context)`.
 ///

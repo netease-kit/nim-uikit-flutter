@@ -4,6 +4,8 @@
 
 import 'team_kit_client_localizations.dart';
 
+// ignore_for_file: type=lint
+
 /// The translations for Chinese (`zh`).
 class TeamKitClientLocalizationsZh extends TeamKitClientLocalizations {
   TeamKitClientLocalizationsZh([String locale = 'zh']) : super(locale);

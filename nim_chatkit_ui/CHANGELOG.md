@@ -1,5 +1,14 @@
 # NimChatKitUI ChangeLog
 
+## 9.7.3(Sep 30, 2024)
+
+### Dependency Updates
+* 升级`webview_flutter`到`4.7.0`
+* 升级`connectivity_plus`到`6.0.2`
+* 升级`device_info_plus`到`10.1.0`
+* 升级`audioplayers`到`6.0.0`
+* 升级`file_picker`到`8.0.0`
+
 ## 9.7.2(Jun 20, 2024)
 ### Bug fix
 * 修复上报数据版本号问题

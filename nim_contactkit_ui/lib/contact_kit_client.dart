@@ -178,6 +178,6 @@ class ContactKitClient {
       (context) => ContactKitSystemNotifyMessagePage(),
     );
 
-    XKitReporter().register(moduleName: 'ContactUIKit', moduleVersion: '9.7.2');
+    XKitReporter().register(moduleName: 'ContactUIKit', moduleVersion: '9.7.3');
   }
 }

@@ -4,6 +4,8 @@
 
 import 'contact_kit_client_localizations.dart';
 
+// ignore_for_file: type=lint
+
 /// The translations for Chinese (`zh`).
 class ContactKitClientLocalizationsZh extends ContactKitClientLocalizations {
   ContactKitClientLocalizationsZh([String locale = 'zh']) : super(locale);
