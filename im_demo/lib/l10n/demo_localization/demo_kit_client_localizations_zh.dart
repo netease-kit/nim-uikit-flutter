@@ -6,6 +6,8 @@
 
 import 'demo_kit_client_localizations.dart';
 
+// ignore_for_file: type=lint
+
 /// The translations for Chinese (`zh`).
 class DemoKitClientLocalizationsZh extends DemoKitClientLocalizations {
   DemoKitClientLocalizationsZh([String locale = 'zh']) : super(locale);
