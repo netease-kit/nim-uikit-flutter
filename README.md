@@ -28,8 +28,8 @@ dependencies:
 ### Try out
 体验包下载   
 [iOS](https://demo-app.yunxin.163.com/iim-flutter)   
-![ios](ios.png)   
+![ios](im-flutter-ios.png)   
 [Android](https://demo-app.yunxin.163.com/aim-flutter)     
-![android](android.png)
+![android](im-flutter-android.png)
 ### Run demo
 快速跑通请参考[快速跑通](https://doc.yunxin.163.com/messaging/docs/Dg3NDI5MzE?platform=flutter)
