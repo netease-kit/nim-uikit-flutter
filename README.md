@@ -1,4 +1,4 @@
-# kit.imkit
+# 云信IMUIKit
 
 基于NIM实现的即时通讯，包括消息组件（聊天界面，包括单聊和群聊）、通讯录组件、会话列表组件、群组设置组件、联系人搜索组件
 
@@ -27,9 +27,9 @@ dependencies:
 ```
 ### Try out
 体验包下载   
-[iOS](https://www.pgyer.com/tynH)   
+[iOS](https://demo-app.yunxin.163.com/iim-flutter)   
 ![ios](ios.png)   
-[Android](https://www.pgyer.com/ettV)     
+[Android](https://demo-app.yunxin.163.com/aim-flutter)     
 ![android](android.png)
 ### Run demo
 快速跑通请参考[快速跑通](https://doc.yunxin.163.com/messaging/docs/Dg3NDI5MzE?platform=flutter)
