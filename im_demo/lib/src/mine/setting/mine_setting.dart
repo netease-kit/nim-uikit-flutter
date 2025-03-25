@@ -2,7 +2,6 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:auth/auth.dart';
 import 'package:netease_common_ui/ui/background.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/widgets/common_list_tile.dart';
@@ -132,7 +131,6 @@ class _MineSettingPageState extends State<MineSettingPage> {
                     if (value ?? false) {
                       IMKitClient.logoutIM().then((value) {
                         if (value) {
-                          UnifyLogin.logout();
                           Navigator.pop(context);
                         }
                       });

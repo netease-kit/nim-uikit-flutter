@@ -5,8 +5,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:auth/auth.dart';
-import 'package:auth/provider/login_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:im_demo/src/config.dart';
@@ -82,9 +80,9 @@ class _SplashState extends State<SplashPage> {
     //fixme 将您的云信IM账号(accid)和Token设置在这里即可
     String account = "your account";
     String token = "your token";
-    IMKitClient.loginIM(NIMLoginInfo(
-        account: account,
-        token: token))
+    IMKitClient.loginIM(
+         account,
+        token)
         .then((value) {
       if(value){
         updateAPNsToken();
