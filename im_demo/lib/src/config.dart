@@ -4,9 +4,11 @@
 
 import 'dart:io';
 
+import 'package:flutter/services.dart';
 import 'package:netease_corekit_im/repo/config_repo.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:yunxin_alog/yunxin_alog.dart';
 
 class IMDemoConfig {
   //云信IM appKey
@@ -28,12 +30,12 @@ class NIMSDKOptionsConfig {
     NIMSDKOptions? options;
     if (Platform.isAndroid) {
       final directory = await getExternalStorageDirectory();
-      NIMStatusBarNotificationConfig config = loadStatusBarNotificationConfig();
+      NIMStatusBarNotificationConfig config =
+          await loadStatusBarNotificationConfig();
       options = NIMAndroidSDKOptions(
         appKey: appKey,
         shouldSyncStickTopSessionInfos: true,
         enableTeamMessageReadReceipt: true,
-        autoLoginInfo: loginInfo,
         enableFcs: false,
         sdkRootDir: directory != null ? '${directory.path}/NIMFlutter' : null,
         notificationConfig: config,
@@ -41,6 +43,7 @@ class NIMSDKOptionsConfig {
         shouldConsiderRevokedMessageUnreadCount: true,
         shouldSyncUnreadCount: true,
         enablePreloadMessageAttachment: true,
+        enableV2CloudConversation: true,
         mixPushConfig: _buildMixPushConfig(),
       );
       ConfigRepo.saveStatusBarNotificationConfig(config, saveToNative: false);
@@ -50,7 +53,6 @@ class NIMSDKOptionsConfig {
         appKey: appKey,
         shouldSyncStickTopSessionInfos: true,
         enableTeamMessageReadReceipt: true,
-        autoLoginInfo: loginInfo,
         sdkRootDir: '${directory.path}/NIMFlutter',
         apnsCername: 'dis_im_flutter',
         pkCername: '',
@@ -58,17 +60,27 @@ class NIMSDKOptionsConfig {
         shouldSyncUnreadCount: true,
         enableTeamReceipt: true,
         enablePreloadMessageAttachment: true,
+        enableV2CloudConversation: true,
       );
     }
     return options;
   }
 
-  static NIMStatusBarNotificationConfig loadStatusBarNotificationConfig() {
-    //todo 设置Android通知栏点击跳转类
-    return NIMStatusBarNotificationConfig(
-        notificationEntranceClassName:
-            'com.netease.yunxin.app.flutter.im.MainActivity',
-        notificationExtraType: NIMNotificationExtraType.jsonArrStr);
+  static Future<NIMStatusBarNotificationConfig>
+  //todo 设置Android通知栏点击跳转类
+      loadStatusBarNotificationConfig() async {
+    final config = await ConfigRepo.getStatusBarNotificationConfig();
+    if (config == null) {
+      return NIMStatusBarNotificationConfig(
+          notificationEntranceClassName:
+              'com.netease.yunxin.app.flutter.im.MainActivity',
+          notificationExtraType: NIMNotificationExtraType.jsonArrStr);
+    } else {
+      config.notificationEntranceClassName =
+          'com.netease.yunxin.app.flutter.im.MainActivity';
+      config.notificationExtraType = NIMNotificationExtraType.jsonArrStr;
+      return config;
+    }
   }
 
   static NIMMixPushConfig? _buildMixPushConfig() {

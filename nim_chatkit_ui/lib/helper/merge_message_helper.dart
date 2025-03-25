@@ -2,6 +2,8 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'dart:convert';
+
 import 'package:netease_corekit_im/model/custom_type_constant.dart';
 import 'package:netease_corekit_im/service_locator.dart';
 import 'package:netease_corekit_im/services/contact/contact_provider.dart';
@@ -9,7 +11,7 @@ import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
 import 'package:nim_chatkit/message/merge_message.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_user_helper.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 
 import 'chat_message_helper.dart';
 
@@ -17,8 +19,8 @@ class MergeMessageHelper {
   ///解析合并消息
   static MergedMessage? parseMergeMessage(NIMMessage message) {
     if (message.messageType == NIMMessageType.custom &&
-        message.messageAttachment is NIMCustomMessageAttachment) {
-      var data = (message.messageAttachment as NIMCustomMessageAttachment).data;
+        message.attachment?.raw?.isNotEmpty == true) {
+      var data = jsonDecode(message.attachment!.raw!);
       if (data?[CustomMessageKey.type] ==
               CustomMessageType.customMergeMessageType &&
           data?[CustomMessageKey.data] is Map) {
@@ -31,21 +33,18 @@ class MergeMessageHelper {
 
   ///创建合并消息
   static Future<NIMResult<NIMMessage>> createMergedMessage(
-      List<NIMMessage> messages,
-      String sessionId,
-      NIMSessionType sessionType) async {
+      List<NIMMessage> messages) async {
     if (messages.isEmpty) {
       return NIMResult.failure(message: 'message list is empty');
     }
     final mergedMessage = await mergeMessage(messages);
     if (mergedMessage.isSuccess && mergedMessage.data != null) {
-      final customMsgBuilder = await MessageBuilder.createCustomMessage(
-          sessionId: sessionId,
-          sessionType: sessionType,
-          attachment: NIMCustomMessageAttachment(data: mergedMessage.data!));
+      final customMsgBuilder = await MessageCreator.createCustomMessage(
+          '', jsonEncode(mergedMessage.data!));
       if (customMsgBuilder.isSuccess && customMsgBuilder.data != null) {
-        customMsgBuilder.data!.pushContent =
-            ChatMessageHelper.getMessageBrief(customMsgBuilder.data!);
+        customMsgBuilder.data!.pushConfig = NIMMessagePushConfig(
+            pushContent:
+                ChatMessageHelper.getMessageBrief(customMsgBuilder.data!));
         return NIMResult.success(data: customMsgBuilder.data!);
       } else {
         return NIMResult.failure(message: customMsgBuilder.errorDetails);
@@ -84,10 +83,12 @@ class MergeMessageHelper {
       var depth = 0;
       String sessionId;
       String sessionName;
-      sessionId = messages.first.sessionId!;
-      if (messages.first.sessionType == NIMSessionType.p2p) {
+      sessionId = (await NimCore.instance.conversationIdUtil
+              .conversationTargetId(messages.first.conversationId!))
+          .data!;
+      if (messages.first.conversationType == NIMConversationType.p2p) {
         sessionName = await sessionId.getUserName(needAlias: false);
-      } else if (messages.first.sessionType == NIMSessionType.team) {
+      } else if (messages.first.conversationType == NIMConversationType.team) {
         sessionName = NIMChatCache.instance.teamInfo?.name ?? sessionId;
       } else {
         sessionName = sessionId;
@@ -96,7 +97,7 @@ class MergeMessageHelper {
       for (int i = 0; i < messages.length; i++) {
         var message = messages[i];
         if (i < 3) {
-          String userAccId = message.fromAccount!;
+          String userAccId = message.senderId!;
           String senderNick = (await getIt<ContactProvider>()
                       .getContact(userAccId, needFriend: false))
                   ?.getName(needAlias: false) ??

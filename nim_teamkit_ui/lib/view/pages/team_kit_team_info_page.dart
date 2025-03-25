@@ -7,13 +7,14 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/background.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:netease_common_ui/widgets/update_text_info_page.dart';
 import 'package:netease_corekit_im/service_locator.dart';
 import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
 import 'package:netease_corekit_im/services/team/team_provider.dart';
-import 'package:nim_core/nim_core.dart';
-import 'package:nim_teamkit/repo/team_repo.dart';
+import 'package:nim_core_v2/nim_core.dart';
+import 'package:nim_chatkit/repo/team_repo.dart';
 import 'package:nim_teamkit_ui/view/pages/team_kit_avatar_editor_page.dart';
 
 import '../../l10n/S.dart';
@@ -38,12 +39,19 @@ class _TeamKitTeamInfoState extends State<TeamKitTeamInfoPage> {
 
   String? avatar;
 
-  Future<bool> _updateName(String name) {
+  Future<bool> _updateName(String name) async {
+    if (!(await haveConnectivity())) {
+      return Future(() => false);
+      ;
+    }
+
     if (name.trim().isEmpty) {
       Fluttertoast.showToast(msg: S.of(context).teamNameMustNotEmpty);
       return Future(() => false);
     }
-    return TeamRepo.updateTeamName(widget.team.id!, name).then((value) {
+    return TeamRepo.updateTeamName(
+            widget.team.teamId, widget.team.teamType, name)
+        .then((value) {
       _updatedName = name;
       if (!value) {
         if (!NIMChatCache.instance.hasPrivilegeToModify()) {
@@ -58,8 +66,14 @@ class _TeamKitTeamInfoState extends State<TeamKitTeamInfoPage> {
     });
   }
 
-  Future<bool> _updateIntroduce(introduce) {
-    return TeamRepo.updateTeamIntroduce(widget.team.id!, introduce)
+  Future<bool> _updateIntroduce(introduce) async {
+    if (!(await haveConnectivity())) {
+      return Future(() => false);
+      ;
+    }
+
+    return TeamRepo.updateTeamIntroduce(
+            widget.team.teamId, widget.team.teamType, introduce)
         .then((result) {
       _updatedIntroduce = introduce;
       if (!result) {
@@ -76,7 +90,7 @@ class _TeamKitTeamInfoState extends State<TeamKitTeamInfoPage> {
   @override
   void initState() {
     super.initState();
-    avatar = widget.team.icon;
+    avatar = widget.team.avatar;
   }
 
   @override
@@ -201,8 +215,8 @@ class _TeamKitTeamInfoState extends State<TeamKitTeamInfoPage> {
                         MaterialPageRoute(
                             builder: (context) => UpdateTextInfoPage(
                                   title: S.of(context).teamIntroduceTitle,
-                                  content: _updatedIntroduce ??
-                                      widget.team.introduce,
+                                  content:
+                                      _updatedIntroduce ?? widget.team.intro,
                                   maxLength: 100,
                                   privilege: NIMChatCache.instance
                                       .hasPrivilegeToModify(),

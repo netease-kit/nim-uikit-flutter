@@ -11,8 +11,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
 
@@ -62,36 +62,57 @@ class MediaBottomActionOverlay extends StatelessWidget {
   }
 
   void _saveFile(BuildContext context) async {
-    if (Platform.isIOS) {
-      var result;
-      var attachment = message.messageAttachment;
-      if (attachment is NIMImageAttachment) {
-        var response = await Dio().get(attachment.url!,
-            options: Options(responseType: ResponseType.bytes));
-        result = await ImageGallerySaver.saveImage(response.data,
-            name: attachment.displayName);
-      } else if (attachment is NIMVideoAttachment) {
-        result = await ImageGallerySaver.saveFile(attachment.path!);
-      }
-      _saveFinish(context, result);
-      return;
-    }
+    // if (Platform.isIOS) {
+    //   var result;
+    //   var attachment = message.attachment;
+    //   if (attachment is NIMMessageImageAttachment) {
+    //     var response = await Dio().get(attachment.url!,
+    //         options: Options(responseType: ResponseType.bytes));
+    //     result = await ImageGallerySaverPlus.saveImage(response.data,
+    //         name: attachment.name);
+    //   } else if (attachment is NIMMessageVideoAttachment) {
+    //     result = await ImageGallerySaverPlus.saveFile(attachment.path!);
+    //   }
+    //   _saveFinish(context, result);
+    //   return;
+    // }
     if (message.isFileDownload()) {
-      NIMFileAttachment attachment =
-          message.messageAttachment as NIMFileAttachment;
+      NIMMessageFileAttachment attachment =
+          message.attachment as NIMMessageFileAttachment;
       Alog.d(
           tag: 'ChatKit',
           moduleName: 'media save',
-          content: 'media:${attachment.path}, ext:${attachment.extension}');
+          content: 'media:${attachment.path}, ext:${attachment.ext}');
       String path = attachment.path!;
-      if (!attachment.path!.endsWith(attachment.extension!)) {
-        path = await _copyFile(attachment.path!, attachment.extension!);
+      if (!attachment.path!.endsWith(attachment.ext!)) {
+        path = await _copyFile(attachment.path!, attachment.ext!);
       }
-      var result = await ImageGallerySaver.saveFile(path);
+      var result = await ImageGallerySaverPlus.saveFile(path);
       _saveFinish(context, result);
     } else {
-      NimCore.instance.messageService
-          .downloadAttachment(message: message, thumb: false);
+      NIMDownloadMessageAttachmentParams params =
+          NIMDownloadMessageAttachmentParams(
+        attachment: message.attachment!,
+        type: NIMDownloadAttachmentType.nimDownloadAttachmentTypeSource,
+        thumbSize: NIMSize(),
+        messageClientId: message.messageClientId,
+      );
+
+      NimCore.instance.storageService
+          .downloadAttachment(params)
+          .then((value) async {
+        if (value.data != null) {
+          var attachment = message.attachment as NIMMessageFileAttachment;
+          String? path = value.data;
+          if (path != null &&
+              attachment.ext != null &&
+              !path.endsWith(attachment.ext!)) {
+            path = await _copyFile(path, attachment.ext!);
+          }
+          var result = await ImageGallerySaverPlus.saveFile(path!);
+          _saveFinish(context, result);
+        }
+      });
     }
   }
 

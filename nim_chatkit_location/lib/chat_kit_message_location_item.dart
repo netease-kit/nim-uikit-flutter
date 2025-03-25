@@ -8,7 +8,7 @@ import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/neListView/frame_separate_widget.dart';
 import 'package:nim_chatkit/location.dart';
 import 'package:nim_chatkit_location/chat_kit_location.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 
 import 'location_map_page.dart';
 
@@ -25,14 +25,13 @@ class ChatKitMessageLocationItem extends StatefulWidget {
 class ChatKitMessageLocationState extends State<ChatKitMessageLocationItem> {
   late bool _isReceive;
 
-  late final NIMLocationAttachment _attachment =
-      widget.message.messageAttachment as NIMLocationAttachment;
+  late final NIMMessageLocationAttachment _attachment =
+      widget.message.attachment as NIMMessageLocationAttachment;
 
   @override
   void initState() {
     super.initState();
-    _isReceive =
-        widget.message.messageDirection == NIMMessageDirection.received;
+    _isReceive = widget.message.isSelf != true;
   }
 
   Widget _placeHolder(double aspectRatio, {double? width}) {
@@ -50,12 +49,12 @@ class ChatKitMessageLocationState extends State<ChatKitMessageLocationItem> {
   @override
   Widget build(BuildContext context) {
     var locationStr =
-        '${_attachment.longitude.toStringAsFixed(6)},${_attachment.latitude.toStringAsFixed(6)}';
+        '${_attachment.longitude!.toStringAsFixed(6)},${_attachment.latitude!.toStringAsFixed(6)}';
     var appKey = ChatKitLocation.instance.aMapWebKey;
     var imageUrl =
         'https://restapi.amap.com/v3/staticmap?location=$locationStr&zoom=16&size=480*180&scale=2&key=$appKey';
     return FrameSeparateWidget.builder(
-        id: widget.message.uuid,
+        id: widget.message.messageClientId,
         placeHolder: Container(
           width: 242,
           height: 140,
@@ -75,9 +74,9 @@ class ChatKitMessageLocationState extends State<ChatKitMessageLocationItem> {
                   return LocationMapPage(
                     needLocate: false,
                     locationInfo: LocationInfo(
-                        _attachment.latitude, _attachment.longitude,
+                        _attachment.latitude!, _attachment.longitude!,
                         address: _attachment.address,
-                        name: widget.message.content),
+                        name: widget.message.text),
                     showOpenMap: true,
                   );
                 }));
@@ -85,11 +84,11 @@ class ChatKitMessageLocationState extends State<ChatKitMessageLocationItem> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (widget.message.content?.isNotEmpty == true)
+                  if (widget.message.text?.isNotEmpty == true)
                     Padding(
                       padding:
                           const EdgeInsets.only(top: 11, left: 16, right: 16),
-                      child: Text(widget.message.content!,
+                      child: Text(widget.message.text!,
                           style: TextStyle(
                               fontSize: 16, color: '#333333'.toColor()),
                           maxLines: 1,
@@ -98,7 +97,7 @@ class ChatKitMessageLocationState extends State<ChatKitMessageLocationItem> {
                   Padding(
                     padding:
                         const EdgeInsets.only(left: 16, right: 16, bottom: 3),
-                    child: Text(_attachment.address,
+                    child: Text(_attachment.address ?? '',
                         style:
                             TextStyle(fontSize: 12, color: '#999999'.toColor()),
                         maxLines: 1,
@@ -112,7 +111,8 @@ class ChatKitMessageLocationState extends State<ChatKitMessageLocationItem> {
                       child: Stack(alignment: Alignment.center, children: [
                         CachedNetworkImage(
                           imageUrl: imageUrl,
-                          cacheKey: imageUrl,
+                          cacheKey:
+                              '$imageUrl${widget.message.messageClientId}',
                           placeholder: (context, url) => _placeHolder(24 / 9),
                           fit: BoxFit.fitWidth,
                           fadeInDuration: const Duration(milliseconds: 0),

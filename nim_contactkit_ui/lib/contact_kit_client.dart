@@ -8,13 +8,12 @@ import 'package:netease_corekit/report/xkit_report.dart';
 import 'package:netease_corekit_im/model/contact_info.dart';
 import 'package:netease_corekit_im/router/imkit_router.dart';
 import 'package:netease_corekit_im/router/imkit_router_constants.dart';
-import 'package:nim_contactkit/contactkit_client_repo.dart';
 
 import 'l10n/S.dart';
 import 'page/contact_kit_black_list_page.dart';
 import 'page/contact_kit_contact_selector_page.dart';
 import 'page/contact_kit_detail_page.dart';
-import 'page/contact_kit_system_notify_message_page.dart';
+import 'page/contact_kit_friend_add_application_page.dart';
 import 'page/contact_kit_team_list_page.dart';
 import 'page/contact_page.dart';
 import 'widgets/contact_kit_contact_list_view.dart';
@@ -139,7 +138,7 @@ class ContactKitClient {
   }
 
   static init() {
-    ContactKitClientRepo.init();
+    // ContactKitClientRepo.init();
     IMKitRouter.instance.registerRouter(
         RouterConstants.PATH_CONTACT_PAGE, (context) => ContactPage());
 
@@ -178,6 +177,7 @@ class ContactKitClient {
       (context) => ContactKitSystemNotifyMessagePage(),
     );
 
-    XKitReporter().register(moduleName: 'ContactUIKit', moduleVersion: '9.7.3');
+    XKitReporter()
+        .register(moduleName: 'ContactUIKit', moduleVersion: '10.0.0');
   }
 }

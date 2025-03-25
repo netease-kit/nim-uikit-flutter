@@ -2,6 +2,8 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+
+
 import 'chat_kit_client_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -295,8 +297,7 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
   }
 
   @override
-  String chatTeamModifyResourcePermissionUpdate(
-      String user, String permission) {
+  String chatTeamModifyResourcePermissionUpdate(String user, String permission) {
     return '$user 更新了群权限\"群资料修改权限\"为\"$permission\"';
   }
 
@@ -488,4 +489,13 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
 
   @override
   String get chatMessageHaveCannotForwardMessages => '存在不可转发的消息体，是否去除后发送？';
+
+  @override
+  String get teamMsgAitAllPrivilegeIsAll => '@所有人权限更新为所有人';
+
+  @override
+  String get teamMsgAitAllPrivilegeIsOwner => '@所有人权限更新为群主和管理员';
+
+  @override
+  String get chatMessagePinLimitTips => '已超出pin数量上限';
 }

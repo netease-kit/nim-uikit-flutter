@@ -3,8 +3,8 @@
 // found in the LICENSE file.
 
 import 'package:azlistview_plus/azlistview_plus.dart';
-import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:netease_common_ui/utils/color_utils.dart';
 
 class AZListViewContainer extends StatefulWidget {
   final List<ISuspensionBeanImpl>? memberList;

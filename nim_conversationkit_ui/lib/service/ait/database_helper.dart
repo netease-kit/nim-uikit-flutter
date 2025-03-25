@@ -75,10 +75,10 @@ class DatabaseHelper {
 
   // 添加@消息
   Future<int> insertAitMessage(
-      String sessionId, String messageId, String accId) async {
+      String conversationId, String messageId, String accId) async {
     Database? db = await instance.database;
     return await db!.insert(table, {
-      sessionIdColumn: sessionId,
+      sessionIdColumn: conversationId,
       messageIdColumn: messageId,
       myAccId: accId
     });

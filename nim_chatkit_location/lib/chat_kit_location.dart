@@ -2,14 +2,14 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:amap_flutter_location/amap_flutter_location.dart';
+import 'package:x_amap_flutter_location/amap_flutter_location.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_corekit/report/xkit_report.dart';
 import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
 import 'package:nim_chatkit/location.dart';
 import 'package:nim_chatkit_location/location_map_page.dart';
-import 'package:nim_core/nim_core.dart' as nim;
+import 'package:nim_core_v2/nim_core.dart' as nim;
 import 'package:permission_handler/permission_handler.dart';
 
 import 'chat_kit_message_location_item.dart';
@@ -18,7 +18,7 @@ import 'l10n/S.dart';
 class ChatKitLocation {
   static const String kPackage = 'nim_chatkit_location';
 
-  static const String _kVersion = '9.7.3';
+  static const String _kVersion = '10.0.0';
 
   static const String _kName = 'ChatKitLocation';
 
@@ -59,7 +59,7 @@ class ChatKitLocation {
         ),
         title: S.of().locationTitle,
         permissions: [Permission.locationWhenInUse],
-        onTap: (context, sessionId, sessionType, {messageSender}) {
+        onTap: (context, sessionId, conversationTye, {messageSender}) {
           ///去位置消息页面
           Navigator.push(context, MaterialPageRoute(builder: (context) {
             return LocationMapPage(
@@ -69,15 +69,11 @@ class ChatKitLocation {
           })).then((location) {
             if (location != null && location is LocationInfo) {
               ///构建位置消息
-              nim.MessageBuilder.createLocationMessage(
-                      sessionId: sessionId,
-                      sessionType: sessionType,
-                      latitude: location.latitude,
-                      longitude: location.longitude,
-                      address: location.address ?? '')
+              nim.MessageCreator.createLocationMessage(location.latitude,
+                      location.longitude, location.address ?? '')
                   .then((ret) {
                 if (ret.isSuccess && ret.data != null) {
-                  ret.data!.content = location.name;
+                  ret.data!.text = location.name;
 
                   ///发送位置消息
                   messageSender?.call(ret.data!);

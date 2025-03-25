@@ -2,12 +2,12 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:netease_corekit_im/router/imkit_router_factory.dart';
+import 'package:flutter/material.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
-import 'package:flutter/material.dart';
+import 'package:netease_corekit_im/router/imkit_router_factory.dart';
 import 'package:nim_contactkit_ui/page/viewmodel/team_list_viewmodel.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:provider/provider.dart';
 
 import '../contact_kit_client.dart';
@@ -32,7 +32,7 @@ class _TeamListPageState extends State<ContactKitTeamListPage> {
         if (widget.selectorModel == true) {
           Navigator.pop(context, team);
         } else {
-          goToTeamChat(context, team.id!);
+          goToTeamChat(context, team.teamId);
         }
       },
       child: Container(
@@ -44,9 +44,9 @@ class _TeamListPageState extends State<ContactKitTeamListPage> {
             Avatar(
               width: 36,
               height: 36,
-              avatar: team.icon,
+              avatar: team.avatar,
               name: team.name,
-              bgCode: AvatarColor.avatarColor(content: team.id),
+              bgCode: AvatarColor.avatarColor(content: team.teamId),
               radius: widget.listConfig?.avatarCornerRadius,
             ),
             Expanded(
@@ -54,7 +54,7 @@ class _TeamListPageState extends State<ContactKitTeamListPage> {
                   alignment: Alignment.centerLeft,
                   padding: EdgeInsets.only(left: 12),
                   child: Text(
-                    team.name!,
+                    team.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(

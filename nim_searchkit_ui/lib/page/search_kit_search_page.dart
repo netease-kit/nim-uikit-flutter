@@ -10,13 +10,13 @@ import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/search_page.dart';
 import 'package:netease_corekit_im/model/contact_info.dart';
 import 'package:netease_corekit_im/router/imkit_router_factory.dart';
-import 'package:nim_core/nim_core.dart';
-import 'package:nim_searchkit/model/friend_search_info.dart';
-import 'package:nim_searchkit/model/hit_type.dart';
-import 'package:nim_searchkit/model/search_info.dart';
-import 'package:nim_searchkit/model/team_search_info.dart';
-import 'package:nim_searchkit/repo/search_repo.dart';
-import 'package:nim_searchkit/repo/text_search.dart';
+import 'package:nim_core_v2/nim_core.dart';
+import 'package:nim_chatkit/model/friend_search_info.dart';
+import 'package:nim_chatkit/model/hit_type.dart';
+import 'package:nim_chatkit/model/search_info.dart';
+import 'package:nim_chatkit/model/team_search_info.dart';
+import 'package:nim_chatkit/repo/search_repo.dart';
+import 'package:nim_chatkit/repo/text_search.dart';
 
 import '../l10n/S.dart';
 import '../search_kit_client.dart';
@@ -32,13 +32,11 @@ class _SearchKitGlobalState extends State<SearchKitGlobalSearchPage> {
   @override
   initState() {
     super.initState();
-    SearchRepo.instance.initListener();
   }
 
   @override
   dispose() {
     super.dispose();
-    SearchRepo.instance.releaseListener();
   }
 
   Future<List<SearchInfo>> _search(String text) async {
@@ -73,9 +71,9 @@ class _SearchKitGlobalState extends State<SearchKitGlobalSearchPage> {
           case HitType.alias:
             return contact.friend?.alias;
           case HitType.userName:
-            return contact.user.nick;
+            return contact.user.name;
           case HitType.account:
-            return contact.user.userId;
+            return contact.user.accountId;
           default:
             return contact.getName();
         }
@@ -103,17 +101,17 @@ class _SearchKitGlobalState extends State<SearchKitGlobalSearchPage> {
 
       return InkWell(
         onTap: () {
-          goToP2pChat(context, contact.user.userId!);
+          goToP2pChat(context, contact.user.accountId!);
         },
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Avatar(
               avatar: contact.user.avatar,
-              name: contact.getName(needAlias: false),
+              name: contact.getName(),
               width: 36,
               height: 36,
-              bgCode: AvatarColor.avatarColor(content: contact.user.userId),
+              bgCode: AvatarColor.avatarColor(content: contact.user.accountId),
             ),
             Expanded(
               child: Container(
@@ -149,11 +147,13 @@ class _SearchKitGlobalState extends State<SearchKitGlobalSearchPage> {
       NIMTeam team = (currentItem as TeamSearchInfo).team;
       return InkWell(
         onTap: () {
-          NimCore.instance.teamService.queryTeam(team.id!).then((value) {
+          NimCore.instance.teamService
+              .getTeamInfo(team.teamId, NIMTeamType.typeNormal)
+              .then((value) {
             if (value.isSuccess &&
                 value.data != null &&
-                value.data!.isMyTeam == true) {
-              goToTeamChat(context, team.id!);
+                value.data!.isValidTeam == true) {
+              goToTeamChat(context, team.teamId);
             } else {
               showCommonDialog(
                   context: context,
@@ -166,11 +166,11 @@ class _SearchKitGlobalState extends State<SearchKitGlobalSearchPage> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Avatar(
-              avatar: team.icon,
+              avatar: team.avatar,
               name: team.name,
               width: 32,
               height: 32,
-              bgCode: AvatarColor.avatarColor(content: team.id),
+              bgCode: AvatarColor.avatarColor(content: team.teamId),
             ),
             Expanded(
               child: Container(

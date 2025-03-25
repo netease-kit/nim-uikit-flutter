@@ -9,7 +9,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:nim_chatkit/extension.dart';
 import 'package:nim_chatkit_ui/media/media_bottom_actions.dart';
 import 'package:flutter/material.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
@@ -27,7 +27,6 @@ class PictureViewer extends StatefulWidget {
 }
 
 class _PictureViewerState extends State<PictureViewer> {
-  late StreamSubscription _subscription;
   late List<NIMMessage> _galleryItems;
   late int _currentIndex;
 
@@ -37,18 +36,37 @@ class _PictureViewerState extends State<PictureViewer> {
 
   PhotoViewGalleryPageOptions _buildItem(BuildContext context, int index) {
     NIMMessage message = _galleryItems[index];
-    NIMImageAttachment attachment =
-        message.messageAttachment as NIMImageAttachment;
-    String path = attachment.path ?? attachment.thumbPath ?? "";
-    _logI('build item index:$index ${message.uuid}');
+    NIMMessageImageAttachment attachment =
+        message.attachment as NIMMessageImageAttachment;
+    String path = attachment.path ?? "";
+    _logI('build item index:$index ${message.messageClientId}');
     ImageProvider imageProvider;
     //如果不存在则下载，下载成功之后会调用onMessageStatusChange 的回调，然后更新
     if (!message.isFileDownload()) {
-      _logI('to download image -->> ${message.uuid}');
-      NimCore.instance.messageService
-          .downloadAttachment(message: message, thumb: false);
+      _logI('to download image -->> ${message.messageClientId}');
+      NIMDownloadMessageAttachmentParams params =
+          NIMDownloadMessageAttachmentParams(
+        attachment: message.attachment!,
+        type: NIMDownloadAttachmentType.nimDownloadAttachmentTypeSource,
+        thumbSize: NIMSize(),
+        messageClientId: message.messageClientId,
+      );
+
+      NimCore.instance.storageService.downloadAttachment(params).then((result) {
+        if (result.isSuccess) {
+          int pos = index;
+
+          if (pos > -1) {
+            var attachment = message.attachment as NIMMessageImageAttachment;
+            attachment.path = result.data;
+            _galleryItems[pos].attachment = attachment;
+            setState(() {});
+            _logI('download finish, update $pos');
+          }
+        }
+      });
     }
-    String? url = attachment.url ?? attachment.thumbUrl;
+    String? url = attachment.url;
     _logI('load from url:$url, path:$path');
     if (url != null) {
       imageProvider = CachedNetworkImageProvider(url);
@@ -60,8 +78,8 @@ class _PictureViewerState extends State<PictureViewer> {
         initialScale: PhotoViewComputedScale.contained,
         minScale: PhotoViewComputedScale.contained,
         maxScale: PhotoViewComputedScale.contained * 2,
-        heroAttributes:
-            PhotoViewHeroAttributes(tag: '${message.messageId}${message.uuid}'),
+        heroAttributes: PhotoViewHeroAttributes(
+            tag: '${message.messageServerId}${message.messageClientId}'),
         errorBuilder: (
           BuildContext context,
           Object error,
@@ -74,31 +92,12 @@ class _PictureViewerState extends State<PictureViewer> {
   @override
   void initState() {
     super.initState();
-    _subscription =
-        NimCore.instance.messageService.onMessageStatus.listen((event) {
-      _logI('onMessageStatus ${event.uuid} ${event.attachmentStatus}');
-      if (event.isFileDownload()) {
-        int pos = -1;
-        for (int i = 0; i < _galleryItems.length; ++i) {
-          if (_galleryItems[i].isSameMessage(event)) {
-            pos = i;
-            break;
-          }
-        }
-        if (pos > -1) {
-          _galleryItems[pos] = event;
-          setState(() {});
-          _logI('download finish, update $pos');
-        }
-      }
-    });
     _galleryItems = widget.messages;
     _currentIndex = widget.showIndex > 0 ? widget.showIndex : 0;
   }
 
   @override
   void dispose() {
-    _subscription.cancel();
     super.dispose();
   }
 

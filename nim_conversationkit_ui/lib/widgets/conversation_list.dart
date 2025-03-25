@@ -3,16 +3,18 @@
 // found in the LICENSE file.
 
 import 'package:flutter_svg/svg.dart';
+import 'package:netease_common_ui/base/base_state.dart';
 import 'package:netease_corekit_im/router/imkit_router_constants.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
-import 'package:nim_conversationkit/model/conversation_info.dart';
 import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
 import 'package:nim_conversationkit_ui/widgets/conversation_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:provider/provider.dart';
+import 'package:yunxin_alog/yunxin_alog.dart';
 
 import '../l10n/S.dart';
+import '../model/conversation_info.dart';
 import '../view_model/conversation_view_model.dart';
 
 class ConversationList extends StatefulWidget {
@@ -22,12 +24,27 @@ class ConversationList extends StatefulWidget {
 
   final ValueChanged<int>? onUnreadCountChanged;
   final ConversationItemConfig config;
-
   @override
   State<ConversationList> createState() => _ConversationListState();
 }
 
-class _ConversationListState extends State<ConversationList> {
+class _ConversationListState extends BaseState<ConversationList> {
+  final ScrollController _scrollController = ScrollController();
+
+  // 滚动监听
+  void _scrollListener() {
+    if (_scrollController.position.pixels >
+        _scrollController.position.maxScrollExtent - 20) {
+      context.read<ConversationViewModel>().queryConversationNextList();
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_scrollListener);
+  }
+
   @override
   Widget build(BuildContext context) {
     List<ConversationInfo> conversationList =
@@ -37,6 +54,7 @@ class _ConversationListState extends State<ConversationList> {
             child: ListView.builder(
                 itemCount: conversationList.length,
                 itemExtent: conversationItemHeight,
+                controller: _scrollController,
                 itemBuilder: (context, index) {
                   ConversationInfo conversationInfo = conversationList[index];
                   return Slidable(
@@ -64,9 +82,10 @@ class _ConversationListState extends State<ConversationList> {
                         Navigator.pushNamed(
                             context, RouterConstants.PATH_CHAT_PAGE,
                             arguments: {
-                              'sessionId': conversationInfo.session.sessionId,
-                              'sessionType':
-                                  conversationInfo.session.sessionType
+                              'conversationId':
+                                  conversationInfo.getConversationId(),
+                              'conversationType':
+                                  conversationInfo.getConversationType()
                             });
                       },
                     ),
@@ -75,7 +94,11 @@ class _ConversationListState extends State<ConversationList> {
                       children: [
                         SlidableAction(
                           onPressed: (context) {
-                            if (conversationInfo.isStickTop) {
+                            //提前判断网络
+                            if (!checkNetwork()) {
+                              return;
+                            }
+                            if (conversationInfo.isStickTop()) {
                               context
                                   .read<ConversationViewModel>()
                                   .removeStick(conversationInfo);
@@ -88,12 +111,16 @@ class _ConversationListState extends State<ConversationList> {
                           backgroundColor: CommonColors.color_337eff,
                           foregroundColor: Colors.white,
                           padding: EdgeInsets.zero,
-                          label: conversationInfo.isStickTop
+                          label: conversationInfo.isStickTop()
                               ? S.of(context).cancelStickTitle
                               : S.of(context).stickTitle,
                         ),
                         SlidableAction(
                           onPressed: (context) {
+                            //提前判断网络
+                            if (!checkNetwork()) {
+                              return;
+                            }
                             context
                                 .read<ConversationViewModel>()
                                 .deleteConversation(conversationInfo,

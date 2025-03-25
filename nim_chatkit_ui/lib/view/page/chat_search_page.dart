@@ -13,7 +13,7 @@ import 'package:netease_corekit_im/router/imkit_router_constants.dart';
 import 'package:netease_corekit_im/services/message/chat_message.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_user_helper.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 
 import '../../chat_kit_client.dart';
 import '../../l10n/S.dart';
@@ -66,12 +66,16 @@ class ChatSearchResult extends StatelessWidget {
             itemBuilder: (context, index) {
               ChatMessage item = searchResult![index];
               return InkWell(
-                onTap: () {
+                onTap: () async {
+                  var conversationId = (await NimCore
+                          .instance.conversationIdUtil
+                          .teamConversationId(teamId))
+                      .data!;
                   Navigator.pushNamedAndRemoveUntil(context,
                       RouterConstants.PATH_CHAT_PAGE, ModalRoute.withName('/'),
                       arguments: {
-                        'sessionId': teamId,
-                        'sessionType': NIMSessionType.team,
+                        'conversationId': conversationId,
+                        'conversationType': NIMConversationType.team,
                         'anchor': item.nimMessage
                       });
                 },
@@ -89,13 +93,14 @@ class _ChatSearchPageState extends State<ChatSearchPage> {
     return SearchPage(
       title: S.of(context).messageSearchTitle,
       searchHint: S.of(context).messageSearchHint,
+      buildOnComplete: true,
       builder: (context, keyword) {
         if (keyword.isEmpty) {
           return Container();
         } else {
           return FutureBuilder<List<ChatMessage>?>(
               future: ChatMessageRepo.searchMessage(
-                  keyword, widget.teamId, NIMSessionType.team),
+                  keyword, widget.teamId, NIMConversationType.team),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.done) {
                   return ChatSearchResult(
@@ -122,11 +127,13 @@ class SearchItem extends StatelessWidget {
   final String keyword;
 
   Future<String> _getUserName() async {
-    if (message.nimMessage.sessionType == NIMSessionType.p2p) {
+    if (message.nimMessage.conversationType == NIMConversationType.p2p) {
       return message.getNickName();
     } else {
-      return getUserNickInTeam(
-          message.nimMessage.sessionId!, message.nimMessage.fromAccount!);
+      var teamId = (await NimCore.instance.conversationIdUtil
+              .conversationTargetId(message.nimMessage.conversationId!))
+          .data!;
+      return getUserNickInTeam(teamId, message.nimMessage.senderId!);
     }
   }
 
@@ -178,7 +185,7 @@ class SearchItem extends StatelessWidget {
                 const SizedBox(
                   height: 6,
                 ),
-                _hitWidget(message.nimMessage.content ?? ''),
+                _hitWidget(message.nimMessage.text ?? ''),
               ],
             ),
           ),
@@ -186,7 +193,7 @@ class SearchItem extends StatelessWidget {
               right: 0,
               top: 17,
               child: Text(
-                message.nimMessage.timestamp.formatDateTime(),
+                message.nimMessage.createTime!.formatDateTime(),
                 style: const TextStyle(
                     fontSize: 12, color: CommonColors.color_cccccc),
               )),

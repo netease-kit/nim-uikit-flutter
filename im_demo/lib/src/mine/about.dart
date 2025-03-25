@@ -2,10 +2,10 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:netease_common_ui/utils/color_utils.dart';
-import 'package:netease_common_ui/widgets/common_browse_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_common_ui/widgets/common_browse_page.dart';
 
 import '../../l10n/S.dart';
 
@@ -51,7 +51,7 @@ class AboutPage extends StatelessWidget {
               ),
               // 如果引入package_info 则不需要手动修改此处，但是如果只为了版本号引入不值得
               trailing: Text(
-                'V9.7.0',
+                'V10.0.0',
                 style: _style,
               ),
             ),

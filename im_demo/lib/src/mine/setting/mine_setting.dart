@@ -93,19 +93,19 @@ class _MineSettingPageState extends State<MineSettingPage> {
                               builder: (context) => const NotifySettingPage()));
                     },
                   ),
-                  Visibility(
-                    visible: false,
-                    child: CommonListTile(
-                      title: S.of(context).settingClearCache,
-                      trailingType: TrailingType.arrow,
-                      onTap: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => const ClearCachePage()));
-                      },
-                    ),
-                  ),
+                  // Visibility(
+                  //   visible: false,
+                  //   child: CommonListTile(
+                  //     title: S.of(context).settingClearCache,
+                  //     trailingType: TrailingType.arrow,
+                  //     onTap: () {
+                  //       Navigator.push(
+                  //           context,
+                  //           MaterialPageRoute(
+                  //               builder: (context) => const ClearCachePage()));
+                  //     },
+                  //   ),
+                  // ),
                 ]).toList(),
               ),
             ),
@@ -131,7 +131,6 @@ class _MineSettingPageState extends State<MineSettingPage> {
                     if (value ?? false) {
                       IMKitClient.logoutIM().then((value) {
                         if (value) {
-                          // UnifyLogin.logout();
                           Navigator.pop(context);
                         }
                       });

@@ -12,9 +12,10 @@ import 'package:netease_common_ui/widgets/neListView/size_cache_widget.dart';
 import 'package:netease_corekit_im/router/imkit_router.dart';
 import 'package:netease_corekit_im/services/message/chat_message.dart';
 import 'package:nim_chatkit/message/message_helper.dart';
+import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit_ui/l10n/S.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:provider/provider.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
@@ -80,8 +81,8 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
       return true;
     }
     if (message.nimMessage.messageType == NIMMessageType.text &&
-        message.nimMessage.content?.isNotEmpty == true) {
-      Clipboard.setData(ClipboardData(text: message.nimMessage.content!));
+        message.nimMessage.text?.isNotEmpty == true) {
+      Clipboard.setData(ClipboardData(text: message.nimMessage.text!));
       Fluttertoast.showToast(msg: S.of().chatMessageCopySuccess);
       return true;
     }
@@ -96,11 +97,9 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
     return false;
   }
 
-  _scrollToMessageByUUID(String uuid) {
-    var index = context
-        .read<ChatViewModel>()
-        .messageList
-        .indexWhere((element) => element.nimMessage.uuid == uuid);
+  _scrollToMessageByUUID(String messageClientId) {
+    var index = context.read<ChatViewModel>().messageList.indexWhere(
+        (element) => element.nimMessage.messageClientId == messageClientId);
     if (index >= 0) {
       widget.scrollController.scrollToIndex(index);
     }
@@ -114,18 +113,17 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
     }
     final lastTimestamp = context
             .read<ChatViewModel>()
-            .getAnchor(QueryDirection.QUERY_OLD)
-            ?.timestamp ??
+            .getAnchor(NIMQueryDirection.desc)
+            ?.createTime ??
         DateTime.now().millisecondsSinceEpoch;
-    if (anchor.timestamp >= lastTimestamp) {
+    if (anchor.createTime! >= lastTimestamp) {
       // in range
       findAnchor = null;
-      int index = context
-          .read<ChatViewModel>()
-          .messageList
-          .indexWhere((element) => element.nimMessage.uuid == anchor.uuid!);
+      int index = context.read<ChatViewModel>().messageList.indexWhere(
+          (element) =>
+              element.nimMessage.messageClientId == anchor.messageClientId!);
       _logI(
-          'scrollToAnchor: found time:${anchor.timestamp} >= $lastTimestamp, index found:$index');
+          'scrollToAnchor: found time:${anchor.createTime} >= $lastTimestamp, index found:$index');
       if (index >= 0) {
         widget.scrollController
             .scrollToIndex(index, duration: Duration(milliseconds: 500))
@@ -136,10 +134,8 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
       }
     } else {
       _logI(
-          'scrollToAnchor: not found in ${list.length} items, load more -->> ');
-      widget.scrollController
-          .scrollToIndex(list.length, duration: Duration(milliseconds: 1));
-      _loadMore();
+          'scrollToAnchor: not found in ${list.length} items, _findAnchorRemote -->> ');
+      _findAnchorRemote(anchor);
     }
   }
 
@@ -173,13 +169,13 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
     // 转发
     var sessionName = context.read<ChatViewModel>().chatTitle;
     var filterUser =
-        context.read<ChatViewModel>().sessionType == NIMSessionType.p2p
-            ? [context.read<ChatViewModel>().sessionId]
+        context.read<ChatViewModel>().p2pUserAccId?.isNotEmpty == true
+            ? [context.read<ChatViewModel>().p2pUserAccId!]
             : null;
-    ChatMessageHelper.showForwardMessageDialog(context, (sessionId, sessionType,
+    ChatMessageHelper.showForwardMessageDialog(context, (conversationId,
         {String? postScript, bool? isLastUser}) {
       context.read<ChatViewModel>().forwardMessage(
-          message.nimMessage, sessionId, sessionType,
+          message.nimMessage, conversationId,
           postScript: postScript);
     }, filterUser: filterUser, sessionName: sessionName);
     return true;
@@ -194,7 +190,14 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
     if (isCancel) {
       context.read<ChatViewModel>().removeMessagePin(message.nimMessage);
     } else {
-      context.read<ChatViewModel>().addMessagePin(message.nimMessage);
+      context
+          .read<ChatViewModel>()
+          .addMessagePin(message.nimMessage)
+          .then((result) {
+        if (result.code == ChatMessageRepo.errorPINLimited) {
+          Fluttertoast.showToast(msg: S.of(context).chatMessagePinLimitTips);
+        }
+      });
     }
     return true;
   }
@@ -224,8 +227,9 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
   }
 
   void _resendMessage(ChatMessage message) {
-    context.read<ChatViewModel>().sendMessage(message.nimMessage,
-        replyMsg: message.replyMsg, resend: true);
+    context
+        .read<ChatViewModel>()
+        .sendMessage(message.nimMessage, replyMsg: message.replyMsg);
   }
 
   bool _onMessageRevoke(ChatMessage message) {
@@ -245,7 +249,7 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
                     .revokeMessage(message)
                     .then((value) {
                   if (!value.isSuccess) {
-                    if (value.code == 508) {
+                    if (value.code == ChatMessageRepo.errorRevokeTimeout) {
                       Fluttertoast.showToast(
                           msg: S.of().chatMessageRevokeOverTime);
                     } else {
@@ -258,6 +262,10 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
     return true;
   }
 
+  _findAnchorRemote(NIMMessage anchor) {
+    context.read<ChatViewModel>().loadMessageWithAnchor(anchor);
+  }
+
   _loadMore() async {
     // load old
     if (context.read<ChatViewModel>().messageList.isNotEmpty &&
@@ -267,7 +275,20 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
           tag: 'ChatKit',
           moduleName: 'ChatKitMessageList',
           content: '_loadMore -->>');
-      context.read<ChatViewModel>().fetchMoreMessage(QueryDirection.QUERY_OLD);
+      context.read<ChatViewModel>().fetchMoreMessage(NIMQueryDirection.desc);
+    }
+  }
+
+  _loadNewer() {
+    // load old
+    if (context.read<ChatViewModel>().messageList.isNotEmpty &&
+        context.read<ChatViewModel>().hasMoreNewerMessages &&
+        !context.read<ChatViewModel>().isLoading) {
+      Alog.d(
+          tag: 'ChatKit',
+          moduleName: 'ChatKitMessageList',
+          content: '_loadNewer -->>');
+      context.read<ChatViewModel>().fetchMoreMessage(NIMQueryDirection.asc);
     }
   }
 
@@ -323,10 +344,12 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
 
   _initScrollController() {
     widget.scrollController.addListener(() {
-      if (widget.scrollController.position.pixels ==
+      if (widget.scrollController.position.pixels >=
           widget.scrollController.position.maxScrollExtent) {
         _logI('scrollController -->> load more');
         _loadMore();
+      } else if (widget.scrollController.position.pixels <= 0) {
+        _loadNewer();
       }
     });
     context.read<ChatViewModel>().scrollToEnd = _scrollToBottom;
@@ -341,22 +364,18 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
   @override
   Widget build(BuildContext context) {
     if (findAnchor != null) {
-      _logI('build, try scroll to anchor:${findAnchor?.content}');
+      _logI('build, try scroll to anchor:${findAnchor?.text}');
       _scrollToAnchor(findAnchor!);
     }
 
     return Consumer<ChatViewModel>(builder: (cnt, chatViewModel, child) {
-      if (chatViewModel.sessionType == NIMSessionType.p2p &&
+      if (chatViewModel.conversationType == NIMConversationType.p2p &&
           chatViewModel.messageList.isNotEmpty) {
         NIMMessage? firstMessage = chatViewModel.messageList
-            .firstWhereOrNull((element) =>
-                element.nimMessage.messageDirection ==
-                NIMMessageDirection.received)
+            .firstWhereOrNull((element) => element.nimMessage.isSelf == false)
             ?.nimMessage;
-        if (firstMessage?.messageAck == true &&
-            firstMessage?.hasSendAck == false &&
-            isInCurrentPage) {
-          chatViewModel.sendMessageP2PReceipt(firstMessage!);
+        if (isInCurrentPage && firstMessage != null) {
+          chatViewModel.sendMessageP2PReceipt(firstMessage);
         }
       }
 
@@ -384,10 +403,10 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
                     return AutoScrollTag(
                       controller: widget.scrollController,
                       index: index,
-                      key: ValueKey(message.nimMessage.uuid),
+                      key: ValueKey(message.nimMessage.messageClientId),
                       highlightColor: Colors.black.withOpacity(0.1),
                       child: ChatKitMessageItem(
-                        key: ValueKey(message.nimMessage.uuid),
+                        key: ValueKey(message.nimMessage.messageClientId),
                         chatMessage: message,
                         messageBuilder: widget.messageBuilder,
                         lastMessage: lastMessage,

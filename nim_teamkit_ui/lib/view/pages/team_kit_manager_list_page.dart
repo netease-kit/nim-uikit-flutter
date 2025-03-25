@@ -12,9 +12,9 @@ import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_corekit_im/model/team_models.dart';
 import 'package:netease_corekit_im/router/imkit_router_factory.dart';
 import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/login/login_service.dart';
+import 'package:netease_corekit_im/services/login/im_login_service.dart';
 import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:nim_teamkit_ui/view/pages/team_kit_member_list_page.dart';
 import 'package:provider/provider.dart';
 
@@ -55,7 +55,8 @@ class TeamKitManagerListPageState extends State<TeamKitManagerListPage> {
         var memberList = context
             .watch<TeamSettingViewModel>()
             .userInfoData
-            ?.where((e) => e.teamInfo.type == TeamMemberType.manager)
+            ?.where((e) =>
+                e.teamInfo.memberRole == NIMTeamMemberRole.memberRoleManager)
             .toList();
         memberList?.sort(
             (a, b) => a.teamInfo.joinTime.compareTo(b.teamInfo.joinTime));
@@ -181,11 +182,11 @@ class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
-        if (getIt<LoginService>().userInfo?.userId ==
-            widget.teamMember.userInfo?.userId) {
+        if (getIt<IMLoginService>().userInfo?.accountId ==
+            widget.teamMember.userInfo?.accountId) {
           gotoMineInfoPage(context);
         } else {
-          goToContactDetail(context, widget.teamMember.userInfo!.userId!);
+          goToContactDetail(context, widget.teamMember.userInfo!.accountId!);
         }
       },
       child: Container(
@@ -199,7 +200,7 @@ class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
               name: widget.teamMember
                   .getName(needAlias: false, needTeamNick: false),
               bgCode: AvatarColor.avatarColor(
-                  content: widget.teamMember.teamInfo.account),
+                  content: widget.teamMember.teamInfo.accountId),
             ),
             const Padding(padding: EdgeInsets.symmetric(horizontal: 7)),
             Expanded(
@@ -210,13 +211,14 @@ class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
                 style: TextStyle(fontSize: 16, color: '#333333'.toColor()),
               ),
             ),
-            if (NIMChatCache.instance.myTeamRole() == TeamMemberType.owner)
+            if (NIMChatCache.instance.myTeamRole() ==
+                NIMTeamMemberRole.memberRoleOwner)
               TextButton(
                 onPressed: () {
                   _showRemoveConfirmDialog(
                       context,
-                      widget.teamMember.teamInfo.id!,
-                      widget.teamMember.userInfo!.userId!);
+                      widget.teamMember.teamInfo.teamId,
+                      widget.teamMember.userInfo!.accountId!);
                 },
                 child: Container(
                   width: 50,

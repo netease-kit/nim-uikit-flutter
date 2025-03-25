@@ -2,10 +2,12 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'dart:convert';
+
 import 'package:flutter/widgets.dart';
 import 'package:netease_corekit_im/model/ait/ait_msg.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 
 import '../../../helper/chat_message_helper.dart';
 
@@ -33,10 +35,14 @@ class ChatKitMessageTextItem extends StatefulWidget {
 class ChatKitMessageTextState extends State<ChatKitMessageTextItem> {
   @override
   Widget build(BuildContext context) {
-    final String text = widget.message.content!;
+    final String text = widget.message.text!;
     var matches = RegExp("\\[[^\\[]{1,10}\\]").allMatches(text);
     List<InlineSpan> spans = [];
     int preIndex = 0;
+    var remoteExtension = null;
+    if (widget.message.serverExtension?.isNotEmpty == true) {
+      remoteExtension = jsonDecode(widget.message.serverExtension!);
+    }
     if (matches.isNotEmpty) {
       for (final match in matches) {
         if (match.start > preIndex) {
@@ -44,7 +50,7 @@ class ChatKitMessageTextState extends State<ChatKitMessageTextItem> {
               context, text.substring(preIndex, match.start), preIndex,
               end: match.start,
               chatUIConfig: widget.chatUIConfig,
-              remoteExtension: widget.message.remoteExtension));
+              remoteExtension: remoteExtension));
         }
         var span = ChatMessageHelper.imageSpan(match.group(0));
         if (span != null) {
@@ -52,7 +58,7 @@ class ChatKitMessageTextState extends State<ChatKitMessageTextItem> {
         } else if (match.group(0)?.isNotEmpty == true) {
           spans.addAll(ChatMessageHelper.textSpan(context, match.group(0)!, 0,
               chatUIConfig: widget.chatUIConfig,
-              remoteExtension: widget.message.remoteExtension));
+              remoteExtension: remoteExtension));
         }
         preIndex = match.end;
       }
@@ -60,12 +66,11 @@ class ChatKitMessageTextState extends State<ChatKitMessageTextItem> {
         spans.addAll(ChatMessageHelper.textSpan(
             context, text.substring(preIndex, text.length), preIndex,
             chatUIConfig: widget.chatUIConfig,
-            remoteExtension: widget.message.remoteExtension));
+            remoteExtension: remoteExtension));
       }
     } else {
       spans.addAll(ChatMessageHelper.textSpan(context, text, 0,
-          chatUIConfig: widget.chatUIConfig,
-          remoteExtension: widget.message.remoteExtension));
+          chatUIConfig: widget.chatUIConfig, remoteExtension: remoteExtension));
     }
     return Container(
       //放到里面

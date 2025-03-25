@@ -8,7 +8,7 @@ import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/text_untils.dart';
 import 'package:netease_corekit_im/model/contact_info.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 
 import '../../../l10n/S.dart';
 
@@ -30,9 +30,9 @@ Future<ForwardResult?> showChatForwardDialog(
         Avatar(
           height: 32,
           width: 32,
-          avatar: team.icon,
+          avatar: team.avatar,
           name: team.name,
-          bgCode: AvatarColor.avatarColor(content: team.id),
+          bgCode: AvatarColor.avatarColor(content: team.teamId),
         ),
         Expanded(
             child: Container(
@@ -55,7 +55,7 @@ Future<ForwardResult?> showChatForwardDialog(
           width: 32,
           avatar: user.user.avatar,
           name: user.getName(),
-          bgCode: AvatarColor.avatarColor(content: user.user.userId),
+          bgCode: AvatarColor.avatarColor(content: user.user.accountId),
         ),
         Expanded(
             child: Container(
@@ -87,7 +87,7 @@ Future<ForwardResult?> showChatForwardDialog(
                   width: 32,
                   avatar: user.user.avatar,
                   name: user.getName(),
-                  bgCode: AvatarColor.avatarColor(content: user.user.userId),
+                  bgCode: AvatarColor.avatarColor(content: user.user.accountId),
                 ),
               );
             }),

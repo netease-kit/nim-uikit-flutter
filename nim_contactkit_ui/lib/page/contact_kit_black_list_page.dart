@@ -2,16 +2,16 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:netease_corekit_im/router/imkit_router_factory.dart';
+import 'package:flutter/material.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
-import 'package:nim_contactkit_ui/contact_kit_client.dart';
-import 'package:nim_contactkit_ui/page/viewmodel/black_list_viewmodel.dart';
 import 'package:netease_corekit_im/model/contact_info.dart';
+import 'package:netease_corekit_im/router/imkit_router_factory.dart';
 import 'package:netease_corekit_im/service_locator.dart';
 import 'package:netease_corekit_im/services/contact/contact_provider.dart';
-import 'package:flutter/material.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_contactkit_ui/contact_kit_client.dart';
+import 'package:nim_contactkit_ui/page/viewmodel/black_list_viewmodel.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/S.dart';
@@ -27,9 +27,9 @@ class ContactKitBlackListPage extends StatefulWidget {
 }
 
 class _BlackListPageState extends State<ContactKitBlackListPage> {
-  Widget _buildItem(BuildContext context, NIMUser user) {
+  Widget _buildItem(BuildContext context, NIMUserInfo user) {
     return FutureBuilder<ContactInfo?>(
-        future: getIt<ContactProvider>().getContact(user.userId!),
+        future: getIt<ContactProvider>().getContact(user.accountId!),
         builder: (context, snapshot) {
           var contact = snapshot.data;
           return Container(
@@ -42,8 +42,8 @@ class _BlackListPageState extends State<ContactKitBlackListPage> {
                   width: 36,
                   height: 36,
                   avatar: user.avatar,
-                  name: contact?.getName(needAlias: false) ?? user.userId,
-                  bgCode: AvatarColor.avatarColor(content: user.userId),
+                  name: contact?.getName() ?? user.accountId,
+                  bgCode: AvatarColor.avatarColor(content: user.accountId),
                   radius: widget.listConfig?.avatarCornerRadius,
                 ),
                 Expanded(
@@ -51,7 +51,7 @@ class _BlackListPageState extends State<ContactKitBlackListPage> {
                     alignment: Alignment.centerLeft,
                     padding: const EdgeInsets.only(left: 12),
                     child: Text(
-                      contact?.getName() ?? user.userId!,
+                      contact?.getName() ?? user.accountId!,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -65,7 +65,7 @@ class _BlackListPageState extends State<ContactKitBlackListPage> {
                   onTap: () {
                     context
                         .read<BlackListViewModel>()
-                        .removeFromBlackList(user.userId!);
+                        .removeFromBlackList(user.accountId!);
                   },
                   child: Container(
                       padding:
@@ -92,15 +92,12 @@ class _BlackListPageState extends State<ContactKitBlackListPage> {
     return ChangeNotifierProvider(
       create: (context) {
         var viewModel = BlackListViewModel();
-        viewModel.fetchBlackList();
+        viewModel.init();
         return viewModel;
       },
       builder: (context, child) {
-        List<NIMUser> users = context
-            .watch<BlackListViewModel>()
-            .blackListUsers
-            .reversed
-            .toList();
+        List<NIMUserInfo> users =
+            context.watch<BlackListViewModel>().blackListUsers.toList();
         return Scaffold(
           backgroundColor: Colors.white,
           appBar: AppBar(
@@ -124,7 +121,7 @@ class _BlackListPageState extends State<ContactKitBlackListPage> {
                   onPressed: () {
                     //选择器
                     goToContactSelector(context,
-                            filter: users.map((e) => e.userId!).toList())
+                            filter: users.map((e) => e.accountId!).toList())
                         .then((value) {
                       if (value is List<String> && value.isNotEmpty) {
                         context

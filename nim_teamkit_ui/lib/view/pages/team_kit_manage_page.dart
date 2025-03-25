@@ -11,11 +11,12 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:netease_common_ui/ui/background.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:netease_corekit_im/model/team_models.dart';
 import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
-import 'package:nim_core/nim_core.dart';
-import 'package:nim_teamkit/repo/team_repo.dart';
+import 'package:nim_core_v2/nim_core.dart';
+import 'package:nim_chatkit/repo/team_repo.dart';
 import 'package:nim_teamkit_ui/view/pages/team_kit_manager_list_page.dart';
 
 import '../../l10n/S.dart';
@@ -30,9 +31,9 @@ class TeamKitManagerPage extends StatefulWidget {
 }
 
 class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
-  late NIMTeamInviteModeEnum invitePrivilege;
+  late NIMTeamInviteMode inviteMode;
 
-  late NIMTeamUpdateModeEnum updatePrivilege;
+  late NIMTeamUpdateInfoMode updateInfoMode;
 
   String aitPrivilege = aitPrivilegeAll;
 
@@ -45,11 +46,10 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
 
   @override
   void initState() {
-    invitePrivilege =
-        (NIMChatCache.instance.teamInfo as NIMTeam).teamInviteMode;
-    updatePrivilege =
-        (NIMChatCache.instance.teamInfo as NIMTeam).teamUpdateMode;
-    _parseExtension((NIMChatCache.instance.teamInfo as NIMTeam).extension);
+    inviteMode = (NIMChatCache.instance.teamInfo as NIMTeam).inviteMode;
+    updateInfoMode = (NIMChatCache.instance.teamInfo as NIMTeam).updateInfoMode;
+    _parseExtension(
+        (NIMChatCache.instance.teamInfo as NIMTeam).serverExtension);
     _updateManagerCount(NIMChatCache.instance.teamMembers);
     _initListener();
     super.initState();
@@ -67,9 +67,9 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
     _teamSubs.addAll([
       NIMChatCache.instance.teamInfoNotifier.listen((event) {
         if (event is NIMTeam) {
-          invitePrivilege = event.teamInviteMode;
-          updatePrivilege = event.teamUpdateMode;
-          _parseExtension(event.extension);
+          inviteMode = event.inviteMode;
+          updateInfoMode = event.updateInfoMode;
+          _parseExtension(event.serverExtension);
           if (mounted) {
             setState(() {});
           }
@@ -97,8 +97,9 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
 
   void _updateManagerCount(List<UserInfoWithTeam>? memberList) {
     _managerCount = memberList
-            ?.where(
-                (element) => element.teamInfo.type == TeamMemberType.manager)
+            ?.where((element) =>
+                element.teamInfo.memberRole ==
+                NIMTeamMemberRole.memberRoleManager)
             .length ??
         0;
   }
@@ -112,15 +113,20 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
             style: style,
           ),
           subtitle: Text(
-            updatePrivilege == NIMTeamUpdateModeEnum.all
+            updateInfoMode == NIMTeamUpdateInfoMode.updateInfoModeAll
                 ? S.of(context).teamAllMember
                 : S.of(context).teamOwnerManager,
             style:
                 const TextStyle(fontSize: 14, color: CommonColors.color_999999),
           ),
           trailing: const Icon(Icons.keyboard_arrow_right_outlined),
-          onTap: () {
-            if (NIMChatCache.instance.myTeamRole() == TeamMemberType.normal) {
+          onTap: () async {
+            if (!(await haveConnectivity())) {
+              return;
+            }
+
+            if (NIMChatCache.instance.myTeamRole() ==
+                NIMTeamMemberRole.memberRoleNormal) {
               Fluttertoast.showToast(
                   msg: S.of(context).teamNoOperatePermission);
               return;
@@ -128,12 +134,13 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
             _showTeamIdentifyDialog((value) {
               if (value != null) {
                 var updateMode = value == 1
-                    ? NIMTeamUpdateModeEnum.all
-                    : NIMTeamUpdateModeEnum.manager;
-                TeamRepo.updateTeamInfoPrivilege(team.id!, updateMode)
+                    ? NIMTeamUpdateInfoMode.updateInfoModeAll
+                    : NIMTeamUpdateInfoMode.updateInfoModeManager;
+                TeamRepo.updateTeamInfoPrivilege(
+                        team.teamId, team.teamType, updateMode)
                     .then((value) {
                   if (value) {
-                    updatePrivilege = updateMode;
+                    updateInfoMode = updateMode;
                     setState(() {});
                   }
                 });
@@ -147,15 +154,20 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
             style: style,
           ),
           subtitle: Text(
-            invitePrivilege == NIMTeamInviteModeEnum.all
+            inviteMode == NIMTeamInviteMode.inviteModeAll
                 ? S.of(context).teamAllMember
                 : S.of(context).teamOwnerManager,
             style:
                 const TextStyle(fontSize: 14, color: CommonColors.color_999999),
           ),
           trailing: const Icon(Icons.keyboard_arrow_right_outlined),
-          onTap: () {
-            if (NIMChatCache.instance.myTeamRole() == TeamMemberType.normal) {
+          onTap: () async {
+            if (!(await haveConnectivity())) {
+              return;
+            }
+
+            if (NIMChatCache.instance.myTeamRole() ==
+                NIMTeamMemberRole.memberRoleNormal) {
               Fluttertoast.showToast(
                   msg: S.of(context).teamNoOperatePermission);
               return;
@@ -163,9 +175,10 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
             _showTeamIdentifyDialog((value) {
               if (value != null) {
                 var modeEnum = value == 1
-                    ? NIMTeamInviteModeEnum.all
-                    : NIMTeamInviteModeEnum.manager;
-                TeamRepo.updateInviteMode(team.id!, modeEnum).then((value) {
+                    ? NIMTeamInviteMode.inviteModeAll
+                    : NIMTeamInviteMode.inviteModeManager;
+                TeamRepo.updateInviteMode(team.teamId, team.teamType, modeEnum)
+                    .then((value) {
                   if (value) {}
                 });
               }
@@ -185,8 +198,13 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
                 const TextStyle(fontSize: 14, color: CommonColors.color_999999),
           ),
           trailing: const Icon(Icons.keyboard_arrow_right_outlined),
-          onTap: () {
-            if (NIMChatCache.instance.myTeamRole() == TeamMemberType.normal) {
+          onTap: () async {
+            if (!(await haveConnectivity())) {
+              return;
+            }
+
+            if (NIMChatCache.instance.myTeamRole() ==
+                NIMTeamMemberRole.memberRoleNormal) {
               Fluttertoast.showToast(
                   msg: S.of(context).teamNoOperatePermission);
               return;
@@ -195,28 +213,12 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
               if (value != null) {
                 var aitModel =
                     value == 1 ? aitPrivilegeAll : aitPrivilegeManager;
-                TeamRepo.updateTeamExtension(team.id!,
+                TeamRepo.updateTeamExtension(team.teamId, team.teamType,
                         _updateTeamExtensionByAitPrivilegeAll(aitModel))
-                    .then((value) {
+                    .then((value) async {
                   if (value == false) {
                     Fluttertoast.showToast(
                         msg: S.of(context).teamSettingFailed);
-                  } else {
-                    var tip = aitModel == aitPrivilegeAll
-                        ? S.of(context).teamMsgAitAllPrivilegeIsAll
-                        : S.of(context).teamMsgAitAllPrivilegeIsOwner;
-                    MessageBuilder.createTipMessage(
-                            sessionId: team.id!,
-                            sessionType: NIMSessionType.team,
-                            content: tip)
-                        .then((value) {
-                      if (value.isSuccess && value.data != null) {
-                        value.data!.config = NIMCustomMessageConfig(
-                            enableUnreadCount: false, enablePush: false);
-                        NimCore.instance.messageService
-                            .sendMessage(message: value.data!);
-                      }
-                    });
                   }
                 });
               }
@@ -228,15 +230,17 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
   }
 
   String _updateTeamExtensionByAitPrivilegeAll(String aitModel) {
-    var extension = widget.team.extension;
+    var extension = widget.team.serverExtension;
     if (extension?.isNotEmpty == true) {
       var extMap = (json.decode(extension!) as Map?)?.cast<dynamic, dynamic>();
       if (extMap != null) {
         extMap[aitPrivilegeKey] = aitModel;
+        extMap[lastOption] = aitPrivilegeKey;
         return json.encode(extMap);
       }
     }
-    return json.encode({aitPrivilegeKey: aitModel});
+    return json
+        .encode({aitPrivilegeKey: aitModel, lastOption: aitPrivilegeKey});
   }
 
   void _showTeamIdentifyDialog(ValueChanged<int?> onChoose) {
@@ -277,7 +281,8 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
               children: [
-                if (NIMChatCache.instance.myTeamRole() == TeamMemberType.owner)
+                if (NIMChatCache.instance.myTeamRole() ==
+                    NIMTeamMemberRole.memberRoleOwner)
                   CardBackground(
                     child: ListTile(
                       title: Text(
@@ -300,7 +305,7 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
                             context,
                             MaterialPageRoute(
                                 builder: (context) => TeamKitManagerListPage(
-                                      tId: widget.team.id!,
+                                      tId: widget.team.teamId,
                                     )));
                       },
                     ),

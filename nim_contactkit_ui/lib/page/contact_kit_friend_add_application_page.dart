@@ -7,11 +7,12 @@ import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/base/base_state.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
-import 'package:nim_contactkit/model/system_notify_info.dart';
-import 'package:nim_contactkit/repo/contact_repo.dart';
+import 'package:netease_corekit_im/im_kit_client.dart';
+import 'package:nim_chatkit/model/system_notify_info.dart';
+import 'package:nim_chatkit/repo/contact_repo.dart';
 import 'package:nim_contactkit_ui/contact_kit_client.dart';
-import 'package:nim_contactkit_ui/page/viewmodel/system_notify_viewmodel.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_contactkit_ui/page/viewmodel/friend_add_application_viewmodel.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:provider/provider.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
@@ -31,79 +32,53 @@ class _SystemNotifyPageState
     extends BaseState<ContactKitSystemNotifyMessagePage> {
   int offset = 0;
 
-  Widget _buildItem(BuildContext context, SystemNotifyMerged messageMerged) {
+  Widget _buildItem(
+      BuildContext context, ValidationMessageMerged messageMerged) {
     var message = messageMerged.lastMsg;
     var count = messageMerged.messageUnreadCount();
     bool unread = messageMerged.unread;
-    String getHeadMessageText(String userName, String? teamName) {
-      if (message.type == SystemMessageType.addFriend &&
-          message.attachObject is AddFriendNotify) {
-        AddFriendNotify notification = message.attachObject as AddFriendNotify;
-        switch (notification.event) {
-          case FriendEvent.addFriendDirect:
-            return S.of(context).contactSomeAddYourAsFriend(userName);
-          case FriendEvent.addFriendVerifyRequest:
-            return S.of(context).contactApplyFrom(userName);
-          case FriendEvent.agreeAddFriend:
-            return S.of(context).contactSomeAcceptYourApply(userName);
-          case FriendEvent.rejectAddFriend:
-            return S.of(context).contactSomeRejectYourApply(userName);
-          default:
-            break;
+    String getHeadMessageText(String userName) {
+      if (message.applicantAccountId == IMKitClient.account()) {
+        if (message.status ==
+            NIMFriendAddApplicationStatus.nimFriendAddApplicationStatusAgreed) {
+          return S.of(context).contactSomeAcceptYourApply(userName);
+        }
+
+        if (message.status ==
+            NIMFriendAddApplicationStatus
+                .nimFriendAddApplicationStatusRejected) {
+          return S.of(context).contactSomeRejectYourApply(userName);
         }
       }
-      if (message.type == SystemMessageType.teamInvite) {
-        return S
-            .of(context)
-            .contactSomeoneInviteYourJoinTeam(userName, teamName ?? '');
-      }
-      if (message.type == SystemMessageType.declineTeamInvite) {
-        return S.of(context).contactSomeRejectYourInvitation(userName);
-      }
-      if (message.type == SystemMessageType.rejectTeamApply) {
-        return S.of(context).contactSomeRejectYourTeamApply(userName);
-      }
-      if (message.type == SystemMessageType.applyJoinTeam) {
-        return S
-            .of(context)
-            .contactSomeoneApplyJoinTeam(userName, teamName ?? '');
-      }
-      return userName;
+      return S.of(context).contactApplyFrom(userName);
     }
 
     String getStatueText() {
       switch (message.status) {
-        case SystemMessageStatus.passed:
-          return S.of(context).contactAccepted;
-        case SystemMessageStatus.declined:
-          return S.of(context).contactRejected;
-        case SystemMessageStatus.ignored:
-          return S.of(context).contactIgnored;
-        case SystemMessageStatus.expired:
+        case NIMFriendAddApplicationStatus.nimFriendAddApplicationStatusAgreed:
+          return message.operatorAccountId == IMKitClient.account()
+              ? S.of(context).contactAccepted
+              : '';
+        case NIMFriendAddApplicationStatus
+              .nimFriendAddApplicationStatusRejected:
+          return message.operatorAccountId == IMKitClient.account()
+              ? S.of(context).contactRejected
+              : '';
+        case NIMFriendAddApplicationStatus.nimFriendAddApplicationStatusExpired:
           return S.of(context).contactExpired;
         default:
           return '';
       }
     }
 
-    Widget _getAvatar(
-        SystemMessageType? messageType, NIMTeam? team, NIMUser? user) {
-      String? avatar;
-      String? name;
-      String? avatarColorContent;
-      bool isTeamType = messageType == SystemMessageType.declineTeamInvite ||
-          messageType == SystemMessageType.rejectTeamApply ||
-          messageType == SystemMessageType.teamInvite;
-      if (isTeamType) {
-        avatar = team?.icon;
-        name = team?.name;
-        avatarColorContent = team?.id;
-      } else {
-        avatar = user?.avatar;
-        name =
-            user?.nick?.isNotEmpty == true ? user?.nick : message.fromAccount;
-        avatarColorContent = message.fromAccount;
-      }
+    Widget _getAvatar(NIMUserInfo? user) {
+      String? avatar = user?.avatar;
+      String? name = user?.name?.isNotEmpty == true
+          ? user?.name
+          : message.applicantAccountId;
+      ;
+      String? avatarColorContent = message.applicantAccountId;
+
       return Avatar(
         width: 36,
         height: 36,
@@ -130,17 +105,15 @@ class _SystemNotifyPageState
                 builder: (context, snapShot) {
                   if (snapShot.data != null) {
                     messageMerged.user = snapShot.data?.fromUser;
-                    messageMerged.team = snapShot.data?.targetTeam;
                   }
                   var user = messageMerged.user;
-                  var team = messageMerged.team;
                   return Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Stack(
                         alignment: Alignment.topRight,
                         children: [
-                          _getAvatar(message.type, team, user),
+                          _getAvatar(user),
                           if (count > 1 && unread)
                             Container(
                               padding: EdgeInsets.all(4),
@@ -166,15 +139,15 @@ class _SystemNotifyPageState
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              user?.nick?.isNotEmpty == true
-                                  ? user!.nick!
-                                  : message.fromAccount!,
+                              user?.name?.isNotEmpty == true
+                                  ? user!.name!
+                                  : message.applicantAccountId!,
                               style: nameTextStyle,
                               overflow: TextOverflow.ellipsis,
                               maxLines: 1,
                             ),
                             Text(
-                              getHeadMessageText('', team?.name),
+                              getHeadMessageText(''),
                               style: nameTextStyle,
                               overflow: TextOverflow.ellipsis,
                               maxLines: 2,
@@ -186,19 +159,15 @@ class _SystemNotifyPageState
                   );
                 }),
           ),
-          if (message.status == SystemMessageStatus.init &&
-              !(message.attachObject is AddFriendNotify &&
-                  (message.attachObject as AddFriendNotify).event !=
-                      FriendEvent.addFriendVerifyRequest) &&
-              message.type != SystemMessageType.declineTeamInvite &&
-              message.type != SystemMessageType.rejectTeamApply)
+          if (message.status ==
+              NIMFriendAddApplicationStatus.nimFriendAddApplicationStatusInit)
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 InkWell(
                   onTap: () {
                     context
-                        .read<SystemNotifyViewModel>()
+                        .read<ValidationMessageViewModel>()
                         .reject(messageMerged, context);
                   },
                   child: Container(
@@ -221,7 +190,7 @@ class _SystemNotifyPageState
                 InkWell(
                   onTap: () {
                     context
-                        .read<SystemNotifyViewModel>()
+                        .read<ValidationMessageViewModel>()
                         .agree(messageMerged, context);
                   },
                   child: Container(
@@ -240,20 +209,27 @@ class _SystemNotifyPageState
                 ),
               ],
             ),
-          if (message.status == SystemMessageStatus.declined ||
-              message.status == SystemMessageStatus.expired ||
-              message.status == SystemMessageStatus.ignored ||
-              message.status == SystemMessageStatus.passed)
+          if (message.operatorAccountId == IMKitClient.account() &&
+              (message.status ==
+                      NIMFriendAddApplicationStatus
+                          .nimFriendAddApplicationStatusRejected ||
+                  message.status ==
+                      NIMFriendAddApplicationStatus
+                          .nimFriendAddApplicationStatusAgreed))
             Row(
               children: [
-                if (message.status == SystemMessageStatus.passed)
+                if (message.status ==
+                    NIMFriendAddApplicationStatus
+                        .nimFriendAddApplicationStatusAgreed)
                   SvgPicture.asset(
                     'images/ic_agree.svg',
                     package: kPackage,
                     height: 16,
                     width: 16,
                   ),
-                if (message.status == SystemMessageStatus.declined)
+                if (message.status ==
+                    NIMFriendAddApplicationStatus
+                        .nimFriendAddApplicationStatusRejected)
                   SvgPicture.asset(
                     'images/ic_reject.svg',
                     package: kPackage,
@@ -278,7 +254,7 @@ class _SystemNotifyPageState
   void onAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.inactive) {
       //退后台清除未读数
-      ContactRepo.clearNotificationUnreadCount();
+      ContactRepo.setAddApplicationRead();
     }
     super.onAppLifecycleState(state);
   }
@@ -287,12 +263,12 @@ class _SystemNotifyPageState
       RefreshController(initialRefresh: false);
 
   void _onLoading(BuildContext context) {
-    if (context.read<SystemNotifyViewModel>().haveMore) {
+    if (context.read<ValidationMessageViewModel>().haveMore) {
       offset = offset + 100;
 
       context
-          .read<SystemNotifyViewModel>()
-          .querySystemMessage(offset: offset)
+          .read<ValidationMessageViewModel>()
+          .queryNIMFriendAddApplication(offset: offset)
           .then((value) {
         if (value) {
           _refreshController.loadComplete();
@@ -314,19 +290,19 @@ class _SystemNotifyPageState
   @override
   void dispose() {
     //清理未读数
-    ContactRepo.clearNotificationUnreadCount();
+    ContactRepo.setAddApplicationRead();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(create: (context) {
-      var viewModel = SystemNotifyViewModel();
+      var viewModel = ValidationMessageViewModel();
       viewModel.init();
       return viewModel;
     }, builder: (context, child) {
-      List<SystemNotifyMerged> messages =
-          context.watch<SystemNotifyViewModel>().systemMessages;
+      List<ValidationMessageMerged> messages =
+          context.watch<ValidationMessageViewModel>().NIMFriendAddApplications;
       return Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
@@ -346,7 +322,7 @@ class _SystemNotifyPageState
           actions: [
             InkWell(
               onTap: () {
-                context.read<SystemNotifyViewModel>().cleanMessage();
+                context.read<ValidationMessageViewModel>().cleanMessage();
               },
               child: Container(
                 padding: EdgeInsets.only(right: 20),

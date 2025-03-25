@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
@@ -15,7 +16,7 @@ import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/permission_request.dart';
 import 'package:netease_common_ui/widgets/platform_utils.dart';
 import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
@@ -40,7 +41,7 @@ class MorePanel extends StatefulWidget {
 
   final String sessionId;
 
-  final NIMSessionType sessionType;
+  final NIMConversationType sessionType;
 
   @override
   State<StatefulWidget> createState() => _MorePanelState();
@@ -96,7 +97,7 @@ class _MorePanelState extends State<MorePanel> {
   }
 
   _onFileActionTap(
-      BuildContext context, String sessionId, NIMSessionType sessionType,
+      BuildContext context, String sessionId, NIMConversationType sessionType,
       {NIMMessageSender? messageSender}) async {
     final permissionList;
     if (Platform.isAndroid && await PlatformUtils.isAboveAndroidT()) {
@@ -125,7 +126,7 @@ class _MorePanelState extends State<MorePanel> {
   }
 
   _onShootActionTap(
-      BuildContext context, String sessionId, NIMSessionType sessionType,
+      BuildContext context, String sessionId, NIMConversationType sessionType,
       {NIMMessageSender? messageSender}) {
     var style = const TextStyle(fontSize: 16, color: CommonColors.color_333333);
     showBottomChoose<int>(
@@ -168,8 +169,11 @@ class _MorePanelState extends State<MorePanel> {
         moduleName: 'more action',
         content: 'take photo path:${photo?.path}');
     if (photo != null) {
-      int len = await photo.length();
-      context.read<ChatViewModel>().sendImageMessage(photo.path, len);
+      final codec =
+          await instantiateImageCodec(File(photo.path).readAsBytesSync());
+      final frame = await codec.getNextFrame();
+      context.read<ChatViewModel>().sendImageMessage(
+          photo.path, photo.name, frame.image.width, frame.image.height);
     }
   }
 
@@ -184,11 +188,12 @@ class _MorePanelState extends State<MorePanel> {
           VideoPlayerController.file(File(video.path));
       controller.initialize().then((value) {
         context.read<ChatViewModel>().sendVideoMessage(
-            video.path,
-            controller.value.duration.inMilliseconds,
-            controller.value.size.width.toInt(),
-            controller.value.size.height.toInt(),
-            video.name);
+              video.path,
+              video.name,
+              controller.value.duration.inMilliseconds,
+              controller.value.size.width.toInt(),
+              controller.value.size.height.toInt(),
+            );
       });
     }
   }
@@ -232,7 +237,7 @@ class MoreActionPage extends StatelessWidget {
 
   final String sessionId;
 
-  final NIMSessionType sessionType;
+  final NIMConversationType sessionType;
 
   final NIMMessageSender? messageSender;
 
@@ -272,7 +277,7 @@ class MoreItemAction extends StatelessWidget {
 
   final String sessionId;
 
-  final NIMSessionType sessionType;
+  final NIMConversationType sessionType;
 
   final NIMMessageSender? messageSender;
 

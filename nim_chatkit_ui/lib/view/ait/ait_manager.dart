@@ -23,6 +23,8 @@ class AitManager {
 
   get aitContactsModel => _aitContactsModel;
 
+  ScrollController _scrollController = ScrollController();
+
   final String teamId;
 
   StreamSubscription? _teamSub;
@@ -32,10 +34,9 @@ class AitManager {
   AitManager(this.teamId) {
     _teamMemberList.value = List.from(NIMChatCache.instance.teamMembers);
     _teamSub = NIMChatCache.instance.teamMembersNotifier.listen((event) {
-      if (_teamMemberList.value?.isNotEmpty != true) {
-        _teamMemberList.value = event;
-      }
+      _teamMemberList.value = event;
     });
+    _scrollController.addListener(_scrollListener);
   }
 
   ///通过@文本添加@用户
@@ -89,9 +90,8 @@ class AitManager {
     List<String> pushList = [];
     _aitContactsModel.aitBlocks.forEach((key, value) {
       if (key == AitContactsModel.accountAll) {
+        //如果有@所有人，则不需要填写pushList
         pushList.clear();
-        List<UserInfoWithTeam> _teamMembers = NIMChatCache.instance.teamMembers;
-        pushList.addAll(_teamMembers.map((e) => e.teamInfo.account ?? ''));
         return pushList;
       } else {
         pushList.add(key);
@@ -126,6 +126,13 @@ class AitManager {
     _teamSub?.cancel();
   }
 
+  void _scrollListener() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent) {
+      NIMChatCache.instance.fetchTeamMember(teamId, loadMore: true);
+    }
+  }
+
   ///选择@的成员
   Future<dynamic> selectMember(BuildContext context) async {
     return showModalBottomSheet(
@@ -140,7 +147,7 @@ class AitManager {
                 Widget? child) {
               var _teamMembers = value
                   ?.where((element) =>
-                      element.userInfo?.userId != IMKitClient.account())
+                      element.userInfo?.accountId != IMKitClient.account())
                   .toList();
               return Column(
                 children: [
@@ -180,6 +187,7 @@ class AitManager {
                   if (_teamMembers?.isNotEmpty == true)
                     Expanded(
                         child: ListView.builder(
+                            controller: _scrollController,
                             itemCount: _teamMembers!.length,
                             itemBuilder: (context, index) {
                               var user = _teamMembers[index];

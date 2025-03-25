@@ -12,7 +12,7 @@ import 'package:netease_corekit_im/services/message/chat_message.dart';
 import 'package:nim_chatkit/chatkit_client_repo.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
 import 'package:nim_chatkit_ui/view/page/chat_pin_page.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 
 import 'l10n/S.dart';
 import 'view/chat_kit_message_list/item/chat_kit_message_item.dart';
@@ -20,7 +20,8 @@ import 'view/input/actions.dart';
 import 'view/page/chat_page.dart';
 import 'view/page/chat_search_page.dart';
 
-typedef NIMMessageAction = Future Function(NIMMessage message);
+typedef NIMMessageAction = Future Function(
+    NIMMessage message, NIMSendMessageParams params);
 
 const String kPackage = 'nim_chatkit_ui';
 
@@ -88,7 +89,8 @@ class ChatUIConfig {
 
   MessageClickListener? messageClickListener;
 
-  Map<String, dynamic> Function(NIMMessage message)? getPushPayload;
+  Future<Map<String, dynamic>> Function(
+      NIMMessage message, String conversationId)? getPushPayload;
 
   ///设置图片加载中的占位图
   ///[aspectRatio] 图片宽高比
@@ -236,10 +238,11 @@ class ChatKitClient {
     IMKitRouter.instance.registerRouter(
         RouterConstants.PATH_CHAT_PAGE,
         (context) => ChatPage(
-              sessionId:
-                  IMKitRouter.getArgumentFormMap<String>(context, 'sessionId')!,
-              sessionType: IMKitRouter.getArgumentFormMap<NIMSessionType>(
-                  context, 'sessionType')!,
+              conversationId: IMKitRouter.getArgumentFormMap<String>(
+                  context, 'conversationId')!,
+              conversationType:
+                  IMKitRouter.getArgumentFormMap<NIMConversationType>(
+                      context, 'conversationType')!,
               anchor:
                   IMKitRouter.getArgumentFormMap<NIMMessage>(context, 'anchor'),
             ));
@@ -251,14 +254,15 @@ class ChatKitClient {
     IMKitRouter.instance.registerRouter(
         RouterConstants.PATH_CHAT_PIN_PAGE,
         (context) => ChatPinPage(
-              sessionId:
-                  IMKitRouter.getArgumentFormMap<String>(context, 'sessionId')!,
-              sessionType: IMKitRouter.getArgumentFormMap<NIMSessionType>(
-                  context, 'sessionType')!,
+              conversationId: IMKitRouter.getArgumentFormMap<String>(
+                  context, 'conversationId')!,
+              conversationType:
+                  IMKitRouter.getArgumentFormMap<NIMConversationType>(
+                      context, 'conversationType')!,
               chatTitle:
                   IMKitRouter.getArgumentFormMap<String>(context, 'chatTitle')!,
             ));
 
-    XKitReporter().register(moduleName: 'ChatUIKit', moduleVersion: '9.7.3');
+    XKitReporter().register(moduleName: 'ChatUIKit', moduleVersion: '10.0.0');
   }
 }

@@ -3,20 +3,22 @@
 // found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_corekit_im/im_kit_client.dart';
 import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/login/login_service.dart';
-import 'package:netease_corekit_im/services/message/message_provider.dart';
-import 'package:nim_conversationkit/extention.dart';
-import 'package:nim_conversationkit/model/conversation_info.dart';
-import 'package:nim_conversationkit/repo/conversation_repo.dart';
+import 'package:netease_corekit_im/services/contact/contact_provider.dart';
+import 'package:netease_corekit_im/services/login/im_login_service.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
+import 'package:nim_chatkit/repo/conversation_repo.dart';
 import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
 import 'package:nim_conversationkit_ui/service/ait/ait_server.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
+import 'package:nim_chatkit/repo/contact_repo.dart';
+import '../model/conversation_info.dart';
 
 class ConversationViewModel extends ChangeNotifier {
   final String modelName = 'ConversationViewModel';
@@ -27,17 +29,21 @@ class ConversationViewModel extends ChangeNotifier {
 
   ValueChanged<int>? onUnreadCountChanged;
 
+  final int pageLimit = 50;
+  int _offset = 0; //分页加载
+  // 是否还有下一页
+  bool _finished = false;
+
+  // 是否正在请求数据
+  bool _isLoading = false;
+
   set conversationList(List<ConversationInfo> value) {
     _conversationList = value;
     notifyListeners();
   }
 
   Comparator<ConversationInfo> _comparator = (a, b) {
-    if (a.isStickTop == b.isStickTop) {
-      var time = a.session.lastMessageTime! - b.session.lastMessageTime!;
-      return time == 0 ? 0 : (time > 0 ? -1 : 1);
-    }
-    return a.isStickTop ? -1 : 1;
+    return (b.conversation.sortOrder ?? 0) - (a.conversation.sortOrder ?? 0);
   };
 
   final subscriptions = <StreamSubscription?>[];
@@ -66,167 +72,171 @@ class ConversationViewModel extends ChangeNotifier {
     });
   }
 
+  /// 补充会话信息，会话列表中的个人信息和群组信息都在这里填充
+  List<ConversationInfo>? convertConversationInfo(
+      List<NIMConversation>? infoList,
+      {bool fillUserInfo = true}) {
+    if (infoList == null) {
+      return null;
+    }
+    List<ConversationInfo> conversationList = [];
+    for (int i = 0; i < infoList.length; ++i) {
+      var e = infoList[i];
+      var conversationInfo = ConversationInfo(e);
+      conversationList.add(conversationInfo);
+    }
+    return conversationList;
+  }
+
   _init() {
     _logI('init -->> ');
-    if (getIt<LoginService>().status == NIMAuthStatus.dataSyncFinish) {
-      queryConversationList();
-    } else {
-      subscriptions.add(getIt<LoginService>().loginStatus?.listen((event) {
-        if (event == NIMAuthStatus.dataSyncFinish) {
-          queryConversationList();
-        }
-      }));
-    }
-    getIt<MessageProvider>().initListener();
-    // change observer
+
+    // 会话列表同步完成（仅保证列表完整性，会话具体信息如 name 需等待其他同步回调）
     subscriptions.add(
-        ConversationRepo.registerSessionChangedObserver().listen((event) async {
-      _logI('onSessionUpdate ${event.length}');
-      List<ConversationInfo>? result =
-          await ConversationRepo.fillSessionInfo(event);
+        NimCore.instance.conversationService.onSyncFinished.listen((event) {
+      _logI('conversationService onSyncFinished');
+      queryConversationList();
+    }));
+
+    // 主数据同步完成（包含 P2P 数据，iOS 不包含群信息）
+    subscriptions.add(NimCore.instance.loginService.onDataSync.listen((event) {
+      _logI('loginService onDataSync');
+      if (event.type == NIMDataSyncType.nimDataSyncMain &&
+          event.state == NIMDataSyncState.nimDataSyncStateCompleted) {
+        queryConversationList();
+      }
+    }));
+
+    // 群信息同步完成
+    subscriptions
+        .add(NimCore.instance.teamService.onSyncFinished.listen((event) {
+      _logI('teamService onSyncFinished');
+      if (Platform.isIOS) {
+        queryConversationList();
+      }
+    }));
+
+    subscriptions.add(NimCore.instance.friendService.onFriendInfoChanged
+        .listen((event) async {
+      _logI('friendService onFriendInfoChanged');
+      for (var conversationInfo in conversationList) {
+        var sessionId = ChatKitUtils.getConversationTargetId(
+            conversationInfo.conversation.conversationId);
+        if (sessionId == event.accountId) {
+          if (event.alias?.isNotEmpty == true) {
+            conversationInfo.setNickName(event.alias);
+          } else {
+            var name = event.userProfile?.name ??
+                getIt<ContactProvider>()
+                    .getContactInCache(event.accountId)
+                    ?.user
+                    .name;
+            conversationInfo.setNickName(name);
+          }
+          notifyListeners();
+          return;
+        }
+      }
+    }));
+
+    subscriptions.add(
+        NimCore.instance.userService.onUserProfileChanged.listen((event) async {
+      for (var e in event) {
+        for (var conversationInfo in conversationList) {
+          var sessionId = ChatKitUtils.getConversationTargetId(
+              conversationInfo.conversation.conversationId);
+          if (sessionId == e.accountId) {
+            if (e.name?.isNotEmpty == true) {
+              conversationInfo.conversation.name = e.name;
+            }
+            if (e.avatar?.isNotEmpty == true) {
+              conversationInfo.conversation.avatar = e.avatar;
+            }
+            notifyListeners();
+            return;
+          }
+        }
+      }
+    }));
+
+    // getIt<MessageProvider>().initListener();
+    // change observer
+    subscriptions
+        .add(ConversationRepo.onConversationChanged().listen((event) async {
+      _logI('onConversationChanged ${event.length}');
+      List<ConversationInfo>? result = convertConversationInfo(event);
       if (result != null) {
         for (var conversationInfo in result) {
-          if (_isMineLeave(conversationInfo.session)) {
-            deleteConversation(conversationInfo);
-            _logI(
-                'changeObserver:onSuccess:DismissTeam ${conversationInfo.session.sessionId}');
-          } else {
-            _updateItem(conversationInfo);
-            _logI(
-                'changeObserver:onSuccess:update ${conversationInfo.session.sessionId}');
-          }
+          // if (_isMineLeave(conversationInfo)) {
+          //   deleteConversation(conversationInfo);
+          //   _logI(
+          //       'changeObserver:onSuccess:DismissTeam ${conversationInfo.getConversationId()}');
+          // } else {
+          _updateItem(conversationInfo);
+          _logI(
+              'changeObserver:onSuccess:update ${conversationInfo.getConversationId()}');
+          // }
         }
         doUnreadCallback();
       }
     }));
 
     // delete observer
-    subscriptions
-        .add(ConversationRepo.registerSessionDeleteObserver().listen((event) {
-      _logI('onSessionDelete ${event?.sessionId}');
+    subscriptions.add(ConversationRepo.onConversationDeleted().listen((event) {
+      _logI('onConversationDeleted ${event.length}');
       if (event == null) {
         // 清空会话列表
         _conversationList.clear();
         notifyListeners();
       } else {
-        _deleteItem(event.sessionId, event.sessionType);
+        _deleteItem(event);
       }
       doUnreadCallback();
     }));
 
-    // userInfo observer
-    subscriptions
-        .add(ConversationRepo.registerUserInfoObserver().listen((event) {
-      _logI('onUserInfoChange size:${event.length}');
-      _updateUserInfo(event);
-    }));
-
-    // friend observer
-    subscriptions.add(ConversationRepo.registerFriendObserver()
-        .listen((addedOrUpdatedFriends) {
-      _logI('onFriendAddedOrUpdated size:${addedOrUpdatedFriends.length}');
-      _updateFriendInfo(addedOrUpdatedFriends);
-    }));
-
-    // team update observer
-    subscriptions
-        .add(ConversationRepo.registerTeamUpdateObserver().listen((teamList) {
-      _logI('onTeamListUpdate size:${teamList.length}');
-      _updateTeamInfo(teamList);
-    }));
-
-    // mute observer
-    subscriptions
-        .add(ConversationRepo.registerFriendMuteObserver().listen((notify) {
-      _logI('onMuteListChanged $notify');
-      int index = _conversationList
-          .indexWhere((element) => element.session.sessionId == notify.account);
-      if (index > -1) {
-        _conversationList[index].mute = notify.mute;
-        notifyListeners();
-      }
-    }));
-
-    // add stick observer
-    subscriptions
-        .add(ConversationRepo.registerAddStickTopObserver().listen((event) {
-      _logI('onStickTopSessionAdd ${event.sessionId}');
-      _addRemoveStickTop(event.sessionId, true);
+    // delete observer
+    subscriptions.add(ConversationRepo.onConversationCreated().listen((event) {
+      _logI('onConversationCreated ${event.conversationId}');
+      var conversationInfo = ConversationInfo(event);
+      _addItem(conversationInfo);
       doUnreadCallback();
-    }));
-
-    // remove stick observer
-    subscriptions
-        .add(ConversationRepo.registerRemoveStickTopObserver().listen((event) {
-      _logI('onStickTopSessionRemove ${event.sessionId}');
-      _addRemoveStickTop(event.sessionId, false);
-      doUnreadCallback();
-    }));
-
-    // sync stick observer
-    subscriptions.add(
-        ConversationRepo.registerSyncStickTopObserver().listen((eventList) {
-      _logI('onSyncStickTop');
-      queryConversationList();
     }));
 
     // ait observer
     subscriptions.add(
         AitServer.instance.onSessionAitUpdated.listen((AitSession? aitSession) {
       final index = _conversationList.indexWhere(
-          (element) => element.session.sessionId == aitSession?.sessionId);
+          (element) => element.getConversationId() == aitSession?.sessionId);
       if (index > -1) {
         _conversationList[index].haveBeenAit = aitSession!.isAit;
         notifyListeners();
       }
     }));
 
-    // all read observer for ios
-    subscriptions.add(
-        NimCore.instance.messageService.allMessagesReadForIOS.listen((event) {
-      _logI('allMessagesReadForIOS');
-      _conversationList.forEach((element) {
-        element.session.unreadCount = 0;
-      });
-      notifyListeners();
-    }));
-
-    //异步加载userInfo 回调
     subscriptions
-        .add(ConversationRepo.instance.onUserInfoUpdated.listen((event) {
-      var sessionList = event as List<ConversationInfo>;
-      for (var session in sessionList) {
-        int index = _conversationList.indexWhere((element) =>
-            element.session.sessionType == NIMSessionType.p2p &&
-            element.session.sessionId == session.user?.userId);
-        if (index > -1) {
-          _conversationList[index].user = session.user;
-          _conversationList[index].friend = session.friend;
-          _conversationList[index].mute = session.mute;
-        }
+        .add(NimCore.instance.teamService.onTeamDismissed.listen((team) async {
+      var conversationId =
+          (await ConversationIdUtil().teamConversationId(team.teamId)).data;
+      _logI('onTeamDismissed ${team.teamId}');
+      if (conversationId != null) {
+        deleteConversationById(conversationId);
       }
-      notifyListeners();
     }));
-  }
 
-  _addRemoveStickTop(String sessionId, bool add) {
-    int index = _conversationList
-        .indexWhere((element) => element.session.sessionId == sessionId);
-    if (index > -1) {
-      _conversationList[index].isStickTop = add;
-      var tmp = _conversationList.removeAt(index);
-      if (add) {
-        _conversationList.insert(0, tmp);
-      } else {
-        int insertIndex = _searchComparatorIndex(tmp);
-        _conversationList.insert(insertIndex, tmp);
+    subscriptions.add(
+        NimCore.instance.teamService.onTeamLeft.listen((teamLeftResult) async {
+      var conversationId = (await ConversationIdUtil()
+              .teamConversationId(teamLeftResult.team.teamId))
+          .data;
+      _logI('onTeamLeft ${teamLeftResult.team.teamId}');
+      if (conversationId != null) {
+        deleteConversationById(conversationId);
       }
-    }
-    notifyListeners();
+    }));
   }
 
   int _searchComparatorIndex(ConversationInfo data) {
-    if (data.isStickTop) {
+    if (data.isStickTop()) {
       return 0;
     }
     int index = _conversationList.length;
@@ -239,50 +249,31 @@ class ConversationViewModel extends ChangeNotifier {
     return index;
   }
 
-  _updateTeamInfo(List<NIMTeam> teamList) {
-    for (var team in teamList) {
-      int index = _conversationList.indexWhere(
-          (element) => element.team != null && element.team!.id == team.id);
-      if (index > -1) {
-        _conversationList[index].team = team;
-        _conversationList[index].mute =
-            team.messageNotifyType == NIMTeamMessageNotifyTypeEnum.mute;
+  _addRemoveStickTop(String conversationId, bool add) {
+    int index = _conversationList
+        .indexWhere((element) => element.getConversationId() == conversationId);
+    if (index > -1) {
+      // _conversationList[index].isStickTop() = add;
+      var tmp = _conversationList.removeAt(index);
+      if (add) {
+        _conversationList.insert(0, tmp);
+      } else {
+        int insertIndex = _searchComparatorIndex(tmp);
+        _conversationList.insert(insertIndex, tmp);
       }
     }
     notifyListeners();
   }
 
-  _updateFriendInfo(List<NIMFriend> addedOrUpdatedFriends) {
-    for (var friend in addedOrUpdatedFriends) {
-      int index = _conversationList.indexWhere((element) =>
-          element.friend != null && element.friend!.userId == friend.userId);
-      if (index > -1) {
-        _conversationList[index].friend = friend;
-      }
-    }
-    notifyListeners();
-  }
-
-  _updateUserInfo(List<NIMUser> users) {
-    for (var userInfo in users) {
-      int index = _conversationList.indexWhere((element) =>
-          element.user != null && element.user!.userId == userInfo.userId);
-      if (index > -1) {
-        _conversationList[index].user = userInfo;
-      }
-    }
-    notifyListeners();
-  }
-
-  _updateItem(ConversationInfo conversationInfo) async {
+  _addItem(ConversationInfo conversationInfo) async {
     int index = _conversationList
         .indexWhere((element) => element.isSame(conversationInfo));
     if (index > -1) {
-      if (conversationInfo.session.sessionType == NIMSessionType.team) {
+      if (conversationInfo.getConversationType() == NIMConversationType.team) {
         bool haveBeenAit = _conversationList[index].haveBeenAit;
-        if ((conversationInfo.session.unreadCount ?? 0) <= 0) {
+        if ((conversationInfo.conversation.unreadCount ?? 0) <= 0) {
           AitServer.instance
-              .clearAitMessage(conversationInfo.session.sessionId);
+              .clearAitMessage(conversationInfo.getConversationId());
           haveBeenAit = false;
         }
         if (haveBeenAit) {
@@ -292,55 +283,145 @@ class ConversationViewModel extends ChangeNotifier {
       _conversationList.removeAt(index);
       int insertIndex = _searchComparatorIndex(conversationInfo);
       _logI(
-          'insertIndex:$insertIndex unread:${conversationInfo.session.unreadCount} haveBeenAit:${conversationInfo.haveBeenAit}');
+          'additem insertIndex:$insertIndex unread:${conversationInfo.conversation.unreadCount} haveBeenAit:${conversationInfo.haveBeenAit}');
       _conversationList.insert(insertIndex, conversationInfo);
-    } else if (_isMySession(conversationInfo)) {
+    } else {
       int insertIndex = _searchComparatorIndex(conversationInfo);
       _conversationList.insert(insertIndex, conversationInfo);
     }
     notifyListeners();
   }
 
-  /// 是否是我的会话,如果不是则不展示
-  /// p2p 一定是我的会话
-  /// team 有可能不是我的会话
-  bool _isMySession(ConversationInfo conversationInfo) {
-    if (conversationInfo.session.sessionType == NIMSessionType.p2p) {
-      return true;
+  _updateItem(ConversationInfo conversationInfo) async {
+    int index = _conversationList
+        .indexWhere((element) => element.isSame(conversationInfo));
+    if (index > -1) {
+      if (conversationInfo.getConversationType() == NIMConversationType.team) {
+        bool haveBeenAit = _conversationList[index].haveBeenAit;
+        if ((conversationInfo.conversation.unreadCount ?? 0) <= 0) {
+          AitServer.instance
+              .clearAitMessage(conversationInfo.getConversationId());
+          haveBeenAit = false;
+        }
+        if (haveBeenAit) {
+          conversationInfo.haveBeenAit = true;
+        }
+      }
+      _conversationList.removeAt(index);
+      int insertIndex = _searchComparatorIndex(conversationInfo);
+      _logI(
+          'insertIndex:$insertIndex unread:${conversationInfo.conversation.unreadCount} haveBeenAit:${conversationInfo.haveBeenAit}');
+      _conversationList.insert(insertIndex, conversationInfo);
+    } else {
+      int insertIndex = _searchComparatorIndex(conversationInfo);
+      _conversationList.insert(insertIndex, conversationInfo);
     }
-    if (conversationInfo.session.sessionType == NIMSessionType.team) {
-      return conversationInfo.team?.isMyTeam == true;
-    }
-    return true;
+    notifyListeners();
   }
 
-  _deleteItem(String sessionId, NIMSessionType sessionType) {
-    int index = _conversationList.indexWhere((element) =>
-        element.session.sessionId == sessionId &&
-        element.session.sessionType == sessionType);
-    if (index > -1) {
-      _conversationList.removeAt(index);
-      notifyListeners();
+  _deleteItem(List<String> idList) {
+    for (String conversationId in idList) {
+      int index = _conversationList.indexWhere(
+          (element) => element.getConversationId() == conversationId);
+      if (index > -1) {
+        _conversationList.removeAt(index);
+        notifyListeners();
+      }
     }
   }
 
   void queryConversationList() async {
-    final _resultData = await ConversationRepo.getSessionList(_comparator);
+    _logI('queryConversationList start');
+
+    if (_isLoading) {
+      return;
+    }
+    _isLoading = true;
+    final _resultData =
+        await ConversationRepo.getConversationList(0, pageLimit);
     if (_resultData != null) {
-      if (IMKitClient.enableAit) {
-        final myId = IMKitClient.account();
-        if (myId != null) {
-          final aitSessionList =
-              await AitServer.instance.getAllAitSession(myId);
-          _resultData.forEach((element) {
-            if (aitSessionList.contains(element.session.sessionId) &&
-                (element.session.unreadCount ?? 0) > 0) {
-              element.haveBeenAit = true;
+      _offset = _resultData.offset;
+      _finished = _resultData.finished;
+      final myId = IMKitClient.account();
+      if (myId != null) {
+        final aitSessionList = await AitServer.instance.getAllAitSession(myId);
+        var resultList = convertConversationInfo(_resultData.conversationList)!;
+        _logI('queryConversationList size ${resultList.length}');
+
+        for (int index = resultList.length - 1; index >= 0; index--) {
+          var element = resultList[index];
+          if (_isMineLeave(element)) {
+            deleteConversation(element);
+            _logI('queryConversationList ${element.getConversationId()}');
+            resultList.remove(index);
+          } else {
+            if (IMKitClient.enableAit) {
+              if (aitSessionList.contains(element.getConversationId()) &&
+                  element.getUnreadCount() > 0) {
+                element.haveBeenAit = true;
+              }
             }
-          });
+          }
         }
+        _conversationList.clear();
+        _conversationList.addAll(resultList);
+        notifyListeners();
       }
-      conversationList = _resultData;
+    }
+    _isLoading = false;
+  }
+
+  void queryConversationNextList() async {
+    int offset = _conversationList.length;
+    _logI('queryConversationNextList _isLoading ${offset},${_isLoading},'
+        '${_finished}');
+    if (_isLoading || _finished) {
+      return;
+    }
+    _isLoading = true;
+    final _resultData =
+        await ConversationRepo.getConversationList(_offset, pageLimit);
+    if (_resultData != null) {
+      _offset = _resultData.offset;
+      _finished = _resultData.finished;
+      final myId = IMKitClient.account();
+      _logI(
+          'queryConversationNextList ${_offset},${_finished},${_resultData.conversationList?.length}');
+
+      if (myId != null) {
+        final aitSessionList = await AitServer.instance.getAllAitSession(myId);
+        var resultList = convertConversationInfo(_resultData.conversationList)!;
+        List<String> userIdList = [];
+        for (int index = resultList.length - 1; index >= 0; index--) {
+          var element = resultList[index];
+          if (_isMineLeave(element)) {
+            deleteConversation(element);
+            resultList.remove(index);
+          } else {
+            if (IMKitClient.enableAit) {
+              if (aitSessionList.contains(element.getConversationId()) &&
+                  element.getUnreadCount() > 0) {
+                element.haveBeenAit = true;
+              }
+            }
+            if (element.conversation.type == NIMConversationType.p2p &&
+                getIt<ContactProvider>().getContactInCache(element.targetId) ==
+                    null) {
+              userIdList.add(element.targetId);
+            }
+          }
+        }
+        _conversationList.addAll(resultList);
+        notifyListeners();
+        fetchUserInfo(userIdList);
+      }
+      _isLoading = false;
+    }
+  }
+
+  void fetchUserInfo(List<String>? userIds) {
+    if (userIds != null && userIds.length > 0) {
+      ContactRepo.getUserListFromCloud(userIds);
     }
   }
 
@@ -349,66 +430,52 @@ class ConversationViewModel extends ChangeNotifier {
     if (!await haveConnectivity()) {
       return;
     }
+    this.deleteConversationById(conversationInfo.getConversationId());
+  }
+
+  void deleteConversationById(String conversationId,
+      {bool? clearMessageHistory}) {
     if (clearMessageHistory == null) {
       clearMessageHistory = ConversationKitClient.instance.conversationUIConfig
           .itemConfig.clearMessageWhenDeleteSession;
     }
-    ConversationRepo.deleteSession(
-            conversationInfo.session.sessionId,
-            conversationInfo.session.sessionType,
-            NIMSessionDeleteType.localAndRemote,
-            true,
-            deleteHistory: clearMessageHistory)
-        .then((value) {
-      if (value.isSuccess) {
-        _deleteItem(conversationInfo.session.sessionId,
-            conversationInfo.session.sessionType);
-      }
-    });
+    ConversationRepo.deleteConversation(conversationId, clearMessageHistory);
   }
 
-  bool _isMineLeave(NIMSession session) {
-    if (session.lastMessageAttachment is NIMTeamNotificationAttachment) {
-      NIMTeamNotificationAttachment notify =
-          session.lastMessageAttachment as NIMTeamNotificationAttachment;
-      var accId = getIt<LoginService>().userInfo?.userId;
-      return notify.type == NIMTeamNotificationTypes.dismissTeam ||
-          (notify.type == NIMTeamNotificationTypes.kickMember &&
-              (notify as NIMMemberChangeAttachment?)
-                      ?.targets
-                      ?.contains(accId) ==
-                  true) ||
-          (notify.type == NIMTeamNotificationTypes.leaveTeam &&
-              session.senderAccount == accId);
+  bool _isMineLeave(ConversationInfo conversationInfo) {
+    if (conversationInfo.getLastAttachment()
+        is NIMMessageNotificationAttachment) {
+      NIMMessageNotificationAttachment notify = conversationInfo
+          .getLastAttachment() as NIMMessageNotificationAttachment;
+      if (notify.type == NIMMessageNotificationType.teamDismiss) {
+        return true;
+      } else if (notify.type == NIMMessageNotificationType.teamKick) {
+        var accId = getIt<IMLoginService>().userInfo?.accountId;
+        var targetIds = notify.targetIds;
+        if (targetIds != null && targetIds!.contains(accId)) {
+          return true;
+        }
+      } else if (notify.type == NIMMessageNotificationType.teamLeave) {
+        var accId = getIt<IMLoginService>().userInfo?.accountId;
+        var senderId =
+            conversationInfo.conversation.lastMessage?.messageRefer?.senderId;
+        if (accId == senderId) {
+          return true;
+        }
+      }
     }
     return false;
   }
 
   void addStickTop(ConversationInfo info) async {
     if (await haveConnectivity()) {
-      ConversationRepo.addStickTop(
-              info.session.sessionId, info.session.sessionType, '')
-          .then((value) {
-        if (value != null) {
-          _logI('addStickTop:onSuccess sessionId:${value.sessionId}');
-          info.isStickTop = true;
-          _updateItem(info);
-        }
-      });
+      ConversationRepo.addStickTop(info.getConversationId());
     }
   }
 
   void removeStick(ConversationInfo info) async {
     if (await haveConnectivity()) {
-      ConversationRepo.removeStickTop(
-              info.session.sessionId, info.session.sessionType, '')
-          .then((value) {
-        if (value) {
-          _logI('removeStick:onSuccess sessionId:${info.session.sessionId}');
-          info.isStickTop = false;
-          _updateItem(info);
-        }
-      });
+      ConversationRepo.removeStickTop(info.getConversationId());
     }
   }
 
@@ -418,7 +485,6 @@ class ConversationViewModel extends ChangeNotifier {
     for (var element in subscriptions) {
       element?.cancel();
     }
-    getIt<MessageProvider>().removeListeners();
     super.dispose();
   }
 }

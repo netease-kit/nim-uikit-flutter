@@ -5,10 +5,11 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:amap_flutter_base/amap_flutter_base.dart';
-import 'package:amap_flutter_location/amap_flutter_location.dart';
-import 'package:amap_flutter_location/amap_location_option.dart';
-import 'package:amap_flutter_map/amap_flutter_map.dart';
+import 'package:flutter/services.dart';
+import 'package:x_amap_flutter_base/amap_flutter_base.dart';
+import 'package:x_amap_flutter_location/amap_flutter_location.dart';
+import 'package:x_amap_flutter_location/amap_location_option.dart';
+import 'package:x_amap_flutter_map/amap_flutter_map.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -238,32 +239,45 @@ class LocationMapPageState extends State<LocationMapPage> {
         '${Platform.isAndroid ? 'android' : 'ios'}amap://viewMap?sourceApplication=NIMUIKit&poiname=$address&lat=$latitude&lon=$longitude&dev=0';
     if (Platform.isIOS) url = Uri.encodeFull(url);
     try {
-      launchUrlString(url, mode: LaunchMode.externalApplication).then((value) {
-        if (!value) {
+      final result =
+          await launchUrlString(url, mode: LaunchMode.externalApplication);
+      if (!result) {
+        Fluttertoast.showToast(msg: S.of(context).chatMessageAMapNotFound);
+      }
+    } on Exception catch (e) {
+      if (e is PlatformException) {
+        final error = e.code;
+        if (error == 'ACTIVITY_NOT_FOUND') {
           Fluttertoast.showToast(msg: S.of(context).chatMessageAMapNotFound);
         }
-      });
-    } on Exception catch (e) {
+      }
       Alog.e(tag: 'LocationPage', content: 'jump A Map error ${e.toString()}');
     }
   }
 
   //打开腾讯地图
-  void _openTencentMap(double longitude, double latitude, {String? address}) {
+  void _openTencentMap(double longitude, double latitude,
+      {String? address}) async {
     var baseUrl = 'qqmap://map/';
     String drivePlan =
         "routeplan?type=drive&from=我的位置&fromcoord=&to=$address&tocoord=$latitude,$longitude&policy=1";
     String tencentUri = baseUrl + drivePlan + "&referer=imuikit";
     if (Platform.isIOS) tencentUri = Uri.encodeFull(tencentUri);
     try {
-      launchUrlString(tencentUri, mode: LaunchMode.externalApplication)
-          .then((value) {
-        if (!value) {
+      final result = await launchUrlString(tencentUri,
+          mode: LaunchMode.externalApplication);
+      if (!result) {
+        Fluttertoast.showToast(
+            msg: S.of(context).chatMessageTencentMapNotFound);
+      }
+    } on Exception catch (e) {
+      if (e is PlatformException) {
+        final error = e.code;
+        if (error == 'ACTIVITY_NOT_FOUND') {
           Fluttertoast.showToast(
               msg: S.of(context).chatMessageTencentMapNotFound);
         }
-      });
-    } on Exception catch (e) {
+      }
       Alog.e(
           tag: 'LocationPage',
           content: 'jump Tencent Map error ${e.toString()}');

@@ -12,6 +12,8 @@ import 'package:intl/intl.dart' as intl;
 import 'chat_kit_location_client_localizations_en.dart';
 import 'chat_kit_location_client_localizations_zh.dart';
 
+// ignore_for_file: type=lint
+
 /// Callers can lookup localized strings with an instance of ChatKitLocationClientLocalizations
 /// returned by `ChatKitLocationClientLocalizations.of(context)`.
 ///
@@ -64,18 +66,15 @@ import 'chat_kit_location_client_localizations_zh.dart';
 /// be consistent with the languages listed in the ChatKitLocationClientLocalizations.supportedLocales
 /// property.
 abstract class ChatKitLocationClientLocalizations {
-  ChatKitLocationClientLocalizations(String locale)
-      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  ChatKitLocationClientLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
   static ChatKitLocationClientLocalizations? of(BuildContext context) {
-    return Localizations.of<ChatKitLocationClientLocalizations>(
-        context, ChatKitLocationClientLocalizations);
+    return Localizations.of<ChatKitLocationClientLocalizations>(context, ChatKitLocationClientLocalizations);
   }
 
-  static const LocalizationsDelegate<ChatKitLocationClientLocalizations>
-      delegate = _ChatKitLocationClientLocalizationsDelegate();
+  static const LocalizationsDelegate<ChatKitLocationClientLocalizations> delegate = _ChatKitLocationClientLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -87,8 +86,7 @@ abstract class ChatKitLocationClientLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
-      <LocalizationsDelegate<dynamic>>[
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
     delegate,
     GlobalMaterialLocalizations.delegate,
     GlobalCupertinoLocalizations.delegate,
@@ -150,37 +148,34 @@ abstract class ChatKitLocationClientLocalizations {
   String get locationTitle;
 }
 
-class _ChatKitLocationClientLocalizationsDelegate
-    extends LocalizationsDelegate<ChatKitLocationClientLocalizations> {
+class _ChatKitLocationClientLocalizationsDelegate extends LocalizationsDelegate<ChatKitLocationClientLocalizations> {
   const _ChatKitLocationClientLocalizationsDelegate();
 
   @override
   Future<ChatKitLocationClientLocalizations> load(Locale locale) {
-    return SynchronousFuture<ChatKitLocationClientLocalizations>(
-        lookupChatKitLocationClientLocalizations(locale));
+    return SynchronousFuture<ChatKitLocationClientLocalizations>(lookupChatKitLocationClientLocalizations(locale));
   }
 
   @override
-  bool isSupported(Locale locale) =>
-      <String>['en', 'zh'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => <String>['en', 'zh'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_ChatKitLocationClientLocalizationsDelegate old) => false;
 }
 
-ChatKitLocationClientLocalizations lookupChatKitLocationClientLocalizations(
-    Locale locale) {
+ChatKitLocationClientLocalizations lookupChatKitLocationClientLocalizations(Locale locale) {
+
+
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'en':
-      return ChatKitLocationClientLocalizationsEn();
-    case 'zh':
-      return ChatKitLocationClientLocalizationsZh();
+    case 'en': return ChatKitLocationClientLocalizationsEn();
+    case 'zh': return ChatKitLocationClientLocalizationsZh();
   }
 
   throw FlutterError(
-      'ChatKitLocationClientLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
+    'ChatKitLocationClientLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.'
+  );
 }

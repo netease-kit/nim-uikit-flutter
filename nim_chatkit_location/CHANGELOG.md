@@ -1,5 +1,11 @@
 # NimChatKitLocation ChangeLog
 
+## 10.0.0(Mar 25, 2025)
+
+### New Features
+* SDK 更新到nim_core_v2
+* 引入x_amap_flutter_map
+
 ## 9.7.3(Sep 30, 2024)
 
 ### Dependency Updates

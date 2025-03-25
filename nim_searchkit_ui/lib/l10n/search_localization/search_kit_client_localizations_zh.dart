@@ -4,6 +4,8 @@
 
 import 'search_kit_client_localizations.dart';
 
+// ignore_for_file: type=lint
+
 /// The translations for Chinese (`zh`).
 class SearchKitClientLocalizationsZh extends SearchKitClientLocalizations {
   SearchKitClientLocalizationsZh([String locale = 'zh']) : super(locale);

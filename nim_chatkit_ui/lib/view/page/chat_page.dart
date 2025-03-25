@@ -16,7 +16,7 @@ import 'package:netease_corekit_im/router/imkit_router.dart';
 import 'package:netease_corekit_im/router/imkit_router_constants.dart';
 import 'package:netease_corekit_im/router/imkit_router_factory.dart';
 import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/login/login_service.dart';
+import 'package:netease_corekit_im/services/login/im_login_service.dart';
 import 'package:netease_corekit_im/services/message/chat_message.dart';
 import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
 import 'package:nim_chatkit/message/merge_message.dart';
@@ -27,7 +27,7 @@ import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
 import 'package:nim_chatkit_ui/view/page/chat_setting_page.dart';
 import 'package:nim_chatkit_ui/view_model/chat_view_model.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:provider/provider.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
@@ -38,9 +38,9 @@ import '../../media/audio_player.dart';
 import '../input/bottom_input_field.dart';
 
 class ChatPage extends StatefulWidget {
-  final String sessionId;
+  final String conversationId;
 
-  final NIMSessionType sessionType;
+  final NIMConversationType conversationType;
 
   final NIMMessage? anchor;
 
@@ -58,8 +58,8 @@ class ChatPage extends StatefulWidget {
 
   ChatPage(
       {Key? key,
-      required this.sessionId,
-      required this.sessionType,
+      required this.conversationId,
+      required this.conversationType,
       this.anchor,
       this.customPopActions,
       this.onTapAvatar,
@@ -123,13 +123,20 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
 
   ///设置正在聊天的账号
   void _setChattingAccount() {
-    ChatMessageRepo.setChattingAccount(widget.sessionId, widget.sessionType);
+    ChatMessageRepo.setChattingAccount(
+        null, widget.conversationType, widget.conversationId);
+  }
+
+  Future<String> getSessionId(String conversationId) async {
+    return (await NimCore.instance.conversationIdUtil
+            .conversationTargetId(conversationId))
+        .data!;
   }
 
   ///清除正在聊天的账号
-  void _clearChattingAccount() {
+  void _clearChattingAccount() async {
     ChatMessageRepo.clearChattingAccountWithId(
-        widget.sessionId, widget.sessionType);
+        null, widget.conversationType, widget.conversationId);
   }
 
   @override
@@ -144,9 +151,9 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
     //初始化语音播放器
     ChatAudioPlayer.instance.initAudioPlayer();
     ChatKitClient.instance.registerRevokedMessage();
-    if (widget.sessionType == NIMSessionType.team) {
+    if (widget.conversationType == NIMConversationType.team) {
       _teamDismissSub =
-          NimCore.instance.messageService.onMessage.listen((event) {
+          NimCore.instance.messageService.onReceiveMessages.listen((event) {
         for (var msg in event) {
           if (_isTeamDisMessageNotify(msg)) {
             _showTeamDismissDialog();
@@ -166,12 +173,12 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
   }
 
   bool _isTeamDisMessageNotify(NIMMessage msg) {
-    if (msg.sessionId == widget.sessionId &&
+    if (msg.conversationId == widget.conversationId &&
         msg.messageType == NIMMessageType.notification) {
-      NIMTeamNotificationAttachment attachment =
-          msg.messageAttachment as NIMTeamNotificationAttachment;
-      if (attachment.type == NIMTeamNotificationTypes.dismissTeam &&
-          msg.fromAccount != getIt<LoginService>().userInfo?.userId) {
+      NIMMessageNotificationAttachment attachment =
+          msg.attachment as NIMMessageNotificationAttachment;
+      if (attachment.type == NIMMessageNotificationType.teamDismiss &&
+          msg.senderId != getIt<IMLoginService>().userInfo?.accountId) {
         return true;
       }
     }
@@ -180,15 +187,13 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
 
   ///是否是被踢出群的通知
   bool _isTeamKickedMessageNotify(NIMMessage msg) {
-    if (msg.sessionId == widget.sessionId &&
+    if (msg.conversationId == widget.conversationId &&
         msg.messageType == NIMMessageType.notification) {
-      NIMTeamNotificationAttachment attachment =
-          msg.messageAttachment as NIMTeamNotificationAttachment;
-      if (attachment.type == NIMTeamNotificationTypes.kickMember) {
-        NIMMemberChangeAttachment memberChangeAttachment =
-            attachment as NIMMemberChangeAttachment;
-        if (memberChangeAttachment.targets
-                ?.contains(getIt<LoginService>().userInfo?.userId) ==
+      NIMMessageNotificationAttachment attachment =
+          msg.attachment as NIMMessageNotificationAttachment;
+      if (attachment.type == NIMMessageNotificationType.teamKick) {
+        if (attachment.targetIds
+                ?.contains(getIt<IMLoginService>().userInfo?.accountId) ==
             true) {
           return true;
         }
@@ -244,10 +249,10 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
 
   @override
   void didPopNext() {
-    if (NIMChatCache.instance.currentChatSession?.sessionId !=
-            widget.sessionId ||
-        NIMChatCache.instance.currentChatSession?.sessionType !=
-            widget.sessionType) {
+    if (NIMChatCache.instance.currentChatSession?.conversationId !=
+            widget.conversationId ||
+        NIMChatCache.instance.currentChatSession?.conversationType !=
+            widget.conversationType) {
       _setChattingAccount();
     }
     super.didPopNext();
@@ -276,9 +281,9 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
           MergedMessage.defaultMaxDepth) {
         return true;
       }
-      return e.status == NIMMessageStatus.fail ||
-          e.messageType == NIMMessageType.avchat ||
-          e.status == NIMMessageStatus.sending;
+      return e.sendingState == NIMMessageSendingState.failed ||
+          e.messageType == NIMMessageType.avChat ||
+          e.sendingState == NIMMessageSendingState.sending;
     }).toList();
     if (cannotMergeMessage.isNotEmpty) {
       showCommonDialog(
@@ -299,9 +304,9 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
 
     // 处理合并转发
     var sessionName = context.read<ChatViewModel>().chatTitle;
-    ChatMessageHelper.showForwardMessageDialog(context, (sessionId, sessionType,
+    ChatMessageHelper.showForwardMessageDialog(context, (conversationId,
         {String? postScript, bool? isLastUser}) {
-      context.read<ChatViewModel>().mergedMessageForward(sessionId, sessionType,
+      context.read<ChatViewModel>().mergedMessageForward(conversationId,
           postScript: postScript,
           errorToast: S.of(context).chatMessageMergeMessageError,
           exitMultiMode: isLastUser == true);
@@ -326,9 +331,9 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
     // 2. 消息正在发送
     // 3. 消息是语音消息
     var cannotMergeMessage = selectedMessages.where((e) {
-      return e.status == NIMMessageStatus.fail ||
-          e.status == NIMMessageStatus.sending ||
-          e.messageType == NIMMessageType.avchat ||
+      return e.sendingState == NIMMessageSendingState.failed ||
+          e.sendingState == NIMMessageSendingState.sending ||
+          e.messageType == NIMMessageType.avChat ||
           e.messageType == NIMMessageType.audio;
     }).toList();
     if (cannotMergeMessage.isNotEmpty) {
@@ -348,10 +353,9 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
       return;
     }
     var sessionName = context.read<ChatViewModel>().chatTitle;
-    ChatMessageHelper.showForwardMessageDialog(context, (sessionId, sessionType,
+    ChatMessageHelper.showForwardMessageDialog(context, (conversationId,
         {String? postScript, bool? isLastUser}) {
-      context.read<ChatViewModel>().forwardMessageOneByOne(
-          sessionId, sessionType,
+      context.read<ChatViewModel>().forwardMessageOneByOne(conversationId,
           postScript: postScript, exitMultiMode: isLastUser == true);
     }, sessionName: sessionName, type: ForwardType.oneByOne);
   }
@@ -373,15 +377,15 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
 
   @override
   Widget build(BuildContext context) {
-    if (NIMChatCache.instance.currentChatSession?.sessionId !=
-            widget.sessionId ||
-        NIMChatCache.instance.currentChatSession?.sessionType !=
-            widget.sessionType) {
+    if (NIMChatCache.instance.currentChatSession?.conversationId !=
+            widget.conversationId ||
+        NIMChatCache.instance.currentChatSession?.conversationType !=
+            widget.conversationType) {
       _setChattingAccount();
     }
     return ChangeNotifierProvider(
         create: (context) =>
-            ChatViewModel(widget.sessionId, widget.sessionType),
+            ChatViewModel(widget.conversationId, widget.conversationType),
         builder: (context, wg) {
           String title;
           String inputHint = context.watch<ChatViewModel>().chatTitle;
@@ -412,7 +416,7 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
                       style:
                           TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
-                    elevation: 0.5,
+                    elevation: 0,
                     actions: [
                       context.watch<ChatViewModel>().isMultiSelected
                           ? TextButton(
@@ -426,8 +430,9 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
                                       fontSize: 16,
                                       color: '#333333'.toColor())))
                           : IconButton(
-                              onPressed: () {
-                                if (widget.sessionType == NIMSessionType.p2p) {
+                              onPressed: () async {
+                                if (widget.conversationType ==
+                                    NIMConversationType.p2p) {
                                   ContactInfo? info =
                                       context.read<ChatViewModel>().contactInfo;
                                   if (info != null) {
@@ -435,14 +440,16 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
                                         context,
                                         MaterialPageRoute(
                                             builder: (context) =>
-                                                ChatSettingPage(info)));
+                                                ChatSettingPage(info,
+                                                    widget.conversationId)));
                                   }
-                                } else if (widget.sessionType ==
-                                    NIMSessionType.team) {
+                                } else if (widget.conversationType ==
+                                    NIMConversationType.team) {
                                   Navigator.pushNamed(context,
                                       RouterConstants.PATH_TEAM_SETTING_PAGE,
                                       arguments: {
-                                        'teamId': widget.sessionId
+                                        'teamId': await getSessionId(
+                                            widget.conversationId)
                                       }).then((value) {
                                     if (value == true) {
                                       Navigator.pop(context);
@@ -586,8 +593,8 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
                               maintainState: true,
                               child: BottomInputField(
                                 scrollController: autoController,
-                                sessionType: widget.sessionType,
-                                sessionId: widget.sessionId,
+                                conversationType: widget.conversationType,
+                                conversationId: widget.conversationId,
                                 hint: S
                                     .of(context)
                                     .chatMessageSendHint(inputHint),

@@ -7,7 +7,6 @@ import 'package:netease_common_ui/widgets/common_list_tile.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:netease_corekit_im/repo/misc_repo.dart';
 
 import '../../../l10n/S.dart';
 
@@ -24,11 +23,11 @@ class _ClearCachePageState extends State<ClearCachePage> {
   @override
   void initState() {
     super.initState();
-    MiscRepo.getCacheSize().then((value) {
-      double size = value / (1024 * 1024);
-      cacheSize = size.toStringAsFixed(2);
-      setState(() {});
-    });
+    // MiscRepo.getCacheSize().then((value) {
+    //   double size = value / (1024 * 1024);
+    //   cacheSize = size.toStringAsFixed(2);
+    //   setState(() {});
+    // });
   }
 
   @override
@@ -39,29 +38,28 @@ class _ClearCachePageState extends State<ClearCachePage> {
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: CardBackground(
           child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: ListTile.divideTiles(context: context, tiles: [
-              CommonListTile(
-                title: S.of(context).clearMessage,
-                trailingType: TrailingType.custom,
-                onTap: () {
-                  MiscRepo.clearMessageCache();
-                  Fluttertoast.showToast(msg: S.of(context).clearMessageTips);
-                },
-              ),
-              CommonListTile(
-                title: S.of(context).clearSdkCache,
-                trailingType: TrailingType.custom,
-                customTrailing: Text(S.of(context).cacheSizeText(cacheSize)),
-                onTap: () {
-                  MiscRepo.clearCacheSize();
-                  setState(() {
-                    cacheSize = '0.00';
-                  });
-                },
-              )
-            ]).toList(),
-          ),
+              mainAxisSize: MainAxisSize.min,
+              children: ListTile.divideTiles(context: context, tiles: [
+                CommonListTile(
+                  title: S.of(context).clearMessage,
+                  trailingType: TrailingType.custom,
+                  onTap: () {
+                    // MiscRepo.clearMessageCache();
+                    Fluttertoast.showToast(msg: S.of(context).clearMessageTips);
+                  },
+                ),
+                CommonListTile(
+                  title: S.of(context).clearSdkCache,
+                  trailingType: TrailingType.custom,
+                  customTrailing: Text(S.of(context).cacheSizeText(cacheSize)),
+                  onTap: () {
+                    // MiscRepo.clearCacheSize();
+                    setState(() {
+                      cacheSize = '0.00';
+                    });
+                  },
+                )
+              ]).toList()),
         ),
       ),
     );

@@ -11,11 +11,12 @@ import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/background.dart';
 import 'package:netease_common_ui/ui/photo.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
-import 'package:nim_core/nim_core.dart';
-import 'package:nim_teamkit/model/team_default_icon.dart';
-import 'package:nim_teamkit/repo/team_repo.dart';
+import 'package:nim_core_v2/nim_core.dart';
+import 'package:nim_chatkit/model/team_default_icon.dart';
+import 'package:nim_chatkit/repo/team_repo.dart';
 
 import '../../l10n/S.dart';
 import '../../team_kit_client.dart';
@@ -35,24 +36,37 @@ class TeamKitAvatarEditorPage extends StatefulWidget {
 class TeamKitAvatarEditorState extends State<TeamKitAvatarEditorPage> {
   String? photoAvatar;
 
-  void _setDefaultIcon(int index) {
+  Future<void> _setDefaultIcon(int index) async {
+    if (!(await haveConnectivity())) {
+      return;
+    }
+
     setState(() {
       photoAvatar = TeamDefaultIcons.getIconByIndex(index);
     });
   }
 
   _selectPic() {
-    showPhotoSelector(context).then((value) {
+    showPhotoSelector(context).then((value) async {
+      if (!(await haveConnectivity())) {
+        return;
+      }
+
       if (value != null && value.isNotEmpty) {
-        NimCore.instance.nosService
-            .upload(filePath: value, mimeType: 'image/jpeg')
-            .then((url) {
-          setState(() {
-            if (url.data != null && url.data!.isNotEmpty) {
-              photoAvatar = url.data;
-            }
+        NIMUploadFileParams params = NIMUploadFileParams(filePath: value);
+        final uploadTask =
+            await NimCore.instance.storageService.createUploadFileTask(params);
+        if (uploadTask.data != null) {
+          NimCore.instance.storageService
+              .uploadFile(uploadTask.data!)
+              .then((result) {
+            setState(() {
+              if (result.data != null && result.data!.isNotEmpty) {
+                photoAvatar = result.data;
+              }
+            });
           });
-        });
+        }
       }
     });
   }
@@ -73,11 +87,12 @@ class TeamKitAvatarEditorState extends State<TeamKitAvatarEditorPage> {
       actions: [
         TextButton(
             onPressed: () async {
-              if (!(await Connectivity().checkNetwork(context))) {
+              if (!(await haveConnectivity())) {
                 return;
               }
               if (photoAvatar != null) {
-                TeamRepo.updateTeamIcon(widget.team.id!, photoAvatar!)
+                TeamRepo.updateTeamIcon(
+                        widget.team.teamId, widget.team.teamType, photoAvatar!)
                     .then((value) {
                   if (!value) {
                     if (!NIMChatCache.instance.hasPrivilegeToModify()) {
@@ -87,8 +102,10 @@ class TeamKitAvatarEditorState extends State<TeamKitAvatarEditorPage> {
                       Fluttertoast.showToast(
                           msg: S.of(context).teamSettingFailed);
                     }
+                    Navigator.pop(context);
+                  } else {
+                    Navigator.pop(context, photoAvatar!);
                   }
-                  Navigator.pop(context, photoAvatar!);
                 });
               }
             },
@@ -115,7 +132,7 @@ class TeamKitAvatarEditorState extends State<TeamKitAvatarEditorPage> {
                           width: 80,
                           height: 80,
                           avatar: photoAvatar ??
-                              (widget.avatar ?? widget.team.icon),
+                              (widget.avatar ?? widget.team.avatar),
                           name: widget.team.name,
                         ),
                         Align(

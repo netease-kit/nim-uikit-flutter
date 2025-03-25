@@ -2,6 +2,8 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+
+
 import 'team_kit_client_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -65,8 +67,7 @@ class TeamKitClientLocalizationsEn extends TeamKitClientLocalizations {
   String get teamUpdateInfoPermission => 'Permission to modify Team info';
 
   @override
-  String get teamNeedAgreedWhenBeInvitedPermission =>
-      'Whether the invitee\'s consent is required';
+  String get teamNeedAgreedWhenBeInvitedPermission => 'Whether the invitee\'s consent is required';
 
   @override
   String get teamAdvancedDismiss => 'Disband the Team chat';
@@ -99,8 +100,7 @@ class TeamKitClientLocalizationsEn extends TeamKitClientLocalizations {
   String get teamQuitAdvancedTeamQuery => 'Do you want to leave the Team chat?';
 
   @override
-  String get teamQuitGroupTeamQuery =>
-      'Do you want to leave the Team Group chat?';
+  String get teamQuitGroupTeamQuery => 'Do you want to leave the Team Group chat?';
 
   @override
   String get teamDismissAdvancedTeamQuery => 'Disband the Team chat?';
@@ -139,8 +139,7 @@ class TeamKitClientLocalizationsEn extends TeamKitClientLocalizations {
   String get teamRemoveConfirm => 'Sure to remove';
 
   @override
-  String get teamRemoveConfirmContent =>
-      'This Member will lost Manager Promise after remove';
+  String get teamRemoveConfirmContent => 'This Member will lost Manager Promise after remove';
 
   @override
   String get teamSettingFailed => 'Setting failed';
@@ -149,8 +148,7 @@ class TeamKitClientLocalizationsEn extends TeamKitClientLocalizations {
   String get teamMsgAitAllPrivilegeIsAll => '@All privilege update to all';
 
   @override
-  String get teamMsgAitAllPrivilegeIsOwner =>
-      '@All privilege update to owner and manager';
+  String get teamMsgAitAllPrivilegeIsOwner => '@All privilege update to owner and manager';
 
   @override
   String get teamManagers => 'Managers';
@@ -170,8 +168,7 @@ class TeamKitClientLocalizationsEn extends TeamKitClientLocalizations {
   String get teamManagerEmpty => 'No manager';
 
   @override
-  String get teamMemberRemoveContent =>
-      'This member will leave this team after remove';
+  String get teamMemberRemoveContent => 'This member will leave this team after remove';
 
   @override
   String get teamMemberRemoveFailed => 'Remove failed';
