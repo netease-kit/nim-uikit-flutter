@@ -4,12 +4,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:netease_common/netease_common.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_corekit_im/services/message/chat_message.dart';
 import 'package:nim_chatkit/message/message_helper.dart';
 import 'package:nim_chatkit_ui/l10n/S.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:super_tooltip/super_tooltip.dart';
 
 import '../../../chat_kit_client.dart';
@@ -40,18 +41,63 @@ class ChatKitMessagePopMenu {
     double arrowTipDistance = 30;
     TooltipDirection popupDirection = TooltipDirection.up;
 
+    //重设arrowTipDistance
+    var resetDistance = true;
+
+    // 获取屏幕安全区域
+    final mediaQuery = MediaQuery.of(context);
+    final screenHeight = mediaQuery.size.height;
+    final visibleAreaTop = mediaQuery.padding.top;
+    final visibleAreaBottom = screenHeight - mediaQuery.padding.bottom;
+
     RenderBox? box = context.findRenderObject() as RenderBox?;
     if (box != null) {
-      Offset offset = box.localToGlobal(Offset.zero);
-      if (offset.dy < 240) {
+      Offset position = box.localToGlobal(Offset.zero);
+      if (position.dy < 240) {
         popupDirection = TooltipDirection.down;
       }
+      // 获取 Widget 的全局坐标
+      final size = box.size;
+      final widgetTop = position.dy;
+      final widgetBottom = widgetTop + size.height;
+      // 检查是否在可滚动容器内
+      final scrollable = Scrollable.of(context);
+      if (scrollable != null) {
+        final scrollPosition = scrollable.position;
+        final scrollOffset = scrollPosition.pixels;
+        final viewportHeight = scrollPosition.viewportDimension;
+
+        // 计算视口边界
+        final viewportTop = scrollOffset;
+        final viewportBottom = scrollOffset + viewportHeight;
+
+        // 获取 Widget 在滚动容器内的相对位置
+        final scrollableRenderBox =
+            scrollable.context.findRenderObject() as RenderBox;
+        final localOffset =
+            box.localToGlobal(Offset.zero, ancestor: scrollableRenderBox);
+        final widgetScrollTop = scrollOffset + localOffset.dy;
+        final widgetScrollBottom = widgetScrollTop + size.height;
+
+        // 判断可见性
+        if (popupDirection == TooltipDirection.down &&
+            (widgetScrollBottom + 20) > viewportBottom) {
+          resetDistance = false;
+          arrowTipDistance = (context.size!.height / 2).roundToDouble() -
+              ((widgetScrollBottom + 100) - viewportBottom);
+          if (arrowTipDistance < 0) {
+            popupDirection = TooltipDirection.up;
+            arrowTipDistance = 0 - arrowTipDistance;
+          }
+        }
+      }
     }
-    arrowTipDistance = (context.size!.height / 2).roundToDouble() + 10;
+    if (resetDistance) {
+      arrowTipDistance = (context.size!.height / 2).roundToDouble() + 10;
+    }
 
     bool isSelf() {
-      return message.nimMessage.messageDirection ==
-          NIMMessageDirection.outgoing;
+      return message.nimMessage.isSelf == true;
     }
 
     _tooltip = SuperTooltip(
@@ -105,7 +151,8 @@ class ChatKitMessagePopMenu {
       }
       var multiLineMap =
           MessageHelper.parseMultiLineMessage(message.nimMessage);
-      if (multiLineMap != null) {
+      if (multiLineMap != null &&
+          multiLineMap[ChatMessage.keyMultiLineBody]?.isNotEmpty == true) {
         return true;
       }
     }
@@ -123,14 +170,13 @@ class ChatKitMessagePopMenu {
   }
 
   bool _enableStatus(ChatMessage message) {
-    return message.nimMessage.status != NIMMessageStatus.sending &&
-        message.nimMessage.status != NIMMessageStatus.fail;
+    return message.nimMessage.sendingState != NIMMessageSendingState.sending &&
+        message.nimMessage.sendingState != NIMMessageSendingState.failed;
   }
 
   _buildLongPressTipItem(
       BuildContext context, ChatUIConfig? config, ChatMessage message) {
-    final shouldShowRevokeAction =
-        message.nimMessage.messageDirection == NIMMessageDirection.outgoing;
+    final shouldShowRevokeAction = message.nimMessage.isSelf == true;
     final firstRowList = [
       if (_showCopy(config, message))
         {

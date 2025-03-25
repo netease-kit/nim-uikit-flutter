@@ -5,7 +5,6 @@
 import 'package:netease_corekit/report/xkit_report.dart';
 import 'package:netease_corekit_im/router/imkit_router.dart';
 import 'package:netease_corekit_im/router/imkit_router_constants.dart';
-import 'package:nim_searchkit/searchkit_client_repo.dart';
 
 import 'l10n/S.dart';
 import 'page/search_kit_search_page.dart';
@@ -18,10 +17,10 @@ class SearchKitClient {
   }
 
   static init() {
-    SearchKitClientRepo.init();
+    // SearchKitClientRepo.init();
     IMKitRouter.instance.registerRouter(RouterConstants.PATH_GLOBAL_SEARCH_PAGE,
         (context) => const SearchKitGlobalSearchPage());
 
-    XKitReporter().register(moduleName: 'SearchUIKit', moduleVersion: '9.7.3');
+    XKitReporter().register(moduleName: 'SearchUIKit', moduleVersion: '10.0.0');
   }
 }

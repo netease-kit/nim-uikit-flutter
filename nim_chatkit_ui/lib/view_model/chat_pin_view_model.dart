@@ -9,31 +9,35 @@ import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_corekit_im/services/message/chat_message.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit/repo/chat_service_observer_repo.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
 
+import '../helper/chat_message_helper.dart';
 import '../l10n/S.dart';
 
 class ChatPinViewModel extends ChangeNotifier {
-  final String sessionId;
+  String? sessionId;
 
-  final NIMSessionType sessionType;
+  final String conversationId;
+
+  final NIMConversationType conversationType;
 
   final List<ChatMessage> _pinnedMessages = List.empty(growable: true);
 
   List<StreamSubscription> _listSub = List.empty(growable: true);
 
-  ChatPinViewModel(this.sessionId, this.sessionType) {
+  ChatPinViewModel(this.conversationId, this.conversationType) {
     _init();
   }
 
   bool isEmpty = false;
 
-  void _init() {
-    ChatMessageRepo.fetchPinMessage(sessionId, sessionType).then((value) {
+  void _loadData() async {
+    _pinnedMessages.clear();
+    ChatMessageRepo.fetchPinMessage(conversationId).then((value) {
       if (value.isSuccess && value.data != null) {
-        value.data!.sort(
-            (a, b) => b.nimMessage.timestamp.compareTo(a.nimMessage.timestamp));
+        value.data!.sort((a, b) =>
+            b.nimMessage.createTime!.compareTo(a.nimMessage.createTime!));
         _pinnedMessages.addAll(value.data!);
         isEmpty = _pinnedMessages.isEmpty;
         notifyListeners();
@@ -42,23 +46,39 @@ class ChatPinViewModel extends ChangeNotifier {
         isEmpty = true;
         notifyListeners();
       }
-      _initListener();
     });
+  }
+
+  void _init() async {
+    sessionId = (await NimCore.instance.conversationIdUtil
+            .conversationTargetId(conversationId))
+        .data;
+    _loadData();
+    _initListener();
   }
 
   void _initListener() {
     _listSub.addAll([
-      NimCore.instance.messageService.onMessagePinNotify.listen((event) async {
-        if (event is NIMMessagePinAddedEvent) {
-          if (event.pin.messageUuid != null) {
+      // 断网重连，重新拉取数据
+      NimCore.instance.loginService.onDataSync.listen((event) {
+        if (event.type == NIMDataSyncType.nimDataSyncMain &&
+            event.state == NIMDataSyncState.nimDataSyncStateCompleted) {
+          _loadData();
+        }
+      }),
+      NimCore.instance.messageService.onMessagePinNotification
+          .listen((event) async {
+        if (event.pinState == NIMMessagePinState.pinned) {
+          if (event.pin?.messageRefer?.messageClientId != null) {
             var msgRes = await NimCore.instance.messageService
-                .queryMessageListByUuid(
-                    [event.pin.messageUuid!], sessionId, sessionType);
+                .getMessageListByIds(messageClientIds: [
+              event.pin!.messageRefer!.messageClientId!
+            ]);
             if (msgRes.data?.isNotEmpty == true) {
               var index = 0;
               while (index < _pinnedMessages.length) {
-                if (_pinnedMessages[index].nimMessage.timestamp <
-                    msgRes.data!.first.timestamp) {
+                if (_pinnedMessages[index].nimMessage.createTime! <
+                    msgRes.data!.first.createTime!) {
                   break;
                 }
                 index++;
@@ -69,27 +89,35 @@ class ChatPinViewModel extends ChangeNotifier {
               notifyListeners();
             }
           }
-        } else if (event is NIMMessagePinRemovedEvent) {
-          _pinnedMessages.removeWhere(
-              (element) => element.nimMessage.uuid == event.pin.messageUuid);
+        } else if (event.pinState == NIMMessagePinState.notPinned) {
+          _pinnedMessages.removeWhere((element) =>
+              element.nimMessage.messageClientId ==
+              event.pin?.messageRefer?.messageClientId);
           isEmpty = _pinnedMessages.isEmpty;
           notifyListeners();
         }
       }),
-      NimCore.instance.messageService.onMessageRevoked.listen((event) {
-        _pinnedMessages.removeWhere(
-            (element) => element.nimMessage.uuid == event.message?.uuid);
+      NimCore.instance.messageService.onMessageRevokeNotifications
+          .listen((event) {
+        //获取撤回List
+        var revokedList = event
+            .where((element) =>
+                element.messageRefer?.messageClientId?.isNotEmpty == true)
+            .map((e) => e.messageRefer!.messageClientId!)
+            .toList();
+        _pinnedMessages.removeWhere((element) =>
+            revokedList.contains(element.nimMessage.messageClientId));
         isEmpty = _pinnedMessages.isEmpty;
         notifyListeners();
       }),
-      ChatServiceObserverRepo.observeMsgStatus().listen((event) {
+      ChatServiceObserverRepo.observeSendMessage().listen((event) {
         Alog.d(
             tag: 'ChatPinViewModel',
             content:
-                'onMessageStatus ${event.uuid} status change -->> ${event.status}, ${event.attachmentStatus}');
+                'onMessageStatus ${event.messageClientId} status change -->> ${event.sendingState}, ${event.attachmentUploadState}');
         //更新消息状态，解决文件消息下载后状态没有变更的问题
         for (var msg in _pinnedMessages) {
-          if (msg.nimMessage.uuid == event.uuid) {
+          if (msg.nimMessage.messageClientId == event.messageClientId) {
             msg.nimMessage = event;
             notifyListeners();
             break;
@@ -99,8 +127,11 @@ class ChatPinViewModel extends ChangeNotifier {
       ChatServiceObserverRepo.observeMessageDelete().listen((event) {
         if (event.isNotEmpty) {
           for (var msg in event) {
-            if (msg.sessionId == sessionId && msg.sessionType == sessionType) {
-              _pinnedMessages.remove(ChatMessage(msg));
+            if (msg.messageRefer?.conversationId == conversationId &&
+                msg.messageRefer?.conversationType == conversationType) {
+              _pinnedMessages.removeWhere((e) =>
+                  e.nimMessage.messageClientId ==
+                  msg.messageRefer?.messageClientId);
               isEmpty = _pinnedMessages.isEmpty;
             }
           }
@@ -124,14 +155,15 @@ class ChatPinViewModel extends ChangeNotifier {
     }
   }
 
-  void forwardMessage(
-      NIMMessage message, String sessionId, NIMSessionType sessionType) async {
+  void forwardMessage(NIMMessage message, String conversationId) async {
     if (await haveConnectivity()) {
-      ChatMessageRepo.forwardMessage(message, sessionId, sessionType)
+      final params =
+          await ChatMessageHelper.getSenderParams(message, conversationId);
+      ChatMessageRepo.forwardMessage(message, conversationId, params: params)
           .then((value) {
         if (value.code == ChatMessageRepo.errorInBlackList) {
           ChatMessageRepo.saveTipsMessage(
-              sessionId, sessionType, S.of().chatMessageSendFailedByBlackList);
+              conversationId, S.of().chatMessageSendFailedByBlackList);
         }
       });
     }

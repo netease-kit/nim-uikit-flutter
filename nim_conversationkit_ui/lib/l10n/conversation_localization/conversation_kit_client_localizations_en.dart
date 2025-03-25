@@ -4,6 +4,8 @@
 
 import 'conversation_kit_client_localizations.dart';
 
+// ignore_for_file: type=lint
+
 /// The translations for English (`en`).
 class ConversationKitClientLocalizationsEn
     extends ConversationKitClientLocalizations {

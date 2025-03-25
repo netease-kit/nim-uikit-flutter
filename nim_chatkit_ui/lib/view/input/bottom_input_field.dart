@@ -3,7 +3,9 @@
 // found in the LICENSE file.
 
 import 'dart:io';
+import 'dart:ui';
 
+import 'package:extended_text_field/extended_text_field.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -18,14 +20,15 @@ import 'package:netease_common_ui/widgets/platform_utils.dart';
 import 'package:netease_corekit_im/model/ait/ait_contacts_model.dart';
 import 'package:netease_corekit_im/model/team_models.dart';
 import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/login/login_service.dart';
+import 'package:netease_corekit_im/services/login/im_login_service.dart';
 import 'package:netease_corekit_im/services/message/chat_message.dart';
 import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_helper.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_user_helper.dart';
 import 'package:nim_chatkit_ui/view/ait/ait_manager.dart';
 import 'package:nim_chatkit_ui/view/input/emoji_panel.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_chatkit_ui/view/input/ne_special_text_span_builder.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
@@ -42,17 +45,17 @@ class BottomInputField extends StatefulWidget {
   const BottomInputField(
       {Key? key,
       required this.scrollController,
-      required this.sessionType,
-      required this.sessionId,
+      required this.conversationType,
+      required this.conversationId,
       this.hint,
       this.chatUIConfig})
       : super(key: key);
 
   final String? hint;
-  final NIMSessionType sessionType;
+  final NIMConversationType conversationType;
   final AutoScrollController scrollController;
   final ChatUIConfig? chatUIConfig;
-  final String sessionId;
+  final String conversationId;
 
   @override
   State<StatefulWidget> createState() => _BottomInputFieldState();
@@ -96,13 +99,13 @@ class _BottomInputFieldState extends State<BottomInputField>
   }
 
   addMention(String accId) {
-    if (_viewModel.sessionType == NIMSessionType.team) {
+    if (_viewModel.conversationType == NIMConversationType.team) {
       _addAitMember(accId, reAdd: true);
     }
   }
 
   _onRecordActionTap(
-      BuildContext context, String sessionId, NIMSessionType sessionType,
+      BuildContext context, String sessionId, NIMConversationType sessionType,
       {NIMMessageSender? messageSender}) {
     if (_currentType == ActionConstants.record) {
       _currentType = ActionConstants.none;
@@ -114,7 +117,7 @@ class _BottomInputFieldState extends State<BottomInputField>
   }
 
   _onEmojiActionTap(
-      BuildContext context, String sessionId, NIMSessionType sessionType,
+      BuildContext context, String sessionId, NIMConversationType sessionType,
       {NIMMessageSender? messageSender}) {
     if (_titleFocusNode.hasFocus) {
       return;
@@ -142,7 +145,12 @@ class _BottomInputFieldState extends State<BottomInputField>
         if (image.path.lastIndexOf('.') + 1 < image.path.length) {
           imageType = image.path.substring(image.path.lastIndexOf('.') + 1);
         }
-        _viewModel.sendImageMessage(image.path, len, imageType: imageType);
+        final codec =
+            await instantiateImageCodec(File(image.path).readAsBytesSync());
+        final frame = await codec.getNextFrame();
+        _viewModel.sendImageMessage(
+            image.path, image.name, frame.image.width, frame.image.height,
+            imageType: imageType);
       }
     }
   }
@@ -166,17 +174,20 @@ class _BottomInputFieldState extends State<BottomInputField>
       controller.initialize().then((value) {
         _viewModel.sendVideoMessage(
             video.path,
+            video.name,
             controller.value.duration.inMilliseconds,
             controller.value.size.width.toInt(),
-            controller.value.size.height.toInt(),
-            video.name);
+            controller.value.size.height.toInt());
       });
     }
   }
 
   _onImageActionTap(
-      BuildContext context, String sessionId, NIMSessionType sessionType,
+      BuildContext context, String sessionId, NIMConversationType sessionType,
       {NIMMessageSender? messageSender}) {
+    // 收起键盘
+    _focusNode.unfocus();
+
     var style = const TextStyle(fontSize: 16, color: CommonColors.color_333333);
     showBottomChoose<int>(
             context: context,
@@ -230,7 +241,7 @@ class _BottomInputFieldState extends State<BottomInputField>
   // }
 
   _onMoreActionTap(
-      BuildContext context, String sessionId, NIMSessionType sessionType,
+      BuildContext context, String sessionId, NIMConversationType sessionType,
       {NIMMessageSender? messageSender}) {
     if (_currentType == ActionConstants.more) {
       _currentType = ActionConstants.none;
@@ -325,8 +336,8 @@ class _BottomInputFieldState extends State<BottomInputField>
       return MorePanel(
         moreActions: widget.chatUIConfig?.moreActions,
         keepDefault: widget.chatUIConfig?.keepDefaultMoreAction ?? true,
-        sessionId: widget.sessionId,
-        sessionType: widget.sessionType,
+        sessionId: widget.conversationId,
+        sessionType: widget.conversationType,
       );
     }
     if (_currentType == ActionConstants.emoji) {
@@ -359,7 +370,7 @@ class _BottomInputFieldState extends State<BottomInputField>
     if (_viewModel.teamInfo == null) {
       return;
     }
-    String name = await getUserNickInTeam(_viewModel.teamInfo!.id!, account,
+    String name = await getUserNickInTeam(_viewModel.teamInfo!.teamId, account,
         showAlias: false);
     //已经在ait列表中，不再添加
     if (!reAdd && _aitManager?.haveBeAit(account) == true) {
@@ -374,21 +385,23 @@ class _BottomInputFieldState extends State<BottomInputField>
   }
 
   void _handleReplyAit(ChatMessage replyMsg) {
-    if (_replyMessageTemp?.nimMessage.uuid == replyMsg.nimMessage.uuid) {
+    if (_replyMessageTemp?.nimMessage.messageClientId ==
+        replyMsg.nimMessage.messageClientId) {
       return;
     }
     _replyMessageTemp = replyMsg;
-    if (widget.sessionType == NIMSessionType.team &&
-        replyMsg.fromUser?.userId != null &&
-        replyMsg.fromUser?.userId != getIt<LoginService>().userInfo?.userId) {
-      String account = replyMsg.fromUser!.userId!;
-      _addAitMember(account);
+    if (widget.conversationType == NIMConversationType.team &&
+        replyMsg.fromUser?.accountId != null &&
+        replyMsg.fromUser?.accountId !=
+            getIt<IMLoginService>().userInfo?.accountId) {
+      String account = replyMsg.fromUser!.accountId!;
+      _addAitMember(account, reAdd: true);
     }
   }
 
   void _handleAitText() {
     String value = inputController.text;
-    if (widget.sessionType != NIMSessionType.team) {
+    if (widget.conversationType != NIMConversationType.team) {
       inputText = value;
       return;
     }
@@ -436,7 +449,7 @@ class _BottomInputFieldState extends State<BottomInputField>
             String name = select.getName(needAlias: false);
             //add to aitManager
             _aitManager?.addAitWithText(
-                select.teamInfo.account!, '@$name$blank', endIndex - 1);
+                select.teamInfo.accountId, '@$name$blank', endIndex - 1);
             inputController.text =
                 '${value.substring(0, endIndex)}$name$blank${value.substring(endIndex)}';
             inputController.selection = TextSelection.fromPosition(
@@ -465,7 +478,7 @@ class _BottomInputFieldState extends State<BottomInputField>
     }
     if (title.isNotEmpty || text.isNotEmpty) {
       List<String>? pushList;
-      if (widget.sessionType == NIMSessionType.team) {
+      if (widget.conversationType == NIMConversationType.team) {
         if (_aitManager?.aitContactsModel != null) {
           pushList = _aitManager!.getPushList();
         }
@@ -494,7 +507,8 @@ class _BottomInputFieldState extends State<BottomInputField>
       });
     } else {
       Fluttertoast.showToast(
-          msg: S.of(context).chatMessageNotSupportEmptyMessage);
+          msg: S.of(context).chatMessageNotSupportEmptyMessage,
+          gravity: ToastGravity.CENTER);
     }
     _scrollToBottom();
   }
@@ -514,6 +528,7 @@ class _BottomInputFieldState extends State<BottomInputField>
 
   onViewModelChange() {
     if (_viewModel.reeditMessage != null) {
+      _aitManager?.cleanAit();
       var reeditMessageContent = _viewModel.reeditMessage!.reeditMessage;
       var multiLineMap = _viewModel.reeditMessage!.multiLineMessage;
       String? titleText;
@@ -571,7 +586,7 @@ class _BottomInputFieldState extends State<BottomInputField>
     titleController = TextEditingController();
     _viewModel = context.read<ChatViewModel>();
     inputController.addListener(() {
-      if (_viewModel.sessionType == NIMSessionType.p2p) {
+      if (_viewModel.conversationType == NIMConversationType.p2p) {
         _viewModel.sendInputNotification(inputController.text.isNotEmpty);
       } else if (inputText == inputController.text &&
           _aitManager?.haveAitMember() == true) {
@@ -593,7 +608,7 @@ class _BottomInputFieldState extends State<BottomInputField>
       }
     });
     titleController.addListener(() {
-      if (_viewModel.sessionType == NIMSessionType.p2p) {
+      if (_viewModel.conversationType == NIMConversationType.p2p) {
         _viewModel.sendInputNotification(titleController.text.isNotEmpty);
       }
       if (titleController.text.isEmpty) {
@@ -614,8 +629,10 @@ class _BottomInputFieldState extends State<BottomInputField>
       }
     });
     _viewModel.addListener(onViewModelChange);
-    if (widget.sessionType == NIMSessionType.team) {
-      _aitManager = AitManager(_viewModel.sessionId);
+    if (widget.conversationType == NIMConversationType.team) {
+      _viewModel.sessionId.then((sessionId) {
+        _aitManager = AitManager(sessionId);
+      });
     }
   }
 
@@ -665,12 +682,7 @@ class _BottomInputFieldState extends State<BottomInputField>
 
   @override
   Widget build(BuildContext context) {
-    var team = context.watch<ChatViewModel>().teamInfo;
-    if (team != null &&
-        team.creator != getIt<LoginService>().userInfo?.userId) {
-      mute = team.isAllMute == true &&
-          NIMChatCache.instance.myTeamRole() == TeamMemberType.normal;
-    }
+    mute = context.watch<ChatViewModel>().mute;
     if (mute) {
       _isExpanded = false;
       titleController.clear();
@@ -716,11 +728,11 @@ class _BottomInputFieldState extends State<BottomInputField>
                         ),
                         Expanded(
                           child: FutureBuilder<String>(
-                            future: ChatMessageHelper.getReplayMessageText(
+                            future: ChatMessageHelper.getReplayMessageTextById(
                                 context,
-                                _viewModel.replyMessage!.nimMessage.uuid!,
-                                _viewModel.sessionId,
-                                _viewModel.sessionType),
+                                _viewModel
+                                    .replyMessage!.nimMessage.messageClientId!,
+                                _viewModel.conversationId),
                             builder: (context, snapshot) {
                               return Text(
                                 S.of(context).chatMessageReplySomeone(
@@ -806,9 +818,11 @@ class _BottomInputFieldState extends State<BottomInputField>
                         SingleChildScrollView(
                           child: SizedBox(
                             height: showTitle ? null : 40,
-                            child: TextField(
+                            child: ExtendedTextField(
                               controller: inputController,
                               scrollController: _scrollController,
+                              specialTextSpanBuilder:
+                                  NeSpecialTextSpanBuilder(),
                               focusNode: _focusNode,
                               decoration: InputDecoration(
                                   contentPadding: const EdgeInsets.symmetric(
@@ -913,8 +927,8 @@ class _BottomInputFieldState extends State<BottomInputField>
                           onTap: () {
                             _scrollToBottom();
                             if (action.enable && action.onTap != null) {
-                              action.onTap!(
-                                  context, widget.sessionId, widget.sessionType,
+                              action.onTap!(context, widget.conversationId,
+                                  widget.conversationType,
                                   messageSender: (message) {
                                 _viewModel.sendMessage(message);
                               });

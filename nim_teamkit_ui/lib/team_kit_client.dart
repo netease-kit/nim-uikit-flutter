@@ -5,7 +5,6 @@
 import 'package:netease_corekit/report/xkit_report.dart';
 import 'package:netease_corekit_im/router/imkit_router.dart';
 import 'package:netease_corekit_im/router/imkit_router_constants.dart';
-import 'package:nim_teamkit/teamkit_client_repo.dart';
 
 import 'l10n/S.dart';
 import 'view/pages/team_kit_setting_page.dart';
@@ -21,13 +20,13 @@ class TeamKitClient {
   }
 
   static init() {
-    TeamKitClientRepo.init();
+    // TeamKitClientRepo.init();
     IMKitRouter.instance.registerRouter(
         RouterConstants.PATH_TEAM_SETTING_PAGE,
         (context) => TeamSettingPage(
             IMKitRouter.getArgumentFormMap<String>(context, 'teamId')!));
 
-    XKitReporter().register(moduleName: 'TeamUIKit', moduleVersion: '9.7.3');
+    XKitReporter().register(moduleName: 'TeamUIKit', moduleVersion: '10.0.0');
   }
 
   TeamKitClient._();

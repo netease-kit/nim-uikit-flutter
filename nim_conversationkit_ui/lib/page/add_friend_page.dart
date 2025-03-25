@@ -6,11 +6,11 @@ import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_corekit_im/router/imkit_router_factory.dart';
 import 'package:netease_common_ui/widgets/search_page.dart';
 import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/login/login_service.dart';
+import 'package:netease_corekit_im/services/login/im_login_service.dart';
 import 'package:netease_corekit_im/services/user_info/user_info_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 
 import '../conversation_kit_client.dart';
 import '../l10n/S.dart';
@@ -23,7 +23,7 @@ class AddFriendPage extends StatefulWidget {
 }
 
 class _AddFriendPageState extends State<AddFriendPage> {
-  Future<List<NIMUser>?> searchUserInfo(List<String> accountList) async {
+  Future<List<NIMUserInfo>?> searchUserInfo(List<String> accountList) async {
     if (!await haveConnectivity()) {
       return null;
     }
@@ -40,7 +40,7 @@ class _AddFriendPageState extends State<AddFriendPage> {
         if (keyword.isEmpty)
           return Container();
         else {
-          return FutureBuilder<List<NIMUser>?>(
+          return FutureBuilder<List<NIMUserInfo>?>(
               future: searchUserInfo([keyword]),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.done) {
@@ -66,11 +66,12 @@ class _AddFriendPageState extends State<AddFriendPage> {
                     );
                   } else {
                     Future.delayed(Duration(milliseconds: 200), () {
-                      if (getIt<LoginService>().userInfo?.userId ==
-                          snapshot.data![0].userId) {
+                      if (getIt<IMLoginService>().userInfo?.accountId ==
+                          snapshot.data![0].accountId) {
                         gotoMineInfoPage(context);
                       } else {
-                        goToContactDetail(context, snapshot.data![0].userId!);
+                        goToContactDetail(
+                            context, snapshot.data![0].accountId!);
                       }
                     });
                   }

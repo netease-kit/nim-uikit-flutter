@@ -8,10 +8,11 @@ import 'package:flutter/material.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_corekit_im/model/team_models.dart';
 import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/login/login_service.dart';
+import 'package:netease_corekit_im/services/login/im_login_service.dart';
 import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
-import 'package:nim_core/nim_core.dart';
-import 'package:nim_teamkit/repo/team_repo.dart';
+import 'package:nim_chatkit/repo/conversation_repo.dart';
+import 'package:nim_core_v2/nim_core.dart';
+import 'package:nim_chatkit/repo/team_repo.dart';
 
 class TeamSettingViewModel extends ChangeNotifier {
   //当前用户在群里的身份
@@ -22,12 +23,17 @@ class TeamSettingViewModel extends ChangeNotifier {
 
   List<UserInfoWithTeam> selectedList = List.empty(growable: true);
 
+  //群通知
   bool messageTip = true;
+  //置顶
   bool isStick = false;
+  //禁言
   bool muteAllMember = false;
-  NIMTeamInviteModeEnum? invitePrivilege;
-  NIMTeamUpdateModeEnum? infoPrivilege;
-  bool beInvitedNeedAgreed = false;
+  //邀请
+  NIMTeamInviteMode? inviteMode;
+  //更改
+  NIMTeamUpdateInfoMode? updateInfoMode;
+  bool agreeMode = false;
   String? myTeamNickName;
   //搜索关键字
   String? _searchKey;
@@ -35,17 +41,23 @@ class TeamSettingViewModel extends ChangeNotifier {
   List<StreamSubscription> _teamSub = List.empty(growable: true);
 
   void requestTeamData(String teamId) async {
-    teamWithMember = await TeamRepo.queryTeamWithMember(
-        teamId, getIt<LoginService>().userInfo!.userId!);
-    isStick = await TeamRepo.isStickTop(teamId);
+    final teamInfo = await TeamRepo.getTeamInfo(teamId, NIMTeamType.typeNormal);
+    if (teamInfo != null) {
+      final teamMember = await NIMChatCache.instance.getMyTeamMember(teamId);
+      teamWithMember = TeamWithMember(teamInfo, teamMember?.teamInfo);
+    }
 
-    messageTip = teamWithMember?.team.messageNotifyType ==
-        NIMTeamMessageNotifyTypeEnum.all;
-    muteAllMember = teamWithMember?.team.isAllMute ?? false;
-    invitePrivilege = teamWithMember?.team.teamInviteMode;
-    infoPrivilege = teamWithMember?.team.teamUpdateMode;
-    beInvitedNeedAgreed = teamWithMember?.team.teamBeInviteModeEnum ==
-        NIMTeamBeInviteModeEnum.needAuth;
+    isStick = await TeamRepo.isStickTop(teamId, NIMTeamType.typeNormal);
+
+    messageTip = await TeamRepo.getTeamNotify(teamId);
+    muteAllMember = (teamWithMember?.team.chatBannedMode ==
+            NIMTeamChatBannedMode.chatBannedModeBannedNormal) ||
+        (teamWithMember?.team.chatBannedMode ==
+            NIMTeamChatBannedMode.chatBannedModeBannedAll);
+    inviteMode = teamWithMember?.team.inviteMode;
+    updateInfoMode = teamWithMember?.team.updateInfoMode;
+    agreeMode =
+        teamWithMember?.team.agreeMode == NIMTeamAgreeMode.agreeModeNoAuth;
     myTeamNickName = teamWithMember?.teamMember?.teamNick;
     notifyListeners();
   }
@@ -61,12 +73,10 @@ class TeamSettingViewModel extends ChangeNotifier {
   }
 
   void addTeamSubscribe() {
-    _teamSub.add(TeamRepo.registerTeamUpdateObserver().listen((event) {
-      for (var e in event) {
-        if (e.id == teamWithMember?.team.id) {
-          teamWithMember?.team = e;
-          notifyListeners();
-        }
+    _teamSub.add(TeamRepo.registerTeamUpdateObserver().listen((team) {
+      if (team.teamId == teamWithMember?.team.teamId) {
+        teamWithMember?.team = team;
+        notifyListeners();
       }
     }));
 
@@ -74,15 +84,13 @@ class TeamSettingViewModel extends ChangeNotifier {
       NIMChatCache.instance.teamMembersNotifier.listen((event) {
         userInfoData = event;
         //更新完毕后重新排序,可能有新成员加入
-        if (_searchKey?.isNotEmpty == true) {
-          filterByText(_searchKey);
-        }
+        filterByText(_searchKey);
         //移除选择列表中不存在的成员
         if (selectedList.isNotEmpty) {
           var allMembers =
-              userInfoData?.map((e) => e.teamInfo.account).toList();
+              userInfoData?.map((e) => e.teamInfo.accountId).toList();
           selectedList.removeWhere(
-              (element) => !allMembers!.contains(element.teamInfo.account));
+              (element) => !allMembers!.contains(element.teamInfo.accountId));
         }
         notifyListeners();
       }),
@@ -104,16 +112,16 @@ class TeamSettingViewModel extends ChangeNotifier {
   }
 
   void addTeamManager(String tid, List<String> accounts) {
-    TeamRepo.addTeamManager(tid, accounts).then((value) {});
+    TeamRepo.addTeamManager(tid, NIMTeamType.typeNormal, accounts)
+        .then((value) {});
   }
 
-  Future<NIMResult<List<NIMTeamMember>>> removeTeamManager(
-      String tid, String accId) {
-    return TeamRepo.removeTeamManager(tid, [accId]);
+  Future<NIMResult<void>> removeTeamManager(String tid, String accId) {
+    return TeamRepo.removeTeamManager(tid, NIMTeamType.typeNormal, [accId]);
   }
 
   Future<NIMResult<void>> removeTeamMember(String tid, String accId) {
-    return TeamRepo.removeTeamMembers(tid, [accId]);
+    return TeamRepo.removeTeamMembers(tid, NIMTeamType.typeNormal, [accId]);
   }
 
   void filterByText(String? filterStr) {
@@ -129,20 +137,35 @@ class TeamSettingViewModel extends ChangeNotifier {
         member.searchPoint = member.getName().length;
         return true;
       }
-      if (member.teamInfo.account?.contains(filterStr) == true) {
-        member.searchPoint = 100 + member.teamInfo.account!.length;
-        return true;
-      }
       return false;
     }).toList();
     filterResult?.sort((a, b) {
-      return b.searchPoint - a.searchPoint;
+      if (a.teamInfo.memberRole == NIMTeamMemberRole.memberRoleOwner) {
+        return -1;
+      } else if (b.teamInfo.memberRole == NIMTeamMemberRole.memberRoleOwner) {
+        return 1;
+      } else if (a.teamInfo.memberRole == NIMTeamMemberRole.memberRoleManager &&
+          b.teamInfo.memberRole != NIMTeamMemberRole.memberRoleManager) {
+        return -1;
+      } else if (a.teamInfo.memberRole != NIMTeamMemberRole.memberRoleManager &&
+          b.teamInfo.memberRole == NIMTeamMemberRole.memberRoleManager) {
+        return 1;
+      } else if (a.teamInfo.joinTime == 0) {
+        return 1;
+      } else if (b.teamInfo.joinTime == 0) {
+        return -1;
+      }
+      return a.teamInfo.joinTime - b.teamInfo.joinTime;
     });
     filterList = filterResult;
     notifyListeners();
   }
 
-  void muteTeam(String teamId, bool mute) {
+  Future<void> muteTeam(String teamId, bool mute) async {
+    if (!(await haveConnectivity())) {
+      return;
+    }
+
     TeamRepo.updateTeamNotify(teamId, mute).then((value) {
       if (!value) {
         messageTip = mute;
@@ -153,17 +176,21 @@ class TeamSettingViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void configStick(String sessionId, bool stick) {
+  Future<void> configStick(String teamId, bool stick) async {
+    if (!(await haveConnectivity())) {
+      return;
+    }
+
     if (stick) {
-      TeamRepo.addStickTop(sessionId, '').then((value) {
-        if (value == null) {
+      TeamRepo.addStickTop(teamId).then((value) {
+        if (!value.isSuccess) {
           isStick = false;
           notifyListeners();
         }
       });
     } else {
-      TeamRepo.removeStickTop(sessionId, '').then((value) {
-        if (!value) {
+      TeamRepo.removeStickTop(teamId).then((value) {
+        if (!value.isSuccess) {
           isStick = true;
           notifyListeners();
         }
@@ -173,7 +200,11 @@ class TeamSettingViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void muteTeamAllMember(String teamId, bool mute) {
+  Future<void> muteTeamAllMember(String teamId, bool mute) async {
+    if (!(await haveConnectivity())) {
+      return;
+    }
+
     TeamRepo.muteAllMembers(teamId, mute).then((value) {
       if (value) {
         muteAllMember = mute;
@@ -182,28 +213,31 @@ class TeamSettingViewModel extends ChangeNotifier {
     });
   }
 
-  void updateInvitePrivilege(String teamId, NIMTeamInviteModeEnum modeEnum) {
-    TeamRepo.updateInviteMode(teamId, modeEnum).then((value) {
+  void updateInvitePrivilege(String teamId, NIMTeamInviteMode modeEnum) {
+    TeamRepo.updateInviteMode(teamId, NIMTeamType.typeNormal, modeEnum)
+        .then((value) {
       if (value) {
-        invitePrivilege = modeEnum;
+        inviteMode = modeEnum;
         notifyListeners();
       }
     });
   }
 
-  void updateInfoPrivilege(String teamId, NIMTeamUpdateModeEnum modeEnum) {
-    TeamRepo.updateTeamInfoPrivilege(teamId, modeEnum).then((value) {
+  void updateInfoPrivilege(String teamId, NIMTeamUpdateInfoMode modeEnum) {
+    TeamRepo.updateTeamInfoPrivilege(teamId, NIMTeamType.typeNormal, modeEnum)
+        .then((value) {
       if (value) {
-        infoPrivilege = modeEnum;
+        updateInfoMode = modeEnum;
         notifyListeners();
       }
     });
   }
 
   void updateBeInviteMode(String teamId, bool needAgree) {
-    TeamRepo.updateBeInviteMode(teamId, needAgree).then((value) {
+    TeamRepo.updateBeInviteMode(teamId, NIMTeamType.typeNormal, needAgree)
+        .then((value) {
       if (value) {
-        beInvitedNeedAgreed = needAgree;
+        agreeMode = needAgree;
         notifyListeners();
       }
     });
@@ -211,7 +245,10 @@ class TeamSettingViewModel extends ChangeNotifier {
 
   Future<bool> quitTeam(String teamId) async {
     if (await haveConnectivity()) {
-      return TeamRepo.quitTeam(teamId);
+      return TeamRepo.quitTeam(
+        teamId,
+        NIMTeamType.typeNormal,
+      );
     } else {
       return Future(() => false);
     }
@@ -219,15 +256,18 @@ class TeamSettingViewModel extends ChangeNotifier {
 
   Future<bool> dismissTeam(String teamId) async {
     if (await haveConnectivity()) {
-      return TeamRepo.dismissTeam(teamId);
+      return TeamRepo.dismissTeam(
+        teamId,
+        NIMTeamType.typeNormal,
+      );
     } else {
       return Future(() => false);
     }
   }
 
   Future<bool> updateNickname(String teamId, String nickname) {
-    return TeamRepo.updateMemberNick(
-            teamId, getIt<LoginService>().userInfo!.userId!, nickname)
+    return TeamRepo.updateMemberNick(teamId, NIMTeamType.typeNormal,
+            getIt<IMLoginService>().userInfo!.accountId!, nickname)
         .then((value) {
       if (value) {
         myTeamNickName = nickname;
@@ -239,7 +279,7 @@ class TeamSettingViewModel extends ChangeNotifier {
 
   Future<NIMResult<List<String>>> addMembers(
       String teamId, List<String> members) {
-    return TeamRepo.inviteUser(teamId, members);
+    return TeamRepo.inviteUser(teamId, NIMTeamType.typeNormal, members, null);
   }
 
   @override

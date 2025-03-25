@@ -3,12 +3,12 @@
 // found in the LICENSE file.
 
 import 'package:nim_chatkit_ui/l10n/S.dart';
-import 'package:nim_chatkit_ui/view/input/emoji.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
 import '../../chat_kit_client.dart';
+import 'emoji/emoji.dart';
 
 class EmojiPanel extends StatefulWidget {
   const EmojiPanel(
@@ -109,10 +109,11 @@ class EmojiPage extends StatelessWidget {
             physics: const NeverScrollableScrollPhysics(),
             children: [
               ...emojiData.sublist(start, end).map((e) {
-                int unicode = e['unicode'] as int;
+                String source = e['name'] as String;
+                String tag = e['tag'] as String;
                 return InkWell(
                   onTap: () {
-                    emojiTap(String.fromCharCode(unicode));
+                    emojiTap(tag);
                   },
                   child: Container(
                     decoration: BoxDecoration(
@@ -123,9 +124,11 @@ class EmojiPage extends StatelessWidget {
                     alignment: Alignment.center,
                     height: 30,
                     width: 30,
-                    child: Text(
-                      String.fromCharCode(unicode),
-                      style: const TextStyle(fontSize: 30),
+                    child: Image.asset(
+                      source,
+                      package: kPackage,
+                      height: 24,
+                      width: 24,
                     ),
                   ),
                 );

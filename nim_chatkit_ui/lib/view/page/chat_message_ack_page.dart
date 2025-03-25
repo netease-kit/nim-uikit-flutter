@@ -11,7 +11,7 @@ import 'package:netease_corekit_im/service_locator.dart';
 import 'package:netease_corekit_im/services/contact/contact_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
 
 import '../../chat_kit_client.dart';
@@ -20,7 +20,10 @@ import '../../l10n/S.dart';
 class ChatMessageAckPage extends StatefulWidget {
   final NIMMessage message;
 
-  ChatMessageAckPage({Key? key, required this.message}) : super(key: key);
+  final NIMTeamMessageReadReceiptDetail? ackInfo;
+
+  ChatMessageAckPage({Key? key, required this.message, this.ackInfo})
+      : super(key: key);
 
   @override
   State<StatefulWidget> createState() => _MessageAckState();
@@ -31,7 +34,7 @@ enum _State { init, done }
 class _MessageAckState extends State<ChatMessageAckPage> {
   _State _state = _State.init;
 
-  NIMTeamMessageAckInfo? ackInfo;
+  NIMTeamMessageReadReceiptDetail? ackInfo;
 
   Widget _getAckList(List<String> reads, bool read) {
     if (_state == _State.init) {
@@ -79,7 +82,7 @@ class _MessageAckState extends State<ChatMessageAckPage> {
                           avatar: contact?.user.avatar,
                           name: contact?.getName(),
                           bgCode: AvatarColor.avatarColor(
-                              content: contact?.user.userId),
+                              content: contact?.user.accountId),
                         ),
                         Expanded(
                           child: Container(
@@ -104,23 +107,29 @@ class _MessageAckState extends State<ChatMessageAckPage> {
   @override
   void initState() {
     super.initState();
-    ChatMessageRepo.fetchTeamMessageReceiptDetail(widget.message).then((value) {
-      Alog.d(
-          tag: 'ChatKit',
-          moduleName: 'Ack Page',
-          content:
-              'initState fetchTeamMessageReceiptDetail ${widget.message.uuid} -->> ${value?.toMap()}');
-      setState(() {
-        _state = _State.done;
-        ackInfo = value;
+    if (widget.ackInfo != null) {
+      _state = _State.done;
+      ackInfo = widget.ackInfo;
+    } else {
+      ChatMessageRepo.fetchTeamMessageReceiptDetail(widget.message)
+          .then((value) {
+        Alog.d(
+            tag: 'ChatKit',
+            moduleName: 'Ack Page',
+            content:
+                'initState fetchTeamMessageReceiptDetail ${widget.message.messageClientId} -->> ${value?.toJson()}');
+        setState(() {
+          _state = _State.done;
+          ackInfo = value;
+        });
       });
-    });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    var readList = ackInfo?.ackAccountList ?? List.empty();
-    var unreadList = ackInfo?.unAckAccountList ?? List.empty();
+    var readList = ackInfo?.readAccountList ?? List.empty();
+    var unreadList = ackInfo?.unreadAccountList ?? List.empty();
     return DefaultTabController(
         length: 2,
         initialIndex: 0,

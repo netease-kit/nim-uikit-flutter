@@ -15,7 +15,7 @@ import 'package:nim_chatkit/repo/chat_service_observer_repo.dart';
 import 'package:nim_chatkit_ui/media/audio_player.dart';
 import 'package:nim_chatkit_ui/media/video.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/widgets/chat_thumb_view.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
 
@@ -39,8 +39,10 @@ class _ChatKitMessageVideoState extends State<ChatKitMessageVideoItem> {
   StreamSubscription? _subscriptionMsgDownload;
   late StreamController<double> _progress;
 
-  NIMVideoAttachment get attachment =>
-      widget.message.messageAttachment as NIMVideoAttachment;
+  String? _localPath;
+
+  NIMMessageVideoAttachment get attachment =>
+      widget.message.attachment as NIMMessageVideoAttachment;
 
   String _videoDuration() {
     if (attachment.duration != null) {
@@ -103,14 +105,9 @@ class _ChatKitMessageVideoState extends State<ChatKitMessageVideoItem> {
   }
 
   void _goVideoViewer(String? path) {
-    var msg;
-    if (path != null) {
-      var map = widget.message.toMap();
-      // iOS需要将下载后的path更新到message中，提供给VideoViewer播放
-      map['messageAttachment']['path'] = path;
-      msg = NIMMessage.fromMap(map);
-    } else {
-      msg = widget.message;
+    var attachment = widget.message.attachment as NIMMessageVideoAttachment;
+    if (attachment.path?.isNotEmpty != true) {
+      attachment.path = path;
     }
 
     //播放视频前停止播放语音消息
@@ -120,31 +117,31 @@ class _ChatKitMessageVideoState extends State<ChatKitMessageVideoItem> {
         context,
         MaterialPageRoute(
             builder: (context) => VideoViewer(
-                  message: msg,
+                  message: widget.message,
                 )));
   }
 
   void _videoOnTap() async {
-    if (Platform.isIOS || widget.independentFile) {
-      // SDK不提供下载功能，需要手动下载
-      var appDocDir = await getTemporaryDirectory();
-      String savePath = "${appDocDir.path}/${attachment.md5}.mp4";
-      bool exist = await File(savePath).exists();
-      if (!exist) {
-        await Dio().download(attachment.url!, savePath,
-            onReceiveProgress: (count, total) {
-          _progress.add(count / total);
-        });
-      } else {
-        _goVideoViewer(savePath);
-      }
-      return;
+    if (attachment.path?.isNotEmpty == true) {
+      _localPath = attachment.path;
     }
-    if (widget.message.isFileDownload()) {
-      _goVideoViewer(null);
+    if (_localPath?.isNotEmpty == true &&
+        await File(_localPath!).existsSync()) {
+      _goVideoViewer(_localPath);
     } else {
-      NimCore.instance.messageService
-          .downloadAttachment(message: widget.message, thumb: false);
+      var params = NIMDownloadMessageAttachmentParams(
+          attachment: attachment,
+          type: NIMDownloadAttachmentType.nimDownloadAttachmentTypeSource,
+          thumbSize:
+              NIMSize(width: attachment.width, height: attachment.height),
+          messageClientId: widget.message.messageClientId);
+      NimCore.instance.storageService.downloadAttachment(params).then((result) {
+        if (result.data?.isNotEmpty == true) {
+          _localPath = result.data;
+          _progress.add(1);
+          _goVideoViewer(_localPath);
+        }
+      });
     }
   }
 
@@ -155,10 +152,12 @@ class _ChatKitMessageVideoState extends State<ChatKitMessageVideoItem> {
 
     _subscriptionMsgDownload =
         ChatServiceObserverRepo.observeAttachmentProgress().listen((event) {
-      if (event.id == widget.message.uuid) {
-        _log('onAttachmentProgress -->> ${event.id} : ${event.progress}');
+      if (event.downloadParam?.messageClientId ==
+          widget.message.messageClientId) {
+        _log(
+            'onAttachmentProgress -->> ${event.downloadParam?.messageClientId} : ${event.progress}');
         if (event.progress != null) {
-          _progress.add(event.progress!);
+          _progress.add(event.progress! / 100);
         }
       }
     });
@@ -177,15 +176,15 @@ class _ChatKitMessageVideoState extends State<ChatKitMessageVideoItem> {
 
   @override
   Widget build(BuildContext context) {
-    String path = attachment.thumbPath ?? '';
-    _log(
-        'build video item ${widget.message.uuid} -->> thumbPath:${attachment.thumbPath}, path:${attachment.path}');
-    if (attachment.thumbPath == null) {
-      NimCore.instance.messageService
-          .downloadAttachment(message: widget.message, thumb: true);
-    }
+    String url = attachment.url ?? '';
+    // _log(
+    //     'build video item ${widget.message.messageClientId} -->> thumbPath:${attachment.thumbPath}, path:${attachment.path}');
+    // if (attachment.thumbPath == null) {
+    //   NimCore.instance.messageService
+    //       .downloadAttachment(message: widget.message, thumb: true);
+    // }
     return FrameSeparateWidget.builder(
-      id: widget.message.uuid,
+      id: widget.message.messageClientId,
       placeHolder: Container(
         width: _getVideoSize().width,
         height: _getVideoSize().height,
@@ -198,18 +197,18 @@ class _ChatKitMessageVideoState extends State<ChatKitMessageVideoItem> {
               ChatThumbView(
                 message: widget.message,
                 radius: const BorderRadius.all(Radius.circular(12)),
-                thumbFromRemote: widget.independentFile,
+                thumbFromRemote: true,
               ),
               Positioned.fill(
                 child: Visibility(
-                  visible: path.isNotEmpty,
+                  visible: url.isNotEmpty,
                   child: Center(
                     child: _buildLoading(),
                   ),
                 ),
               ),
               Visibility(
-                visible: path.isNotEmpty && attachment.duration != null,
+                visible: url.isNotEmpty && attachment.duration != null,
                 child: Positioned(
                     right: 6,
                     bottom: 6,

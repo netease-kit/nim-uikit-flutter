@@ -4,7 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:netease_common_ui/widgets/permission_request.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 typedef NIMMessageSender = Function(NIMMessage session);
@@ -13,8 +13,9 @@ class ActionItem {
   String type;
   Widget icon;
   String? title;
-  Function(BuildContext context, String sessionId, NIMSessionType sessionType,
-      {NIMMessageSender? messageSender})? onTap;
+  Function(BuildContext context, String conversationId,
+          NIMConversationType sessionType, {NIMMessageSender? messageSender})?
+      onTap;
   List<Permission>? permissions;
   //权限拒绝后的提示
   String? deniedTip;

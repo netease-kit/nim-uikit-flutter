@@ -9,9 +9,8 @@ import 'package:netease_common_ui/extension.dart';
 import 'package:nim_chatkit_ui/media/media_bottom_actions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:video_player/video_player.dart';
-import 'package:phone_state/phone_state.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../chat_kit_client.dart';
@@ -32,42 +31,7 @@ class _VideoViewerState extends State<VideoViewer> with WidgetsBindingObserver {
   bool _isPlaying = true;
   StreamSubscription? _phoneStateSub;
 
-  //监听权限
-  Future<bool?> _requestPermission() async {
-    var status = await Permission.phone.request();
-
-    switch (status) {
-      case PermissionStatus.denied:
-      case PermissionStatus.restricted:
-      case PermissionStatus.limited:
-      case PermissionStatus.permanentlyDenied:
-        return false;
-      case PermissionStatus.granted:
-        return true;
-      default:
-        return true;
-    }
-  }
-
-  //处理来电话播放器停止播放的操作
-  void _handlePhoneCall() async {
-    if (_phoneStateSub != null) {
-      return;
-    }
-    bool havePermission = true;
-    if (Platform.isAndroid) {
-      havePermission = await _requestPermission() ?? true;
-    }
-    if (havePermission) {
-      _phoneStateSub = PhoneState.stream.listen((event) {
-        if (_isPlaying) {
-          _isPlaying = false;
-          _controller.pause();
-          setState(() {});
-        }
-      });
-    }
-  }
+  late NIMMessageVideoAttachment attachment;
 
   void _playProgressAutoHide() {
     _timer?.cancel();
@@ -86,17 +50,14 @@ class _VideoViewerState extends State<VideoViewer> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    NIMVideoAttachment attachment =
-        widget.message.messageAttachment as NIMVideoAttachment;
+    attachment = widget.message.attachment as NIMMessageVideoAttachment;
     _controller = VideoPlayerController.file(File(attachment.path!),
-        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
+        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: false));
     _controller.addListener(() {
       if (!_controller.value.isPlaying &&
           _controller.value.position == _controller.value.duration) {
         _controller.seekTo(Duration());
         _isPlaying = false;
-      } else {
-        _handlePhoneCall();
       }
       setState(() {});
     });
@@ -138,7 +99,8 @@ class _VideoViewerState extends State<VideoViewer> with WidgetsBindingObserver {
       body: Stack(alignment: Alignment.bottomCenter, children: [
         Center(
           child: Hero(
-            tag: '${widget.message.messageId}${widget.message.uuid}',
+            tag:
+                '${widget.message.messageServerId}${widget.message.messageClientId}',
             child: _controller.value.isInitialized
                 ? GestureDetector(
                     onTap: () {

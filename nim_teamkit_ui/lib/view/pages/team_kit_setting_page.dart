@@ -12,6 +12,7 @@ import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/background.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:netease_common_ui/widgets/update_text_info_page.dart';
 import 'package:netease_corekit_im/model/contact_info.dart';
@@ -19,10 +20,10 @@ import 'package:netease_corekit_im/model/team_models.dart';
 import 'package:netease_corekit_im/router/imkit_router_constants.dart';
 import 'package:netease_corekit_im/router/imkit_router_factory.dart';
 import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/login/login_service.dart';
+import 'package:netease_corekit_im/services/login/im_login_service.dart';
 import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
 import 'package:netease_corekit_im/services/team/team_provider.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:nim_teamkit_ui/l10n/S.dart';
 import 'package:nim_teamkit_ui/view/pages/team_kit_manage_page.dart';
 import 'package:nim_teamkit_ui/view/pages/team_kit_member_list_page.dart';
@@ -49,10 +50,10 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
   bool _hasPrivilegeToModify(TeamWithMember teamWithMember) {
     var team = teamWithMember.team;
     var teamMember = teamWithMember.teamMember;
-    return (team.teamUpdateMode == NIMTeamUpdateModeEnum.all) ||
-        (team.teamUpdateMode == NIMTeamUpdateModeEnum.manager &&
-            (teamMember?.type == TeamMemberType.manager ||
-                teamMember?.type == TeamMemberType.owner)) ||
+    return (team.updateInfoMode == NIMTeamUpdateInfoMode.updateInfoModeAll) ||
+        (team.updateInfoMode == NIMTeamUpdateInfoMode.updateInfoModeManager &&
+            (teamMember?.memberRole == NIMTeamMemberRole.memberRoleManager ||
+                teamMember?.memberRole == NIMTeamMemberRole.memberRoleOwner)) ||
         getIt<TeamProvider>().isGroupTeam(team);
   }
 
@@ -89,7 +90,7 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
             child: Row(
               children: [
                 Avatar(
-                  avatar: team.icon,
+                  avatar: team.avatar,
                   name: team.name,
                 ),
                 const SizedBox(
@@ -97,7 +98,7 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
                 ),
                 Expanded(
                   child: Text(
-                    team.name!,
+                    team.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -119,7 +120,10 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
         GestureDetector(
           onTap: () {
             Navigator.of(context).push(MaterialPageRoute(
-                builder: (context) => TeamKitMemberListPage(tId: team.id!)));
+                builder: (context) => TeamKitMemberListPage(
+                      tId: team.teamId,
+                      isGroupTeam: getIt<TeamProvider>().isGroupTeam(team),
+                    )));
           },
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -173,12 +177,14 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
                               padding: const EdgeInsets.only(right: 12),
                               child: GestureDetector(
                                 onTap: () {
-                                  if (userInfo.userId ==
-                                      getIt<LoginService>().userInfo?.userId!) {
+                                  if (userInfo.accountId ==
+                                      getIt<IMLoginService>()
+                                          .userInfo
+                                          ?.accountId) {
                                     gotoMineInfoPage(context);
                                   } else {
                                     goToContactDetail(
-                                        context, userInfo.userId!);
+                                        context, userInfo.accountId!);
                                   }
                                 },
                                 child: Avatar(
@@ -198,15 +204,18 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
                   padding: const EdgeInsets.only(right: 12),
                   decoration: BoxDecoration(color: '#FFFFFF'.toColor()),
                   child: GestureDetector(
-                    onTap: () {
+                    onTap: () async {
+                      await NIMChatCache.instance.fetchAllMember(team.teamId);
+                      final memberList = NIMChatCache.instance.teamMembers;
+                      final inviteCount = team.memberLimit - memberList.length;
                       goToContactSelector(context,
-                              filter: list
-                                  ?.where((element) => element.userInfo != null)
-                                  .map((e) => e.userInfo!.userId!)
+                              filter: memberList
+                                  .map((e) => e.teamInfo.accountId)
                                   .toList(),
-                              mostCount: list == null
-                                  ? team.memberLimit - 1
-                                  : team.memberLimit - list.length,
+                              mostCount: inviteCount >
+                                      TeamProvider.createTeamInviteLimit
+                                  ? TeamProvider.createTeamInviteLimit
+                                  : inviteCount,
                               returnContact: true)
                           .then((contacts) {
                         if (contacts is List<ContactInfo> &&
@@ -215,9 +224,9 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
                             context
                                 .read<TeamSettingViewModel>()
                                 .addMembers(
-                                    team.id!,
+                                    team.teamId,
                                     contacts
-                                        .map((e) => e.user.userId!)
+                                        .map((e) => e.user.accountId!)
                                         .toList())
                                 .then((value) {
                               if (value.isSuccess != true) {
@@ -257,12 +266,16 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
           ),
           trailing: const Icon(Icons.keyboard_arrow_right_outlined),
           onTap: () {
-            Navigator.pushNamed(context, RouterConstants.PATH_CHAT_PIN_PAGE,
-                arguments: {
-                  'sessionId': widget.teamId,
-                  'sessionType': NIMSessionType.team,
-                  'chatTitle': teamMember.team.name ?? '',
-                });
+            NimCore.instance.conversationIdUtil
+                .teamConversationId(widget.teamId)
+                .then((result) {
+              Navigator.pushNamed(context, RouterConstants.PATH_CHAT_PIN_PAGE,
+                  arguments: {
+                    'conversationId': result.data!,
+                    'conversationType': NIMConversationType.team,
+                    'chatTitle': teamMember.team.name ?? '',
+                  });
+            });
           },
         ),
         ListTile(
@@ -287,7 +300,7 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
               onChanged: (bool value) {
                 context
                     .read<TeamSettingViewModel>()
-                    .muteTeam(teamMember.team.id!, !value);
+                    .muteTeam(teamMember.team.teamId, !value);
               },
               value: context.read<TeamSettingViewModel>().messageTip,
             ),
@@ -302,7 +315,7 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
               onChanged: (bool value) {
                 context
                     .read<TeamSettingViewModel>()
-                    .configStick(teamMember.team.id!, value);
+                    .configStick(teamMember.team.teamId, value);
               },
               value: context.read<TeamSettingViewModel>().isStick,
             ),
@@ -319,7 +332,7 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
               onChanged: (bool value) {
                 context
                     .read<TeamSettingViewModel>()
-                    .muteTeam(teamMember.team.id!, !value);
+                    .muteTeam(teamMember.team.teamId, !value);
               },
               value: context.read<TeamSettingViewModel>().messageTip,
             ),
@@ -334,7 +347,7 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
               onChanged: (bool value) {
                 context
                     .read<TeamSettingViewModel>()
-                    .configStick(teamMember.team.id!, value);
+                    .configStick(teamMember.team.teamId, value);
               },
               value: context.read<TeamSettingViewModel>().isStick,
             ),
@@ -349,10 +362,15 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
               var teamNick =
                   context.read<TeamSettingViewModel>().myTeamNickName;
               Future<bool> _updateNick(nickname) async {
+                if (!(await haveConnectivity())) {
+                  return Future(() => false);
+                  ;
+                }
+
                 var result = await context
                     .read<TeamSettingViewModel>()
                     .updateNickname(
-                        teamMember.team.id!, (nickname as String).trim());
+                        teamMember.team.teamId, (nickname as String).trim());
                 if (!result) {
                   Fluttertoast.showToast(msg: S.of(context).teamSettingFailed);
                 }
@@ -387,7 +405,8 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
     return Column(
       children: ListTile.divideTiles(context: context, tiles: [
         Visibility(
-          visible: teamWithMember.teamMember?.type == TeamMemberType.owner,
+          visible: teamWithMember.teamMember?.memberRole ==
+              NIMTeamMemberRole.memberRoleOwner,
           child: ListTile(
             title: Text(
               S.of(context).teamMute,
@@ -398,15 +417,17 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
               onChanged: (bool value) {
                 context
                     .read<TeamSettingViewModel>()
-                    .muteTeamAllMember(teamWithMember.team.id!, value);
+                    .muteTeamAllMember(teamWithMember.team.teamId, value);
               },
               value: context.read<TeamSettingViewModel>().muteAllMember,
             ),
           ),
         ),
         if (!getIt<TeamProvider>().isGroupTeam(teamWithMember.team) &&
-            (NIMChatCache.instance.myTeamRole() == TeamMemberType.owner ||
-                NIMChatCache.instance.myTeamRole() == TeamMemberType.manager))
+            (NIMChatCache.instance.myTeamRole() ==
+                    NIMTeamMemberRole.memberRoleOwner ||
+                NIMChatCache.instance.myTeamRole() ==
+                    NIMTeamMemberRole.memberRoleManager))
           ListTile(
             title: Text(
               S.of(context).teamManage,
@@ -499,10 +520,6 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
 
   @override
   void initState() {
-    //ios 端需要重新获取群成员
-    if (Platform.isIOS) {
-      NIMChatCache.instance.fetchTeamMember(widget.teamId);
-    }
     super.initState();
   }
 
@@ -555,8 +572,8 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
                             child: _actionButton(
                                 context,
                                 teamWithMember.team,
-                                teamWithMember.teamMember?.type ==
-                                    TeamMemberType.owner)),
+                                teamWithMember.teamMember?.memberRole ==
+                                    NIMTeamMemberRole.memberRoleOwner)),
                         const SizedBox(
                           height: 16,
                         ),

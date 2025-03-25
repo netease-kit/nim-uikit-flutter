@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -12,14 +13,16 @@ import 'package:netease_common_ui/ui/progress_ring.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/string_utils.dart';
 import 'package:netease_common_ui/widgets/radio_button.dart';
+import 'package:netease_corekit_im/im_kit_client.dart';
 import 'package:netease_corekit_im/model/team_models.dart';
 import 'package:netease_corekit_im/service_locator.dart';
 import 'package:netease_corekit_im/services/contact/contact_provider.dart';
-import 'package:netease_corekit_im/services/login/login_service.dart';
+import 'package:netease_corekit_im/services/login/im_login_service.dart';
 import 'package:netease_corekit_im/services/message/chat_message.dart';
 import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
 import 'package:netease_corekit_im/services/team/team_provider.dart';
 import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
+import 'package:nim_chatkit/extension.dart';
 import 'package:nim_chatkit/message/message_helper.dart';
 import 'package:nim_chatkit/message/message_reply_info.dart';
 import 'package:nim_chatkit/message/message_revoke_info.dart';
@@ -40,7 +43,7 @@ import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_mess
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
 import 'package:nim_chatkit_ui/view/page/chat_message_ack_page.dart';
 import 'package:nim_chatkit_ui/view_model/chat_view_model.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:provider/provider.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
@@ -122,16 +125,8 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   //重新编辑展示时间
   static const reeditTime = 2 * 60 * 1000;
 
-  int _teamAck = 0;
-
-  int _teamUnAck = 0;
-
-  int _teamAllAck = 0;
-
-  late UserAvatarInfo _userAvatarInfo = widget
-      .chatMessage.nimMessage.fromAccount!
-      .getCacheAvatar(widget.chatMessage.nimMessage.fromNickname ??
-          widget.chatMessage.nimMessage.fromAccount!);
+  late UserAvatarInfo _userAvatarInfo = widget.chatMessage.nimMessage.senderId!
+      .getCacheAvatar(widget.chatMessage.nimMessage.senderId!);
 
   MessageItemConfig _getMessageItemConfig(NIMMessage message) {
     if (message.messageType == NIMMessageType.image ||
@@ -140,7 +135,7 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
       return MessageItemConfig(showMsgCommonBg: false);
     } else if (message.messageType == NIMMessageType.file) {
       return MessageItemConfig(
-          showMsgCommonBg: false, showMsgLoadingState: false);
+          showMsgCommonBg: false, showMsgLoadingState: true);
     }
     return MessageItemConfig();
   }
@@ -150,63 +145,54 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   }
 
   bool isSelf() {
-    return widget.chatMessage.nimMessage.messageDirection ==
-        NIMMessageDirection.outgoing;
+    return widget.chatMessage.nimMessage.isSelf == true;
   }
 
   ChatKitMessagePopMenu? _popMenu;
 
   bool isTeam() {
-    return widget.chatMessage.nimMessage.sessionType == NIMSessionType.team;
+    return widget.chatMessage.nimMessage.conversationType ==
+        NIMConversationType.team;
   }
 
   bool _showMsgAck(ChatMessage message) {
-    if (message.nimMessage.sessionType == NIMSessionType.p2p &&
+    if (message.nimMessage.conversationType == NIMConversationType.p2p &&
         widget.chatUIConfig?.showP2pMessageStatus == false) {
       return false;
     }
-    if (message.nimMessage.sessionType == NIMSessionType.team &&
+    if (message.nimMessage.conversationType == NIMConversationType.team &&
         widget.chatUIConfig?.showTeamMessageStatus == false) {
       return false;
     }
-    return message.nimMessage.messageAck &&
+    return message.nimMessage.messageConfig?.readReceiptEnabled == true &&
         (widget.teamInfo?.memberCount ?? 0) < maxReceiptNum;
   }
 
   int _getProcess(ChatMessage message) {
-    if (widget.chatMessage.nimMessage.sessionType == NIMSessionType.p2p) {
+    if (widget.chatMessage.nimMessage.conversationType ==
+        NIMConversationType.p2p) {
       int receiptTime = context.watch<ChatViewModel>().receiptTime;
-      if (receiptTime >= message.nimMessage.timestamp ||
-          message.nimMessage.isRemoteRead == true) {
+      if (receiptTime >= message.nimMessage.createTime!) {
         return 1;
       } else {
         return 0;
       }
     }
-    if (message.ackCount > 0) {
-      _teamAck = message.ackCount;
+    if (message.ackCount != null) {
+      return message.ackCount!;
     }
-    return _teamAck;
+    return 0;
   }
 
   int _getAllAck(ChatMessage message) {
-    if (message.nimMessage.sessionType == NIMSessionType.p2p) {
+    if (message.nimMessage.conversationType == NIMConversationType.p2p) {
       return 1;
     } else {
-      if (message.ackCount > 0) {
-        _teamAck = message.ackCount;
+      if (message.ackCount != null && message.unAckCount != null) {
+        return message.ackCount! + message.unAckCount!;
       }
-      if (_teamAllAck == 0 ||
-          message.ackCount + message.unAckCount == _teamAllAck) {
-        _teamUnAck = message.unAckCount;
-      }
-      _log(
-          '_getAllAck _teamUnAck:$_teamUnAck, _teamAck:$_teamAck _teamAllAck:$_teamAllAck');
-      if (_teamAllAck == 0) {
-        _teamAllAck = _teamAck + _teamUnAck;
-      }
-      return _teamAllAck;
     }
+    return 0;
   }
 
   double getMaxWidth(isSelect) {
@@ -216,7 +202,8 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   }
 
   bool showNickname() {
-    return widget.chatMessage.nimMessage.sessionType == NIMSessionType.team &&
+    return widget.chatMessage.nimMessage.conversationType ==
+            NIMConversationType.team &&
         !isSelf();
   }
 
@@ -232,21 +219,23 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
     var message = widget.chatMessage;
     return isSelf() &&
         revokedMessageInfo != null &&
-        DateTime.now().millisecondsSinceEpoch - message.nimMessage.timestamp <
+        DateTime.now().millisecondsSinceEpoch - message.nimMessage.createTime! <
             reeditTime;
   }
 
   Widget _buildRevokedMessage(ChatMessage message) {
     RevokedMessageInfo? revokedMessageInfo;
-    if ((message.nimMessage.localExtension?[ChatMessage.keyRevokeMsgContent]
-            is Map) &&
-        (message.nimMessage.localExtension?[ChatMessage.keyRevokeMsgContent]
-                    as Map?)
+    var localExtension = null;
+    if (message.nimMessage.localExtension?.isNotEmpty == true) {
+      localExtension = jsonDecode(message.nimMessage.localExtension!);
+    }
+    if ((localExtension?[ChatMessage.keyRevokeMsgContent] is Map) &&
+        (localExtension?[ChatMessage.keyRevokeMsgContent] as Map?)
                 ?.isNotEmpty ==
             true) {
-      revokedMessageInfo = RevokedMessageInfo.fromMap((message.nimMessage
-              .localExtension![ChatMessage.keyRevokeMsgContent] as Map)
-          .cast<String, dynamic>());
+      revokedMessageInfo = RevokedMessageInfo.fromMap(
+          (localExtension![ChatMessage.keyRevokeMsgContent] as Map)
+              .cast<String, dynamic>());
     }
     return Container(
       padding: const EdgeInsets.only(left: 16, top: 12, right: 16, bottom: 12),
@@ -271,29 +260,45 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
     );
   }
 
-  String? _getReplyMessageId(ChatMessage message) {
+  NIMMessageRefer? _getReplyMessageRefer(ChatMessage message) {
+    if (message.nimMessage.threadReply != null &&
+        message.nimMessage.threadReply?.messageClientId?.isNotEmpty == true) {
+      return message.nimMessage.threadReply;
+    }
+    var remoteExtension = null;
+    if (message.nimMessage.serverExtension?.isNotEmpty == true) {
+      remoteExtension = jsonDecode(message.nimMessage.serverExtension!);
+    }
     var replyMessageInfoMap =
-        message.nimMessage.remoteExtension?[ChatMessage.keyReplyMsgKey] as Map?;
+        remoteExtension?[ChatMessage.keyReplyMsgKey] as Map?;
     if (replyMessageInfoMap != null) {
-      return ReplyMessageInfo.fromMap(
-              replyMessageInfoMap.cast<String, dynamic>())
-          .idClient;
+      final info =
+          ReplyMessageInfo.fromMap(replyMessageInfoMap.cast<String, dynamic>());
+
+      return NIMMessageRefer(
+          senderId: info.from,
+          conversationId: info.to,
+          receiverId: info.receiverId,
+          messageClientId: info.idClient,
+          messageServerId: info.idServer,
+          conversationType: ConversationTypeEx.getTypeFromValue(info.scene),
+          createTime: info.time);
     }
     return null;
   }
 
   bool _showReplyMessage(ChatMessage message) {
-    return _getReplyMessageId(message)?.isNotEmpty == true;
+    return _getReplyMessageRefer(message)?.messageClientId?.isNotEmpty == true;
   }
 
   Widget _buildMessageReply(ChatMessage message) {
-    String? replyMsgId = _getReplyMessageId(message);
+    NIMMessageRefer? messageRefer = _getReplyMessageRefer(message);
     return Container(
         padding: const EdgeInsets.only(left: 16, top: 12, right: 16),
         child: GestureDetector(
           child: FutureBuilder<String>(
-            future: ChatMessageHelper.getReplayMessageText(context, replyMsgId!,
-                message.nimMessage.sessionId!, message.nimMessage.sessionType!),
+            future: ChatMessageHelper.getReplayMessageText(
+                context, messageRefer!, message.nimMessage.conversationId!),
             builder: (context, snapshot) {
               return Text(
                 '| ${snapshot.data}',
@@ -305,7 +310,7 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
             },
           ),
           onTap: () {
-            widget.scrollToIndex(replyMsgId);
+            widget.scrollToIndex(messageRefer.messageClientId!);
           },
         ));
   }
@@ -409,10 +414,10 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   ///过滤消息
   ///返回结果为是否展示
   bool _filterNotification(NIMMessage message) {
-    if (message.messageAttachment is NIMTeamNotificationAttachment) {
-      NIMTeamNotificationAttachment attachment =
-          message.messageAttachment as NIMTeamNotificationAttachment;
-      if (attachment.type == NIMTeamNotificationTypes.transferOwner &&
+    if (message.attachment is NIMMessageNotificationAttachment) {
+      NIMMessageNotificationAttachment attachment =
+          message.attachment as NIMMessageNotificationAttachment;
+      if (attachment.type == NIMMessageNotificationType.teamOwnerTransfer &&
           getIt<TeamProvider>().isGroupTeam(widget.teamInfo)) {
         return false;
       }
@@ -421,25 +426,25 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   }
 
   bool _showMessageStatus(ChatMessage message) {
-    return message.nimMessage.status == NIMMessageStatus.sending ||
-        message.nimMessage.status == NIMMessageStatus.fail ||
-        message.nimMessage.sessionType == NIMSessionType.p2p ||
-        message.nimMessage.isInBlackList ||
-        message.nimMessage.messageAck;
+    return message.nimMessage.sendingState == NIMMessageSendingState.sending ||
+        message.nimMessage.sendingState == NIMMessageSendingState.failed ||
+        message.nimMessage.conversationType == NIMConversationType.p2p ||
+        message.nimMessage.messageConfig?.unreadEnabled == true;
   }
 
   void _onVisibleChange(VisibilityInfo info) {
     //可见并且未发送回执的时候发送回执
     if (info.visibleFraction > 0 &&
         !isSelf() &&
-        widget.chatMessage.nimMessage.messageAck &&
-        !widget.chatMessage.nimMessage.hasSendAck) {
+        widget.chatMessage.nimMessage.messageConfig?.readReceiptEnabled ==
+            true &&
+        widget.chatMessage.nimMessage.messageStatus?.readReceiptSent != true) {
       context.read<ChatViewModel>().sendTeamMessageReceipt(widget.chatMessage);
     }
   }
 
   Widget _getMessageStatus(ChatMessage message) {
-    if (message.nimMessage.status == NIMMessageStatus.sending &&
+    if (message.nimMessage.sendingState == NIMMessageSendingState.sending &&
         _getMessageItemConfig(message.nimMessage).showMsgLoadingState) {
       return SizedBox(
         child: CircularProgressIndicator(
@@ -450,8 +455,8 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
         width: 16,
         height: 16,
       );
-    } else if (message.nimMessage.status == NIMMessageStatus.fail ||
-        message.nimMessage.isInBlackList) {
+    } else if (message.nimMessage.sendingState ==
+        NIMMessageSendingState.failed) {
       return GestureDetector(
         onTap: () {
           if (widget.onTapFailedMessage != null) {
@@ -463,16 +468,28 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
       );
     } else if (_showMsgAck(message)) {
       return InkWell(
-        onTap: () {
+        onTap: () async {
           ///多选模式下不可点击
           if (context.read<ChatViewModel>().isMultiSelected) {
             return;
           }
-          _log('click $_teamUnAck');
-          if (message.nimMessage.sessionType == NIMSessionType.team &&
-              _teamUnAck != 0) {
+          if (message.nimMessage.conversationType == NIMConversationType.team &&
+              message.unAckCount != null &&
+              message.unAckCount! > 0) {
+            final receiptDetail =
+                await ChatMessageRepo.fetchTeamMessageReceiptDetail(
+                    widget.chatMessage.nimMessage);
+            if (receiptDetail != null) {
+              widget.chatMessage.ackCount =
+                  receiptDetail.readReceipt?.readCount;
+              widget.chatMessage.unAckCount =
+                  receiptDetail.readReceipt?.unreadCount;
+            }
             Navigator.push(context, MaterialPageRoute(builder: (context) {
-              return ChatMessageAckPage(message: message.nimMessage);
+              return ChatMessageAckPage(
+                message: message.nimMessage,
+                ackInfo: receiptDetail,
+              );
             }));
           }
         },
@@ -500,26 +517,40 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
 
   //PIN消息时候展示
   Future<String> _getUserName(String accId) async {
-    if (accId == getIt<LoginService>().userInfo!.userId) {
+    if (accId == getIt<IMLoginService>().userInfo!.accountId) {
       return S.of(context).chatMessageYou;
     }
-    if (widget.chatMessage.nimMessage.sessionType == NIMSessionType.team) {
-      return getUserNickInTeam(widget.chatMessage.nimMessage.sessionId!, accId);
+    if (widget.chatMessage.nimMessage.conversationType ==
+        NIMConversationType.team) {
+      var teamId = (await NimCore.instance.conversationIdUtil
+              .conversationTargetId(
+                  widget.chatMessage.nimMessage.conversationId!))
+          .data;
+      return getUserNickInTeam(teamId!, accId);
     } else {
       return accId.getUserName();
     }
   }
 
+  // 根据ConversationID 获取TeamId
+  Future<String> _getTeamIdByConversationId() async {
+    var teamId = (await NimCore.instance.conversationIdUtil
+            .conversationTargetId(
+                widget.chatMessage.nimMessage.conversationId!))
+        .data;
+    return teamId!;
+  }
+
   //获取对方的用户信息
   Future<UserAvatarInfo> _getUserInfo(String accId) async {
-    String name = (accId == getIt<LoginService>().userInfo!.userId)
+    String name = (accId == getIt<IMLoginService>().userInfo!.accountId)
         ? (S.of(context).chatMessageYou)
         : (await (isTeam()
-            ? getUserNickInTeam(widget.chatMessage.nimMessage.sessionId!, accId)
+            ? getUserNickInTeam((await _getTeamIdByConversationId()), accId)
             : accId.getUserName()));
     String? avatar = await accId.getAvatar();
 
-    String? avatarName = await accId.getUserName(needAlias: false);
+    String? avatarName = await accId.getUserName(needAlias: true);
     _userAvatarInfo =
         UserAvatarInfo(name, avatar: avatar, avatarName: avatarName);
     return _userAvatarInfo;
@@ -529,10 +560,10 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
     if (lastMessage == null) {
       return true;
     }
-    var currentTime = currentMessage.nimMessage.timestamp == 0
+    var currentTime = currentMessage.nimMessage.createTime! == 0
         ? DateTime.now().millisecondsSinceEpoch
-        : currentMessage.nimMessage.timestamp;
-    if (currentTime - lastMessage.nimMessage.timestamp > showTimeInterval) {
+        : currentMessage.nimMessage.createTime!;
+    if (currentTime - lastMessage.nimMessage.createTime! > showTimeInterval) {
       return true;
     }
     return false;
@@ -589,18 +620,18 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   @override
   void initState() {
     super.initState();
-    if (widget.chatMessage.nimMessage.sessionType == NIMSessionType.team &&
-        widget.chatMessage.nimMessage.messageDirection ==
-            NIMMessageDirection.outgoing) {
+    if (widget.chatMessage.nimMessage.conversationType ==
+            NIMConversationType.team &&
+        widget.chatMessage.nimMessage.senderId == IMKitClient.account()) {
       ChatMessageRepo.fetchTeamMessageReceiptDetail(
               widget.chatMessage.nimMessage)
-          .then((value) {
-        _teamAck = value?.ackAccountList?.length ?? 0;
-        _teamUnAck = value?.unAckAccountList?.length ?? 0;
-        _teamAllAck = _teamAck + _teamUnAck;
-        _log('fetchTeamMessageReceiptDetail ${value?.toMap()}');
-        if (mounted) {
-          setState(() {});
+          .then((result) {
+        if (result != null) {
+          widget.chatMessage.unAckCount = result.readReceipt?.unreadCount;
+          widget.chatMessage.ackCount = result.readReceipt?.readCount;
+          if (mounted) {
+            setState(() {});
+          }
         }
       });
     }
@@ -608,8 +639,8 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
         .add(NIMChatCache.instance.teamMembersNotifier.listen((members) {
       if (members is List<UserInfoWithTeam>) {
         for (var member in members) {
-          if (member.teamInfo.account ==
-              widget.chatMessage.nimMessage.fromAccount) {
+          if (member.teamInfo.accountId ==
+              widget.chatMessage.nimMessage.senderId) {
             if (mounted) {
               setState(() {});
             }
@@ -621,7 +652,7 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
     if (userInfoUpdated != null) {
       subscriptions.add(userInfoUpdated.listen((event) {
         if (event != null &&
-            event.user.userId == widget.chatMessage.nimMessage.fromAccount) {
+            event.user.accountId == widget.chatMessage.nimMessage.senderId) {
           if (mounted) {
             setState(() {});
           }
@@ -728,7 +759,7 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
         children: [
           if (_showTime(widget.chatMessage, widget.lastMessage))
             Text(
-              _timeFormat(widget.chatMessage.nimMessage.timestamp),
+              _timeFormat(widget.chatMessage.nimMessage.createTime!),
               style: TextStyle(
                   fontSize: widget.chatUIConfig?.timeTextSize ?? 12,
                   color: widget.chatUIConfig?.timeTextColor ??
@@ -749,7 +780,7 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
                           chatViewModel.isMultiSelected, chatViewModel),
                       FutureBuilder<UserAvatarInfo>(
                         future: _getUserInfo(
-                            widget.chatMessage.nimMessage.fromAccount!),
+                            widget.chatMessage.nimMessage.senderId!),
                         builder: (context, snapshot) {
                           return Expanded(
                               child: Row(
@@ -764,14 +795,14 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
                                   onTap: () {
                                     if (widget.onTapAvatar != null) {
                                       widget.onTapAvatar!(widget
-                                          .chatMessage.nimMessage.fromAccount);
+                                          .chatMessage.nimMessage.senderId);
                                     }
                                   },
                                   onLongPress: () {
                                     if (widget.onAvatarLongPress != null) {
                                       widget.onAvatarLongPress!.call(
-                                          widget.chatMessage.nimMessage
-                                              .fromAccount,
+                                          widget
+                                              .chatMessage.nimMessage.senderId,
                                           isSelf: isSelf());
                                     }
                                   },
@@ -791,8 +822,8 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
                                     radius:
                                         widget.chatUIConfig?.avatarCornerRadius,
                                     bgCode: AvatarColor.avatarColor(
-                                        content: widget.chatMessage.nimMessage
-                                            .fromAccount),
+                                        content: widget
+                                            .chatMessage.nimMessage.senderId),
                                   ),
                                 ),
                               //消息
@@ -937,9 +968,11 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
                                   child: Avatar(
                                     width: 32,
                                     height: 32,
-                                    avatar:
-                                        getIt<LoginService>().userInfo!.avatar,
-                                    name: getIt<LoginService>().userInfo!.nick,
+                                    avatar: getIt<IMLoginService>()
+                                        .userInfo!
+                                        .avatar,
+                                    name:
+                                        getIt<IMLoginService>().userInfo!.name,
                                     nameColor:
                                         widget.chatUIConfig?.userNickColor,
                                     fontSize:
@@ -947,9 +980,9 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
                                     radius:
                                         widget.chatUIConfig?.avatarCornerRadius,
                                     bgCode: AvatarColor.avatarColor(
-                                        content: getIt<LoginService>()
+                                        content: getIt<IMLoginService>()
                                             .userInfo!
-                                            .userId),
+                                            .accountId),
                                   ),
                                 )
                             ],

@@ -2,6 +2,8 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as Intl;
 import 'package:netease_common_ui/ui/avatar.dart';
@@ -15,7 +17,7 @@ import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_image_item.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_nonsupport_item.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_video_item.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 
 import '../../../../helper/merge_message_helper.dart';
 import '../../../../l10n/S.dart';
@@ -173,7 +175,7 @@ class _ChatKitMergedMessageItemState extends State<ChatKitMergedMessageItem> {
     if (widget.lastMessageTime == null) {
       return true;
     }
-    var currentTime = widget.message.timestamp;
+    var currentTime = widget.message.createTime!;
     var lastMessageTime = widget.lastMessageTime!;
     return currentTime - lastMessageTime > showTimeInterval;
   }
@@ -223,9 +225,13 @@ class _ChatKitMergedMessageItemState extends State<ChatKitMergedMessageItem> {
 
   @override
   Widget build(BuildContext context) {
-    final sendNick = widget.message.remoteExtension?[mergedMessageNickKey] ??
-        widget.message.fromAccount;
-    final sendAvatar = widget.message.remoteExtension?[mergedMessageAvatarKey];
+    var extension = null;
+    if (widget.message.serverExtension?.isNotEmpty == true) {
+      extension = jsonDecode(widget.message.serverExtension!);
+    }
+    final sendNick =
+        extension?[mergedMessageNickKey] ?? widget.message.senderId;
+    final sendAvatar = extension?[mergedMessageAvatarKey];
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
       margin: const EdgeInsets.only(bottom: 10),
@@ -236,7 +242,7 @@ class _ChatKitMergedMessageItemState extends State<ChatKitMergedMessageItem> {
             Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
               child: Text(
-                _timeFormat(widget.message.timestamp),
+                _timeFormat(widget.message.createTime!),
                 style: TextStyle(
                     fontSize: widget.chatUIConfig?.timeTextSize ?? 12,
                     color: widget.chatUIConfig?.timeTextColor ??

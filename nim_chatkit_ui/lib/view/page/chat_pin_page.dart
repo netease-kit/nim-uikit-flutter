@@ -9,18 +9,19 @@ import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:netease_corekit_im/router/imkit_router_constants.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/pinMessage/chat_kit_pin_message_item.dart';
 import 'package:nim_chatkit_ui/view_model/chat_pin_view_model.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:provider/provider.dart';
 
 import '../../chat_kit_client.dart';
 import '../../l10n/S.dart';
+import '../../media/audio_player.dart';
 import '../chat_kit_message_list/item/chat_kit_message_item.dart';
 
 ///消息标记列表页面
 class ChatPinPage extends StatefulWidget {
-  final String sessionId;
+  final String conversationId;
 
-  final NIMSessionType sessionType;
+  final NIMConversationType conversationType;
 
   final String chatTitle;
 
@@ -30,8 +31,8 @@ class ChatPinPage extends StatefulWidget {
 
   ChatPinPage(
       {Key? key,
-      required this.sessionId,
-      required this.sessionType,
+      required this.conversationId,
+      required this.conversationType,
       required this.chatTitle,
       this.chatUIConfig,
       this.messageBuilder})
@@ -56,10 +57,16 @@ class _ChatPinPageState extends BaseState<ChatPinPage> {
   }
 
   @override
+  void dispose() {
+    ChatAudioPlayer.instance.stopAll();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
         create: (context) =>
-            ChatPinViewModel(widget.sessionId, widget.sessionType),
+            ChatPinViewModel(widget.conversationId, widget.conversationType),
         builder: (context, child) {
           return TransparentScaffold(
             title: S.of(context).chatMessageSignal,
@@ -100,8 +107,8 @@ class _ChatPinPageState extends BaseState<ChatPinPage> {
                             RouterConstants.PATH_CHAT_PAGE,
                             ModalRoute.withName('/'),
                             arguments: {
-                              'sessionId': widget.sessionId,
-                              'sessionType': widget.sessionType,
+                              'conversationId': widget.conversationId,
+                              'conversationType': widget.conversationType,
                               'anchor': message.nimMessage
                             });
                       },

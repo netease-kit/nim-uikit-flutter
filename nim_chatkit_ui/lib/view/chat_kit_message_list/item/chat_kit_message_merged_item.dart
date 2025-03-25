@@ -8,7 +8,7 @@ import 'package:netease_common_ui/utils/string_utils.dart';
 import 'package:netease_common_ui/widgets/text_untils.dart';
 import 'package:nim_chatkit/message/merge_message.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 
 import '../../../l10n/S.dart';
 import '../../page/merged_message_page.dart';
@@ -68,7 +68,7 @@ class _ChatKitMessageMergedItemState extends State<ChatKitMessageMergedItem> {
   }
 
   bool isSelf() {
-    return widget.message.messageDirection == NIMMessageDirection.outgoing;
+    return widget.message.isSelf == true;
   }
 
   @override

@@ -8,11 +8,10 @@ import 'package:netease_corekit/report/xkit_report.dart';
 import 'package:netease_corekit_im/im_kit_client.dart';
 import 'package:netease_corekit_im/router/imkit_router.dart';
 import 'package:netease_corekit_im/router/imkit_router_constants.dart';
-import 'package:nim_conversationkit/conversationkit_client_repo.dart';
-import 'package:nim_conversationkit/model/conversation_info.dart';
 import 'package:nim_conversationkit_ui/service/ait/ait_server.dart';
 
 import 'l10n/S.dart';
+import 'model/conversation_info.dart';
 import 'page/add_friend_page.dart';
 import 'page/conversation_page.dart';
 
@@ -160,7 +159,6 @@ class ConversationKitClient {
 
   /// 初始化
   static init() {
-    ConversationKitClientRepo.init();
     IMKitRouter.instance.registerRouter(
       RouterConstants.PATH_CONVERSATION_PAGE,
       (context) => ConversationPage(
@@ -176,7 +174,7 @@ class ConversationKitClient {
     );
 
     XKitReporter()
-        .register(moduleName: 'ConversationUIKit', moduleVersion: '9.7.3');
+        .register(moduleName: 'ConversationUIKit', moduleVersion: '10.0.0');
 
     if (IMKitClient.enableAit) {
       //初始化@消息服务

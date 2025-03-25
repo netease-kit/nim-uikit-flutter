@@ -423,5 +423,8 @@
   "chatTeamPermissionInviteOnlyOwnerAndManagers": "群主和管理员",
   "chatTeamPermissionUpdateOnlyOwnerAndManagers": "群主和管理员",
     "chatTeamHaveBeenKick": "您已被移除群聊",
-    "chatMessageHaveCannotForwardMessages": "存在不可转发的消息体，是否去除后发送？"
+    "chatMessageHaveCannotForwardMessages": "存在不可转发的消息体，是否去除后发送？",
+      "teamMsgAitAllPrivilegeIsAll": "@所有人权限更新为所有人",
+      "teamMsgAitAllPrivilegeIsOwner": "@所有人权限更新为群主和管理员",
+    "chatMessagePinLimitTips": "已超出pin数量上限"
 }

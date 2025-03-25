@@ -2,18 +2,16 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:netease_common_ui/extension.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/login/login_service.dart';
-import 'package:nim_contactkit/repo/contact_repo.dart';
-import 'package:nim_contactkit_ui/widgets/contact_kit_contact_list_view.dart';
+import 'package:netease_common_ui/utils/connectivity_checker.dart';
+import 'package:netease_corekit_im/im_kit_client.dart';
 import 'package:netease_corekit_im/model/contact_info.dart';
-import 'package:flutter/material.dart';
+import 'package:nim_chatkit/repo/contact_repo.dart';
+import 'package:nim_contactkit_ui/widgets/contact_kit_contact_list_view.dart';
 
 import '../contact_kit_client.dart';
 import '../l10n/S.dart';
@@ -53,14 +51,13 @@ class _ContactSelectorState extends State<ContactKitSelectorPage> {
         value.removeWhere((e) {
           var result = false;
           if (widget.filterUsers != null) {
-            result = result || widget.filterUsers!.contains(e.user.userId);
+            result = result || widget.filterUsers!.contains(e.user.accountId);
           }
           if (!widget.includeBlackList) {
             result = result || e.isInBlack == true;
           }
           if (!widget.includeSelf) {
-            result = result ||
-                e.user.userId == getIt<LoginService>().userInfo?.userId;
+            result = result || e.user.accountId == IMKitClient.account();
           }
           return result;
         });
@@ -120,14 +117,14 @@ class _ContactSelectorState extends State<ContactKitSelectorPage> {
                     msg: S.of(context).contactSelectEmptyTip);
                 return;
               }
-              if (!(await Connectivity().checkNetwork(context))) {
+              if (!(await haveConnectivity())) {
                 return;
               }
               Navigator.pop(
                   context,
                   widget.returnContact == true
                       ? selectedUser
-                      : selectedUser.map((e) => e.user.userId!).toList());
+                      : selectedUser.map((e) => e.user.accountId!).toList());
             },
             child: Container(
               alignment: Alignment.center,
@@ -166,7 +163,7 @@ class _ContactSelectorState extends State<ContactKitSelectorPage> {
                             avatar: member.user.avatar,
                             name: member.getName(),
                             bgCode: AvatarColor.avatarColor(
-                                content: member.user.userId!),
+                                content: member.user.accountId!),
                           ),
                         ),
                       );

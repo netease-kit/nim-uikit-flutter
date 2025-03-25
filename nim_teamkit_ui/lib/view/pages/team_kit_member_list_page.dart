@@ -13,9 +13,10 @@ import 'package:netease_common_ui/widgets/radio_button.dart';
 import 'package:netease_corekit_im/model/team_models.dart';
 import 'package:netease_corekit_im/router/imkit_router_factory.dart';
 import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/login/login_service.dart';
+import 'package:netease_corekit_im/services/login/im_login_service.dart';
 import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:netease_corekit_im/services/team/team_provider.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:nim_teamkit_ui/team_kit_client.dart';
 import 'package:provider/provider.dart';
 
@@ -31,12 +32,16 @@ class TeamKitMemberListPage extends StatefulWidget {
   /// 是否显示群主和管理员
   final bool showOwnerAndManager;
 
+  ///是否是讨论组
+  final bool isGroupTeam;
+
   final bool isSelectModel;
 
   const TeamKitMemberListPage(
       {Key? key,
       required this.tId,
       this.showOwnerAndManager = true,
+      this.isGroupTeam = false,
       this.isSelectModel = false})
       : super(key: key);
 
@@ -46,6 +51,8 @@ class TeamKitMemberListPage extends StatefulWidget {
 
 class TeamKitMemberListPageState extends BaseState<TeamKitMemberListPage> {
   String? filterStr;
+
+  ScrollController _scrollController = ScrollController();
 
   void _onFilterChange(String text, BuildContext context) {
     context.read<TeamSettingViewModel>().filterByText(text);
@@ -58,9 +65,17 @@ class TeamKitMemberListPageState extends BaseState<TeamKitMemberListPage> {
         ),
       );
 
+  void _scrollListener() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent) {
+      NIMChatCache.instance.fetchTeamMember(widget.tId, loadMore: true);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_scrollListener);
   }
 
   @override
@@ -82,8 +97,8 @@ class TeamKitMemberListPageState extends BaseState<TeamKitMemberListPage> {
         if (!widget.showOwnerAndManager) {
           memberList = memberList
               ?.where((e) =>
-                  e.teamInfo.type != TeamMemberType.owner &&
-                  e.teamInfo.type != TeamMemberType.manager)
+                  e.teamInfo.memberRole != NIMTeamMemberRole.memberRoleOwner &&
+                  e.teamInfo.memberRole != NIMTeamMemberRole.memberRoleManager)
               .toList();
         }
         return Scaffold(
@@ -144,7 +159,7 @@ class TeamKitMemberListPageState extends BaseState<TeamKitMemberListPage> {
                             context
                                 .read<TeamSettingViewModel>()
                                 .selectedList
-                                .map((e) => e.teamInfo.account!)
+                                .map((e) => e.teamInfo.accountId)
                                 .toList());
                       } else {
                         Fluttertoast.showToast(
@@ -185,13 +200,16 @@ class TeamKitMemberListPageState extends BaseState<TeamKitMemberListPage> {
                 memberList?.isNotEmpty == true
                     ? Expanded(
                         child: ListView.builder(
-                            itemCount: memberList?.length ?? 0,
-                            itemBuilder: (context, index) {
-                              var user = memberList?[index];
-                              return TeamMemberListItem(
-                                  teamMember: user!,
-                                  isSelectModel: widget.isSelectModel);
-                            }))
+                        controller: _scrollController,
+                        itemCount: memberList?.length ?? 0,
+                        itemBuilder: (context, index) {
+                          var user = memberList?[index];
+                          return TeamMemberListItem(
+                              teamMember: user!,
+                              isGroupTeam: widget.isGroupTeam,
+                              isSelectModel: widget.isSelectModel);
+                        },
+                      ))
                     : Column(
                         children: [
                           SizedBox(
@@ -226,8 +244,13 @@ class TeamMemberListItem extends StatefulWidget {
 
   final bool isSelectModel;
 
+  final isGroupTeam;
+
   const TeamMemberListItem(
-      {Key? key, required this.teamMember, this.isSelectModel = false})
+      {Key? key,
+      required this.teamMember,
+      this.isGroupTeam = false,
+      this.isSelectModel = false})
       : super(key: key);
 
   @override
@@ -236,13 +259,19 @@ class TeamMemberListItem extends StatefulWidget {
 
 class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
   bool _showRemoveButton(UserInfoWithTeam teamMember) {
-    if (teamMember.teamInfo.type == TeamMemberType.owner) {
+    if (widget.isGroupTeam) {
       return false;
     }
-    if (NIMChatCache.instance.myTeamRole() == TeamMemberType.owner) {
+    if (teamMember.teamInfo.memberRole == NIMTeamMemberRole.memberRoleOwner) {
+      return false;
+    }
+    if (NIMChatCache.instance.myTeamRole() ==
+        NIMTeamMemberRole.memberRoleOwner) {
       return true;
-    } else if (NIMChatCache.instance.myTeamRole() == TeamMemberType.manager) {
-      if (teamMember.teamInfo.type == TeamMemberType.normal) {
+    } else if (NIMChatCache.instance.myTeamRole() ==
+        NIMTeamMemberRole.memberRoleManager) {
+      if (teamMember.teamInfo.memberRole ==
+          NIMTeamMemberRole.memberRoleNormal) {
         return true;
       }
     }
@@ -289,11 +318,11 @@ class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
           }
           return;
         }
-        if (getIt<LoginService>().userInfo?.userId ==
-            widget.teamMember.userInfo?.userId) {
+        if (getIt<IMLoginService>().userInfo?.accountId ==
+            widget.teamMember.userInfo?.accountId) {
           gotoMineInfoPage(context);
         } else {
-          goToContactDetail(context, widget.teamMember.userInfo!.userId!);
+          goToContactDetail(context, widget.teamMember.userInfo!.accountId!);
         }
       },
       child: Container(
@@ -318,7 +347,7 @@ class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
               name: widget.teamMember
                   .getName(needAlias: false, needTeamNick: false),
               bgCode: AvatarColor.avatarColor(
-                  content: widget.teamMember.teamInfo.account),
+                  content: widget.teamMember.teamInfo.accountId),
             ),
             const Padding(padding: EdgeInsets.symmetric(horizontal: 7)),
             Expanded(
@@ -329,7 +358,9 @@ class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
                 style: TextStyle(fontSize: 16, color: '#333333'.toColor()),
               ),
             ),
-            if (widget.teamMember.teamInfo.type == TeamMemberType.owner)
+            if (!widget.isGroupTeam &&
+                widget.teamMember.teamInfo.memberRole ==
+                    NIMTeamMemberRole.memberRoleOwner)
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
@@ -342,7 +373,9 @@ class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
                   style: TextStyle(fontSize: 12, color: '#656A72'.toColor()),
                 ),
               ),
-            if (widget.teamMember.teamInfo.type == TeamMemberType.manager)
+            if (!widget.isGroupTeam &&
+                widget.teamMember.teamInfo.memberRole ==
+                    NIMTeamMemberRole.memberRoleManager)
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
@@ -360,8 +393,8 @@ class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
                 onPressed: () {
                   _showRemoveConfirmDialog(
                       context,
-                      widget.teamMember.teamInfo.id!,
-                      widget.teamMember.userInfo!.userId!);
+                      widget.teamMember.teamInfo.teamId,
+                      widget.teamMember.userInfo!.accountId!);
                 },
                 child: Container(
                   width: 50,

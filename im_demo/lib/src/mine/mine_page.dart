@@ -7,14 +7,14 @@ import 'dart:async';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/login/login_service.dart';
+import 'package:netease_corekit_im/services/login/im_login_service.dart';
 import 'package:flutter/material.dart';
 import 'package:im_demo/l10n/S.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:im_demo/src/mine/about.dart';
 import 'package:im_demo/src/mine/setting/mine_setting.dart';
 import 'package:im_demo/src/mine/user_info_page.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 
 class MinePage extends StatefulWidget {
   const MinePage({Key? key}) : super(key: key);
@@ -24,9 +24,9 @@ class MinePage extends StatefulWidget {
 }
 
 class _MinePageState extends State<MinePage> {
-  NIMUser? _userInfo;
+  NIMUserInfo? _userInfo;
 
-  LoginService _loginService = getIt<LoginService>();
+  IMLoginService _loginService = getIt<IMLoginService>();
 
   StreamSubscription? _sub;
 
@@ -35,15 +35,15 @@ class _MinePageState extends State<MinePage> {
     super.initState();
 
     //数据同步完成之后再请求更新信息
-    if (getIt<LoginService>().status == NIMAuthStatus.dataSyncFinish) {
-      _refreshUserInfo();
-    } else {
-      _sub = getIt<LoginService>().loginStatus?.listen((event) {
-        if (event == NIMAuthStatus.dataSyncFinish) {
-          _refreshUserInfo();
-        }
-      });
-    }
+
+    _refreshUserInfo();
+
+    _sub = NimCore.instance.loginService.onDataSync.listen((event) {
+      if (event.type == NIMDataSyncType.nimDataSyncMain &&
+          event.state == NIMDataSyncState.nimDataSyncStateCompleted) {
+        _refreshUserInfo();
+      }
+    });
   }
 
   void _refreshUserInfo() {
@@ -68,8 +68,8 @@ class _MinePageState extends State<MinePage> {
       width: 16,
     );
 
-    var nick = _loginService.userInfo?.nick?.trim().isNotEmpty == true
-        ? _loginService.userInfo?.nick?.trim()
+    var nick = _loginService.userInfo?.name?.trim().isNotEmpty == true
+        ? _loginService.userInfo?.name?.trim()
         : null;
     return Container(
       color: Colors.white,
@@ -98,7 +98,7 @@ class _MinePageState extends State<MinePage> {
                   Avatar(
                     height: 60,
                     width: 60,
-                    name: _loginService.userInfo?.nick ?? _userInfo?.nick,
+                    name: _loginService.userInfo?.name ?? _userInfo?.name,
                     fontSize: 22,
                     avatar: _loginService.userInfo?.avatar ?? _userInfo?.avatar,
                   ),
@@ -111,7 +111,7 @@ class _MinePageState extends State<MinePage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          nick ?? _loginService.userInfo?.userId ?? '',
+                          nick ?? _loginService.userInfo?.accountId ?? '',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -124,7 +124,7 @@ class _MinePageState extends State<MinePage> {
                         ),
                         Text(
                           S.of(context).tabMineAccount(
-                              _loginService.userInfo?.userId ?? ''),
+                              _loginService.userInfo?.accountId ?? ''),
                           style: const TextStyle(
                               fontSize: 16, color: CommonColors.color_333333),
                         )

@@ -8,7 +8,7 @@ import 'package:netease_common/netease_common.dart';
 import 'package:nim_chatkit/message/merge_message.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/mergedMessage/chat_kit_merged_message_item.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 
 import '../../chat_kit_client.dart';
 import '../../l10n/S.dart';
@@ -44,7 +44,7 @@ class _MergedMessagePageState extends State<MergedMessagePage> {
   void initState() {
     chatUIConfig = widget.chatUIConfig ?? ChatKitClient.instance.chatUIConfig;
     var mergedMsg = widget.mergedMessage;
-    mergedMsg.messageId = widget.message.uuid;
+    mergedMsg.messageId = widget.message.messageClientId;
     ChatMessageRepo.getMessagesFromMergedMessage(mergedMsg).then((value) {
       if (value.isSuccess && value.data != null) {
         setState(() {
@@ -90,7 +90,7 @@ class _MergedMessagePageState extends State<MergedMessagePage> {
             shrinkWrap: true,
             itemBuilder: (context, index) {
               var msg = messages[index];
-              var lastTime = index > 0 ? messages[index - 1].timestamp : null;
+              var lastTime = index > 0 ? messages[index - 1].createTime : null;
               return ChatKitMergedMessageItem(
                 message: msg,
                 chatTitle: widget.mergedMessage.sessionName,

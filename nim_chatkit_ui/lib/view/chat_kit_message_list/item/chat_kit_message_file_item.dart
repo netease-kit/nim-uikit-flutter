@@ -12,7 +12,7 @@ import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit/repo/chat_service_observer_repo.dart';
 import 'package:nim_chatkit_ui/media/audio_player.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
@@ -152,14 +152,23 @@ class ChatKitMessageFileItem extends StatefulWidget {
 }
 
 class ChatKitMessageFileState extends State<ChatKitMessageFileItem> {
-  NIMFileAttachment get attachment =>
-      widget.message.messageAttachment as NIMFileAttachment;
+  NIMMessageFileAttachment get attachment =>
+      widget.message.attachment as NIMMessageFileAttachment;
   double? processValue = 0.0;
   bool processVisible = false;
-  StreamSubscription<NIMAttachmentProgress>? processStreamSub;
+  StreamSubscription<NIMDownloadMessageAttachmentProgress>? processStreamSub;
+
+  //文件路径，赋值一次
+  String? filePath;
 
   String _getIcon() {
-    String? extension = attachment.extension?.toLowerCase();
+    String? extension = attachment.ext?.toLowerCase();
+    if (extension?.isNotEmpty != true) {
+      extension = attachment.name?.split('.').last;
+    }
+    if (extension?.startsWith('.') == true) {
+      extension = extension?.substring(1);
+    }
     String fileType = _file_type_map[extension] ?? 'ic_file_unknown.svg';
     return "images/$fileType";
   }
@@ -170,8 +179,13 @@ class ChatKitMessageFileState extends State<ChatKitMessageFileItem> {
 
     processStreamSub =
         ChatServiceObserverRepo.observeAttachmentProgress().listen((event) {
-      if (event.id == widget.message.uuid) {
-        processValue = event.progress;
+      Alog.d(
+          tag: 'Download file',
+          content:
+              'observeAttachmentProgress = ${event.downloadParam?.messageClientId} progress = ${event.progress}');
+      if (event.downloadParam?.messageClientId ==
+          widget.message.messageClientId) {
+        processValue = ((event.progress ?? 0) / 100).toDouble();
         processVisible = (processValue ?? 0) < 1.0;
         setState(() {});
       }
@@ -210,14 +224,14 @@ class ChatKitMessageFileState extends State<ChatKitMessageFileItem> {
 
   String _getSizeFormat() {
     double size = attachment.size?.toDouble() ?? 0;
-    if (size < 1024) {
+    if (size < 1000) {
       return "${size.toStringAsFixed(2)}B";
-    } else if (size < 1024 * 1024) {
-      return "${(size / 1024).toStringAsFixed(2)}KB";
-    } else if (size < 1024 * 1024 * 1024) {
-      return "${(size / 1024 / 1024).toStringAsFixed(2)}MB";
+    } else if (size < 1000 * 1000) {
+      return "${(size / 1000).toStringAsFixed(2)}KB";
+    } else if (size < 1000 * 1000 * 1000) {
+      return "${(size / 1000 / 1000).toStringAsFixed(2)}MB";
     } else {
-      return "${(size / 1024 / 1024 / 1024).toStringAsFixed(2)}GB";
+      return "${(size / 1000 / 1000 / 1000).toStringAsFixed(2)}GB";
     }
   }
 
@@ -270,20 +284,21 @@ class ChatKitMessageFileState extends State<ChatKitMessageFileItem> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () async {
-        String filePath;
-        if (widget.independentFile) {
-          var directory;
-          if (Platform.isIOS) {
-            directory = await getApplicationDocumentsDirectory();
+        if (filePath?.isNotEmpty != true) {
+          if (widget.independentFile) {
+            var directory;
+            if (Platform.isIOS) {
+              directory = await getApplicationDocumentsDirectory();
+            } else {
+              directory = await getExternalStorageDirectory();
+            }
+            filePath =
+                '${directory?.path}/${widget.message.messageClientId}/${attachment.name}';
           } else {
-            directory = await getExternalStorageDirectory();
+            filePath = attachment.path ?? '';
           }
-          filePath =
-              '${directory?.path}/${widget.message.uuid}/${attachment.displayName}';
-        } else {
-          filePath = attachment.path ?? '';
         }
-        if (!File(filePath).existsSync()) {
+        if (!File(filePath!).existsSync()) {
           processValue = 0.0;
           if (widget.independentFile) {
             Dio().download(attachment.url!, filePath,
@@ -293,24 +308,34 @@ class ChatKitMessageFileState extends State<ChatKitMessageFileItem> {
               setState(() {});
             });
           } else {
-            ChatMessageRepo.downloadAttachment(
-                    message: widget.message, thumb: false)
-                .then((value) => {
-                      Alog.d(
-                          tag: 'ChatKitMessageFileItem',
-                          content: 'downloadAttachment result is $value')
-                    });
+            var params = NIMDownloadMessageAttachmentParams(
+              attachment: widget.message.attachment!,
+              type: NIMDownloadAttachmentType.nimDownloadAttachmentTypeSource,
+              thumbSize: NIMSize(),
+              messageClientId: widget.message.messageClientId,
+            );
+            Alog.d(
+                tag: 'Download file',
+                content: 'messageClientId = ${widget.message.messageClientId}');
+            ChatMessageRepo.downloadAttachment(params).then((result) {
+              filePath = result.data;
+              processValue = 1;
+              processVisible = false;
+              setState(() {});
+              Alog.d(
+                  tag: 'ChatKitMessageFileItem',
+                  content: 'downloadAttachment result is $result');
+            });
           }
         } else {
           if (_needAudioFocus()) {
             ChatAudioPlayer.instance.stopAll();
           }
           if (Platform.isAndroid) {
-            OpenFilex.open(filePath,
-                type: support_type_map_android[
-                    attachment.extension?.toLowerCase()]);
+            OpenFilex.open(filePath!,
+                type: support_type_map_android[attachment.ext?.toLowerCase()]);
           } else {
-            OpenFilex.open(filePath);
+            OpenFilex.open(filePath!);
           }
         }
       },
@@ -336,16 +361,16 @@ class ChatKitMessageFileState extends State<ChatKitMessageFileItem> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ConstrainedBox(
+                    Container(
                       child: _getSingleMiddleEllipsisText(
-                        attachment.displayName,
+                        attachment.name,
                         style: TextStyle(
                             fontSize: 14, color: CommonColors.color_333333),
                       ),
-                      constraints: BoxConstraints(maxWidth: 185),
+                      width: 185,
                     ),
-                    ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: 185),
+                    Container(
+                      width: 185,
                       child: Padding(
                         padding: EdgeInsets.only(top: 4),
                         child: Text(

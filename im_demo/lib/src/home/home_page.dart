@@ -13,16 +13,17 @@ import 'package:im_demo/src/mine/mine_page.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_corekit_im/router/imkit_router_factory.dart';
 import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/login/login_service.dart';
+import 'package:netease_corekit_im/services/login/im_login_service.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_item.dart';
 import 'package:nim_chatkit_ui/view/input/actions.dart';
-import 'package:nim_contactkit/repo/contact_repo.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
+import 'package:nim_chatkit/repo/contact_repo.dart';
 import 'package:nim_contactkit_ui/page/contact_page.dart';
-import 'package:nim_conversationkit/repo/conversation_repo.dart';
+import 'package:nim_chatkit/repo/conversation_repo.dart';
 import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
 import 'package:nim_conversationkit_ui/page/conversation_page.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
 
 const channelName = "com.netease.yunxin.app.flutter.im/channel";
@@ -52,16 +53,9 @@ class _HomePageState extends State<HomePage> {
         });
       }
     });
-    ContactRepo.getNotificationUnreadCount().then((value) {
-      if (value.isSuccess && value.data != null) {
-        setState(() {
-          contactUnreadCount = value.data!;
-        });
-      }
-    });
-    ContactRepo.registerNotificationUnreadCountObserver().listen((event) {
+    ContactRepo.addApplicationUnreadCountNotifier.listen((count) {
       setState(() {
-        contactUnreadCount = event;
+        contactUnreadCount = count;
       });
     });
   }
@@ -117,7 +111,7 @@ class _HomePageState extends State<HomePage> {
       NIMMessageType.custom: (NIMMessage msg) {
         return Container(
           child: Text(
-            msg.content ?? 'default text',
+            msg.text ?? 'default text',
             style: TextStyle(fontSize: 20, color: Colors.red),
           ),
         );
@@ -130,13 +124,10 @@ class _HomePageState extends State<HomePage> {
           type: 'custom',
           icon: Icon(Icons.android_outlined),
           title: "自定义",
-          onTap: (BuildContext context, String sessionId,
-              NIMSessionType sessionType,
+          onTap: (BuildContext context, String conversationId,
+              NIMConversationType sessionType,
               {NIMMessageSender? messageSender}) async {
-            var msg = await MessageBuilder.createCustomMessage(
-                sessionId: sessionId,
-                sessionType: sessionType,
-                content: '自定义消息');
+            var msg = await MessageCreator.createCustomMessage('自定义消息', '');
             if (msg.isSuccess && msg.data != null) {
               Fluttertoast.showToast(msg: '发送自定义消息！ ');
               messageSender?.call(msg.data!);
@@ -154,8 +145,9 @@ class _HomePageState extends State<HomePage> {
     ConversationKitClient.instance.conversationUIConfig = ConversationUIConfig(
         itemConfig: ConversationItemConfig(
             lastMessageContentBuilder: (context, conversationInfo) {
-      if (conversationInfo.session.lastMessageType == NIMMessageType.custom &&
-          conversationInfo.session.lastMessageAttachment == null) {
+      if (conversationInfo.conversation.lastMessage?.messageType ==
+              NIMMessageType.custom &&
+          conversationInfo.conversation.lastMessage?.attachment == null) {
         return S.of(context).customMessage;
       }
       return null;
@@ -169,13 +161,14 @@ class _HomePageState extends State<HomePage> {
   }
 
   //获取pushPayload
-  Map<String, dynamic> _getPushPayload(NIMMessage message) {
+  Future<Map<String, dynamic>> _getPushPayload(
+      NIMMessage message, String conversationId) async {
     Map<String, dynamic> pushPayload = Map();
-    var sessionId = message.sessionType == NIMSessionType.p2p
-        ? getIt<LoginService>().userInfo?.userId
-        : message.sessionId;
+    var sessionId = message.conversationType == NIMConversationType.p2p
+        ? getIt<IMLoginService>().userInfo?.accountId
+        : ChatKitUtils.getConversationTargetId(conversationId)!;
     var sessionType =
-        message.sessionType == NIMSessionType.p2p ? "p2p" : "team";
+        message.conversationType == NIMConversationType.p2p ? "p2p" : "team";
     // 添加 apns payload
     // var alert = {
     //   "title" : "your title",

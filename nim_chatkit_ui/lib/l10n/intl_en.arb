@@ -423,5 +423,8 @@
   "chatTeamPermissionInviteOnlyOwnerAndManagers": "Owner and managers",
   "chatTeamPermissionUpdateOnlyOwnerAndManagers": "Owner and managers",
   "chatTeamHaveBeenKick": "You have been kicked",
-  "chatMessageHaveCannotForwardMessages": "There are messages that cannot be forwarded"
+  "chatMessageHaveCannotForwardMessages": "There are messages that cannot be forwarded",
+    "teamMsgAitAllPrivilegeIsAll": "@All privilege update to all",
+    "teamMsgAitAllPrivilegeIsOwner": "@All privilege update to owner and manager",
+   "chatMessagePinLimitTips": "Number of pin reaches the limit."
 }

@@ -139,7 +139,7 @@ List<Map<String, Object>> emojiData = [
     "name": "emoji/default/emoji_22.png",
     "unicode": 128561,
     "id": "emoticon_emoji_22",
-    "tag": "[惊讶]"
+    "tag": "[恐怖]"
   },
   {
     "name": "emoji/default/emoji_23.png",
@@ -418,3 +418,23 @@ List<Map<String, Object>> emojiData = [
     "tag": "[便便]"
   },
 ];
+
+class NeEmoji {
+  String source;
+  int unicode;
+  String id;
+  String tag;
+
+  NeEmoji({
+    required this.source,
+    required this.unicode,
+    required this.id,
+    required this.tag,
+  });
+
+  factory NeEmoji.fromMap(Map<String, dynamic> map) => NeEmoji(
+      source: map['name'],
+      unicode: map['unicode'],
+      id: map['id'],
+      tag: map['tag']);
+}

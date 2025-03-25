@@ -2,15 +2,22 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:netease_corekit_im/im_kit_client.dart';
+import 'dart:async';
+import 'dart:io';
+
+import 'package:auth/auth.dart';
+import 'package:auth/provider/login_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:im_demo/src/config.dart';
 import 'package:im_demo/src/home/home_page.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:im_demo/src/home/welcome_page.dart';
+import 'package:netease_corekit_im/im_kit_client.dart';
+import 'package:netease_corekit_im/service_locator.dart';
+import 'package:netease_corekit_im/services/login/im_login_service.dart';
+import 'package:nim_core_v2/nim_core.dart';
+import 'package:provider/provider.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
-import 'dart:io';
-import 'dart:typed_data';
 
 class SplashPage extends StatefulWidget {
   final Uint8List? deviceToken;
@@ -50,15 +57,13 @@ class _SplashState extends State<SplashPage> {
     if (NimCore.instance.isInitialized &&
         Platform.isIOS &&
         widget.deviceToken != null) {
-      NimCore.instance.settingsService
-          .updateAPNSToken(widget.deviceToken!, null);
+      NimCore.instance.apnsService.updateApnsToken(widget.deviceToken!);
     }
   }
 
   /// init depends package for app
   void _doInit(String appKey) async {
 
-    //如果使用自动登录可在初始化的时候传入loginInfo
     var options =
         await NIMSDKOptionsConfig.getSDKOptions(appKey);
 

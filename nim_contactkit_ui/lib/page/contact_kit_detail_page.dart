@@ -4,22 +4,22 @@
 
 import 'dart:async';
 
-import 'package:netease_common_ui/utils/connectivity_checker.dart';
-import 'package:netease_corekit_im/router/imkit_router_factory.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_common_ui/widgets/update_text_info_page.dart';
-import 'package:netease_corekit_im/services/login/login_service.dart';
-import 'package:nim_contactkit/repo/contact_repo.dart';
+import 'package:netease_corekit_im/im_kit_client.dart';
 import 'package:netease_corekit_im/model/contact_info.dart';
+import 'package:netease_corekit_im/router/imkit_router_factory.dart';
 import 'package:netease_corekit_im/service_locator.dart';
 import 'package:netease_corekit_im/services/contact/contact_provider.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:nim_core/nim_core.dart';
-import 'package:flutter_svg/svg.dart';
+import 'package:nim_chatkit/repo/contact_repo.dart';
+import 'package:nim_core_v2/nim_core.dart';
 
 import '../contact_kit_client.dart';
 import '../l10n/S.dart';
@@ -48,7 +48,7 @@ class _ContactKitDetailPageState extends State<ContactKitDetailPage> {
             contentPadding: const EdgeInsets.symmetric(horizontal: 20),
             title: Text(S.of(context).contactBirthday),
             trailing: Text(
-              contact.user.birth ?? '',
+              contact.user.birthday ?? '',
               style: TextStyle(fontSize: 12, color: '#A6ADB6'.toColor()),
             ),
           ),
@@ -107,7 +107,8 @@ class _ContactKitDetailPageState extends State<ContactKitDetailPage> {
                 }
                 // 加入黑名单开关
                 if (value) {
-                  ContactRepo.addBlacklist(contact.user.userId!).then((result) {
+                  ContactRepo.addBlacklist(contact.user.accountId!)
+                      .then((result) {
                     if (result.isSuccess) {
                       setState(() {
                         isBlackList = value;
@@ -115,7 +116,7 @@ class _ContactKitDetailPageState extends State<ContactKitDetailPage> {
                     }
                   });
                 } else {
-                  ContactRepo.removeBlacklist(contact.user.userId!)
+                  ContactRepo.removeBlacklist(contact.user.accountId!)
                       .then((result) {
                     if (result.isSuccess) {
                       setState(() {
@@ -141,8 +142,8 @@ class _ContactKitDetailPageState extends State<ContactKitDetailPage> {
             width: 65,
             fontSize: 22,
             avatar: contact.user.avatar,
-            name: contact.getName(needAlias: false),
-            bgCode: AvatarColor.avatarColor(content: contact.user.userId),
+            name: contact.getName(),
+            bgCode: AvatarColor.avatarColor(content: contact.user.accountId),
           ),
         ),
         Expanded(
@@ -165,13 +166,13 @@ class _ContactKitDetailPageState extends State<ContactKitDetailPage> {
             ),
             Text(
                 contact.friend?.alias?.isNotEmpty == true &&
-                        contact.user.nick?.isNotEmpty == true
-                    ? S.of(context).contactNick(contact.user.nick!)
-                    : S.of(context).contactAccount(contact.user.userId!),
+                        contact.user.name?.isNotEmpty == true
+                    ? S.of(context).contactNick(contact.user.name!)
+                    : S.of(context).contactAccount(contact.user.accountId!),
                 style: TextStyle(fontSize: 12, color: '#666666'.toColor())),
             if (contact.friend?.alias?.isNotEmpty == true &&
-                contact.user.nick?.isNotEmpty == true)
-              Text(S.of(context).contactAccount(contact.user.userId!),
+                contact.user.name?.isNotEmpty == true)
+              Text(S.of(context).contactAccount(contact.user.accountId!),
                   style: TextStyle(fontSize: 12, color: '#666666'.toColor()))
           ],
         ))
@@ -187,7 +188,7 @@ class _ContactKitDetailPageState extends State<ContactKitDetailPage> {
             positiveContent: S.of(context).contactDelete)
         .then((value) async {
       if ((value ?? false) && await haveConnectivity()) {
-        ContactRepo.deleteFriend(contact.user.userId!).then((value) {
+        ContactRepo.deleteFriend(contact.user.accountId!).then((value) {
           Navigator.pop(context);
           if (!value.isSuccess) {
             Fluttertoast.showToast(msg: value.errorDetails ?? '');
@@ -202,13 +203,14 @@ class _ContactKitDetailPageState extends State<ContactKitDetailPage> {
       return;
     }
 
-    if (getIt<LoginService>().userInfo?.userId == userId) {}
+    if (IMKitClient.account() == userId) {}
     //先判断是否在黑名单,如果在黑名单则将其从黑名单移除
-    var isInBlackList = (await ContactRepo.isBlackList(userId)).data;
+    var isInBlackList = ContactRepo.isBlackList(userId);
     if (isInBlackList == true) {
       await ContactRepo.removeBlacklist(userId);
     }
-    ContactRepo.addFriend(userId, NIMVerifyType.verifyRequest).then((value) {
+    ContactRepo.addFriend(userId, NIMFriendAddMode.nimFriendModeTypeApply)
+        .then((value) {
       if (value.isSuccess) {
         Navigator.pop(context);
         Fluttertoast.showToast(msg: S.of(context).contactHaveSendApply);
@@ -218,40 +220,50 @@ class _ContactKitDetailPageState extends State<ContactKitDetailPage> {
     });
   }
 
-  @override
-  void initState() {
-    super.initState();
-    ContactRepo.isBlackList(widget.accId).then((value) {
-      if (value.isSuccess) {
+  void _isFriend(String userId) async {
+    if (!await haveConnectivity()) {
+      final user = getIt<ContactProvider>().getContactInCache(userId);
+      if (user != null) {
         setState(() {
-          isBlackList = value.data!;
+          isFriend = user.friend != null;
         });
       }
-    });
+      return;
+    }
 
-    ContactRepo.isFriend(widget.accId).then((value) {
+    ContactRepo.isFriend(userId).then((value) {
       setState(() {
         isFriend = value;
       });
     });
+  }
 
-    subs.add(ContactRepo.registerFriendObserver().listen((event) {
-      for (var e in event) {
-        if (e.userId == widget.accId) {
-          setState(() {
-            isFriend = true;
-          });
-        }
+  Future<ContactInfo?> _getFriend(String userId) async {
+    final haveConnect = await haveConnectivity();
+    return getIt<ContactProvider>()
+        .getContact(widget.accId, needRefresh: haveConnect);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    isBlackList = ContactRepo.isBlackList(widget.accId);
+
+    _isFriend(widget.accId);
+
+    subs.add(ContactRepo.registerFriendAddedObserver().listen((event) {
+      if (event.accountId == widget.accId) {
+        setState(() {
+          isFriend = true;
+        });
       }
     }));
 
     subs.add(ContactRepo.registerFriendDeleteObserver().listen((event) {
-      for (var userId in event) {
-        if (userId == widget.accId) {
-          setState(() {
-            isFriend = false;
-          });
-        }
+      if (event.accountId == widget.accId) {
+        setState(() {
+          isFriend = false;
+        });
       }
     }));
   }
@@ -297,8 +309,7 @@ class _ContactKitDetailPageState extends State<ContactKitDetailPage> {
         elevation: 0,
       ),
       body: FutureBuilder<ContactInfo?>(
-        future: getIt<ContactProvider>()
-            .getContact(widget.accId, needRefresh: true),
+        future: _getFriend(widget.accId),
         builder: (context, snapshot) {
           if (snapshot.data == null) {
             return Container();
@@ -320,10 +331,13 @@ class _ContactKitDetailPageState extends State<ContactKitDetailPage> {
                       trailing: arrow,
                       onTap: () {
                         // go allis set
-                        Future<bool> _saveAlias(String alias) {
-                          return ContactRepo.updateAlias(
-                                  widget.accId, alias.trim())
-                              .then((value) => value.isSuccess);
+                        Future<bool> _saveAlias(String alias) async {
+                          if (await haveConnectivity()) {
+                            return ContactRepo.updateAlias(
+                                    widget.accId, alias.trim())
+                                .then((value) => value.isSuccess);
+                          }
+                          return false;
                         }
 
                         Navigator.push(
@@ -333,6 +347,7 @@ class _ContactKitDetailPageState extends State<ContactKitDetailPage> {
                                       title: S.of(context).contactComment,
                                       content: contact.friend?.alias,
                                       maxLength: 15,
+                                      maxLines: 1,
                                       privilege: true,
                                       onSave: _saveAlias,
                                       leading:
@@ -350,7 +365,7 @@ class _ContactKitDetailPageState extends State<ContactKitDetailPage> {
                     divider,
                     TextButton(
                       onPressed: () {
-                        goToP2pChat(context, contact.user.userId!);
+                        goToP2pChat(context, contact.user.accountId!);
                       },
                       child: Text(S.of(context).contactChat,
                           style: TextStyle(
@@ -374,7 +389,7 @@ class _ContactKitDetailPageState extends State<ContactKitDetailPage> {
                     TextButton(
                       onPressed: () {
                         // 添加好友
-                        _addFriend(context, contact.user.userId!);
+                        _addFriend(context, contact.user.accountId!);
                       },
                       child: Text(S.of(context).contactAddFriend,
                           style: TextStyle(

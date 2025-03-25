@@ -2,6 +2,8 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/extension.dart';
@@ -10,10 +12,11 @@ import 'package:netease_common_ui/widgets/unread_message.dart';
 import 'package:netease_corekit_im/model/custom_type_constant.dart';
 import 'package:netease_corekit_im/services/message/chat_message.dart';
 import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
-import 'package:nim_conversationkit/model/conversation_info.dart';
 import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
 import 'package:nim_conversationkit_ui/l10n/S.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
+
+import '../model/conversation_info.dart';
 
 bool isSupportMessageType(NIMMessageType? type) {
   return type == NIMMessageType.text ||
@@ -47,9 +50,9 @@ class ConversationItem extends StatelessWidget {
     if (configMessageContent?.isNotEmpty == true) {
       return configMessageContent!;
     }
-    switch (conversationInfo.session.lastMessageType) {
+    switch (conversationInfo.getLastMessage()?.messageType) {
       case NIMMessageType.text:
-        return conversationInfo.session.lastMessageContent ?? '';
+        return conversationInfo.getLastMessage()?.text ?? '';
       case NIMMessageType.tip:
         return S.of(context).tipMessageType;
       case NIMMessageType.audio:
@@ -64,6 +67,8 @@ class ConversationItem extends StatelessWidget {
         return S.of(context).fileMessageType;
       case NIMMessageType.location:
         return S.of(context).locationMessageType;
+      case NIMMessageType.call:
+        return S.of(context).chatMessageNonsupportType;
       case NIMMessageType.custom:
         var customLastMessageContent =
             _getCustomLastMessageBrief(context, conversationInfo);
@@ -73,33 +78,36 @@ class ConversationItem extends StatelessWidget {
         //插件消息
         var pluginLastContent = NimPluginCoreKit()
             .conversationPool
-            .buildConversationLastText(conversationInfo.session);
+            .buildConversationLastText(conversationInfo.conversation);
         if (pluginLastContent != null) {
           return pluginLastContent;
         }
-        return S.of(context).chatMessageNonsupportType;
+        return conversationInfo.getLastMessage()?.text ??
+            S.of(context).chatMessageNonsupportType;
       default:
-        return S.of(context).chatMessageNonsupportType;
+        return conversationInfo.getLastMessage()?.text ??
+            S.of(context).chatMessageNonsupportType;
     }
   }
 
   String? _getCustomLastMessageBrief(
       BuildContext context, ConversationInfo conversationInfo) {
-    if (conversationInfo.session.lastMessageAttachment
-        is NIMCustomMessageAttachment) {
-      var data = (conversationInfo.session.lastMessageAttachment
-              as NIMCustomMessageAttachment)
-          .data;
-      if (data?[CustomMessageKey.type] ==
-          CustomMessageType.customMergeMessageType) {
-        return S.of(context).chatHistoryBrief;
-      }
-      if (data?[CustomMessageKey.type] ==
-          CustomMessageType.customMultiLineMessageType) {
-        var dataMap = data?[CustomMessageKey.data] as Map?;
-        var title = dataMap?[ChatMessage.keyMultiLineTitle] as String?;
-        if (title != null) {
-          return title;
+    if (conversationInfo.getLastAttachment() is NIMMessageAttachment) {
+      var attachmentRaw = conversationInfo.getLastMessage()?.attachment?.raw;
+      if (attachmentRaw != null) {
+        Map<String, dynamic> data = json.decode(attachmentRaw);
+
+        if (data?[CustomMessageKey.type] ==
+            CustomMessageType.customMergeMessageType) {
+          return S.of(context).chatHistoryBrief;
+        }
+        if (data?[CustomMessageKey.type] ==
+            CustomMessageType.customMultiLineMessageType) {
+          var dataMap = data?[CustomMessageKey.data] as Map?;
+          var title = dataMap?[ChatMessage.keyMultiLineTitle] as String?;
+          if (title != null) {
+            return title;
+          }
         }
       }
     }
@@ -108,24 +116,13 @@ class ConversationItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String? avatar;
-    String? name;
-    String? avatarName;
-    if (conversationInfo.session.sessionType == NIMSessionType.p2p) {
-      avatar = conversationInfo.getAvatar();
-      name = conversationInfo.getName();
-      avatarName = conversationInfo.getName(needAlias: false);
-    } else if (conversationInfo.session.sessionType == NIMSessionType.team ||
-        conversationInfo.session.sessionType == NIMSessionType.superTeam) {
-      avatar = conversationInfo.team?.icon;
-      name = conversationInfo.team?.name;
-      avatarName = name;
-    }
+    String? avatar = conversationInfo.getAvatar();
     return Container(
       height: conversationItemHeight,
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      color:
-          conversationInfo.isStickTop ? const Color(0xffededef) : Colors.white,
+      color: conversationInfo.isStickTop()
+          ? const Color(0xffededef)
+          : Colors.white,
       alignment: Alignment.centerLeft,
       child: Stack(
         fit: StackFit.expand,
@@ -135,7 +132,9 @@ class ConversationItem extends StatelessWidget {
             child: InkWell(
               child: Avatar(
                 avatar: avatar,
-                name: avatarName,
+                name: conversationInfo.getName(),
+                bgCode:
+                    AvatarColor.avatarColor(content: conversationInfo.targetId),
                 height: 42,
                 width: 42,
                 radius: config.avatarCornerRadius,
@@ -154,35 +153,34 @@ class ConversationItem extends StatelessWidget {
               },
             ),
           ),
-          if (!conversationInfo.mute)
+          if (!conversationInfo.isMute())
             Positioned(
                 top: 7,
                 left: 27,
                 child: UnreadMessage(
-                  count: conversationInfo.session.unreadCount ?? 0,
+                  count: conversationInfo.conversation.unreadCount ?? 0,
                 )),
           Positioned(
             left: 54,
             top: 10,
-            right: conversationInfo.mute ? 20 : 0,
+            right: 20,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.only(right: 70),
-                  child: Text(
-                    name ?? '',
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    style: TextStyle(
-                        fontSize: config.itemTitleSize,
-                        color: config.itemTitleColor),
-                  ),
-                ),
+                    padding: const EdgeInsets.only(right: 70),
+                    child: Text(
+                      conversationInfo.getName(),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: TextStyle(
+                          fontSize: config.itemTitleSize,
+                          color: config.itemTitleColor),
+                    )),
                 Text.rich(
                   TextSpan(children: [
                     if (conversationInfo.haveBeenAit &&
-                        (conversationInfo.session.unreadCount ?? 0) > 0)
+                        (conversationInfo.conversation.unreadCount ?? 0) > 0)
                       TextSpan(
                         text: S.of(context).somebodyAitMe,
                         style: TextStyle(
@@ -206,11 +204,11 @@ class ConversationItem extends StatelessWidget {
               right: 0,
               top: 17,
               child: Text(
-                conversationInfo.session.lastMessageTime!.formatDateTime(),
+                conversationInfo.getFormatTime(),
                 style: TextStyle(
                     fontSize: config.itemDateSize, color: config.itemDateColor),
               )),
-          if (conversationInfo.mute)
+          if (conversationInfo.isMute())
             Positioned(
               right: 0,
               bottom: 10,

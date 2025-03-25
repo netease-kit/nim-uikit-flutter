@@ -26,7 +26,7 @@ import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_nonsupport_item.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_video_item.dart';
 import 'package:nim_chatkit_ui/view_model/chat_pin_view_model.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../helper/merge_message_helper.dart';
@@ -57,19 +57,17 @@ class ChatKitPinMessageItem extends StatefulWidget {
 }
 
 class _ChatKitPinMessageItemState extends State<ChatKitPinMessageItem> {
-  late UserAvatarInfo _userAvatarInfo = widget
-          .chatMessage.nimMessage.fromAccount
-          ?.getCacheAvatar(widget.chatMessage.nimMessage.fromNickname ??
-              widget.chatMessage.nimMessage.fromAccount!) ??
+  late UserAvatarInfo _userAvatarInfo = widget.chatMessage.nimMessage.senderId
+          ?.getCacheAvatar(widget.chatMessage.nimMessage.senderId!) ??
       UserAvatarInfo('');
 
   bool isSelf() {
-    return widget.chatMessage.nimMessage.messageDirection ==
-        NIMMessageDirection.outgoing;
+    return widget.chatMessage.nimMessage.isSelf == true;
   }
 
   bool isTeam() {
-    return widget.chatMessage.nimMessage.sessionType == NIMSessionType.team;
+    return widget.chatMessage.nimMessage.conversationType ==
+        NIMConversationType.team;
   }
 
   //item 复用MessageItem
@@ -183,9 +181,17 @@ class _ChatKitPinMessageItemState extends State<ChatKitPinMessageItem> {
 
   //获取对方的用户信息
   Future<UserAvatarInfo> _getUserInfo(String accId) async {
-    String name = await (isTeam()
-        ? getUserNickInTeam(widget.chatMessage.nimMessage.sessionId!, accId)
-        : accId.getUserName());
+    String name = '';
+    if (isTeam()) {
+      var teamId = (await NimCore.instance.conversationIdUtil
+                  .conversationTargetId(
+                      widget.chatMessage.nimMessage.conversationId!))
+              .data ??
+          '';
+      name = await getUserNickInTeam(teamId, accId);
+    } else {
+      name = await accId.getUserName();
+    }
     String? avatar = await accId.getAvatar();
 
     String? avatarName = await accId.getUserName(needAlias: false);
@@ -255,7 +261,7 @@ class _ChatKitPinMessageItemState extends State<ChatKitPinMessageItem> {
         context.read<ChatPinViewModel>().removePinMessage(message);
       } else if (value == 2) {
         if (mounted) {
-          Clipboard.setData(ClipboardData(text: message.nimMessage.content!));
+          Clipboard.setData(ClipboardData(text: message.nimMessage.text!));
           Fluttertoast.showToast(msg: S.of().chatMessageCopySuccess);
         }
       } else if (value == 3) {
@@ -275,20 +281,19 @@ class _ChatKitPinMessageItemState extends State<ChatKitPinMessageItem> {
 
   void _showForwardMessageDialog(ChatMessage message) {
     final NIMMessage msg = message.nimMessage;
-    ChatMessageHelper.showForwardMessageDialog(context, (sessionId, sessionType,
+    ChatMessageHelper.showForwardMessageDialog(context, (conversationId,
             {String? postScript, bool? isLastUser}) {
       if (mounted) {
-        context
-            .read<ChatPinViewModel>()
-            .forwardMessage(msg, sessionId, sessionType);
+        context.read<ChatPinViewModel>().forwardMessage(msg, conversationId);
       } else {
-        haveConnectivity().then((value) {
+        haveConnectivity().then((value) async {
           if (value) {
-            ChatMessageRepo.forwardMessage(msg, sessionId, sessionType)
-                .then((value) {
+            final params =
+                await ChatMessageHelper.getSenderParams(msg, conversationId);
+            ChatMessageRepo.forwardMessage(msg, conversationId).then((value) {
               if (value.code == ChatMessageRepo.errorInBlackList) {
-                ChatMessageRepo.saveTipsMessage(sessionId, sessionType,
-                    S.of().chatMessageSendFailedByBlackList);
+                ChatMessageRepo.saveTipsMessage(
+                    conversationId, S.of().chatMessageSendFailedByBlackList);
               }
             });
           }
@@ -296,13 +301,13 @@ class _ChatKitPinMessageItemState extends State<ChatKitPinMessageItem> {
       }
       if (postScript?.isNotEmpty == true) {
         ChatMessageRepo.sendTextMessageWithMessageAck(
-            sessionId: sessionId, sessionType: sessionType, text: postScript!);
+            conversationId: conversationId, text: postScript!);
       }
     },
-        filterUser:
-            widget.chatMessage.nimMessage.sessionType == NIMSessionType.p2p
-                ? [widget.chatMessage.nimMessage.sessionId!]
-                : null,
+        filterUser: widget.chatMessage.nimMessage.conversationType ==
+                NIMConversationType.p2p
+            ? [widget.chatMessage.nimMessage.senderId!]
+            : null,
         sessionName: widget.chatTitle);
   }
 
@@ -328,7 +333,7 @@ class _ChatKitPinMessageItemState extends State<ChatKitPinMessageItem> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           FutureBuilder<UserAvatarInfo>(
-              future: _getUserInfo(widget.chatMessage.nimMessage.fromAccount!),
+              future: _getUserInfo(widget.chatMessage.nimMessage.senderId!),
               builder: (context, snap) {
                 return Container(
                     constraints: BoxConstraints.expand(height: 64),
@@ -354,8 +359,8 @@ class _ChatKitPinMessageItemState extends State<ChatKitPinMessageItem> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 Text(
-                                  _timeFormat(
-                                      widget.chatMessage.nimMessage.timestamp),
+                                  _timeFormat(widget
+                                      .chatMessage.nimMessage.createTime!),
                                   style: TextStyle(
                                       color: '#999999'.toColor(), fontSize: 12),
                                 )

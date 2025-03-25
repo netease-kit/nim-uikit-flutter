@@ -2,12 +2,12 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:nim_contactkit_ui/page/contact_kit_black_list_page.dart';
-import 'package:nim_contactkit_ui/page/contact_kit_system_notify_message_page.dart';
-import 'package:nim_contactkit_ui/page/contact_kit_team_list_page.dart';
-import 'package:nim_contactkit_ui/page/viewmodel/contact_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:nim_contactkit_ui/page/contact_kit_black_list_page.dart';
+import 'package:nim_contactkit_ui/page/contact_kit_friend_add_application_page.dart';
+import 'package:nim_contactkit_ui/page/contact_kit_team_list_page.dart';
+import 'package:nim_contactkit_ui/page/viewmodel/contact_viewmodel.dart';
 import 'package:provider/provider.dart';
 
 import '../contact_kit_client.dart';
@@ -53,7 +53,9 @@ class _ContactKitContactState extends State<ContactKitContactPage> {
               return ContactKitSystemNotifyMessagePage(
                 listConfig: uiConfig.contactListConfig,
               );
-            }));
+            })).then((value) {
+              context.read<ContactViewModel>().cleanSystemUnreadCount();
+            });
           },
           tips: _getTips(context)),
       TopListItem(
@@ -92,11 +94,7 @@ class _ContactKitContactState extends State<ContactKitContactPage> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) {
-        var viewModel = ContactViewModel();
-        viewModel.init();
-        return viewModel;
-      },
+      create: (context) => ContactViewModel(),
       builder: (context, child) {
         return ContactListView(
           contactList: context

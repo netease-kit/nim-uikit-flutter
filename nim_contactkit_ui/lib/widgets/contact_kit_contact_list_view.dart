@@ -3,15 +3,15 @@
 // found in the LICENSE file.
 
 import 'package:azlistview_plus/azlistview_plus.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:lpinyin/lpinyin.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/radio_button.dart';
-import 'package:nim_contactkit_ui/widgets/az_lsit_view_container.dart';
 import 'package:netease_corekit_im/model/contact_info.dart';
-import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:lpinyin/lpinyin.dart';
-import 'package:flutter_svg/svg.dart';
+import 'package:nim_contactkit_ui/widgets/az_lsit_view_container.dart';
 
 import '../contact_kit_client.dart';
 import '../l10n/S.dart';
@@ -65,10 +65,10 @@ class ContactListViewState extends State<ContactListView> {
       item.addAll([
         Avatar(
           avatar: contact.user.avatar,
-          name: contact.getName(needAlias: false),
+          name: contact.getName(),
           width: select ? 42 : 36,
           height: select ? 42 : 36,
-          bgCode: AvatarColor.avatarColor(content: contact.user.userId),
+          bgCode: AvatarColor.avatarColor(content: contact.user.accountId),
           radius: listConfig?.avatarCornerRadius,
         ),
         Container(
@@ -178,6 +178,7 @@ class ContactListViewState extends State<ContactListView> {
   @override
   Widget build(BuildContext context) {
     final items = _getSusList(widget.contactList);
+    final hasNoFriend = items.isEmpty;
     final topList = widget.topList ?? widget.config?.headerData;
     if (widget.config?.showHeader == true && topList?.isNotEmpty == true) {
       final topItems = topList!
@@ -187,6 +188,11 @@ class ContactListViewState extends State<ContactListView> {
     }
     final topListItemBuilder =
         widget.topListItemBuilder ?? widget.config?.topListItemBuilder;
+
+    if (hasNoFriend) {
+      final emptyImpl = ISuspensionBeanImpl(tagIndex: '@', contactInfo: null);
+      items.add(emptyImpl);
+    }
 
     final selectable = listConfig?.showSelector ?? widget.isCanSelectMemberItem;
 
@@ -225,6 +231,26 @@ class ContactListViewState extends State<ContactListView> {
               ],
             );
           } else {
+            if (hasNoFriend && showItem == null) {
+              return Column(
+                children: [
+                  SizedBox(
+                    height: 170,
+                  ),
+                  SvgPicture.asset(
+                    'images/ic_search_empty.svg',
+                    package: kPackage,
+                  ),
+                  const SizedBox(
+                    height: 18,
+                  ),
+                  Text(
+                    S.of(context).contactFriendEmpty,
+                    style: TextStyle(color: Color(0xffb3b7bc), fontSize: 14),
+                  ),
+                ],
+              );
+            }
             return InkWell(
               onTap: () {
                 if (selectable) {
@@ -251,7 +277,7 @@ class ContactListViewState extends State<ContactListView> {
                 if (!handle) {
                   // default to detail
                   Navigator.push(context, MaterialPageRoute(builder: (context) {
-                    return ContactKitDetailPage(accId: showItem.user.userId!);
+                    return ContactKitDetailPage(accId: showItem.user.accountId);
                   }));
                 }
               },

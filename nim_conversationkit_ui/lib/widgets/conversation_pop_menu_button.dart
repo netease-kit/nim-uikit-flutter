@@ -5,15 +5,17 @@
 import 'package:netease_common_ui/extension.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_corekit_im/router/imkit_router_constants.dart';
 import 'package:netease_corekit_im/router/imkit_router_factory.dart';
 import 'package:nim_conversationkit_ui/page/add_friend_page.dart';
 import 'package:netease_corekit_im/model/contact_info.dart';
 import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/message/message_provider.dart';
 import 'package:netease_corekit_im/services/team/team_provider.dart';
+import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
 
 import '../conversation_kit_client.dart';
@@ -31,20 +33,22 @@ class ConversationPopMenuButton extends StatelessWidget {
         break;
       case "create_group_team":
       case "create_advanced_team":
-        if (!(await Connectivity().checkNetwork(context))) {
+        if (!(await haveConnectivity())) {
           return;
         }
-        goToContactSelector(context, mostCount: 199, returnContact: true)
+        goToContactSelector(context,
+                mostCount: TeamProvider.createTeamInviteLimit,
+                returnContact: true)
             .then((contacts) {
           if (contacts is List<ContactInfo> && contacts.isNotEmpty) {
             Alog.d(
                 tag: 'ConversationKit',
                 content: '$value, select:${contacts.length}');
             var selectName =
-                contacts.map((e) => e.user.nick ?? e.user.userId!).toList();
+                contacts.map((e) => e.user.name ?? e.user.accountId!).toList();
             getIt<TeamProvider>()
                 .createTeam(
-              contacts.map((e) => e.user.userId!).toList(),
+              contacts.map((e) => e.user.accountId!).toList(),
               selectNames: selectName,
               isGroup: value == 'create_group_team',
             )
@@ -54,12 +58,16 @@ class ConversationPopMenuButton extends StatelessWidget {
                   Map<String, String> map = Map();
                   map[RouterConstants.keyTeamCreatedTip] =
                       S.of(context).createAdvancedTeamSuccess;
-                  getIt<MessageProvider>().sendTeamTipWithoutUnread(
-                      teamResult.team!.id!, map,
-                      time: teamResult.team!.createTime as int?);
+                  ConversationIdUtil()
+                      .teamConversationId(teamResult.team!.teamId)
+                      .then((conversationId) {
+                    ChatMessageRepo.insertTeamLocalTipsMessage(
+                        conversationId.data!, '', map,
+                        time: teamResult.team!.createTime - 100);
+                  });
                 }
                 Future.delayed(Duration(milliseconds: 200), () {
-                  goToTeamChat(context, teamResult.team!.id!);
+                  goToTeamChat(context, teamResult.team!.teamId);
                 });
               }
             });

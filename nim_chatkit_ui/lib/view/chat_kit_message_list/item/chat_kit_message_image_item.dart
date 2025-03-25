@@ -5,7 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:nim_chatkit_ui/media/picture.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/widgets/chat_thumb_view.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:provider/provider.dart';
 
 import '../../../view_model/chat_view_model.dart';
@@ -35,8 +35,7 @@ class ChatKitMessageImageState extends State<ChatKitMessageImageItem> {
   @override
   void initState() {
     super.initState();
-    _isReceive =
-        widget.message.messageDirection == NIMMessageDirection.received;
+    _isReceive = widget.message.isSelf == false;
   }
 
   @override
@@ -57,7 +56,7 @@ class ChatKitMessageImageState extends State<ChatKitMessageImageItem> {
                 .read<ChatViewModel>()
                 .messageList
                 .where((element) =>
-                    element.nimMessage.messageAttachment is NIMImageAttachment)
+                    element.nimMessage.attachment is NIMMessageImageAttachment)
                 .map((e) => e.nimMessage)
                 .toList();
           } else {

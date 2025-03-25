@@ -1,12 +1,6 @@
 PODS:
-  - AMap3DMap (9.7.0):
+  - AMap3DMap (10.1.200):
     - AMapFoundation (>= 1.8.0)
-  - amap_flutter_location (0.0.1):
-    - AMapLocation
-    - Flutter
-  - amap_flutter_map (0.0.1):
-    - AMap3DMap
-    - Flutter
   - AMapFoundation (1.8.2)
   - AMapLocation (2.10.0):
     - AMapFoundation (>= 1.8.0)
@@ -14,121 +8,121 @@ PODS:
     - Flutter
   - connectivity_plus (0.0.1):
     - Flutter
-    - ReachabilitySwift
   - device_info_plus (0.0.1):
     - Flutter
-  - DKImagePickerController/Core (4.3.4):
+  - DKImagePickerController/Core (4.3.9):
     - DKImagePickerController/ImageDataManager
     - DKImagePickerController/Resource
-  - DKImagePickerController/ImageDataManager (4.3.4)
-  - DKImagePickerController/PhotoGallery (4.3.4):
+  - DKImagePickerController/ImageDataManager (4.3.9)
+  - DKImagePickerController/PhotoGallery (4.3.9):
     - DKImagePickerController/Core
     - DKPhotoGallery
-  - DKImagePickerController/Resource (4.3.4)
-  - DKPhotoGallery (0.0.17):
-    - DKPhotoGallery/Core (= 0.0.17)
-    - DKPhotoGallery/Model (= 0.0.17)
-    - DKPhotoGallery/Preview (= 0.0.17)
-    - DKPhotoGallery/Resource (= 0.0.17)
+  - DKImagePickerController/Resource (4.3.9)
+  - DKPhotoGallery (0.0.19):
+    - DKPhotoGallery/Core (= 0.0.19)
+    - DKPhotoGallery/Model (= 0.0.19)
+    - DKPhotoGallery/Preview (= 0.0.19)
+    - DKPhotoGallery/Resource (= 0.0.19)
     - SDWebImage
     - SwiftyGif
-  - DKPhotoGallery/Core (0.0.17):
+  - DKPhotoGallery/Core (0.0.19):
     - DKPhotoGallery/Model
     - DKPhotoGallery/Preview
     - SDWebImage
     - SwiftyGif
-  - DKPhotoGallery/Model (0.0.17):
+  - DKPhotoGallery/Model (0.0.19):
     - SDWebImage
     - SwiftyGif
-  - DKPhotoGallery/Preview (0.0.17):
+  - DKPhotoGallery/Preview (0.0.19):
     - DKPhotoGallery/Model
     - DKPhotoGallery/Resource
     - SDWebImage
     - SwiftyGif
-  - DKPhotoGallery/Resource (0.0.17):
+  - DKPhotoGallery/Resource (0.0.19):
     - SDWebImage
     - SwiftyGif
   - file_picker (0.0.1):
     - DKImagePickerController/PhotoGallery
     - Flutter
   - Flutter (1.0.0)
+  - flutter_sound (9.25.4):
+    - Flutter
+    - flutter_sound_core (= 9.25.4)
+  - flutter_sound_core (9.25.4)
   - fluttertoast (0.0.2):
     - Flutter
-    - Toast
-  - FMDB (2.7.5):
-    - FMDB/standard (= 2.7.5)
-  - FMDB/standard (2.7.5)
   - GCDWebServer (3.5.4):
     - GCDWebServer/Core (= 3.5.4)
   - GCDWebServer/Core (3.5.4)
-  - image_gallery_saver (2.0.2):
+  - image_gallery_saver_plus (0.0.1):
     - Flutter
   - image_picker_ios (0.0.1):
     - Flutter
-  - nim_core (1.4.7):
+  - nim_core_v2 (10.3.0):
     - Flutter
-    - NIMSDK_LITE (~> 9.13.0)
+    - NIMSDK_LITE/FCS (= 10.8.10-SNAPSHOT)
     - YXAlog
-  - NIMSDK_LITE (9.13.1):
-    - NIMSDK_LITE/NOS (= 9.13.1)
-    - YXArtemis
-  - NIMSDK_LITE/NOS (9.13.1):
-    - YXArtemis
+  - NIMSDK_LITE/FCS (10.8.10-SNAPSHOT):
+    - YXArtemis_XCFramework
   - open_filex (0.0.2):
     - Flutter
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
-  - permission_handler_apple (9.1.1):
+  - permission_handler_apple (9.3.0):
     - Flutter
-  - phone_state (1.0.3):
-    - Flutter
-  - ReachabilitySwift (5.0.0)
-  - SDWebImage (5.18.3):
-    - SDWebImage/Core (= 5.18.3)
-  - SDWebImage/Core (5.18.3)
+  - SDWebImage (5.21.0):
+    - SDWebImage/Core (= 5.21.0)
+  - SDWebImage/Core (5.21.0)
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
-  - sqflite (0.0.3):
+  - sqflite_darwin (0.0.4):
     - Flutter
-    - FMDB (>= 2.7.5)
-  - SwiftyGif (5.4.4)
-  - Toast (4.0.0)
+    - FlutterMacOS
+  - SwiftyGif (5.4.5)
   - url_launcher_ios (0.0.1):
     - Flutter
   - video_player_avfoundation (0.0.1):
     - Flutter
+    - FlutterMacOS
   - webview_flutter_wkwebview (0.0.1):
+    - Flutter
+    - FlutterMacOS
+  - x_amap_flutter_location (0.0.1):
+    - AMapLocation
+    - Flutter
+  - x_amap_flutter_map (0.0.1):
+    - AMap3DMap
     - Flutter
   - yunxin_alog (0.0.1):
     - Flutter
     - YXAlog (~> 1.0.7)
   - YXAlog (1.0.7)
-  - YXArtemis (1.1.0)
+  - YXArtemis_XCFramework (1.1.4)
 
 DEPENDENCIES:
-  - amap_flutter_location (from `.symlinks/plugins/amap_flutter_location/ios`)
-  - amap_flutter_map (from `.symlinks/plugins/amap_flutter_map/ios`)
   - audioplayers_darwin (from `.symlinks/plugins/audioplayers_darwin/ios`)
   - connectivity_plus (from `.symlinks/plugins/connectivity_plus/ios`)
   - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
   - file_picker (from `.symlinks/plugins/file_picker/ios`)
   - Flutter (from `Flutter`)
+  - flutter_sound (from `.symlinks/plugins/flutter_sound/ios`)
   - fluttertoast (from `.symlinks/plugins/fluttertoast/ios`)
   - GCDWebServer (= 3.5.4)
-  - image_gallery_saver (from `.symlinks/plugins/image_gallery_saver/ios`)
+  - image_gallery_saver_plus (from `.symlinks/plugins/image_gallery_saver_plus/ios`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
-  - nim_core (from `.symlinks/plugins/nim_core/ios`)
+  - nim_core_v2 (from `.symlinks/plugins/nim_core_v2/ios`)
   - open_filex (from `.symlinks/plugins/open_filex/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
-  - phone_state (from `.symlinks/plugins/phone_state/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
-  - sqflite (from `.symlinks/plugins/sqflite/ios`)
+  - sqflite_darwin (from `.symlinks/plugins/sqflite_darwin/darwin`)
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
-  - video_player_avfoundation (from `.symlinks/plugins/video_player_avfoundation/ios`)
-  - webview_flutter_wkwebview (from `.symlinks/plugins/webview_flutter_wkwebview/ios`)
+  - video_player_avfoundation (from `.symlinks/plugins/video_player_avfoundation/darwin`)
+  - webview_flutter_wkwebview (from `.symlinks/plugins/webview_flutter_wkwebview/darwin`)
+  - x_amap_flutter_location (from `.symlinks/plugins/x_amap_flutter_location/ios`)
+  - x_amap_flutter_map (from `.symlinks/plugins/x_amap_flutter_map/ios`)
   - yunxin_alog (from `.symlinks/plugins/yunxin_alog/ios`)
 
 SPEC REPOS:
@@ -138,21 +132,15 @@ SPEC REPOS:
     - AMapLocation
     - DKImagePickerController
     - DKPhotoGallery
-    - FMDB
+    - flutter_sound_core
     - GCDWebServer
     - NIMSDK_LITE
-    - ReachabilitySwift
     - SDWebImage
     - SwiftyGif
-    - Toast
     - YXAlog
-    - YXArtemis
+    - YXArtemis_XCFramework
 
 EXTERNAL SOURCES:
-  amap_flutter_location:
-    :path: ".symlinks/plugins/amap_flutter_location/ios"
-  amap_flutter_map:
-    :path: ".symlinks/plugins/amap_flutter_map/ios"
   audioplayers_darwin:
     :path: ".symlinks/plugins/audioplayers_darwin/ios"
   connectivity_plus:
@@ -163,72 +151,74 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/file_picker/ios"
   Flutter:
     :path: Flutter
+  flutter_sound:
+    :path: ".symlinks/plugins/flutter_sound/ios"
   fluttertoast:
     :path: ".symlinks/plugins/fluttertoast/ios"
-  image_gallery_saver:
-    :path: ".symlinks/plugins/image_gallery_saver/ios"
+  image_gallery_saver_plus:
+    :path: ".symlinks/plugins/image_gallery_saver_plus/ios"
   image_picker_ios:
     :path: ".symlinks/plugins/image_picker_ios/ios"
-  nim_core:
-    :path: ".symlinks/plugins/nim_core/ios"
+  nim_core_v2:
+    :path: ".symlinks/plugins/nim_core_v2/ios"
   open_filex:
     :path: ".symlinks/plugins/open_filex/ios"
   path_provider_foundation:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
   permission_handler_apple:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
-  phone_state:
-    :path: ".symlinks/plugins/phone_state/ios"
   shared_preferences_foundation:
     :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
-  sqflite:
-    :path: ".symlinks/plugins/sqflite/ios"
+  sqflite_darwin:
+    :path: ".symlinks/plugins/sqflite_darwin/darwin"
   url_launcher_ios:
     :path: ".symlinks/plugins/url_launcher_ios/ios"
   video_player_avfoundation:
-    :path: ".symlinks/plugins/video_player_avfoundation/ios"
+    :path: ".symlinks/plugins/video_player_avfoundation/darwin"
   webview_flutter_wkwebview:
-    :path: ".symlinks/plugins/webview_flutter_wkwebview/ios"
+    :path: ".symlinks/plugins/webview_flutter_wkwebview/darwin"
+  x_amap_flutter_location:
+    :path: ".symlinks/plugins/x_amap_flutter_location/ios"
+  x_amap_flutter_map:
+    :path: ".symlinks/plugins/x_amap_flutter_map/ios"
   yunxin_alog:
     :path: ".symlinks/plugins/yunxin_alog/ios"
 
 SPEC CHECKSUMS:
-  AMap3DMap: dce25dd3e51e6b92109caa7d0c97fc6055830fb3
-  amap_flutter_location: 44ff5beb64f42e0bf5feb402fe299dac0013af6f
-  amap_flutter_map: 979e54d227cedac6c7504a2151bfbf3bcf96760a
+  AMap3DMap: 06a11a83072857d6076c14060b2e1a676182e84d
   AMapFoundation: 9885c48fc3a78fdfb84a0299a2293e56ea3c9fec
   AMapLocation: 5248aec2455ebb5d104b367813c946430a2ee033
   audioplayers_darwin: 877d9a4d06331c5c374595e46e16453ac7eafa40
-  connectivity_plus: bf0076dd84a130856aa636df1c71ccaff908fa1d
-  device_info_plus: 7545d84d8d1b896cb16a4ff98c19f07ec4b298ea
-  DKImagePickerController: b512c28220a2b8ac7419f21c491fc8534b7601ac
-  DKPhotoGallery: fdfad5125a9fdda9cc57df834d49df790dbb4179
-  file_picker: ce3938a0df3cc1ef404671531facef740d03f920
-  Flutter: f04841e97a9d0b0a8025694d0796dd46242b2854
-  fluttertoast: eb263d302cc92e04176c053d2385237e9f43fad0
-  FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
+  connectivity_plus: 2a701ffec2c0ae28a48cf7540e279787e77c447d
+  device_info_plus: 97af1d7e84681a90d0693e63169a5d50e0839a0d
+  DKImagePickerController: 946cec48c7873164274ecc4624d19e3da4c1ef3c
+  DKPhotoGallery: b3834fecb755ee09a593d7c9e389d8b5d6deed60
+  file_picker: b159e0c068aef54932bb15dc9fd1571818edaf49
+  Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
+  flutter_sound: 89eb78b7006e68714c29e16102a485b44097a4d5
+  flutter_sound_core: 50f98a00756d0853cc1e38336515f30e8577dff2
+  fluttertoast: 21eecd6935e7064cc1fcb733a4c5a428f3f24f0f
   GCDWebServer: 2c156a56c8226e2d5c0c3f208a3621ccffbe3ce4
-  image_gallery_saver: cb43cc43141711190510e92c460eb1655cd343cb
-  image_picker_ios: 4a8aadfbb6dc30ad5141a2ce3832af9214a705b5
-  nim_core: 68f6b71c3b8fd2648312b1047878b709218d50f0
-  NIMSDK_LITE: 594799d792ec7ec2c1e48ff93ca1340c7b7fd2cb
+  image_gallery_saver_plus: 782ade975fe6a4600b53e7c1983e3a2979d1e9e5
+  image_picker_ios: c560581cceedb403a6ff17f2f816d7fea1421fc1
+  nim_core_v2: afd4f71faed3deea4564467b539fd697f1ded448
+  NIMSDK_LITE: ee41e899bc0a1d4bd407a7d57c5b4fdbd170aa14
   open_filex: 6e26e659846ec990262224a12ef1c528bb4edbe4
-  path_provider_foundation: c68054786f1b4f3343858c1e1d0caaded73f0be9
-  permission_handler_apple: e76247795d700c14ea09e3a2d8855d41ee80a2e6
-  phone_state: d0d36ac85a7cc06ed62e88343795ed5cd7e3d6c9
-  ReachabilitySwift: 985039c6f7b23a1da463388634119492ff86c825
-  SDWebImage: 96e0c18ef14010b7485210e92fac888587ebb958
-  shared_preferences_foundation: 986fc17f3d3251412d18b0265f9c64113a8c2472
-  sqflite: 31f7eba61e3074736dff8807a9b41581e4f7f15a
-  SwiftyGif: 93a1cc87bf3a51916001cf8f3d63835fb64c819f
-  Toast: 91b396c56ee72a5790816f40d3a94dd357abc196
-  url_launcher_ios: 08a3dfac5fb39e8759aeb0abbd5d9480f30fc8b4
-  video_player_avfoundation: 6d971a232d72e6ee25368378d48a079dea01f1cf
-  webview_flutter_wkwebview: b7e70ef1ddded7e69c796c7390ee74180182971f
+  path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
+  permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2
+  SDWebImage: f84b0feeb08d2d11e6a9b843cb06d75ebf5b8868
+  shared_preferences_foundation: fcdcbc04712aee1108ac7fda236f363274528f78
+  sqflite_darwin: 5a7236e3b501866c1c9befc6771dfd73ffb8702d
+  SwiftyGif: 706c60cf65fa2bc5ee0313beece843c8eb8194d4
+  url_launcher_ios: 5334b05cef931de560670eeae103fd3e431ac3fe
+  video_player_avfoundation: 7c6c11d8470e1675df7397027218274b6d2360b3
+  webview_flutter_wkwebview: a4af96a051138e28e29f60101d094683b9f82188
+  x_amap_flutter_location: a8bae974376a05b982af486fb7afbaa2a6306e2d
+  x_amap_flutter_map: ffd4106af1d76ac40af73df058f899beb3ed6fcd
   yunxin_alog: c5532d2a6ab378baef9927fcae5ab19fe36c1103
   YXAlog: ac9bab3aff1326caa72cc25aedc358bc8d4f1b31
-  YXArtemis: e9cedfafd67faff267c24f245063bac78c113e1c
+  YXArtemis_XCFramework: d298161285aa9cf0c99800b17847dc99aef60617
 
-PODFILE CHECKSUM: b2fab7bd54736d5b7eb1fe53350ce2d1346f64c8
+PODFILE CHECKSUM: 5d5edbf6db9a087755b6a1a02223d0ea316c549e
 
-COCOAPODS: 1.11.2
+COCOAPODS: 1.15.2

@@ -3,14 +3,18 @@
 // found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter_sound/flutter_sound.dart';
 
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:netease_common/netease_common.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:nim_chatkit_ui/media/audio_player.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../../chat_kit_client.dart';
@@ -36,9 +40,20 @@ class RecordPanel extends StatefulWidget {
 class _RecordPanelState extends State<RecordPanel> {
   bool _recordOnPressed = false;
   OverlayEntry? _overlayEntry;
-  late StreamSubscription _streamSubscription;
+  StreamSubscription? _streamSubscription;
 
-  AudioService get _audioService => NimCore.instance.audioService;
+  //最大录制时间60，单位s
+  int _maxLength = 60;
+
+  //最小录制时间1000,单位ms
+  int _minLength = 1000;
+
+  int duration = 0;
+
+  //录制状态
+  RecordPlayState _state = RecordPlayState.init;
+
+  FlutterSoundRecorder recorderModule = FlutterSoundRecorder();
 
   void buildOverlay(BuildContext context) {
     if (_overlayEntry == null) {
@@ -61,33 +76,100 @@ class _RecordPanelState extends State<RecordPanel> {
   @override
   void initState() {
     super.initState();
-    _streamSubscription =
-        _audioService.onAudioRecordStatus.listen((recordInfo) {
-      if (recordInfo.recordState == RecordState.REACHED_MAX ||
-          recordInfo.recordState == RecordState.SUCCESS) {
-        // reached max time or success
-        _recordOnPressed = false;
-        widget.onEnd();
-        setState(() {});
-      }
-      if (recordInfo.recordState == RecordState.SUCCESS &&
-          recordInfo.filePath != null &&
-          recordInfo.fileSize != null &&
-          recordInfo.duration != null) {
-        if (recordInfo.duration! > 1000) {
-          context.read<ChatViewModel>().sendAudioMessage(
-              recordInfo.filePath!, recordInfo.fileSize!, recordInfo.duration!);
-        } else {
-          Fluttertoast.showToast(msg: S.of(context).chatSpeakTooShort);
-        }
-      }
-    });
+    initRecoder();
   }
 
-  @override
+  initRecoder() async {
+    await recorderModule.openRecorder();
+    await recorderModule
+        .setSubscriptionDuration(const Duration(milliseconds: 10));
+  }
+
+  /// 开始录音
+  Future<void> _startRecorder() async {
+    try {
+      Directory tempDir = await getTemporaryDirectory();
+      var time = DateTime.now().millisecondsSinceEpoch;
+      String path = '${tempDir.path}/$time${ext[Codec.aacADTS.index]}';
+
+      //这里录制的是aac格式
+      await recorderModule.startRecorder(
+        toFile: path,
+        codec: Codec.aacADTS,
+        bitRate: 8000,
+        numChannels: 1,
+        sampleRate: 8000,
+      );
+      _state = RecordPlayState.recording;
+
+      /// 监听录音
+      _streamSubscription = recorderModule.onProgress!.listen((e) {
+        duration = e.duration.inMilliseconds;
+        //设置了最大录音时长
+        if (e.duration.inSeconds >= _maxLength) {
+          _recordOnPressed = false;
+          removeOverlay();
+          widget.onEnd();
+          _stopRecorder(true);
+          setState(() {});
+          return;
+        }
+      });
+    } catch (err) {
+      setState(() {
+        _stopRecorder(false, durationDuje: false);
+        _cancelRecorderSubscriptions();
+      });
+    }
+  }
+
+  /// 结束录音
+  _stopRecorder(bool sendMessage, {bool durationDuje = true}) async {
+    try {
+      await recorderModule.stopRecorder().then((value) {
+        Alog.d(
+            tag: 'RecordPanel :',
+            content:
+                'stopRecorder usl: $value duration = $duration sendMessage : $sendMessage');
+        _state = RecordPlayState.stop;
+        if (sendMessage && duration > _minLength) {
+          context
+              .read<ChatViewModel>()
+              .sendAudioMessage(value!, null, duration);
+        }
+        if (durationDuje && duration <= _minLength) {
+          Fluttertoast.showToast(msg: S.of(context).chatSpeakTooShort);
+        }
+        _cancelRecorderSubscriptions();
+      });
+    } catch (err) {}
+  }
+
+  ///销毁录音
   void dispose() {
     super.dispose();
-    _streamSubscription.cancel();
+    _cancelRecorderSubscriptions();
+    _releaseRecoder();
+  }
+
+  /// 取消录音监听
+  void _cancelRecorderSubscriptions() {
+    if (_streamSubscription != null) {
+      _streamSubscription!.cancel();
+      _streamSubscription = null;
+    }
+  }
+
+  /// 释放录音
+  Future<void> _releaseRecoder() async {
+    try {
+      await recorderModule.closeRecorder();
+    } catch (e) {}
+  }
+
+  /// 判断文件是否存在
+  Future<bool> _fileExists(String path) async {
+    return await File(path).exists();
   }
 
   @override
@@ -108,13 +190,14 @@ class _RecordPanelState extends State<RecordPanel> {
                 onLongPressCancel: () {
                   _recordOnPressed = false;
                   removeOverlay();
-                  _audioService.cancelRecord();
+                  _state = RecordPlayState.canceled;
+                  _stopRecorder(false);
                   widget.onCancel();
                   setState(() {});
                 },
                 onLongPressDown: (LongPressDownDetails details) {
                   _recordOnPressed = true;
-                  _audioService.startRecord(AudioOutputFormat.AAC, 60);
+                  _startRecorder();
                   ChatAudioPlayer.instance.stopAll();
                   buildOverlay(context);
                   widget.onPressedDown();
@@ -123,16 +206,24 @@ class _RecordPanelState extends State<RecordPanel> {
                 onLongPressEnd: (LongPressEndDetails details) {
                   _recordOnPressed = false;
                   removeOverlay();
+                  final needStopRecord = _state == RecordPlayState.recording;
                   double r = 51.5;
                   double dx = (details.localPosition.dx - r).abs();
                   double dy = (details.localPosition.dy - r).abs();
                   if (dx * dx + dy * dy > r * r) {
-                    _audioService.cancelRecord();
+                    if (needStopRecord) {
+                      _stopRecorder(false, durationDuje: false);
+                    }
+
                     widget.onCancel();
                   } else {
-                    _audioService.stopRecord();
+                    if (needStopRecord) {
+                      _stopRecorder(true);
+                    }
                     widget.onEnd();
                   }
+                  _state = RecordPlayState.stop;
+
                   setState(() {});
                 },
                 child: Container(
@@ -214,3 +305,5 @@ class _RecordButtonWaveState extends State<RecordButtonWave>
     );
   }
 }
+
+enum RecordPlayState { init, recording, stop, canceled }

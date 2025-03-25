@@ -4,6 +4,8 @@
 
 import 'conversation_kit_client_localizations.dart';
 
+// ignore_for_file: type=lint
+
 /// The translations for Chinese (`zh`).
 class ConversationKitClientLocalizationsZh
     extends ConversationKitClientLocalizations {

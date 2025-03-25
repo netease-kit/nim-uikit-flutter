@@ -2,11 +2,11 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:netease_corekit_im/router/imkit_router_factory.dart';
 import 'package:nim_contactkit_ui/contact_kit_client.dart';
 import 'package:nim_contactkit_ui/page/contact_kit_contact_page.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 
 import '../l10n/S.dart';
 

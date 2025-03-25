@@ -10,16 +10,22 @@ import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/login/login_service.dart';
+import 'package:netease_corekit_im/services/login/im_login_service.dart';
 import 'package:netease_corekit_im/services/user_info/user_info_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:im_demo/l10n/S.dart';
-import 'package:nim_core/nim_core.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter_svg/svg.dart';
 
 enum EditType { none, avatar, nick, gender, birthday, phone, email, sign }
+
+const int male = 1;
+
+const int female = 2;
+
+const int genderUnknown = 0;
 
 class UserInfoPage extends StatefulWidget {
   const UserInfoPage({Key? key}) : super(key: key);
@@ -29,21 +35,25 @@ class UserInfoPage extends StatefulWidget {
 }
 
 class _UserInfoPageState extends State<UserInfoPage> {
-  LoginService loginService = getIt<LoginService>();
+  IMLoginService loginService = getIt<IMLoginService>();
   UserInfoProvider userInfoProvider = getIt<UserInfoProvider>();
   String title = '';
   EditType editType = EditType.none;
-  late NIMUser userInfo;
+  late NIMUserInfo userInfo;
   late final TextEditingController _controller;
 
-  _updateInfo() async {
+  _updateInfo(NIMUserUpdateParam params) async {
     if (!await haveConnectivity()) {
       return;
     }
-    userInfoProvider.updateUserInfo(userInfo).then((value) {
+    userInfoProvider.updateUserInfo(params).then((value) {
       if (value.isSuccess) {
-        loginService.getUserInfo();
-        _backToPage();
+        loginService.getUserInfo().then((result) {
+          if (result != null) {
+            userInfo = result;
+          }
+          _backToPage();
+        });
       } else {
         Fluttertoast.showToast(msg: S.of(context).requestFail);
       }
@@ -55,31 +65,34 @@ class _UserInfoPageState extends State<UserInfoPage> {
       return;
     }
     if (type == EditType.avatar) {
-      showPhotoSelector(context).then((path) {
+      showPhotoSelector(context).then((path) async {
         if (path != null) {
-          NimCore.instance.nosService
-              .upload(filePath: path, mimeType: 'image/jpeg')
-              .then((value) {
-            if (value.isSuccess && value.data != null) {
-              userInfo.avatar = value.data;
-              _updateInfo();
+          final fileParams = NIMUploadFileParams(filePath: path);
+          final task = await NimCore.instance.storageService
+              .createUploadFileTask(fileParams);
+          if (task.isSuccess && task.data != null) {
+            final uploadUrl =
+                await NimCore.instance.storageService.uploadFile(task.data!);
+            if (uploadUrl.isSuccess && uploadUrl.data?.isNotEmpty == true) {
+              final updateParams = NIMUserUpdateParam(avatar: uploadUrl.data);
+              _updateInfo(updateParams);
             }
-          });
+          }
         }
       });
       return;
     }
     if (type == EditType.birthday) {
-      showDateTimePicker(context, userInfo.birth, (time) {
-        userInfo.birth = time;
-        _updateInfo();
+      showDateTimePicker(context, userInfo.birthday, (time) {
+        final updateParams = NIMUserUpdateParam(birthday: time);
+        _updateInfo(updateParams);
       });
       return;
     }
     switch (type) {
       case EditType.nick:
         title = S.of(context).userInfoNickname;
-        _controller.text = userInfo.nick ?? '';
+        _controller.text = userInfo.name ?? '';
         break;
       case EditType.phone:
         title = S.of(context).userInfoPhone;
@@ -105,23 +118,24 @@ class _UserInfoPageState extends State<UserInfoPage> {
   }
 
   _onEditSave() {
+    final updateParams = NIMUserUpdateParam();
     switch (editType) {
       case EditType.nick:
-        userInfo.nick = _controller.text.trim();
+        updateParams.name = _controller.text.trim();
         break;
       case EditType.phone:
-        userInfo.mobile = _controller.text;
+        updateParams.mobile = _controller.text;
         break;
       case EditType.email:
-        userInfo.email = _controller.text;
+        updateParams.email = _controller.text;
         break;
       case EditType.sign:
-        userInfo.sign = _controller.text;
+        updateParams.sign = _controller.text;
         break;
       default:
         break;
     }
-    _updateInfo();
+    _updateInfo(updateParams);
   }
 
   _backToPage() {
@@ -184,12 +198,12 @@ class _UserInfoPageState extends State<UserInfoPage> {
   Widget _editGender() {
     TextStyle textStyle =
         const TextStyle(fontSize: 16, color: CommonColors.color_333333);
-    _onGenderSelect(NIMUserGenderEnum genderEnum) {
+    _onGenderSelect(int genderEnum) {
       if (userInfo.gender == genderEnum) {
         return;
       }
-      userInfo.gender = genderEnum;
-      _updateInfo();
+      final updateParams = NIMUserUpdateParam(gender: genderEnum);
+      _updateInfo(updateParams);
     }
 
     return CardBackground(
@@ -198,42 +212,29 @@ class _UserInfoPageState extends State<UserInfoPage> {
         children: ListTile.divideTiles(context: context, tiles: [
           ListTile(
             title: Text(
-              S.of(context).sexualUnknown,
-              style: textStyle,
-            ),
-            trailing: userInfo.gender == NIMUserGenderEnum.unknown
-                ? const Icon(
-                    Icons.check_rounded,
-                    color: CommonColors.color_337eff,
-                  )
-                : null,
-            onTap: () => _onGenderSelect(NIMUserGenderEnum.unknown),
-          ),
-          ListTile(
-            title: Text(
               S.of(context).sexualMale,
               style: textStyle,
             ),
-            trailing: userInfo.gender == NIMUserGenderEnum.male
+            trailing: userInfo.gender == male
                 ? const Icon(
                     Icons.check_rounded,
                     color: CommonColors.color_337eff,
                   )
                 : null,
-            onTap: () => _onGenderSelect(NIMUserGenderEnum.male),
+            onTap: () => _onGenderSelect(male),
           ),
           ListTile(
             title: Text(
               S.of(context).sexualFemale,
               style: textStyle,
             ),
-            trailing: userInfo.gender == NIMUserGenderEnum.female
+            trailing: userInfo.gender == female
                 ? const Icon(
                     Icons.check_rounded,
                     color: CommonColors.color_337eff,
                   )
                 : null,
-            onTap: () => _onGenderSelect(NIMUserGenderEnum.female),
+            onTap: () => _onGenderSelect(female),
           ),
         ]).toList(),
       ),
@@ -244,9 +245,9 @@ class _UserInfoPageState extends State<UserInfoPage> {
   void initState() {
     super.initState();
     if (loginService.userInfo != null) {
-      userInfo = NIMUser.fromMap(loginService.userInfo!.toMap());
+      userInfo = loginService.userInfo!;
     } else {
-      userInfo = NIMUser();
+      userInfo = NIMUserInfo();
     }
     _controller = TextEditingController();
   }
@@ -308,7 +309,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
 class _PersonalInfoPage extends StatelessWidget {
   const _PersonalInfoPage(this.userInfo, this.onEditClick);
 
-  final NIMUser userInfo;
+  final NIMUserInfo userInfo;
   final Function(EditType type) onEditClick;
 
   @override
@@ -321,9 +322,9 @@ class _PersonalInfoPage extends StatelessWidget {
     TextStyle styleLeft = const TextStyle(color: CommonColors.color_333333);
     TextStyle style = const TextStyle(fontSize: 12, color: Color(0xffa6adb6));
     String sex = S.of(context).sexualUnknown;
-    if (userInfo.gender == NIMUserGenderEnum.male) {
+    if (userInfo.gender == male) {
       sex = S.of(context).sexualMale;
-    } else if (userInfo.gender == NIMUserGenderEnum.female) {
+    } else if (userInfo.gender == female) {
       sex = S.of(context).sexualFemale;
     }
     List<Widget> userInfoTiles = [
@@ -338,7 +339,8 @@ class _PersonalInfoPage extends StatelessWidget {
           children: [
             Avatar(
               avatar: userInfo.avatar,
-              name: userInfo.nick,
+              name: userInfo.name,
+              bgCode: AvatarColor.avatarColor(content: userInfo.accountId),
               height: 36,
               width: 36,
             ),
@@ -359,7 +361,7 @@ class _PersonalInfoPage extends StatelessWidget {
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 200),
               child: Text(
-                userInfo.nick ?? '',
+                userInfo.name ?? '',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: style,
@@ -380,7 +382,7 @@ class _PersonalInfoPage extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              userInfo.userId ?? '',
+              userInfo.accountId ?? '',
               style: style,
             ),
             const SizedBox(
@@ -388,7 +390,8 @@ class _PersonalInfoPage extends StatelessWidget {
             ),
             InkWell(
               onTap: () {
-                Clipboard.setData(ClipboardData(text: userInfo.userId ?? ''));
+                Clipboard.setData(
+                    ClipboardData(text: userInfo.accountId ?? ''));
                 Fluttertoast.showToast(msg: S.of(context).actionCopySuccess);
               },
               child: Image.asset(
@@ -425,7 +428,7 @@ class _PersonalInfoPage extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              userInfo.birth ?? '',
+              userInfo.birthday ?? '',
               style: style,
             ),
             const SizedBox(

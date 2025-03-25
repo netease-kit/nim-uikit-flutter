@@ -11,10 +11,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_corekit_im/router/imkit_router.dart';
-import 'package:nim_core/nim_core.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:phone_state/phone_state.dart';
-
+import 'package:nim_core_v2/nim_core.dart';
 import '../../../chat_kit_client.dart';
 import '../../../media/audio_player.dart';
 
@@ -65,15 +62,14 @@ class ChatKitMessageAudioState extends State<ChatKitMessageAudioItem>
   }
 
   int _getAudioLen(NIMMessage message) {
-    NIMAudioAttachment attachment =
-        message.messageAttachment as NIMAudioAttachment;
+    NIMMessageAudioAttachment attachment =
+        message.attachment as NIMMessageAudioAttachment;
     int len = attachment.duration == null ? 0 : attachment.duration!;
     return (len / 1000).truncate();
   }
 
   Widget _getAudioUI(NIMMessage message) {
-    if (message.messageDirection == NIMMessageDirection.outgoing &&
-        !widget.isPin) {
+    if (message.isSelf == true && !widget.isPin) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
@@ -111,30 +107,20 @@ class ChatKitMessageAudioState extends State<ChatKitMessageAudioItem>
   void _startAudioPlay(NIMMessage message) {
     isPlaying = true;
     _timer?.cancel();
-    var attachment = message.messageAttachment as NIMAudioAttachment;
-    if (attachment.path != null) {
-      _playAudio(attachment.path!, attachment.duration!);
-    } else {
-      NimCore.instance.messageService
-          .downloadAttachment(message: message, thumb: false)
-          .then((value) {
-        if (value.isSuccess) {
-          _playAudio(attachment.path!, attachment.duration!);
-        } else {
-          isPlaying = false;
-        }
-      });
+    var attachment = message.attachment as NIMMessageAudioAttachment;
+    if (attachment.url?.isNotEmpty == true) {
+      _playAudio(UrlSource(attachment.url!), attachment.duration!);
+    } else if (attachment.path != null && File(attachment.path!).existsSync()) {
+      _playAudio(DeviceFileSource(attachment.path!), attachment.duration!);
     }
   }
 
-  void _playAudio(String path, int duration) async {
+  void _playAudio(Source source, int duration) async {
     if (isPlaying == false) {
       return;
     }
-    _handlePhoneCall();
     ChatAudioPlayer.instance
-        .play(widget.message.uuid!, DeviceFileSource(path),
-            stopAction: _stopPlayAni)
+        .play(widget.message.messageClientId!, source, stopAction: _stopPlayAni)
         .then((value) {
       if (value) {
         _startPlayAni(duration);
@@ -145,7 +131,7 @@ class ChatKitMessageAudioState extends State<ChatKitMessageAudioItem>
   }
 
   void _stopAudioPlay() {
-    ChatAudioPlayer.instance.stop(widget.message.uuid!);
+    ChatAudioPlayer.instance.stop(widget.message.messageClientId!);
     _stopPlayAni();
   }
 
@@ -182,48 +168,15 @@ class ChatKitMessageAudioState extends State<ChatKitMessageAudioItem>
     }
   }
 
-  //监听权限
-  Future<bool?> _requestPermission() async {
-    var status = await Permission.phone.request();
-
-    switch (status) {
-      case PermissionStatus.denied:
-      case PermissionStatus.restricted:
-      case PermissionStatus.limited:
-      case PermissionStatus.permanentlyDenied:
-        return false;
-      case PermissionStatus.granted:
-        return true;
-      default:
-        return true;
-    }
-  }
-
-  //处理来电话播放器停止播放的操作
-  void _handlePhoneCall() async {
-    _phoneStateSub?.cancel();
-    bool havePermission = true;
-    if (Platform.isAndroid) {
-      havePermission = await _requestPermission() ?? true;
-    }
-    if (havePermission) {
-      _phoneStateSub = PhoneState.stream.listen((event) {
-        if (ChatAudioPlayer.instance.isPlaying(widget.message.uuid!)) {
-          _stopAudioPlay();
-        }
-      });
-    }
-  }
-
   @override
   void initState() {
     super.initState();
     ChatAudioPlayer.instance
-        .getCurrentPosition(widget.message.uuid!)
+        .getCurrentPosition(widget.message.messageClientId!)
         .then((value) {
       //如果消息未播放完成则恢复动画
       if (value != null) {
-        var attachment = widget.message.messageAttachment as NIMAudioAttachment;
+        var attachment = widget.message.attachment as NIMMessageAudioAttachment;
         var durLast = attachment.duration! - value.inMilliseconds;
         isPlaying = true;
         _startPlayAni(durLast);

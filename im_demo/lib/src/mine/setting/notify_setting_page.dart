@@ -25,7 +25,6 @@ class _NotifySettingPageState extends State<NotifySettingPage> {
   bool notify = false;
   bool ring = false;
   bool shake = false;
-  bool pushSync = false;
   bool showNoDetail = false;
 
   initSwitchValue() async {
@@ -34,7 +33,6 @@ class _NotifySettingPageState extends State<NotifySettingPage> {
       ring = await ConfigRepo.getRingToggle();
       shake = await ConfigRepo.getVibrateToggle();
     }
-    pushSync = await ConfigRepo.isMultiPortPushOpen();
     showNoDetail = await ConfigRepo.isPushShowNoDetail();
 
     setState(() {});
@@ -123,33 +121,20 @@ class _NotifySettingPageState extends State<NotifySettingPage> {
             CardBackground(
               child: Column(
                 children: ListTile.divideTiles(context: context, tiles: [
-                  Visibility(
-                    visible: false,
-                    child: CommonListTile(
-                      title: S.of(context).settingNotifyPushSync,
-                      trailingType: TrailingType.onOff,
-                      switchValue: pushSync,
-                      onSwitchChanged: (value) {
-                        ConfigRepo.updateMultiPortPushOpen(value);
-                        setState(() {
-                          pushSync = value;
-                        });
-                      },
-                    ),
-                  ),
                   CommonListTile(
                     title: S.of(context).settingNotifyPushDetail,
                     trailingType: TrailingType.onOff,
                     switchValue: showNoDetail,
                     onSwitchChanged: (value) {
-                      ConfigRepo.updatePushShowNoDetail(value).then((success) {
+                      ConfigRepo.updatePushShowNoDetail(!showNoDetail)
+                          .then((success) {
                         Fluttertoast.showToast(
                             msg: success
                                 ? S.of(context).settingSuccess
                                 : S.of(context).settingFail);
                         if (success) {
                           setState(() {
-                            showNoDetail = value;
+                            showNoDetail = !showNoDetail;
                           });
                         }
                       });
