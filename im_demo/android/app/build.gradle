@@ -96,7 +96,7 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
-            signingConfig signingConfigs.release
+            // TODO: Add your own signing config for the debug build.
         }
     }
 
