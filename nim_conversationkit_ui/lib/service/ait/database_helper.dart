@@ -86,12 +86,12 @@ class DatabaseHelper {
 
   /// 查询session中对应的@消息
   Future<List<String>> queryMessageIdsBySessionId(
-      String sessionId, String accId) async {
+      String conversationId, String accId) async {
     Database? db = await instance.database;
     List<Map<String, dynamic>> result = await db!.query(table,
         columns: [messageIdColumn],
         where: '$sessionIdColumn = ? AND $myAccId = ?',
-        whereArgs: [sessionId, accId]);
+        whereArgs: [conversationId, accId]);
     return result.map((row) => row[messageIdColumn] as String).toList();
   }
 

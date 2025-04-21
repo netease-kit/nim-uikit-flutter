@@ -428,6 +428,24 @@ abstract class DemoKitClientLocalizations {
   /// In en, this message translates to:
   /// **'[Custom Message]'**
   String get customMessage;
+
+  /// No description provided for @localConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Local Conversation'**
+  String get localConversation;
+
+  /// No description provided for @settingAndResetTips.
+  ///
+  /// In en, this message translates to:
+  /// **'The setting succeeds and takes effect after the restart'**
+  String get settingAndResetTips;
+
+  /// No description provided for @swindleTips.
+  ///
+  /// In en, this message translates to:
+  /// **'For test only. Beware of money transfer, lottery winnings & strange call scams.'**
+  String get swindleTips;
 }
 
 class _DemoKitClientLocalizationsDelegate extends LocalizationsDelegate<DemoKitClientLocalizations> {

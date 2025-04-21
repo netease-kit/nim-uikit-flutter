@@ -180,4 +180,13 @@ class DemoKitClientLocalizationsEn extends DemoKitClientLocalizations {
 
   @override
   String get customMessage => '[Custom Message]';
+
+  @override
+  String get localConversation => 'Local Conversation';
+
+  @override
+  String get settingAndResetTips => 'The setting succeeds and takes effect after the restart';
+
+  @override
+  String get swindleTips => 'For test only. Beware of money transfer, lottery winnings & strange call scams.';
 }

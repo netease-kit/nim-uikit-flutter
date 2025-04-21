@@ -58,10 +58,13 @@ class AitServer {
                 AitContactsModel.fromMap(aitMap.cast<String, dynamic>());
             final myId = getIt<IMLoginService>().userInfo?.accountId ?? "";
             if (aitContact.isUserBeAit(myId)) {
-              _onSessionAitUpdated.add(AitSession(message.conversationId!,
-                  messageId: message.messageClientId!));
-              DatabaseHelper.instance.insertAitMessage(
-                  message.conversationId!, message.messageClientId!, myId);
+              DatabaseHelper.instance
+                  .insertAitMessage(
+                      message.conversationId!, message.messageClientId!, myId)
+                  .then((value) {
+                _onSessionAitUpdated.add(AitSession(message.conversationId!,
+                    messageId: message.messageClientId!));
+              });
             }
           }
         }
@@ -123,9 +126,9 @@ class AitServer {
   }
 
   /// 获取session是否是ai消息
-  Future<bool> isAitSession(String sessionId, String myId) async {
+  Future<bool> isAitConversation(String conversationId, String myId) async {
     final msgList = await DatabaseHelper.instance
-        .queryMessageIdsBySessionId(sessionId, myId);
+        .queryMessageIdsBySessionId(conversationId, myId);
     return msgList.isNotEmpty;
   }
 

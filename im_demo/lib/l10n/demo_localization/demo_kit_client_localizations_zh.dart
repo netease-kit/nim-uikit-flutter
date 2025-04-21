@@ -180,4 +180,13 @@ class DemoKitClientLocalizationsZh extends DemoKitClientLocalizations {
 
   @override
   String get customMessage => '[自定义消息]';
+
+  @override
+  String get localConversation => '本地会话';
+
+  @override
+  String get settingAndResetTips => '设置成功，重启后生效';
+
+  @override
+  String get swindleTips => '仅用于体验云信IM 产品功能，请勿轻信汇款、中奖等涉及钱款的信息，勿轻易拨打陌生电话，谨防上当受骗。';
 }

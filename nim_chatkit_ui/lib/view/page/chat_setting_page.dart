@@ -242,9 +242,7 @@ class _ChatSettingPageState extends State<ChatSettingPage> {
         .p2pConversationId(userId)
         .then((result) {
       if (result.data?.isNotEmpty == true) {
-        NimCore.instance.conversationService
-            .getConversation(result.data!)
-            .then((conversation) {
+        ConversationRepo.getConversation(result.data!).then((conversation) {
           if (conversation.data != null) {
             isStick = conversation.data!.stickTop;
             setState(() {});

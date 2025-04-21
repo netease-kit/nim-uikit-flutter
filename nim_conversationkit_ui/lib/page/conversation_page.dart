@@ -16,11 +16,14 @@ import '../l10n/S.dart';
 import '../view_model/conversation_view_model.dart';
 
 class ConversationPage extends StatefulWidget {
-  const ConversationPage({Key? key, this.config, this.onUnreadCountChanged})
+  const ConversationPage(
+      {Key? key, this.config, this.onUnreadCountChanged, this.topWidget})
       : super(key: key);
 
   final ValueChanged<int>? onUnreadCountChanged;
   final ConversationUIConfig? config;
+
+  final Widget? topWidget;
 
   @override
   State<ConversationPage> createState() => _ConversationPageState();
@@ -97,6 +100,7 @@ class _ConversationPageState extends BaseState<ConversationPage> {
         builder: (context, child) {
           return Column(
             children: [
+              if (widget.topWidget != null) widget.topWidget!,
               if (!hasNetWork) NoNetWorkTip(),
               Expanded(
                 child: ConversationList(

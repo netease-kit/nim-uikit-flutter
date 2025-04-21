@@ -9,6 +9,7 @@ import 'package:netease_corekit_im/repo/config_repo.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
+import 'package:netease_corekit_im/im_kit_client.dart';
 
 class IMDemoConfig {
   //云信IM appKey
@@ -28,6 +29,7 @@ class NIMSDKOptionsConfig {
   static Future<NIMSDKOptions?> getSDKOptions(String appKey,
       {NIMLoginInfo? loginInfo}) async {
     NIMSDKOptions? options;
+    final enableCloudConversation = await IMKitClient.enableCloudConversation;
     if (Platform.isAndroid) {
       final directory = await getExternalStorageDirectory();
       NIMStatusBarNotificationConfig config =
@@ -43,7 +45,7 @@ class NIMSDKOptionsConfig {
         shouldConsiderRevokedMessageUnreadCount: true,
         shouldSyncUnreadCount: true,
         enablePreloadMessageAttachment: true,
-        enableV2CloudConversation: true,
+        enableV2CloudConversation: enableCloudConversation,
         mixPushConfig: _buildMixPushConfig(),
       );
       ConfigRepo.saveStatusBarNotificationConfig(config, saveToNative: false);
@@ -60,7 +62,7 @@ class NIMSDKOptionsConfig {
         shouldSyncUnreadCount: true,
         enableTeamReceipt: true,
         enablePreloadMessageAttachment: true,
-        enableV2CloudConversation: true,
+        enableV2CloudConversation: enableCloudConversation,
       );
     }
     return options;
