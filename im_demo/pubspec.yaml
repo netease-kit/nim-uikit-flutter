@@ -15,7 +15,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 9.7.3
+version: 10.1.0
 
 environment:
   sdk: ">=2.16.1 <4.0.0"
@@ -32,21 +32,21 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  nim_conversationkit_ui: ^10.0.0
-#    path: ../nim_conversationkit_ui
-  nim_chatkit_ui: ^10.0.0
-#    path: ../nim_chatkit_ui
-  nim_teamkit_ui: ^10.0.0
-#    path: ../nim_teamkit_ui
-  nim_contactkit_ui: ^10.0.0
-#    path: ../nim_contactkit_ui
-  nim_searchkit_ui: ^10.0.0
-#    path: ../nim_searchkit_ui
+  nim_conversationkit_ui:
+    path: ../nim_conversationkit_ui
+  nim_chatkit_ui:
+    path: ../nim_chatkit_ui
+  nim_teamkit_ui:
+    path: ../nim_teamkit_ui
+  nim_contactkit_ui:
+    path: ../nim_contactkit_ui
+  nim_searchkit_ui:
+    path: ../nim_searchkit_ui
 #  地理位置消息支持
-  nim_chatkit_location: ^10.0.0
+#  nim_chatkit_location:
 #    path: ../nim_chatkit_location
   yunxin_alog: ^2.0.0
-  fluttertoast: ^8.2.4
+  fluttertoast: ^8.2.12
   permission_handler: ^11.0.1
   # 网图加载
   cached_network_image: ^3.3.1

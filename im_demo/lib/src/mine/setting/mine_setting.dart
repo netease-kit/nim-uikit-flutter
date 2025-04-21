@@ -2,6 +2,7 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:netease_common_ui/ui/background.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/widgets/common_list_tile.dart';
@@ -25,6 +26,7 @@ class _MineSettingPageState extends State<MineSettingPage> {
   bool audioPlayMode = false;
   bool friendDeleteMode = false;
   bool messageReadMode = false;
+  bool enableCouldConversation = false;
 
   Widget _divider() {
     return const SizedBox(
@@ -36,6 +38,7 @@ class _MineSettingPageState extends State<MineSettingPage> {
     int v = await ConfigRepo.getAudioPlayModel();
     audioPlayMode = v == ConfigRepo.audioPlayEarpiece;
     messageReadMode = await ConfigRepo.getShowReadStatus();
+    enableCouldConversation = await IMKitClient.enableCloudConversation;
 
     setState(() {});
   }
@@ -70,6 +73,18 @@ class _MineSettingPageState extends State<MineSettingPage> {
           ConfigRepo.updateShowReadStatus(value);
           setState(() {
             messageReadMode = value;
+          });
+        },
+      ),
+      CommonListTile(
+        title: S.of(context).localConversation,
+        trailingType: TrailingType.onOff,
+        switchValue: !enableCouldConversation,
+        onSwitchChanged: (value) {
+          ConfigRepo.updateEnableCloudConversations(!value);
+          Fluttertoast.showToast(msg: S.of(context).settingAndResetTips);
+          setState(() {
+            enableCouldConversation = !value;
           });
         },
       ),

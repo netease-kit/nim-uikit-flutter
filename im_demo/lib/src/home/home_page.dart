@@ -301,6 +301,17 @@ class _HomePageState extends State<HomePage> {
     return getBottomNavigatorList(context);
   }
 
+  Widget getSwindleWidget() {
+    return Container(
+        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 12),
+        alignment: Alignment.center,
+        color: Color(0xfffff5e1),
+        child: Text(
+          S.of(context).swindleTips,
+          style: TextStyle(fontSize: 14, color: Color(0xffeb9718)),
+        ));
+  }
+
   List<NavigationBarData> getBottomNavigatorList(BuildContext context) {
     final List<NavigationBarData> bottomNavigatorList = [
       NavigationBarData(
@@ -310,6 +321,7 @@ class _HomePageState extends State<HomePage> {
               chatUnreadCount = unreadCount;
             });
           },
+          topWidget: getSwindleWidget(),
         ),
         title: S.of(context).message,
         selectedIcon: SvgPicture.asset(

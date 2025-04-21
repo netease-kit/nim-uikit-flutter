@@ -68,5 +68,8 @@
   "notUsable": "Feature not yet available",
   "settingFail": "Setting failed",
   "settingSuccess": "Set successfully",
-  "customMessage": "[Custom Message]"
+  "customMessage": "[Custom Message]",
+   "localConversation": "Local Conversation",
+    "settingAndResetTips": "The setting succeeds and takes effect after the restart",
+    "swindleTips": "For test only. Beware of money transfer, lottery winnings & strange call scams."
 }

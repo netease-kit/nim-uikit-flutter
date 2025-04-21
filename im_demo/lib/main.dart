@@ -2,39 +2,40 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'dart:io';
 import 'package:flutter/gestures.dart';
-import 'package:im_demo/src/config.dart';
-import 'package:im_demo/src/home/home_page.dart';
-import 'package:netease_corekit_im/router/imkit_router.dart';
-import 'package:netease_corekit_im/router/imkit_router_constants.dart';
-import 'package:nim_chatkit_location/chat_kit_location.dart';
-import 'package:nim_chatkit_ui/chat_kit_client.dart';
-import 'package:netease_common_ui/common_ui.dart';
-import 'package:netease_common_ui/utils/color_utils.dart';
-import 'package:nim_contactkit_ui/contact_kit_client.dart';
-import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
-import 'package:netease_corekit_im/im_kit_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:im_demo/l10n/S.dart';
+import 'package:im_demo/src/config.dart';
+import 'package:im_demo/src/home/home_page.dart';
 import 'package:im_demo/src/home/splash_page.dart';
 import 'package:im_demo/src/mine/user_info_page.dart';
+import 'package:netease_common_ui/common_ui.dart';
+import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_corekit_im/im_kit_client.dart';
+import 'package:netease_corekit_im/router/imkit_router.dart';
+import 'package:netease_corekit_im/router/imkit_router_constants.dart';
+// import 'package:nim_chatkit_location/chat_kit_location.dart';
+import 'package:nim_chatkit_ui/chat_kit_client.dart';
+import 'package:nim_contactkit_ui/contact_kit_client.dart';
+import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
 import 'package:nim_searchkit_ui/search_kit_client.dart';
 import 'package:nim_teamkit_ui/team_kit_client.dart';
-import 'dart:io';
+import 'package:provider/provider.dart';
 
 void main() {
   SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(statusBarColor: Colors.transparent));
-  WidgetsFlutterBinding.ensureInitialized().addPostFrameCallback((timeStamp) {
-    //初始化位置消息插件
-    ChatKitLocation.instance.init(
-        aMapAndroidKey: IMDemoConfig.AMapAndroid,
-        aMapIOSKey: IMDemoConfig.AMapIOS,
-        aMapWebKey: IMDemoConfig.AMapWeb);
-  });
+  // WidgetsFlutterBinding.ensureInitialized().addPostFrameCallback((timeStamp) {
+  //   //初始化位置消息插件
+  //   ChatKitLocation.instance.init(
+  //       aMapAndroidKey: IMDemoConfig.AMapAndroid,
+  //       aMapIOSKey: IMDemoConfig.AMapIOS,
+  //       aMapWebKey: IMDemoConfig.AMapWeb);
+  // });
   runApp(const MainApp());
 }
 

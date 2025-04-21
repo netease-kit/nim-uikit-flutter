@@ -2,8 +2,6 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-
-
 import 'contact_kit_client_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -73,7 +71,8 @@ class ContactKitClientLocalizationsEn extends ContactKitClientLocalizations {
   String get contactAddFriend => 'Add Friend';
 
   @override
-  String get contactYouWillNeverReceiveAnyMessageFromThosePerson => 'You will never receive any message from those person';
+  String get contactYouWillNeverReceiveAnyMessageFromThosePerson =>
+      'You will never receive any message from those person';
 
   @override
   String get contactRelease => 'Release';

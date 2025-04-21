@@ -1,5 +1,10 @@
 # NimTeamKitUI ChangeLog
 
+## 10.1.0(Apr 21, 2025)
+
+### New Features
+* 支持本地会话
+
 ## 10.0.0(Mar 25, 2025)
 
 ### New Features

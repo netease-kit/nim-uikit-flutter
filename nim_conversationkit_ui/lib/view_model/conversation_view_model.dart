@@ -92,8 +92,7 @@ class ConversationViewModel extends ChangeNotifier {
     _logI('init -->> ');
 
     // 会话列表同步完成（仅保证列表完整性，会话具体信息如 name 需等待其他同步回调）
-    subscriptions.add(
-        NimCore.instance.conversationService.onSyncFinished.listen((event) {
+    subscriptions.add(ConversationRepo.onSyncFinished().listen((event) {
       _logI('conversationService onSyncFinished');
       queryConversationList();
     }));
@@ -167,11 +166,6 @@ class ConversationViewModel extends ChangeNotifier {
       List<ConversationInfo>? result = convertConversationInfo(event);
       if (result != null) {
         for (var conversationInfo in result) {
-          // if (_isMineLeave(conversationInfo)) {
-          //   deleteConversation(conversationInfo);
-          //   _logI(
-          //       'changeObserver:onSuccess:DismissTeam ${conversationInfo.getConversationId()}');
-          // } else {
           _updateItem(conversationInfo);
           _logI(
               'changeObserver:onSuccess:update ${conversationInfo.getConversationId()}');
@@ -184,20 +178,24 @@ class ConversationViewModel extends ChangeNotifier {
     // delete observer
     subscriptions.add(ConversationRepo.onConversationDeleted().listen((event) {
       _logI('onConversationDeleted ${event.length}');
-      if (event == null) {
-        // 清空会话列表
-        _conversationList.clear();
-        notifyListeners();
-      } else {
-        _deleteItem(event);
-      }
+      _deleteItem(event);
       doUnreadCallback();
     }));
 
     // delete observer
-    subscriptions.add(ConversationRepo.onConversationCreated().listen((event) {
+    subscriptions
+        .add(ConversationRepo.onConversationCreated().listen((event) async {
       _logI('onConversationCreated ${event.conversationId}');
-      var conversationInfo = ConversationInfo(event);
+      if (!_isValidConversation(event)) {
+        deleteConversationById(event.conversationId);
+        return;
+      }
+      ConversationInfo conversationInfo = ConversationInfo(event);
+      if (event.type == NIMConversationType.team &&
+          IMKitClient.account() != null) {
+        conversationInfo.haveBeenAit = await AitServer.instance
+            .isAitConversation(event.conversationId, IMKitClient.account()!);
+      }
       _addItem(conversationInfo);
       doUnreadCallback();
     }));
@@ -263,6 +261,24 @@ class ConversationViewModel extends ChangeNotifier {
       }
     }
     notifyListeners();
+  }
+
+  ///是否合法的群
+  ///如果最后一条消息是群退出，解散，被踢的消息，则非法
+  bool _isValidConversation(NIMConversation conversation) {
+    if (conversation.lastMessage?.messageType == NIMMessageType.notification &&
+        conversation.lastMessage?.attachment
+            is NIMMessageNotificationAttachment) {
+      final notificationType = (conversation.lastMessage?.attachment
+              as NIMMessageNotificationAttachment)
+          .type;
+      if (notificationType == NIMMessageNotificationType.teamDismiss ||
+          notificationType == NIMMessageNotificationType.teamKick ||
+          notificationType == NIMMessageNotificationType.teamLeave) {
+        return false;
+      }
+    }
+    return true;
   }
 
   _addItem(ConversationInfo conversationInfo) async {
