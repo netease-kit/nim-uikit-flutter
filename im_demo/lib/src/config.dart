@@ -5,11 +5,11 @@
 import 'dart:io';
 
 import 'package:flutter/services.dart';
-import 'package:netease_corekit_im/repo/config_repo.dart';
+import 'package:nim_chatkit/repo/config_repo.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
-import 'package:netease_corekit_im/im_kit_client.dart';
+import 'package:nim_chatkit/im_kit_client.dart';
 
 class IMDemoConfig {
   //云信IM appKey

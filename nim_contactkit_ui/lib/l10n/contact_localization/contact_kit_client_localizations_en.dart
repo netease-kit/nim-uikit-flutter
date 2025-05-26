@@ -33,6 +33,9 @@ class ContactKitClientLocalizationsEn extends ContactKitClientLocalizations {
   String get contactTeam => 'My Team';
 
   @override
+  String get contactAIUserList => 'My AI User';
+
+  @override
   String get contactComment => 'Comment';
 
   @override
@@ -179,4 +182,13 @@ class ContactKitClientLocalizationsEn extends ContactKitClientLocalizations {
 
   @override
   String get contactFriendEmpty => 'No Friend';
+
+  @override
+  String get myFriend => 'MY FRIENDS';
+
+  @override
+  String get aiUsers => 'AI USERS';
+
+  @override
+  String get aiUsersEmpty => 'No AIUser';
 }

@@ -6,7 +6,7 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:netease_corekit_im/im_kit_client.dart';
+import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/repo/contact_repo.dart';
 import 'package:nim_core_v2/nim_core.dart';
 

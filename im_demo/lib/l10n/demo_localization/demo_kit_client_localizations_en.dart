@@ -189,4 +189,7 @@ class DemoKitClientLocalizationsEn extends DemoKitClientLocalizations {
 
   @override
   String get swindleTips => 'For test only. Beware of money transfer, lottery winnings & strange call scams.';
+
+  @override
+  String get aiStreamMode => 'AI Stream Mode';
 }

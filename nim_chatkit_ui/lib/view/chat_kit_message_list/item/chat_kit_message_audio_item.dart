@@ -10,7 +10,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
-import 'package:netease_corekit_im/router/imkit_router.dart';
+import 'package:nim_chatkit/router/imkit_router.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import '../../../chat_kit_client.dart';
 import '../../../media/audio_player.dart';

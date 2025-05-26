@@ -4,6 +4,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_contactkit_ui/page/contact_kit_ai_user_list_page.dart';
 import 'package:nim_contactkit_ui/page/contact_kit_black_list_page.dart';
 import 'package:nim_contactkit_ui/page/contact_kit_friend_add_application_page.dart';
 import 'package:nim_contactkit_ui/page/contact_kit_team_list_page.dart';
@@ -88,6 +90,22 @@ class _ContactKitContactState extends State<ContactKitContactPage> {
               );
             }));
           }),
+      if (IMKitClient.enableAi)
+        TopListItem(
+            name: S.of(context).contactAIUserList,
+            icon: SvgPicture.asset(
+              'images/ic_ai_user_list.svg',
+              package: kPackage,
+              height: 36,
+              width: 36,
+            ),
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) {
+                return ContactKitAIUserListPage(
+                  listConfig: uiConfig.contactListConfig,
+                );
+              }));
+            })
     ];
   }
 

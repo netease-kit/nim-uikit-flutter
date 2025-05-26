@@ -2,9 +2,9 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/contact/contact_provider.dart';
-import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
+import 'package:nim_chatkit/service_locator.dart';
+import 'package:nim_chatkit/services/contact/contact_provider.dart';
+import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
 import 'package:nim_core_v2/nim_core.dart';
 
 extension MessageUserHelper on String {

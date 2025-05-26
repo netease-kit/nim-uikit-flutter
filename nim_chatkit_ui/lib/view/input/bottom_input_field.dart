@@ -17,17 +17,21 @@ import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/permission_request.dart';
 import 'package:netease_common_ui/widgets/platform_utils.dart';
-import 'package:netease_corekit_im/model/ait/ait_contacts_model.dart';
-import 'package:netease_corekit_im/model/team_models.dart';
-import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/login/im_login_service.dart';
-import 'package:netease_corekit_im/services/message/chat_message.dart';
-import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
+import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit/model/ait/ait_contacts_model.dart';
+import 'package:nim_chatkit/service_locator.dart';
+import 'package:nim_chatkit/services/login/im_login_service.dart';
+import 'package:nim_chatkit/services/message/chat_message.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
+import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_helper.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_user_helper.dart';
 import 'package:nim_chatkit_ui/view/ait/ait_manager.dart';
+import 'package:nim_chatkit_ui/view/ait/ait_model.dart';
+import 'package:nim_chatkit_ui/view/input/emoji/emoji_text.dart';
 import 'package:nim_chatkit_ui/view/input/emoji_panel.dart';
 import 'package:nim_chatkit_ui/view/input/ne_special_text_span_builder.dart';
+import 'package:nim_chatkit_ui/view/input/translate_panel.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
@@ -87,6 +91,10 @@ class _BottomInputFieldState extends State<BottomInputField>
 
   bool _isExpanded = false;
 
+  // 展开输入框翻译面板
+  bool _isTranslating = false;
+  final GlobalKey<dynamic> _translatePanel = GlobalKey();
+
   ChatMessage? _replyMessageTemp;
 
   hideAllPanel() {
@@ -99,7 +107,7 @@ class _BottomInputFieldState extends State<BottomInputField>
   }
 
   addMention(String accId) {
-    if (_viewModel.conversationType == NIMConversationType.team) {
+    if (enableAit()) {
       _addAitMember(accId, reAdd: true);
     }
   }
@@ -135,7 +143,6 @@ class _BottomInputFieldState extends State<BottomInputField>
     final List<XFile>? pickedFileList = await _picker.pickMultiImage();
     if (pickedFileList != null) {
       for (XFile image in pickedFileList) {
-        int len = await image.length();
         Alog.d(
             tag: 'ChatKit',
             moduleName: 'bottom input',
@@ -338,6 +345,7 @@ class _BottomInputFieldState extends State<BottomInputField>
         keepDefault: widget.chatUIConfig?.keepDefaultMoreAction ?? true,
         sessionId: widget.conversationId,
         sessionType: widget.conversationType,
+        onTranslateClick: _onTranslateActionTap,
       );
     }
     if (_currentType == ActionConstants.emoji) {
@@ -352,8 +360,32 @@ class _BottomInputFieldState extends State<BottomInputField>
           });
         },
         onEmojiDelete: () {
+          final selection = inputController.selection;
+
+          int cursorPos = selection.baseOffset;
+
           String originText = inputController.text;
-          var text = originText.characters.skipLast(1);
+
+          if (cursorPos < 0) {
+            cursorPos = inputController.text.length;
+          }
+
+          String text;
+          final emojiStartIndex = _findMatchingBracket(originText, cursorPos);
+          if (emojiStartIndex >= 0) {
+            text = (emojiStartIndex > 0
+                    ? originText.substring(0, emojiStartIndex)
+                    : '') +
+                (cursorPos >= originText.length
+                    ? ''
+                    : originText.substring(cursorPos));
+          } else {
+            text = originText;
+            text = originText.substring(0, cursorPos - 1) +
+                (cursorPos < originText.length
+                    ? originText.substring(cursorPos)
+                    : '');
+          }
           inputController.text = "$text";
           inputText = inputController.text;
         },
@@ -361,6 +393,22 @@ class _BottomInputFieldState extends State<BottomInputField>
       );
     }
     return Container();
+  }
+
+  // 查找匹配的起始 [
+  int _findMatchingBracket(String text, int endIndex) {
+    if (endIndex > 0 && text[endIndex - 1] == ']') {
+      for (int i = endIndex - 1; i >= 0; i--) {
+        if (text[i] == '[') {
+          String matchStr = text.substring(i, endIndex);
+          final emoji = EmojiUtil.instance.emojiMap[matchStr];
+          if (emoji != null) {
+            return i;
+          }
+        }
+      }
+    }
+    return -1;
   }
 
   //将指定用户添加到@列表中
@@ -390,18 +438,23 @@ class _BottomInputFieldState extends State<BottomInputField>
       return;
     }
     _replyMessageTemp = replyMsg;
-    if (widget.conversationType == NIMConversationType.team &&
-        replyMsg.fromUser?.accountId != null &&
-        replyMsg.fromUser?.accountId !=
-            getIt<IMLoginService>().userInfo?.accountId) {
-      String account = replyMsg.fromUser!.accountId!;
-      _addAitMember(account, reAdd: true);
+    if (enableAit()) {
+      //如果是数字人消息，@数字人
+      if (ChatMessageHelper.isReceivedMessageFromAi(replyMsg.nimMessage)) {
+        String accountId = replyMsg.nimMessage.aiConfig!.accountId!;
+        _addAitMember(accountId, reAdd: true);
+      } else if (replyMsg.fromUser?.accountId != null &&
+          replyMsg.fromUser?.accountId !=
+              getIt<IMLoginService>().userInfo?.accountId) {
+        String account = replyMsg.fromUser!.accountId!;
+        _addAitMember(account, reAdd: true);
+      }
     }
   }
 
   void _handleAitText() {
     String value = inputController.text;
-    if (widget.conversationType != NIMConversationType.team) {
+    if (!enableAit()) {
       inputText = value;
       return;
     }
@@ -434,8 +487,8 @@ class _BottomInputFieldState extends State<BottomInputField>
       // @ 弹出选择框
 
       if (endIndex > 0 && value[endIndex - 1] == '@') {
-        _aitManager?.selectMember(context).then((select) {
-          if (select == AitContactsModel.accountAll) {
+        _aitManager?.selectMember(context).then((aitUser) {
+          if (aitUser == AitContactsModel.accountAll) {
             final String allStr = S.of(context).chatTeamAitAll;
             _aitManager?.addAitWithText(AitContactsModel.accountAll,
                 '@${S.of(context).chatTeamAitAll}$blank', endIndex - 1);
@@ -444,12 +497,23 @@ class _BottomInputFieldState extends State<BottomInputField>
             inputController.selection = TextSelection.fromPosition(
                 TextPosition(offset: endIndex + allStr.length + 1));
             inputText = inputController.text;
-          } else if (select is UserInfoWithTeam) {
-            // @列表需要展示用户备注，@结果不需要
-            String name = select.getName(needAlias: false);
+          } else if (aitUser is AitBean) {
+            String name = '';
+            String accountId = '';
+            if (aitUser.aiUser != null) {
+              //选中数字人
+              name = aitUser.getName();
+              accountId = aitUser.getAccountId()!;
+            } else {
+              //选中正常用户
+              final select = aitUser.teamMember!;
+              // @列表需要展示用户备注，@结果不需要
+              name = select.getName(needAlias: false);
+              accountId = select.teamInfo.accountId;
+            }
             //add to aitManager
             _aitManager?.addAitWithText(
-                select.teamInfo.accountId, '@$name$blank', endIndex - 1);
+                accountId, '@$name$blank', endIndex - 1);
             inputController.text =
                 '${value.substring(0, endIndex)}$name$blank${value.substring(endIndex)}';
             inputController.selection = TextSelection.fromPosition(
@@ -478,7 +542,7 @@ class _BottomInputFieldState extends State<BottomInputField>
     }
     if (title.isNotEmpty || text.isNotEmpty) {
       List<String>? pushList;
-      if (widget.conversationType == NIMConversationType.team) {
+      if (enableAit()) {
         if (_aitManager?.aitContactsModel != null) {
           pushList = _aitManager!.getPushList();
         }
@@ -511,6 +575,38 @@ class _BottomInputFieldState extends State<BottomInputField>
           gravity: ToastGravity.CENTER);
     }
     _scrollToBottom();
+  }
+
+  _onTranslateActionTap(
+      BuildContext context, String sessionId, NIMConversationType sessionType,
+      {NIMMessageSender? messageSender}) {
+    setState(() {
+      _isTranslating = true;
+    });
+  }
+
+  _onTranslateCloseClick() {
+    setState(() {
+      _isTranslating = false;
+    });
+  }
+
+  _onTranslateSureClick(String language, Function(bool textEmpty) completion) {
+    if (inputController.text.isNotEmpty) {
+      NIMAIUser? translateUser = AIUserManager.instance.getAITranslateUser();
+      if (translateUser?.accountId != null) {
+        _viewModel.translateInputText(inputController.text, language);
+      }
+      completion(false);
+    } else {
+      completion(true);
+    }
+  }
+
+  _onTranslateUseClick(String result) {
+    _aitManager?.cleanAit();
+    inputText = result;
+    inputController.text = result;
   }
 
   void _scrollToBottom() {
@@ -629,11 +725,30 @@ class _BottomInputFieldState extends State<BottomInputField>
       }
     });
     _viewModel.addListener(onViewModelChange);
-    if (widget.conversationType == NIMConversationType.team) {
+    if (enableAit()) {
       _viewModel.sessionId.then((sessionId) {
         _aitManager = AitManager(sessionId);
       });
     }
+  }
+
+  //是否支持@功能
+  bool enableAit() {
+    if (!IMKitClient.enableAit) {
+      return false;
+    }
+    if (widget.conversationType == NIMConversationType.team) {
+      return true;
+    }
+    final accountId =
+        ChatKitUtils.getConversationTargetId(widget.conversationId);
+    if (AIUserManager.instance.isAIUser(accountId)) {
+      return false;
+    }
+    if (AIUserManager.instance.getAIChatUserList().isNotEmpty) {
+      return true;
+    }
+    return false;
   }
 
   @override
@@ -703,6 +818,18 @@ class _BottomInputFieldState extends State<BottomInputField>
       child: SafeArea(
         child: Column(
           children: [
+            _isTranslating
+                ? AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    // height: 77,
+                    child: TranslatePanel(
+                      key: _translatePanel,
+                      onTranslateCloseClick: _onTranslateCloseClick,
+                      onTranslateSureClick: _onTranslateSureClick,
+                      onTranslateUseClick: _onTranslateUseClick,
+                    ),
+                  )
+                : Container(),
             _viewModel.replyMessage != null && !_isExpanded
                 ? Container(
                     height: 36,
@@ -874,6 +1001,8 @@ class _BottomInputFieldState extends State<BottomInputField>
                                   : TextInputAction.send,
                               onChanged: (value) {
                                 _handleAitText();
+                                _translatePanel.currentState
+                                    ?.onInputTextChange();
                               },
                               maxLines: _isExpanded ? 8 : (showTitle ? 2 : 1),
                               onEditingComplete: _sendTextMessage,

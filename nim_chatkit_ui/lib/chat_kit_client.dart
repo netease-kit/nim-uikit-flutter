@@ -6,9 +6,9 @@ import 'dart:core';
 
 import 'package:flutter/material.dart';
 import 'package:netease_corekit/report/xkit_report.dart';
-import 'package:netease_corekit_im/router/imkit_router.dart';
-import 'package:netease_corekit_im/router/imkit_router_constants.dart';
-import 'package:netease_corekit_im/services/message/chat_message.dart';
+import 'package:nim_chatkit/router/imkit_router.dart';
+import 'package:nim_chatkit/router/imkit_router_constants.dart';
+import 'package:nim_chatkit/services/message/chat_message.dart';
 import 'package:nim_chatkit/chatkit_client_repo.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
 import 'package:nim_chatkit_ui/view/page/chat_pin_page.dart';
@@ -20,8 +20,12 @@ import 'view/input/actions.dart';
 import 'view/page/chat_page.dart';
 import 'view/page/chat_search_page.dart';
 
+///发送消息前的回调类型
+///[message] 待发送的消息
+///[conversationId] 会话ID
+///[params] 参数
 typedef NIMMessageAction = Future Function(
-    NIMMessage message, NIMSendMessageParams params);
+    NIMMessage message, String conversationId, NIMSendMessageParams? params);
 
 const String kPackage = 'nim_chatkit_ui';
 

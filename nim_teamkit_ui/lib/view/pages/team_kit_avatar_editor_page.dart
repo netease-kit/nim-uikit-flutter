@@ -13,7 +13,7 @@ import 'package:netease_common_ui/ui/photo.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
-import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
+import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:nim_chatkit/model/team_default_icon.dart';
 import 'package:nim_chatkit/repo/team_repo.dart';

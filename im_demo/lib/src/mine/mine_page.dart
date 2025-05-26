@@ -6,8 +6,8 @@ import 'dart:async';
 
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
-import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/login/im_login_service.dart';
+import 'package:nim_chatkit/service_locator.dart';
+import 'package:nim_chatkit/services/login/im_login_service.dart';
 import 'package:flutter/material.dart';
 import 'package:im_demo/l10n/S.dart';
 import 'package:flutter_svg/svg.dart';

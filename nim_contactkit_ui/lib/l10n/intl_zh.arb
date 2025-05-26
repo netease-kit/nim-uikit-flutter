@@ -20,6 +20,7 @@
   "contactVerifyMessage": "验证消息",
   "contactBlackList": "黑名单",
   "contactTeam": "我的群聊",
+  "contactAIUserList": "我的数字人",
   "contactComment": "备注名",
   "contactBirthday": "生日",
   "contactPhone": "手机",
@@ -150,5 +151,8 @@
     }
   },
   "contactSelectEmptyTip": "请选择联系人",
-  "contactFriendEmpty": "暂无好友"
+  "contactFriendEmpty": "暂无好友",
+  "myFriend": "我的好友",
+    "aiUsers": "数字人",
+    "aiUsersEmpty": "暂无数字人"
 }

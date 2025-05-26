@@ -15,9 +15,9 @@ import 'package:im_demo/src/home/splash_page.dart';
 import 'package:im_demo/src/mine/user_info_page.dart';
 import 'package:netease_common_ui/common_ui.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
-import 'package:netease_corekit_im/im_kit_client.dart';
-import 'package:netease_corekit_im/router/imkit_router.dart';
-import 'package:netease_corekit_im/router/imkit_router_constants.dart';
+import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit/router/imkit_router.dart';
+import 'package:nim_chatkit/router/imkit_router_constants.dart';
 // import 'package:nim_chatkit_location/chat_kit_location.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_contactkit_ui/contact_kit_client.dart';
@@ -25,6 +25,8 @@ import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
 import 'package:nim_searchkit_ui/search_kit_client.dart';
 import 'package:nim_teamkit_ui/team_kit_client.dart';
 import 'package:provider/provider.dart';
+import 'package:nim_chatkit/manager/ai_user_manager.dart';
+import 'package:nim_core_v2/nim_core.dart';
 
 void main() {
   SystemChrome.setSystemUIOverlayStyle(
@@ -47,6 +49,12 @@ class MainApp extends StatefulWidget {
 }
 
 class _MainAppState extends State<MainApp> {
+  // AI搜索数字人账号
+  final String AI_SEARCH_USER_ACCOUNT = "search";
+
+  // AI翻译数字人账号
+  final String AI_TRANSLATION_USER_ACCOUNT = "translation";
+
   ///init all plugin here
   void _initPlugins() {
     ChatKitClient.init();
@@ -57,6 +65,31 @@ class _MainAppState extends State<MainApp> {
 
     IMKitRouter.instance.registerRouter(
         RouterConstants.PATH_MINE_INFO_PAGE, (context) => UserInfoPage());
+  }
+
+  ///初始化AI数字人相关配置
+  void _initAIUser() {
+    AIUserManager.instance.init();
+    AIUserManager.instance.aiSearchUserProvider = (List<NIMAIUser> users) {
+      for (var user in users) {
+        if (user.accountId == AI_SEARCH_USER_ACCOUNT) {
+          return user;
+        }
+      }
+      return null;
+    };
+    AIUserManager.instance.aiTranslateUserProvider = (List<NIMAIUser> users) {
+      for (var user in users) {
+        if (user.accountId == AI_TRANSLATION_USER_ACCOUNT) {
+          return user;
+        }
+      }
+      return null;
+    };
+    AIUserManager.instance.aiTranslateLanguagesProvider =
+        (List<NIMAIUser> users) {
+      return ["英语", "日语", "韩语", "俄语", "法语", "德语"];
+    };
   }
 
   Uint8List? _deviceToken;
@@ -79,6 +112,7 @@ class _MainAppState extends State<MainApp> {
     super.initState();
     _updateTokenIOS();
     _initPlugins();
+    _initAIUser();
     GestureBinding.instance.resamplingEnabled = true;
   }
 

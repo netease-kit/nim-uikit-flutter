@@ -7,8 +7,8 @@ import 'package:netease_common_ui/ui/background.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/widgets/common_list_tile.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
-import 'package:netease_corekit_im/im_kit_client.dart';
-import 'package:netease_corekit_im/repo/config_repo.dart';
+import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit/repo/config_repo.dart';
 import 'package:flutter/material.dart';
 import 'package:im_demo/src/mine/setting/clear_cache_page.dart';
 import 'package:im_demo/src/mine/setting/notify_setting_page.dart';
@@ -26,7 +26,8 @@ class _MineSettingPageState extends State<MineSettingPage> {
   bool audioPlayMode = false;
   bool friendDeleteMode = false;
   bool messageReadMode = false;
-  bool enableCouldConversation = false;
+  bool enableCloudConversation = false;
+  bool enableAIStream = true;
 
   Widget _divider() {
     return const SizedBox(
@@ -38,7 +39,8 @@ class _MineSettingPageState extends State<MineSettingPage> {
     int v = await ConfigRepo.getAudioPlayModel();
     audioPlayMode = v == ConfigRepo.audioPlayEarpiece;
     messageReadMode = await ConfigRepo.getShowReadStatus();
-    enableCouldConversation = await IMKitClient.enableCloudConversation;
+    enableCloudConversation = await IMKitClient.enableCloudConversation;
+    enableAIStream = await IMKitClient.enableAIStream;
 
     setState(() {});
   }
@@ -79,12 +81,23 @@ class _MineSettingPageState extends State<MineSettingPage> {
       CommonListTile(
         title: S.of(context).localConversation,
         trailingType: TrailingType.onOff,
-        switchValue: !enableCouldConversation,
+        switchValue: !enableCloudConversation,
         onSwitchChanged: (value) {
           ConfigRepo.updateEnableCloudConversations(!value);
           Fluttertoast.showToast(msg: S.of(context).settingAndResetTips);
           setState(() {
-            enableCouldConversation = !value;
+            enableCloudConversation = !value;
+          });
+        },
+      ),
+      CommonListTile(
+        title: S.of(context).aiStreamMode,
+        trailingType: TrailingType.onOff,
+        switchValue: enableAIStream,
+        onSwitchChanged: (value) {
+          IMKitClient.setEnableAIStream(value);
+          setState(() {
+            enableAIStream = value;
           });
         },
       ),

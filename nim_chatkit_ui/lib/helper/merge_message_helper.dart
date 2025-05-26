@@ -4,10 +4,10 @@
 
 import 'dart:convert';
 
-import 'package:netease_corekit_im/model/custom_type_constant.dart';
-import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/contact/contact_provider.dart';
-import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
+import 'package:nim_chatkit/model/custom_type_constant.dart';
+import 'package:nim_chatkit/service_locator.dart';
+import 'package:nim_chatkit/services/contact/contact_provider.dart';
+import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
 import 'package:nim_chatkit/message/merge_message.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_user_helper.dart';

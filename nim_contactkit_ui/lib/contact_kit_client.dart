@@ -5,9 +5,9 @@
 import 'package:flutter/material.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_corekit/report/xkit_report.dart';
-import 'package:netease_corekit_im/model/contact_info.dart';
-import 'package:netease_corekit_im/router/imkit_router.dart';
-import 'package:netease_corekit_im/router/imkit_router_constants.dart';
+import 'package:nim_chatkit/model/contact_info.dart';
+import 'package:nim_chatkit/router/imkit_router.dart';
+import 'package:nim_chatkit/router/imkit_router_constants.dart';
 
 import 'l10n/S.dart';
 import 'page/contact_kit_black_list_page.dart';
@@ -151,6 +151,9 @@ class ContactKitClient {
                   context, 'filterUser'),
               returnContact: IMKitRouter.getArgumentFormMap<bool>(
                   context, 'returnContact'),
+              includeAIUser: IMKitRouter.getArgumentFormMap<bool>(
+                      context, 'includeAIUser') ??
+                  false,
             ));
 
     IMKitRouter.instance.registerRouter(

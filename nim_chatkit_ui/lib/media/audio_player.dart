@@ -5,7 +5,7 @@
 import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
-import 'package:netease_corekit_im/repo/config_repo.dart';
+import 'package:nim_chatkit/repo/config_repo.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
 
 //终止操作，播放下一个，上一个会被迫终止

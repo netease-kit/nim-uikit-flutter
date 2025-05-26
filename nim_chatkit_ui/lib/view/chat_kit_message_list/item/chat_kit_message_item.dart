@@ -7,22 +7,23 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart' as Intl;
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/progress_ring.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/string_utils.dart';
 import 'package:netease_common_ui/widgets/radio_button.dart';
-import 'package:netease_corekit_im/im_kit_client.dart';
-import 'package:netease_corekit_im/model/team_models.dart';
-import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/contact/contact_provider.dart';
-import 'package:netease_corekit_im/services/login/im_login_service.dart';
-import 'package:netease_corekit_im/services/message/chat_message.dart';
-import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
-import 'package:netease_corekit_im/services/team/team_provider.dart';
+import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit/service_locator.dart';
+import 'package:nim_chatkit/services/contact/contact_provider.dart';
+import 'package:nim_chatkit/services/login/im_login_service.dart';
+import 'package:nim_chatkit/services/message/chat_message.dart';
+import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
+import 'package:nim_chatkit/services/team/team_provider.dart';
 import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
 import 'package:nim_chatkit/extension.dart';
+import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit/message/message_helper.dart';
 import 'package:nim_chatkit/message/message_reply_info.dart';
 import 'package:nim_chatkit/message/message_revoke_info.dart';
@@ -46,7 +47,6 @@ import 'package:nim_chatkit_ui/view_model/chat_view_model.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:provider/provider.dart';
 import 'package:visibility_detector/visibility_detector.dart';
-import 'package:yunxin_alog/yunxin_alog.dart';
 
 import '../../../helper/merge_message_helper.dart';
 import 'chat_kit_message_multi_line_text_item.dart';
@@ -120,6 +120,8 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
 
   static const maxReceiptNum = 100;
 
+  static const errorCodeAIRegenNone = 107404;
+
   final subscriptions = <StreamSubscription>[];
 
   //重新编辑展示时间
@@ -140,11 +142,11 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
     return MessageItemConfig();
   }
 
-  _log(String text) {
-    Alog.d(tag: 'ChatKit', moduleName: 'MessageItem', content: text);
-  }
-
   bool isSelf() {
+    if (ChatMessageHelper.isReceivedMessageFromAi(
+        widget.chatMessage.nimMessage)) {
+      return false;
+    }
     return widget.chatMessage.nimMessage.isSelf == true;
   }
 
@@ -198,7 +200,12 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   double getMaxWidth(isSelect) {
     final size = MediaQuery.of(context).size;
     final width = size.width;
-    return width - (isSelect ? 135 : 110);
+    return width -
+        (isSelect ? 135 : 110) -
+        (ChatMessageHelper.isReceivedMessageFromAi(
+                widget.chatMessage.nimMessage)
+            ? 7
+            : 0);
   }
 
   bool showNickname() {
@@ -208,6 +215,17 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   }
 
   _onLongPress(BuildContext context) {
+    //如果是正在流式消息，Stream 或者PlaceHolder 长按无反应
+    if (ChatMessageHelper.isReceivedMessageFromAi(
+            widget.chatMessage.nimMessage) &&
+        (widget.chatMessage.nimMessage.aiConfig?.aiStreamStatus ==
+                V2NIMMessageAIStreamStatus
+                    .V2NIM_MESSAGE_AI_STREAM_STATUS_STREAMING ||
+            widget.chatMessage.nimMessage.aiConfig?.aiStreamStatus ==
+                V2NIMMessageAIStreamStatus
+                    .V2NIM_MESSAGE_AI_STREAM_STATUS_PLACEHOLDER)) {
+      return;
+    }
     _popMenu?.clean();
     _popMenu = null;
     _popMenu = ChatKitMessagePopMenu(widget.chatMessage, context,
@@ -435,11 +453,22 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   void _onVisibleChange(VisibilityInfo info) {
     //可见并且未发送回执的时候发送回执
     if (info.visibleFraction > 0 &&
-        !isSelf() &&
-        widget.chatMessage.nimMessage.messageConfig?.readReceiptEnabled ==
-            true &&
-        widget.chatMessage.nimMessage.messageStatus?.readReceiptSent != true) {
-      context.read<ChatViewModel>().sendTeamMessageReceipt(widget.chatMessage);
+        widget.chatMessage.nimMessage.isSelf != true) {
+      if (widget.chatMessage.nimMessage.conversationType ==
+              NIMConversationType.team &&
+          widget.chatMessage.nimMessage.messageConfig?.readReceiptEnabled ==
+              true &&
+          widget.chatMessage.nimMessage.messageStatus?.readReceiptSent !=
+              true) {
+        context
+            .read<ChatViewModel>()
+            .sendTeamMessageReceipt(widget.chatMessage);
+      } else if (widget.chatMessage.nimMessage.conversationType ==
+          NIMConversationType.p2p) {
+        context
+            .read<ChatViewModel>()
+            .sendMessageP2PReceipt(widget.chatMessage.nimMessage);
+      }
     }
   }
 
@@ -542,17 +571,27 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   }
 
   //获取对方的用户信息
-  Future<UserAvatarInfo> _getUserInfo(String accId) async {
-    String name = (accId == getIt<IMLoginService>().userInfo!.accountId)
-        ? (S.of(context).chatMessageYou)
-        : (await (isTeam()
-            ? getUserNickInTeam((await _getTeamIdByConversationId()), accId)
-            : accId.getUserName()));
-    String? avatar = await accId.getAvatar();
+  Future<UserAvatarInfo> _getUserInfo(NIMMessage message) async {
+    if (ChatMessageHelper.isReceivedMessageFromAi(message)) {
+      final aiUser =
+          AIUserManager.instance.getAIUserById(message.aiConfig!.accountId!);
+      final name = aiUser?.name ?? aiUser?.accountId ?? '';
+      _userAvatarInfo =
+          UserAvatarInfo(name, avatar: aiUser?.avatar, avatarName: name);
+    } else {
+      final accId = message.senderId!;
+      String name = (accId == getIt<IMLoginService>().userInfo!.accountId)
+          ? (S.of(context).chatMessageYou)
+          : (await (isTeam()
+              ? getUserNickInTeam((await _getTeamIdByConversationId()), accId)
+              : accId.getUserName()));
+      String? avatar = await accId.getAvatar();
 
-    String? avatarName = await accId.getUserName(needAlias: true);
-    _userAvatarInfo =
-        UserAvatarInfo(name, avatar: avatar, avatarName: avatarName);
+      String? avatarName = await accId.getUserName(needAlias: true);
+      _userAvatarInfo =
+          UserAvatarInfo(name, avatar: avatar, avatarName: avatarName);
+    }
+
     return _userAvatarInfo;
   }
 
@@ -567,6 +606,17 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
       return true;
     }
     return false;
+  }
+
+  //是否展示流式停止按钮
+  //展示流式停止按钮的时候不能被多选
+  bool _showStreamStop(NIMMessage message) {
+    return message.aiConfig?.aiStreamStatus ==
+            V2NIMMessageAIStreamStatus
+                .V2NIM_MESSAGE_AI_STREAM_STATUS_STREAMING ||
+        message.aiConfig?.aiStreamStatus ==
+            V2NIMMessageAIStreamStatus
+                .V2NIM_MESSAGE_AI_STREAM_STATUS_PLACEHOLDER;
   }
 
   bool _hideAvatarMessage(ChatMessage message) {
@@ -637,13 +687,11 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
     }
     subscriptions
         .add(NIMChatCache.instance.teamMembersNotifier.listen((members) {
-      if (members is List<UserInfoWithTeam>) {
-        for (var member in members) {
-          if (member.teamInfo.accountId ==
-              widget.chatMessage.nimMessage.senderId) {
-            if (mounted) {
-              setState(() {});
-            }
+      for (var member in members) {
+        if (member.teamInfo.accountId ==
+            widget.chatMessage.nimMessage.senderId) {
+          if (mounted) {
+            setState(() {});
           }
         }
       }
@@ -651,8 +699,7 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
     var userInfoUpdated = getIt<ContactProvider>().onContactInfoUpdated;
     if (userInfoUpdated != null) {
       subscriptions.add(userInfoUpdated.listen((event) {
-        if (event != null &&
-            event.user.accountId == widget.chatMessage.nimMessage.senderId) {
+        if (event.user.accountId == widget.chatMessage.nimMessage.senderId) {
           if (mounted) {
             setState(() {});
           }
@@ -710,7 +757,8 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
 
   Widget _getSelectWidget(bool isSelectModel, ChatViewModel chatViewModel) {
     if (isSelectModel) {
-      if (!widget.chatMessage.isRevoke) {
+      if (!widget.chatMessage.isRevoke &&
+          !_showStreamStop(widget.chatMessage.nimMessage)) {
         return Container(
           width: 18,
           margin: const EdgeInsets.only(right: 8, top: 10),
@@ -743,6 +791,17 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
     }
     subscriptions.clear();
     super.dispose();
+  }
+
+  //是否展示重新生成数字人消息或者停止按钮
+  //只有发起者才能操作
+  bool _showStopOrRegenMessage(NIMMessage message) {
+    if (message.conversationType == NIMConversationType.p2p &&
+        AIUserManager.instance.isAIUser(message.senderId)) {
+      return true;
+    }
+    return ChatMessageHelper.isReceivedMessageFromAi(message) &&
+        message.threadReply?.senderId == IMKitClient.account();
   }
 
   @override
@@ -779,8 +838,7 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
                       _getSelectWidget(
                           chatViewModel.isMultiSelected, chatViewModel),
                       FutureBuilder<UserAvatarInfo>(
-                        future: _getUserInfo(
-                            widget.chatMessage.nimMessage.senderId!),
+                        future: _getUserInfo(widget.chatMessage.nimMessage),
                         builder: (context, snapshot) {
                           return Expanded(
                               child: Row(
@@ -794,16 +852,33 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
                                 InkWell(
                                   onTap: () {
                                     if (widget.onTapAvatar != null) {
-                                      widget.onTapAvatar!(widget
-                                          .chatMessage.nimMessage.senderId);
+                                      if (ChatMessageHelper
+                                          .isReceivedMessageFromAi(
+                                              widget.chatMessage.nimMessage)) {
+                                        widget.onTapAvatar!(widget.chatMessage
+                                            .nimMessage.aiConfig?.accountId);
+                                      } else {
+                                        widget.onTapAvatar!(widget
+                                            .chatMessage.nimMessage.senderId);
+                                      }
                                     }
                                   },
                                   onLongPress: () {
                                     if (widget.onAvatarLongPress != null) {
-                                      widget.onAvatarLongPress!.call(
-                                          widget
-                                              .chatMessage.nimMessage.senderId,
-                                          isSelf: isSelf());
+                                      if (ChatMessageHelper
+                                          .isReceivedMessageFromAi(
+                                              widget.chatMessage.nimMessage)) {
+                                        widget.onAvatarLongPress!.call(widget
+                                            .chatMessage
+                                            .nimMessage
+                                            .aiConfig
+                                            ?.accountId);
+                                      } else {
+                                        widget.onAvatarLongPress!.call(
+                                            widget.chatMessage.nimMessage
+                                                .senderId,
+                                            isSelf: isSelf());
+                                      }
                                     }
                                   },
                                   child: Avatar(
@@ -850,8 +925,9 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
                                                     CommonColors.color_999999)),
                                       ),
                                     Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end,
+                                      crossAxisAlignment: isSelf()
+                                          ? CrossAxisAlignment.end
+                                          : CrossAxisAlignment.start,
                                       children: [
                                         if (isSelf() &&
                                             !widget.chatMessage.isRevoke &&
@@ -923,6 +999,77 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
                                             },
                                           ),
                                         ),
+                                        if (!chatViewModel.isMultiSelected &&
+                                            _showStopOrRegenMessage(
+                                                widget.chatMessage.nimMessage))
+                                          Padding(
+                                            padding: EdgeInsets.only(left: 7),
+                                            child: InkWell(
+                                              onTap: () {
+                                                if (chatViewModel
+                                                    .isMultiSelected) {
+                                                  return;
+                                                }
+                                                if (_showStreamStop(widget
+                                                    .chatMessage.nimMessage)) {
+                                                  //正在输出流式布局.可以停止输出
+                                                  NIMMessageAIStreamStopParams
+                                                      params =
+                                                      NIMMessageAIStreamStopParams(
+                                                          operationType:
+                                                              V2NIMMessageAIStreamStopOpType
+                                                                  .V2NIM_MESSAGE_AI_STREAM_STOP_OP_DEFAULT);
+                                                  ChatMessageRepo
+                                                      .stopAIStreamMessage(
+                                                          widget.chatMessage
+                                                              .nimMessage,
+                                                          params);
+                                                } else {
+                                                  //其他，可以重新生成
+                                                  NIMMessageAIRegenParams
+                                                      params =
+                                                      NIMMessageAIRegenParams(
+                                                          operationType:
+                                                              V2NIMMessageAIRegenOpType
+                                                                  .V2NIM_MESSAGE_AI_REGEN_OP_NEW);
+                                                  ChatMessageRepo
+                                                          .regenAIMessage(
+                                                              widget.chatMessage
+                                                                  .nimMessage,
+                                                              params)
+                                                      .then((result) {
+                                                    if (!result.isSuccess) {
+                                                      if (result.code ==
+                                                          errorCodeAIRegenNone) {
+                                                        Fluttertoast.showToast(
+                                                            msg: S
+                                                                .of(context)
+                                                                .chatMessageRemovedTip);
+                                                      } else {
+                                                        Fluttertoast.showToast(
+                                                            msg: S
+                                                                .of(context)
+                                                                .chatAiSearchError);
+                                                      }
+                                                    }
+                                                  });
+                                                }
+                                              },
+                                              child: _showStreamStop(widget
+                                                      .chatMessage.nimMessage)
+                                                  ? SvgPicture.asset(
+                                                      'images/ic_ai_stream_stop.svg',
+                                                      package: kPackage,
+                                                      width: 24,
+                                                      height: 24,
+                                                    )
+                                                  : SvgPicture.asset(
+                                                      'images/ic_ai_stream_regen.svg',
+                                                      package: kPackage,
+                                                      width: 24,
+                                                      height: 24),
+                                            ),
+                                          ),
                                       ],
                                     ),
                                     if (widget.chatMessage.getPinAccId() !=

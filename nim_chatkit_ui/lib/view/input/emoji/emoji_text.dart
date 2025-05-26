@@ -21,7 +21,7 @@ class EmojiText extends SpecialText {
   InlineSpan finishText() {
     final String key = toString();
 
-    if (EmojiUitl.instance.emojiMap.containsKey(key)) {
+    if (EmojiUtil.instance.emojiMap.containsKey(key)) {
       double size = 18;
 
       if (textStyle?.fontSize != null) {
@@ -30,10 +30,10 @@ class EmojiText extends SpecialText {
 
       return EmojiSpan(
           Image.asset(
-            EmojiUitl.instance.emojiMap[key]!.source,
+            EmojiUtil.instance.emojiMap[key]!.source,
             package: kPackage,
-            height: 30,
-            width: 30,
+            height: 16,
+            width: 16,
           ),
           actualText: key,
           imageWidth: size,
@@ -47,8 +47,8 @@ class EmojiText extends SpecialText {
   }
 }
 
-class EmojiUitl {
-  EmojiUitl._() {
+class EmojiUtil {
+  EmojiUtil._() {
     emojiData.forEach((emojiMap) {
       _emojiMap[(emojiMap['tag'] as String)] = NeEmoji.fromMap(emojiMap);
     });
@@ -58,6 +58,6 @@ class EmojiUitl {
 
   Map<String, NeEmoji> get emojiMap => _emojiMap;
 
-  static EmojiUitl? _instance;
-  static EmojiUitl get instance => _instance ??= EmojiUitl._();
+  static EmojiUtil? _instance;
+  static EmojiUtil get instance => _instance ??= EmojiUtil._();
 }

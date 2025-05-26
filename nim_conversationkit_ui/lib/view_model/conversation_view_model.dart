@@ -7,11 +7,12 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
-import 'package:netease_corekit_im/im_kit_client.dart';
-import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/contact/contact_provider.dart';
-import 'package:netease_corekit_im/services/login/im_login_service.dart';
+import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit/service_locator.dart';
+import 'package:nim_chatkit/services/contact/contact_provider.dart';
+import 'package:nim_chatkit/services/login/im_login_service.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
+import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit/repo/conversation_repo.dart';
 import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
 import 'package:nim_conversationkit_ui/service/ait/ait_server.dart';
@@ -24,8 +25,10 @@ class ConversationViewModel extends ChangeNotifier {
   final String modelName = 'ConversationViewModel';
 
   List<ConversationInfo> _conversationList = [];
+  List<NIMAIUser> _topAIUserList = [];
 
   List<ConversationInfo> get conversationList => _conversationList;
+  List<NIMAIUser> get topAIUserList => _topAIUserList;
 
   ValueChanged<int>? onUnreadCountChanged;
 
@@ -91,6 +94,9 @@ class ConversationViewModel extends ChangeNotifier {
   _init() {
     _logI('init -->> ');
 
+    //先拉去一遍，解决会话列表在二级页面，不能监听同步数据的case
+    queryConversationList();
+
     // 会话列表同步完成（仅保证列表完整性，会话具体信息如 name 需等待其他同步回调）
     subscriptions.add(ConversationRepo.onSyncFinished().listen((event) {
       _logI('conversationService onSyncFinished');
@@ -140,6 +146,7 @@ class ConversationViewModel extends ChangeNotifier {
 
     subscriptions.add(
         NimCore.instance.userService.onUserProfileChanged.listen((event) async {
+      _logI('onUserProfileChanged -->> ${event.length}');
       for (var e in event) {
         for (var conversationInfo in conversationList) {
           var sessionId = ChatKitUtils.getConversationTargetId(
@@ -154,6 +161,10 @@ class ConversationViewModel extends ChangeNotifier {
             notifyListeners();
             return;
           }
+        }
+        if (IMKitClient.enableAi && e.accountId == IMKitClient.account()) {
+          // 个人信息更新，重新拉取置顶AI数字人。因为修改置顶信息在个人信息的扩展字段中保存
+          queryTopAIUser();
         }
       }
     }));
@@ -210,7 +221,7 @@ class ConversationViewModel extends ChangeNotifier {
         notifyListeners();
       }
     }));
-
+    // 群解散通知，删除相关群会话
     subscriptions
         .add(NimCore.instance.teamService.onTeamDismissed.listen((team) async {
       var conversationId =
@@ -221,6 +232,7 @@ class ConversationViewModel extends ChangeNotifier {
       }
     }));
 
+    // 退群通知，删除相关群会话
     subscriptions.add(
         NimCore.instance.teamService.onTeamLeft.listen((teamLeftResult) async {
       var conversationId = (await ConversationIdUtil()
@@ -231,6 +243,17 @@ class ConversationViewModel extends ChangeNotifier {
         deleteConversationById(conversationId);
       }
     }));
+
+    // 查询置顶AI数字人列表，数字人配置为置顶，并且当前账号没有取消置顶
+    if (IMKitClient.enableAi) {
+      _logI('init queryTopAIUser ');
+      queryTopAIUser();
+      subscriptions.add(
+          AIUserManager.instance.aiUserChanged?.listen((userListData) async {
+        _logI('aiUserChanged size: ${userListData.length}');
+        queryTopAIUser();
+      }));
+    }
   }
 
   int _searchComparatorIndex(ConversationInfo data) {
@@ -245,22 +268,6 @@ class ConversationViewModel extends ChangeNotifier {
       }
     }
     return index;
-  }
-
-  _addRemoveStickTop(String conversationId, bool add) {
-    int index = _conversationList
-        .indexWhere((element) => element.getConversationId() == conversationId);
-    if (index > -1) {
-      // _conversationList[index].isStickTop() = add;
-      var tmp = _conversationList.removeAt(index);
-      if (add) {
-        _conversationList.insert(0, tmp);
-      } else {
-        int insertIndex = _searchComparatorIndex(tmp);
-        _conversationList.insert(insertIndex, tmp);
-      }
-    }
-    notifyListeners();
   }
 
   ///是否合法的群
@@ -432,6 +439,38 @@ class ConversationViewModel extends ChangeNotifier {
         fetchUserInfo(userIdList);
       }
       _isLoading = false;
+    }
+  }
+
+  bool _isQuerying = false; // 标志位
+  void queryTopAIUser() {
+    if (_isQuerying) return; // 如果正在查询，直接返回
+    _isQuerying = true; // 设置为正在查询
+
+    var userList = AIUserManager.instance.getPinDefaultUserList();
+    _logI('queryTopAIUser -->> ${userList.length}');
+
+    _topAIUserList.clear(); // 清空列表
+
+    if (userList.isNotEmpty) {
+      ContactRepo.getUserList([IMKitClient.account()!]).then((value) {
+        _isQuerying = false; // 查询结束，重置标志位
+        if (value.isSuccess && value.data != null && value.data!.isNotEmpty) {
+          var userUnpinArray =
+              AIUserManager.instance.getUnpinAIUserList(value.data![0]);
+          for (var user in userList) {
+            if (!userUnpinArray.contains(user.accountId) &&
+                !_topAIUserList.contains(user.accountId)) {
+              _logI('queryTopAIUser addAIUser-->> ${user.accountId}');
+              _topAIUserList.add(user);
+            }
+          }
+        }
+        notifyListeners(); // 仅在查询完成后调用
+      });
+    } else {
+      _isQuerying = false; // 如果没有用户，重置标志位
+      notifyListeners(); // 直接通知更新
     }
   }
 

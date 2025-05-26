@@ -16,21 +16,22 @@ class BlackListViewModel extends ChangeNotifier {
     fetchBlackList();
 
     // 断网重连，重新拉取数据
-    NimCore.instance.loginService.onDataSync.listen((event) {
+
+    subscriptions.add(NimCore.instance.loginService.onDataSync.listen((event) {
       if (event.type == NIMDataSyncType.nimDataSyncMain &&
           event.state == NIMDataSyncState.nimDataSyncStateCompleted) {
         fetchBlackList();
       }
-    });
+    }));
 
     subscriptions
-        .add(ContactRepo.registerBlackListRemovedObserver().listen((event) {
+        .add(ContactRepo.registerBlockListRemovedObserver().listen((event) {
       blackListUsers.removeWhere((element) => event == element.accountId);
       notifyListeners();
     }));
 
     subscriptions
-        .add(ContactRepo.registerBlackListAddedObserver().listen((event) {
+        .add(ContactRepo.registerBlockListAddedObserver().listen((event) {
       int index = blackListUsers
           .indexWhere((element) => element.accountId == event.accountId);
       if (index >= 0) {
@@ -65,7 +66,7 @@ class BlackListViewModel extends ChangeNotifier {
   }
 
   void fetchBlackList() {
-    ContactRepo.getBlackList().then((value) {
+    ContactRepo.getBlockList().then((value) {
       if (value.isNotEmpty) {
         blackListUsers.clear();
         blackListUsers.addAll(value);
@@ -76,17 +77,25 @@ class BlackListViewModel extends ChangeNotifier {
 
   Future<void> removeFromBlackList(String userId) async {
     if (await haveConnectivity()) {
-      ContactRepo.removeBlacklist(userId);
+      ContactRepo.removeBlocklist(userId);
     }
   }
 
   void addToBlackList(String userId) {
-    ContactRepo.addBlacklist(userId);
+    ContactRepo.addBlocklist(userId);
   }
 
   void addUserListToBlackList(List<String> users) {
     users.forEach((e) {
       addToBlackList(e);
     });
+  }
+
+  @override
+  void dispose() {
+    for (var sub in subscriptions) {
+      sub.cancel();
+    }
+    super.dispose();
   }
 }

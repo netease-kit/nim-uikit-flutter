@@ -6,7 +6,7 @@ import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
-import 'package:netease_corekit_im/model/ait/ait_msg.dart';
+import 'package:nim_chatkit/model/ait/ait_msg.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_helper.dart';
 import 'package:nim_core_v2/nim_core.dart';

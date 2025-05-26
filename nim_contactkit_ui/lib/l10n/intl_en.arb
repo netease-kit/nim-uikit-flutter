@@ -20,6 +20,7 @@
   "contactVerifyMessage": "Verify Message",
   "contactBlackList": "Black List",
   "contactTeam": "My Team",
+  "contactAIUserList": "My AI User",
   "contactComment": "Comment",
   "contactBirthday": "Birthday",
   "contactPhone": "Phone",
@@ -150,5 +151,8 @@
     }
   },
   "contactSelectEmptyTip": "No Member",
-  "contactFriendEmpty": "No Friend"
+  "contactFriendEmpty": "No Friend",
+  "myFriend": "MY FRIENDS",
+  "aiUsers": "AI USERS",
+  "aiUsersEmpty": "No AIUser"
 }

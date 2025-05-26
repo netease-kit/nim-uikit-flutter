@@ -6,12 +6,12 @@ import 'package:netease_common_ui/extension.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
-import 'package:netease_corekit_im/router/imkit_router_constants.dart';
-import 'package:netease_corekit_im/router/imkit_router_factory.dart';
+import 'package:nim_chatkit/router/imkit_router_constants.dart';
+import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_conversationkit_ui/page/add_friend_page.dart';
-import 'package:netease_corekit_im/model/contact_info.dart';
-import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/team/team_provider.dart';
+import 'package:nim_chatkit/model/contact_info.dart';
+import 'package:nim_chatkit/service_locator.dart';
+import 'package:nim_chatkit/services/team/team_provider.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -38,7 +38,8 @@ class ConversationPopMenuButton extends StatelessWidget {
         }
         goToContactSelector(context,
                 mostCount: TeamProvider.createTeamInviteLimit,
-                returnContact: true)
+                returnContact: true,
+                includeAIUser: true)
             .then((contacts) {
           if (contacts is List<ContactInfo> && contacts.isNotEmpty) {
             Alog.d(
@@ -61,7 +62,7 @@ class ConversationPopMenuButton extends StatelessWidget {
                   ConversationIdUtil()
                       .teamConversationId(teamResult.team!.teamId)
                       .then((conversationId) {
-                    ChatMessageRepo.insertTeamLocalTipsMessage(
+                    ChatMessageRepo.insertLocalTipsMessageWithExt(
                         conversationId.data!, '', map,
                         time: teamResult.team!.createTime - 100);
                   });

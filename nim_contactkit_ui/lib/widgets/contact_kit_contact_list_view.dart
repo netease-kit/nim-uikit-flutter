@@ -10,7 +10,7 @@ import 'package:lpinyin/lpinyin.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/radio_button.dart';
-import 'package:netease_corekit_im/model/contact_info.dart';
+import 'package:nim_chatkit/model/contact_info.dart';
 import 'package:nim_contactkit_ui/widgets/az_lsit_view_container.dart';
 
 import '../contact_kit_client.dart';
@@ -36,7 +36,7 @@ class ContactListView extends StatefulWidget {
   /// 顶部列表项构造器
   final TopListItemBuilder? topListItemBuilder;
 
-  final int? maxSelectNum;
+  final IsSelectable? isSelectable;
 
   const ContactListView(
       {Key? key,
@@ -47,7 +47,7 @@ class ContactListView extends StatefulWidget {
       this.topList,
       this.topListItemBuilder,
       this.selectedUser,
-      this.maxSelectNum})
+      this.isSelectable})
       : super(key: key);
 
   @override
@@ -254,14 +254,12 @@ class ContactListViewState extends State<ContactListView> {
             return InkWell(
               onTap: () {
                 if (selectable) {
+                  final selectedId = (showItem as ContactInfo).user.accountId;
                   final isChecked =
                       widget.selectedUser?.contains(showItem) != true;
                   if (isChecked &&
                       widget.selectedUser != null &&
-                      widget.maxSelectNum != null &&
-                      widget.selectedUser!.length >= widget.maxSelectNum!) {
-                    Fluttertoast.showToast(
-                        msg: S.of(context).contactSelectAsMost);
+                      widget.isSelectable?.call(selectedId!) == false) {
                     return;
                   }
                   if (onSelectedMemberItemChange != null) {
@@ -296,3 +294,5 @@ class TopListItem {
 
   TopListItem({required this.name, required this.icon, this.onTap, this.tips});
 }
+
+typedef IsSelectable = bool Function(String account);

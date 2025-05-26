@@ -39,6 +39,7 @@ class ActionConstants {
   static const String record = 'record';
   static const String image = 'image';
   static const String file = 'file';
+  static const String translate = 'translate';
   static const String emoji = 'emoji';
   static const String more = 'more';
 

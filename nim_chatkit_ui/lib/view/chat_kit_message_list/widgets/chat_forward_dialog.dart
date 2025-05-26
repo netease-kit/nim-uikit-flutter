@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/text_untils.dart';
-import 'package:netease_corekit_im/model/contact_info.dart';
+import 'package:nim_chatkit/model/contact_info.dart';
 import 'package:nim_core_v2/nim_core.dart';
 
 import '../../../l10n/S.dart';

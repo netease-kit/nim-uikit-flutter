@@ -15,14 +15,14 @@ import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:netease_common_ui/widgets/update_text_info_page.dart';
-import 'package:netease_corekit_im/model/contact_info.dart';
-import 'package:netease_corekit_im/model/team_models.dart';
-import 'package:netease_corekit_im/router/imkit_router_constants.dart';
-import 'package:netease_corekit_im/router/imkit_router_factory.dart';
-import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/login/im_login_service.dart';
-import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
-import 'package:netease_corekit_im/services/team/team_provider.dart';
+import 'package:nim_chatkit/model/contact_info.dart';
+import 'package:nim_chatkit/model/team_models.dart';
+import 'package:nim_chatkit/router/imkit_router_constants.dart';
+import 'package:nim_chatkit/router/imkit_router_factory.dart';
+import 'package:nim_chatkit/service_locator.dart';
+import 'package:nim_chatkit/services/login/im_login_service.dart';
+import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
+import 'package:nim_chatkit/services/team/team_provider.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:nim_teamkit_ui/l10n/S.dart';
 import 'package:nim_teamkit_ui/view/pages/team_kit_manage_page.dart';
@@ -216,7 +216,8 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
                                       TeamProvider.createTeamInviteLimit
                                   ? TeamProvider.createTeamInviteLimit
                                   : inviteCount,
-                              returnContact: true)
+                              returnContact: true,
+                              includeAIUser: true)
                           .then((contacts) {
                         if (contacts is List<ContactInfo> &&
                             contacts.isNotEmpty) {

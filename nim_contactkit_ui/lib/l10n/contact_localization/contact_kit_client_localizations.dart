@@ -139,6 +139,12 @@ abstract class ContactKitClientLocalizations {
   /// **'My Team'**
   String get contactTeam;
 
+  /// No description provided for @contactAIUserList.
+  ///
+  /// In en, this message translates to:
+  /// **'My AI User'**
+  String get contactAIUserList;
+
   /// No description provided for @contactComment.
   ///
   /// In en, this message translates to:
@@ -384,6 +390,24 @@ abstract class ContactKitClientLocalizations {
   /// In en, this message translates to:
   /// **'No Friend'**
   String get contactFriendEmpty;
+
+  /// No description provided for @myFriend.
+  ///
+  /// In en, this message translates to:
+  /// **'MY FRIENDS'**
+  String get myFriend;
+
+  /// No description provided for @aiUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'AI USERS'**
+  String get aiUsers;
+
+  /// No description provided for @aiUsersEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No AIUser'**
+  String get aiUsersEmpty;
 }
 
 class _ContactKitClientLocalizationsDelegate

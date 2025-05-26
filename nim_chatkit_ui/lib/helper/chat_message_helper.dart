@@ -10,18 +10,18 @@ import 'package:flutter/gestures.dart';
 import 'package:netease_common/netease_common.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
-import 'package:netease_corekit_im/im_kit_client.dart';
-import 'package:netease_corekit_im/model/ait/ait_contacts_model.dart';
-import 'package:netease_corekit_im/model/ait/ait_msg.dart';
-import 'package:netease_corekit_im/model/contact_info.dart';
-import 'package:netease_corekit_im/model/custom_type_constant.dart';
-import 'package:netease_corekit_im/model/team_models.dart';
-import 'package:netease_corekit_im/repo/config_repo.dart';
-import 'package:netease_corekit_im/router/imkit_router_factory.dart';
-import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/contact/contact_provider.dart';
-import 'package:netease_corekit_im/services/message/chat_message.dart';
-import 'package:netease_corekit_im/services/team/team_provider.dart';
+import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit/model/ait/ait_contacts_model.dart';
+import 'package:nim_chatkit/model/ait/ait_msg.dart';
+import 'package:nim_chatkit/model/contact_info.dart';
+import 'package:nim_chatkit/model/custom_type_constant.dart';
+import 'package:nim_chatkit/model/team_models.dart';
+import 'package:nim_chatkit/repo/config_repo.dart';
+import 'package:nim_chatkit/router/imkit_router_factory.dart';
+import 'package:nim_chatkit/service_locator.dart';
+import 'package:nim_chatkit/services/contact/contact_provider.dart';
+import 'package:nim_chatkit/services/message/chat_message.dart';
+import 'package:nim_chatkit/services/team/team_provider.dart';
 import 'package:nim_chatkit/message/message_helper.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_chatkit_ui/l10n/S.dart';
@@ -636,7 +636,7 @@ class ChatMessageHelper {
 
   ///处理文本消息中的表情
   static WidgetSpan? imageSpan(String? tag) {
-    var item = EmojiUitl.instance.emojiMap[tag ?? ''];
+    var item = EmojiUtil.instance.emojiMap[tag ?? ''];
     if (item == null) return null;
     String source = item.source;
     return WidgetSpan(
@@ -669,11 +669,39 @@ class ChatMessageHelper {
       messageConfig: messageConfig,
       pushConfig: pushConfig,
     );
-    //发送前的对外回调
-    if (ChatKitClient.instance.messageAction != null) {
-      ChatKitClient.instance.messageAction!(message, params);
-    }
     return params;
+  }
+
+  ///根据消息获取内容，作为数字人参数
+  static String? getAIContentMsg(NIMMessage? message) {
+    if (message == null) {
+      return null;
+    }
+
+    if (message.messageType == NIMMessageType.text) {
+      return message.text;
+    }
+
+    if (message.messageType == NIMMessageType.custom) {
+      final multiLineMap = MessageHelper.parseMultiLineMessage(message);
+      if (multiLineMap != null &&
+          multiLineMap[ChatMessage.keyMultiLineTitle] != null) {
+        return multiLineMap[ChatMessage.keyMultiLineTitle]! +
+            (multiLineMap[ChatMessage.keyMultiLineBody] ?? '');
+      }
+    }
+
+    return null;
+  }
+
+  /// 是否是数字人发送的消息
+  static bool isReceivedMessageFromAi(NIMMessage message) {
+    final aiConfig = message.aiConfig;
+    if (aiConfig != null) {
+      return aiConfig.aiStatus == NIMMessageAIStatus.response &&
+          aiConfig.accountId?.isNotEmpty == true;
+    }
+    return false;
   }
 }
 

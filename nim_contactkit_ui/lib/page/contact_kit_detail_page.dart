@@ -13,11 +13,12 @@ import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_common_ui/widgets/update_text_info_page.dart';
-import 'package:netease_corekit_im/im_kit_client.dart';
-import 'package:netease_corekit_im/model/contact_info.dart';
-import 'package:netease_corekit_im/router/imkit_router_factory.dart';
-import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/contact/contact_provider.dart';
+import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit/model/contact_info.dart';
+import 'package:nim_chatkit/router/imkit_router_factory.dart';
+import 'package:nim_chatkit/service_locator.dart';
+import 'package:nim_chatkit/services/contact/contact_provider.dart';
+import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit/repo/contact_repo.dart';
 import 'package:nim_core_v2/nim_core.dart';
 
@@ -37,6 +38,8 @@ class _ContactKitDetailPageState extends State<ContactKitDetailPage> {
   bool isBlackList = false;
 
   bool isFriend = false;
+
+  bool isAIUser = false;
 
   var subs = <StreamSubscription>[];
 
@@ -107,7 +110,7 @@ class _ContactKitDetailPageState extends State<ContactKitDetailPage> {
                 }
                 // 加入黑名单开关
                 if (value) {
-                  ContactRepo.addBlacklist(contact.user.accountId!)
+                  ContactRepo.addBlocklist(contact.user.accountId!)
                       .then((result) {
                     if (result.isSuccess) {
                       setState(() {
@@ -116,7 +119,7 @@ class _ContactKitDetailPageState extends State<ContactKitDetailPage> {
                     }
                   });
                 } else {
-                  ContactRepo.removeBlacklist(contact.user.accountId!)
+                  ContactRepo.removeBlocklist(contact.user.accountId!)
                       .then((result) {
                     if (result.isSuccess) {
                       setState(() {
@@ -205,9 +208,9 @@ class _ContactKitDetailPageState extends State<ContactKitDetailPage> {
 
     if (IMKitClient.account() == userId) {}
     //先判断是否在黑名单,如果在黑名单则将其从黑名单移除
-    var isInBlackList = ContactRepo.isBlackList(userId);
+    var isInBlackList = ContactRepo.isBlockList(userId);
     if (isInBlackList == true) {
-      await ContactRepo.removeBlacklist(userId);
+      await ContactRepo.removeBlocklist(userId);
     }
     ContactRepo.addFriend(userId, NIMFriendAddMode.nimFriendModeTypeApply)
         .then((value) {
@@ -247,9 +250,11 @@ class _ContactKitDetailPageState extends State<ContactKitDetailPage> {
   @override
   void initState() {
     super.initState();
-    isBlackList = ContactRepo.isBlackList(widget.accId);
+    isBlackList = ContactRepo.isBlockList(widget.accId);
 
     _isFriend(widget.accId);
+
+    isAIUser = AIUserManager.instance.isAIUser(widget.accId);
 
     subs.add(ContactRepo.registerFriendAddedObserver().listen((event) {
       if (event.accountId == widget.accId) {
@@ -384,7 +389,20 @@ class _ContactKitDetailPageState extends State<ContactKitDetailPage> {
                                 color: '#E6605C'.toColor(),
                                 fontWeight: FontWeight.bold)))
                   ],
-                  if (!isFriend) ...[
+                  if (isAIUser) ...[
+                    divider,
+                    TextButton(
+                      onPressed: () {
+                        goToP2pChat(context, contact.user.accountId!);
+                      },
+                      child: Text(S.of(context).contactChat,
+                          style: TextStyle(
+                              fontSize: 16,
+                              color: '#337EFF'.toColor(),
+                              fontWeight: FontWeight.bold)),
+                    ),
+                    dividerSmall,
+                  ] else if (!isFriend) ...[
                     divider,
                     TextButton(
                       onPressed: () {

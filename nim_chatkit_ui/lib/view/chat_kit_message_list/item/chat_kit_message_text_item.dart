@@ -4,8 +4,12 @@
 
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:netease_corekit_im/model/ait/ait_msg.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:lottie/lottie.dart';
+import 'package:nim_chatkit/model/ait/ait_msg.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_core_v2/nim_core.dart';
 
@@ -35,12 +39,42 @@ class ChatKitMessageTextItem extends StatefulWidget {
 class ChatKitMessageTextState extends State<ChatKitMessageTextItem> {
   @override
   Widget build(BuildContext context) {
-    final String text = widget.message.text!;
+    //处理数字人返回的消息
+    if (widget.maxLines == null &&
+        ChatMessageHelper.isReceivedMessageFromAi(widget.message)) {
+      //占位
+      if (widget.message.aiConfig?.aiStreamStatus ==
+          V2NIMMessageAIStreamStatus
+              .V2NIM_MESSAGE_AI_STREAM_STATUS_PLACEHOLDER) {
+        return Container(
+            // lottie 动画占位
+            padding: widget.needPadding
+                ? const EdgeInsets.only(
+                    left: 16, top: 12, right: 16, bottom: 12)
+                : null,
+            child: Lottie.asset('lottie/ani_ai_stream_holder.json',
+                package: kPackage, width: 24, height: 24));
+      } else {
+        return Container(
+            padding: widget.needPadding
+                ? const EdgeInsets.only(
+                    left: 16, top: 12, right: 16, bottom: 12)
+                : null,
+            child: Markdown(
+              data: widget.message.text ?? '',
+              shrinkWrap: true, // 关键：收缩内容高度// 最大行数控制// 溢出处理)),
+              padding: EdgeInsets.all(0.0),
+              physics: ClampingScrollPhysics(), //禁用内部的滚动
+            ));
+      }
+    }
+    final String text = widget.message.text ?? '';
     var matches = RegExp("\\[[^\\[]{1,10}\\]").allMatches(text);
     List<InlineSpan> spans = [];
     int preIndex = 0;
     var remoteExtension = null;
-    if (widget.message.serverExtension?.isNotEmpty == true) {
+    if (widget.message.serverExtension?.isNotEmpty == true &&
+        !ChatMessageHelper.isReceivedMessageFromAi(widget.message)) {
       remoteExtension = jsonDecode(widget.message.serverExtension!);
     }
     if (matches.isNotEmpty) {

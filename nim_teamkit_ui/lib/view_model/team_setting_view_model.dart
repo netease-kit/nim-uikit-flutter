@@ -6,11 +6,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
-import 'package:netease_corekit_im/model/team_models.dart';
-import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/login/im_login_service.dart';
-import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
-import 'package:nim_chatkit/repo/conversation_repo.dart';
+import 'package:nim_chatkit/model/team_models.dart';
+import 'package:nim_chatkit/service_locator.dart';
+import 'package:nim_chatkit/services/login/im_login_service.dart';
+import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:nim_chatkit/repo/team_repo.dart';
 
