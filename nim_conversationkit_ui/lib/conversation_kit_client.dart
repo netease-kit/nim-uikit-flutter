@@ -5,9 +5,9 @@
 import 'package:flutter/material.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_corekit/report/xkit_report.dart';
-import 'package:netease_corekit_im/im_kit_client.dart';
-import 'package:netease_corekit_im/router/imkit_router.dart';
-import 'package:netease_corekit_im/router/imkit_router_constants.dart';
+import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit/router/imkit_router.dart';
+import 'package:nim_chatkit/router/imkit_router_constants.dart';
 import 'package:nim_conversationkit_ui/service/ait/ait_server.dart';
 
 import 'l10n/S.dart';

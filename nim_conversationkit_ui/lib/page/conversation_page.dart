@@ -3,13 +3,15 @@
 // found in the LICENSE file.
 
 import 'package:netease_common_ui/base/base_state.dart';
-import 'package:netease_corekit_im/router/imkit_router_factory.dart';
+import 'package:netease_common_ui/ui/avatar.dart';
+import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
 import 'package:nim_conversationkit_ui/widgets/conversation_list.dart';
 import 'package:nim_conversationkit_ui/widgets/conversation_pop_menu_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/widgets/no_network_tip.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/S.dart';
@@ -31,7 +33,6 @@ class ConversationPage extends StatefulWidget {
 
 class _ConversationPageState extends BaseState<ConversationPage> {
   late ConversationTitleBarConfig _titleBarConfig;
-
   ConversationUIConfig get uiConfig =>
       widget.config ?? ConversationKitClient.instance.conversationUIConfig;
 

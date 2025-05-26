@@ -8,14 +8,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
-import 'package:netease_corekit_im/im_kit_client.dart';
-import 'package:netease_corekit_im/model/ait/ait_contacts_model.dart';
-import 'package:netease_corekit_im/model/ait/ait_msg.dart';
-import 'package:netease_corekit_im/model/team_models.dart';
-import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
+import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit/model/ait/ait_contacts_model.dart';
+import 'package:nim_chatkit/model/ait/ait_msg.dart';
+import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
+import 'package:nim_chatkit/manager/ai_user_manager.dart';
 
 import '../../chat_kit_client.dart';
 import '../../l10n/S.dart';
+import 'ait_model.dart';
 
 ///@消息管理类
 class AitManager {
@@ -29,12 +30,34 @@ class AitManager {
 
   StreamSubscription? _teamSub;
 
-  ValueNotifier<List<UserInfoWithTeam>?> _teamMemberList = ValueNotifier(null);
+  ValueNotifier<List<AitBean>?> _aitMemberList = ValueNotifier(null);
+
+  List<AitBean>? _aiUserList;
 
   AitManager(this.teamId) {
-    _teamMemberList.value = List.from(NIMChatCache.instance.teamMembers);
+    _aiUserList = AIUserManager.instance
+        .getAIChatUserList()
+        .map((e) => AitBean(aiUser: e))
+        .toList();
+    //注意去除AI聊天用户，防止重复这哪行四
+    final teamMembers = NIMChatCache.instance.teamMembers
+        .where((member) => !AIUserManager.instance
+            .isAIChatUserByAccount(member.teamInfo.accountId))
+        .map((e) => AitBean(teamMember: e))
+        .toList();
+    _aiUserList!.addAll(teamMembers);
+
+    _aitMemberList.value = _aiUserList!;
     _teamSub = NIMChatCache.instance.teamMembersNotifier.listen((event) {
-      _teamMemberList.value = event;
+      List<AitBean> aitList = [];
+      if (_aiUserList?.isNotEmpty == true) {
+        aitList.addAll(_aiUserList!);
+      }
+      aitList.addAll(event
+          .where((member) => !AIUserManager.instance
+              .isAIChatUserByAccount(member.teamInfo.accountId))
+          .map((e) => AitBean(teamMember: e)));
+      _aitMemberList.value = aitList;
     });
     _scrollController.addListener(_scrollListener);
   }
@@ -142,12 +165,12 @@ class AitManager {
                 topLeft: Radius.circular(8), topRight: Radius.circular(8))),
         builder: (context) {
           return ValueListenableBuilder(
-            valueListenable: _teamMemberList,
-            builder: (BuildContext context, List<UserInfoWithTeam>? value,
-                Widget? child) {
+            valueListenable: _aitMemberList,
+            builder:
+                (BuildContext context, List<AitBean>? value, Widget? child) {
               var _teamMembers = value
                   ?.where((element) =>
-                      element.userInfo?.accountId != IMKitClient.account())
+                      element.getAccountId() != IMKitClient.account())
                   .toList();
               return Column(
                 children: [
@@ -194,8 +217,7 @@ class AitManager {
                               return ListTile(
                                 leading: Avatar(
                                   avatar: user.getAvatar(),
-                                  name: user.getName(
-                                      needAlias: false, needTeamNick: false),
+                                  name: user.getAvatarName(),
                                   height: 42,
                                   width: 42,
                                 ),

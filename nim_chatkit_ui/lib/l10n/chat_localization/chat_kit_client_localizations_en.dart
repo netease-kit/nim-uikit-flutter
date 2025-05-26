@@ -44,6 +44,24 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
   String get chatMessageMoreFile => 'File';
 
   @override
+  String get chatMessageMoreTranslate => 'Translate';
+
+  @override
+  String get chatTranslateTo => 'Translate to';
+
+  @override
+  String get chatTranslateSure => 'AI Translate';
+
+  @override
+  String get chatTranslating => 'AI Translating...';
+
+  @override
+  String get chatTranslateUse => 'Translate to';
+
+  @override
+  String get chatTranslateLanguageTitle => 'Use↓';
+
+  @override
   String get chatMessageMoreLocation => 'Location';
 
   @override
@@ -175,6 +193,9 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
 
   @override
   String get chatMessageSetTop => 'Set session top';
+
+  @override
+  String get chatMessageSetPin => 'PIN';
 
   @override
   String get chatMessageSend => 'Send';
@@ -508,4 +529,56 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
 
   @override
   String get chatMessagePinLimitTips => 'Number of pin reaches the limit.';
+
+  @override
+  String get chatMessageRemovedTip => 'The message was removed.';
+
+  @override
+  String get chatAiSearchError => 'AI error';
+
+  @override
+  String get chatAiMessageTypeUnsupport => 'Unsupported format';
+
+  @override
+  String get chatAiErrorUserNotExist => 'User does not exist';
+
+  @override
+  String get chatAiErrorFailedRequestToTheLlm =>
+      'Failed request to the language model';
+
+  @override
+  String get chatAiErrorAiMessagesFunctionDisabled =>
+      'AI messaging function not enabled';
+
+  @override
+  String get chatAiErrorUserBanned => 'User banned';
+
+  @override
+  String get chatAiErrorUserChatBanned => 'User chat banned';
+
+  @override
+  String get chatAiErrorMessageHitAntispam => 'Message hit anti-spam';
+
+  @override
+  String get chatAiErrorNotAnAiAccount => 'Not an AI account';
+
+  @override
+  String get chatAiErrorTeamMemberNotExist => 'Team member does not exist';
+
+  @override
+  String get chatAiErrorTeamNormalMemberChatBanned =>
+      'Team normal member chat banned';
+
+  @override
+  String get chatAiErrorTeamMemberChatBanned => 'Team member chat banned';
+
+  @override
+  String get chatAiErrorCannotBlocklistAnAiAccount =>
+      'Cannot blocklist an AI account';
+
+  @override
+  String get chatAiErrorRateLimitExceeded => 'Rate limit exceeded';
+
+  @override
+  String get chatAiErrorParameter => 'Parameter error';
 }

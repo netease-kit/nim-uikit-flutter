@@ -2,15 +2,14 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:netease_common/netease_common.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/widgets/neListView/size_cache_widget.dart';
-import 'package:netease_corekit_im/router/imkit_router.dart';
-import 'package:netease_corekit_im/services/message/chat_message.dart';
+import 'package:nim_chatkit/router/imkit_router.dart';
+import 'package:nim_chatkit/services/message/chat_message.dart';
 import 'package:nim_chatkit/message/message_helper.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit_ui/l10n/S.dart';
@@ -369,16 +368,6 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
     }
 
     return Consumer<ChatViewModel>(builder: (cnt, chatViewModel, child) {
-      if (chatViewModel.conversationType == NIMConversationType.p2p &&
-          chatViewModel.messageList.isNotEmpty) {
-        NIMMessage? firstMessage = chatViewModel.messageList
-            .firstWhereOrNull((element) => element.nimMessage.isSelf == false)
-            ?.nimMessage;
-        if (isInCurrentPage && firstMessage != null) {
-          chatViewModel.sendMessageP2PReceipt(firstMessage);
-        }
-      }
-
       ///message list
       return Container(
         child: Stack(

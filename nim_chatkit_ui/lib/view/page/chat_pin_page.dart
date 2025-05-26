@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/base/base_state.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
-import 'package:netease_corekit_im/router/imkit_router_constants.dart';
+import 'package:nim_chatkit/router/imkit_router_constants.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/pinMessage/chat_kit_pin_message_item.dart';
 import 'package:nim_chatkit_ui/view_model/chat_pin_view_model.dart';
 import 'package:nim_core_v2/nim_core.dart';

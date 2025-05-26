@@ -16,6 +16,7 @@ import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/permission_request.dart';
 import 'package:netease_common_ui/widgets/platform_utils.dart';
 import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
+import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
@@ -32,6 +33,7 @@ class MorePanel extends StatefulWidget {
       {Key? key,
       required this.sessionId,
       required this.sessionType,
+      required this.onTranslateClick,
       this.moreActions,
       this.keepDefault = true})
       : super(key: key);
@@ -42,6 +44,10 @@ class MorePanel extends StatefulWidget {
   final String sessionId;
 
   final NIMConversationType sessionType;
+
+  final Function(BuildContext context, String conversationId,
+          NIMConversationType sessionType, {NIMMessageSender? messageSender})?
+      onTranslateClick;
 
   @override
   State<StatefulWidget> createState() => _MorePanelState();
@@ -81,6 +87,19 @@ class _MorePanelState extends State<MorePanel> {
           title: S.of(context).chatMessageMoreFile,
           onTap: _onFileActionTap),
     ];
+
+    // 未配置翻译数字人则不展示【翻译】入口
+    if (AIUserManager.instance.getAITranslateUser() != null) {
+      defaultActions.add(ActionItem(
+          type: ActionConstants.translate,
+          icon: SvgPicture.asset(
+            'images/ic_translate.svg',
+            package: kPackage,
+          ),
+          title: S.of(context).chatMessageMoreTranslate,
+          onTap: widget.onTranslateClick));
+    }
+
     var pluginActions = NimPluginCoreKit()
         .itemPool
         .getMoreActions()

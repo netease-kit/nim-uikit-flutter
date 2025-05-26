@@ -43,6 +43,24 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
   String get chatMessageMoreFile => '文件';
 
   @override
+  String get chatMessageMoreTranslate => '翻译';
+
+  @override
+  String get chatTranslateTo => '翻译为...';
+
+  @override
+  String get chatTranslateSure => 'AI处理';
+
+  @override
+  String get chatTranslating => 'AI处理中...';
+
+  @override
+  String get chatTranslateUse => '使用↓';
+
+  @override
+  String get chatTranslateLanguageTitle => '将输入内容翻译为';
+
+  @override
   String get chatMessageMoreLocation => '位置';
 
   @override
@@ -173,6 +191,9 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
 
   @override
   String get chatMessageSetTop => '聊天置顶';
+
+  @override
+  String get chatMessageSetPin => 'PIN置顶';
 
   @override
   String get chatMessageSend => '发送';
@@ -497,4 +518,52 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
 
   @override
   String get chatMessagePinLimitTips => '已超出pin数量上限';
+
+  @override
+  String get chatMessageRemovedTip => '该消息已撤回或删除';
+
+  @override
+  String get chatAiSearchError => '模型请求异常';
+
+  @override
+  String get chatAiMessageTypeUnsupport => '暂不支持该格式';
+
+  @override
+  String get chatAiErrorUserNotExist => '用户不存在';
+
+  @override
+  String get chatAiErrorFailedRequestToTheLlm => '请求大语言模型失败';
+
+  @override
+  String get chatAiErrorAiMessagesFunctionDisabled => 'AI消息功能未开通';
+
+  @override
+  String get chatAiErrorUserBanned => '用户被禁用';
+
+  @override
+  String get chatAiErrorUserChatBanned => '用户被禁言';
+
+  @override
+  String get chatAiErrorMessageHitAntispam => '消息命中反垃圾';
+
+  @override
+  String get chatAiErrorNotAnAiAccount => '不是数字人账号';
+
+  @override
+  String get chatAiErrorTeamMemberNotExist => '群成员不存在';
+
+  @override
+  String get chatAiErrorTeamNormalMemberChatBanned => '群普通成员禁言';
+
+  @override
+  String get chatAiErrorTeamMemberChatBanned => '群成员被禁言';
+
+  @override
+  String get chatAiErrorCannotBlocklistAnAiAccount => '不允许对数字人进行黑名单操作';
+
+  @override
+  String get chatAiErrorRateLimitExceeded => '频率超限';
+
+  @override
+  String get chatAiErrorParameter => '参数错误';
 }

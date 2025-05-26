@@ -5,7 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
-import 'package:netease_corekit_im/router/imkit_router_factory.dart';
+import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_contactkit_ui/page/viewmodel/team_list_viewmodel.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:provider/provider.dart';

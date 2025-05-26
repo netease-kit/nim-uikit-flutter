@@ -2,7 +2,7 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:netease_corekit_im/services/message/chat_message.dart';
+import 'package:nim_chatkit/services/message/chat_message.dart';
 
 class PopMenuAction {
   bool Function(ChatMessage message)? onMessageCopy;

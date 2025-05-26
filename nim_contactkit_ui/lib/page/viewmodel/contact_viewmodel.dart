@@ -5,11 +5,10 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:netease_corekit_im/model/contact_info.dart';
-import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/contact/contact_provider.dart';
+import 'package:nim_chatkit/model/contact_info.dart';
+import 'package:nim_chatkit/service_locator.dart';
+import 'package:nim_chatkit/services/contact/contact_provider.dart';
 import 'package:nim_chatkit/repo/contact_repo.dart';
-import 'package:nim_core_v2/nim_core.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
 
 class ContactViewModel extends ChangeNotifier {
@@ -27,67 +26,56 @@ class ContactViewModel extends ChangeNotifier {
   }
 
   void fetchContacts() {
-    ContactRepo.getContactList().then((value) {
+    //优先从缓存中拉取数据
+    ContactRepo.getContactList(userCache: true).then((value) {
       Alog.i(
           tag: 'ContactKit',
           moduleName: 'ContactViewModel',
           content: 'fetchContacts size:${value.length}');
       contacts.clear();
+      value.removeWhere((e) => e.isInBlack == true);
       contacts.addAll(value);
       notifyListeners();
     });
   }
 
   void initListener() {
-    subscriptions.add(NimCore.instance.loginService.onDataSync.listen((event) {
-      if (event.type == NIMDataSyncType.nimDataSyncMain &&
-          event.state == NIMDataSyncState.nimDataSyncStateCompleted) {
-        fetchContacts();
-      }
-    }));
-
-    subscriptions.add(ContactRepo.registerFriendAddedObserver().listen((event) {
-      var userId = event.accountId;
-      Alog.d(tag: logTag, content: 'onFriendAdded ${userId}');
-      var index =
-          contacts.indexWhere((element) => element.user.accountId == userId);
-      if (index >= 0) {
-        contacts[index].friend = event;
-        notifyListeners();
-      } else {
-        getIt<ContactProvider>().getContact(userId).then((value) {
-          if (value != null) {
-            Alog.d(
-                tag: logTag,
-                content: 'contacts add value ${value.user.accountId}');
-            contacts.add(value);
-            notifyListeners();
-          }
-        });
-      }
-    }));
-
+    //注册监听，在登录后获取全量联系人数据
     subscriptions
-        .add(ContactRepo.registerFriendInfoChangedObserver().listen((event) {
-      var userId = event.accountId;
-      Alog.d(tag: logTag, content: 'onFriendInfoChanged ${userId}');
-      var index =
-          contacts.indexWhere((element) => element.user.accountId == userId);
-      if (index >= 0) {
-        contacts[index].friend = event;
-        notifyListeners();
-      } else {
-        getIt<ContactProvider>().getContact(userId).then((value) {
-          if (value != null) {
-            Alog.d(
-                tag: logTag,
-                content: 'contact update value ${value.user.accountId}');
-            contacts.add(value);
-            notifyListeners();
+        .add(getIt<ContactProvider>().onContactListComplete?.listen((value) {
+      Alog.i(
+          tag: 'ContactKit',
+          moduleName: 'ContactViewModel',
+          content: 'onContactListComplete size:${value.length}');
+      contacts.clear();
+      value.removeWhere((e) => e.isInBlack == true);
+      contacts.addAll(value);
+      notifyListeners();
+    }));
+
+    //好友变化监听，处理好友添加，黑名单等信息
+    subscriptions
+        .add(getIt<ContactProvider>().onContactInfoUpdated?.listen((event) {
+      //仅需好友
+      if (event.friend != null) {
+        var index = contacts.indexWhere(
+            (element) => element.user.accountId == event.user.accountId);
+        if (event.isInBlack != true) {
+          if (index >= 0) {
+            contacts[index] = event;
+          } else {
+            contacts.add(event);
           }
-        });
+        } else {
+          Alog.d(
+              tag: logTag, content: 'block list add ${event.user.accountId}');
+          contacts.removeWhere((e) => e.user.accountId == event.user.accountId);
+        }
+        notifyListeners();
       }
     }));
+
+    //处理好友申请未读数
     subscriptions
         .add(ContactRepo.registerFriendAddApplicationObserver().listen((event) {
       ContactRepo.getAddApplicationUnreadCount().then((value) {
@@ -106,56 +94,17 @@ class ContactViewModel extends ChangeNotifier {
         notifyListeners();
       });
     }));
+    //监听好友删除回调
     subscriptions
         .add(ContactRepo.registerFriendDeleteObserver().listen((removedFriend) {
       Alog.d(tag: logTag, content: 'contact delete ${removedFriend.accountId}');
       contacts.removeWhere((e) => e.user.accountId == removedFriend.accountId);
       notifyListeners();
     }));
-
-    subscriptions
-        .add(ContactRepo.registerBlackListAddedObserver().listen((blockFriend) {
-      Alog.d(tag: logTag, content: 'onBlackListAdded ${blockFriend.accountId}');
-      contacts.removeWhere((e) => e.user.accountId == blockFriend.accountId);
-      notifyListeners();
-    }));
-
-    subscriptions
-        .add(ContactRepo.registerBlackListRemovedObserver().listen((userId) {
-      Alog.d(tag: logTag, content: 'onBlackListRemoved ${userId}');
-      var index =
-          contacts.indexWhere((element) => element.user.accountId == userId);
-      if (index >= 0) {
-        contacts[index].friend =
-            getIt<ContactProvider>().getContactInCache(userId)?.friend;
-        notifyListeners();
-      } else {
-        final value = getIt<ContactProvider>().getContactInCache(userId);
-        if (value != null && value.friend != null) {
-          Alog.d(
-              tag: logTag,
-              content: 'contacts add value ${value.user.accountId}');
-          contacts.add(value);
-          notifyListeners();
-        }
-      }
-    }));
-
-    subscriptions
-        .add(getIt<ContactProvider>().onContactInfoUpdated?.listen((event) {
-      if (event != null) {
-        var index = contacts.indexWhere(
-            (element) => element.user.accountId == event.user.accountId);
-        if (index >= 0) {
-          contacts[index] = event;
-          notifyListeners();
-        }
-      }
-    }));
   }
 
   void init() {
-    getIt<ContactProvider>().initListener();
+    fetchContacts();
     initListener();
     featSystemUnreadCount();
   }

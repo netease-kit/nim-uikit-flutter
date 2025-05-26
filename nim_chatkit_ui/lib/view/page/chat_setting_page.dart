@@ -2,22 +2,30 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'dart:convert';
+
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
-import 'package:netease_corekit_im/router/imkit_router_constants.dart';
-import 'package:netease_corekit_im/router/imkit_router_factory.dart';
-import 'package:netease_corekit_im/services/team/team_provider.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
+import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit/router/imkit_router_constants.dart';
+import 'package:nim_chatkit/router/imkit_router_factory.dart';
+import 'package:nim_chatkit/services/team/team_provider.dart';
+import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/background.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
-import 'package:netease_corekit_im/model/contact_info.dart';
-import 'package:netease_corekit_im/service_locator.dart';
+import 'package:nim_chatkit/model/contact_info.dart';
+import 'package:nim_chatkit/service_locator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:nim_chatkit/repo/contact_repo.dart';
 import 'package:nim_chatkit/repo/conversation_repo.dart';
+import 'package:nim_chatkit_ui/view_model/chat_setting_view_model.dart';
 import 'package:nim_core_v2/nim_core.dart';
+import 'package:provider/provider.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
 
 import '../../chat_kit_client.dart';
@@ -37,10 +45,9 @@ class ChatSettingPage extends StatefulWidget {
 }
 
 class _ChatSettingPageState extends State<ChatSettingPage> {
-  bool isNotify = false;
-  bool isStick = false;
-
-  String get userId => widget.contactInfo.user.accountId!;
+  late String accountId;
+// AI数字人PIN置顶信息KEY
+  String KEY_UNPIN_AI_USERS = "unpinAIUsers";
 
   Widget _member() {
     return Container(
@@ -53,6 +60,7 @@ class _ChatSettingPageState extends State<ChatSettingPage> {
               Avatar(
                 avatar: widget.contactInfo.user.avatar,
                 name: widget.contactInfo.getName(),
+                bgCode: AvatarColor.avatarColor(content: accountId),
                 fontSize: 16,
                 height: 42,
                 width: 42,
@@ -80,13 +88,13 @@ class _ChatSettingPageState extends State<ChatSettingPage> {
             onTap: () {
               goToContactSelector(context,
                       mostCount: TeamProvider.createTeamInviteLimit,
-                      filter: [userId],
-                      returnContact: true)
+                      filter: [accountId],
+                      returnContact: true,
+                      includeAIUser: true)
                   .then((contacts) {
                 if (contacts is List<ContactInfo> && contacts.isNotEmpty) {
                   // add current friend
                   contacts.add(widget.contactInfo);
-
                   var selectName = contacts
                       .map((e) => e.user.name ?? e.user.accountId!)
                       .toList();
@@ -99,24 +107,19 @@ class _ChatSettingPageState extends State<ChatSettingPage> {
                     Alog.i(
                         tag: 'ChatKit',
                         moduleName: 'Chat Setting',
-                        content: 'create team ${teamResult?.toJson()}');
+                        content: 'create team ${teamResult?.team?.teamId}');
                     if (teamResult != null && teamResult.team != null) {
                       // pop and jump
-                      NimCore.instance.conversationIdUtil
-                          .teamConversationId(teamResult.team!.teamId)
-                          .then((result) {
-                        if (result.data?.isNotEmpty == true) {
-                          Navigator.pushNamedAndRemoveUntil(
-                              context,
-                              RouterConstants.PATH_CHAT_PAGE,
-                              ModalRoute.withName(
-                                  RouterConstants.PATH_CHAT_PAGE),
-                              arguments: {
-                                'conversationId': result.data!,
-                                'conversationType': NIMConversationType.team,
-                              });
-                        }
-                      });
+                      var teamConversationId = ChatKitUtils.conversationId(
+                          teamResult.team!.teamId, NIMConversationType.team);
+                      Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          RouterConstants.PATH_CHAT_PAGE,
+                          ModalRoute.withName(RouterConstants.PATH_CHAT_PAGE),
+                          arguments: {
+                            'conversationId': teamConversationId,
+                            'conversationType': NIMConversationType.team,
+                          });
                     }
                   });
                 }
@@ -134,32 +137,29 @@ class _ChatSettingPageState extends State<ChatSettingPage> {
     );
   }
 
-  Widget _setting() {
+  Widget _setting(BuildContext context) {
     TextStyle style =
         const TextStyle(color: CommonColors.color_333333, fontSize: 16);
+    bool stick = context.watch<ChatSettingViewModel>().isStick;
+    bool notify = context.watch<ChatSettingViewModel>().isNotify;
+    bool hasAIPin = context.watch<ChatSettingViewModel>().hasPin;
+    bool pin = context.watch<ChatSettingViewModel>().isPin;
     return Column(
       children: ListTile.divideTiles(context: context, tiles: [
         ListTile(
-          title: Text(
-            S.of(context).chatMessageSignal,
-            style: style,
-          ),
-          trailing: const Icon(Icons.keyboard_arrow_right_outlined),
-          onTap: () {
-            NimCore.instance.conversationIdUtil
-                .p2pConversationId(userId)
-                .then((result) {
-              if (result.data?.isNotEmpty == true) {
-                Navigator.pushNamed(context, RouterConstants.PATH_CHAT_PIN_PAGE,
-                    arguments: {
-                      'conversationId': result.data!,
-                      'conversationType': NIMConversationType.p2p,
-                      'chatTitle': widget.contactInfo.getName()
-                    });
-              }
-            });
-          },
-        ),
+            title: Text(
+              S.of(context).chatMessageSignal,
+              style: style,
+            ),
+            trailing: const Icon(Icons.keyboard_arrow_right_outlined),
+            onTap: () {
+              Navigator.pushNamed(context, RouterConstants.PATH_CHAT_PIN_PAGE,
+                  arguments: {
+                    'conversationId': widget.conversationId,
+                    'conversationType': NIMConversationType.p2p,
+                    'chatTitle': widget.contactInfo.getName()
+                  });
+            }),
         ListTile(
           title: Text(
             S.of(context).chatMessageOpenMessageNotice,
@@ -171,18 +171,9 @@ class _ChatSettingPageState extends State<ChatSettingPage> {
               if (!(await haveConnectivity())) {
                 return;
               }
-              ChatMessageRepo.setNotify(userId, value).then((suc) {
-                if (!suc.isSuccess) {
-                  setState(() {
-                    isNotify = !value;
-                  });
-                }
-              });
-              setState(() {
-                isNotify = value;
-              });
+              context.read<ChatSettingViewModel>().setNotify(value);
             },
-            value: isNotify,
+            value: notify,
           ),
         ),
         ListTile(
@@ -193,38 +184,31 @@ class _ChatSettingPageState extends State<ChatSettingPage> {
           trailing: CupertinoSwitch(
             activeColor: CommonColors.color_337eff,
             onChanged: (bool value) async {
-              if (value) {
+              if (!(await haveConnectivity())) {
+                return;
+              }
+              context.read<ChatSettingViewModel>().setStick(value);
+            },
+            value: stick,
+          ),
+        ),
+        if (hasAIPin)
+          ListTile(
+            title: Text(
+              S.of(context).chatMessageSetPin,
+              style: style,
+            ),
+            trailing: CupertinoSwitch(
+              activeColor: CommonColors.color_337eff,
+              onChanged: (bool value) async {
                 if (!(await haveConnectivity())) {
                   return;
                 }
-
-                // 调用Conversation 添加置顶
-                ConversationRepo.addStickTop(widget.conversationId)
-                    .then((result) {
-                  if (!result.isSuccess) {
-                    setState(() {
-                      isStick = false;
-                    });
-                  }
-                });
-              } else {
-                // 调用Conversation 移除置顶
-                ConversationRepo.removeStickTop(widget.conversationId)
-                    .then((result) {
-                  if (!result.isSuccess) {
-                    setState(() {
-                      isStick = true;
-                    });
-                  }
-                });
-              }
-              setState(() {
-                isStick = value;
-              });
-            },
-            value: isStick,
+                context.read<ChatSettingViewModel>().setAIUserPin(value);
+              },
+              value: pin,
+            ),
           ),
-        ),
       ]).toList(),
     );
   }
@@ -232,45 +216,29 @@ class _ChatSettingPageState extends State<ChatSettingPage> {
   @override
   void initState() {
     super.initState();
-    ChatMessageRepo.isNeedNotify(userId).then((value) {
-      setState(() {
-        isNotify = value;
-      });
-    });
-    //判断是否置顶
-    NimCore.instance.conversationIdUtil
-        .p2pConversationId(userId)
-        .then((result) {
-      if (result.data?.isNotEmpty == true) {
-        ConversationRepo.getConversation(result.data!).then((conversation) {
-          if (conversation.data != null) {
-            isStick = conversation.data!.stickTop;
-            setState(() {});
-          }
-        });
-      }
-    });
+    accountId = ChatKitUtils.getConversationTargetId(widget.conversationId);
   }
 
   @override
   Widget build(BuildContext context) {
     return TransparentScaffold(
-      title: S.of(context).chatSetting,
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          children: [
-            const SizedBox(
-              height: 16,
-            ),
-            CardBackground(child: _member()),
-            const SizedBox(
-              height: 16,
-            ),
-            CardBackground(child: _setting())
-          ],
-        ),
-      ),
-    );
+        title: S.of(context).chatSetting,
+        body: ChangeNotifierProvider(
+            create: (context) => ChatSettingViewModel(widget.conversationId),
+            builder: (context, child) {
+              const TextStyle(color: CommonColors.color_333333, fontSize: 16);
+              return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(children: [
+                    const SizedBox(
+                      height: 16,
+                    ),
+                    CardBackground(child: _member()),
+                    const SizedBox(
+                      height: 16,
+                    ),
+                    CardBackground(child: _setting(context)),
+                  ]));
+            }));
   }
 }

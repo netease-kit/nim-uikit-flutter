@@ -3,8 +3,8 @@
 // found in the LICENSE file.
 
 import 'package:netease_corekit/report/xkit_report.dart';
-import 'package:netease_corekit_im/router/imkit_router.dart';
-import 'package:netease_corekit_im/router/imkit_router_constants.dart';
+import 'package:nim_chatkit/router/imkit_router.dart';
+import 'package:nim_chatkit/router/imkit_router_constants.dart';
 
 import 'l10n/S.dart';
 import 'view/pages/team_kit_setting_page.dart';

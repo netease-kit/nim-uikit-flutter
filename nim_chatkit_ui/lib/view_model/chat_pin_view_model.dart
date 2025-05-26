@@ -6,7 +6,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
-import 'package:netease_corekit_im/services/message/chat_message.dart';
+import 'package:nim_chatkit/services/message/chat_message.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit/repo/chat_service_observer_repo.dart';
 import 'package:nim_core_v2/nim_core.dart';

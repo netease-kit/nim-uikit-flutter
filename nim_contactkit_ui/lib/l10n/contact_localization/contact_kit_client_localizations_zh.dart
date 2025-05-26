@@ -33,6 +33,9 @@ class ContactKitClientLocalizationsZh extends ContactKitClientLocalizations {
   String get contactTeam => '我的群聊';
 
   @override
+  String get contactAIUserList => '我的数字人';
+
+  @override
   String get contactComment => '备注名';
 
   @override
@@ -179,4 +182,13 @@ class ContactKitClientLocalizationsZh extends ContactKitClientLocalizations {
 
   @override
   String get contactFriendEmpty => '暂无好友';
+
+  @override
+  String get myFriend => '我的好友';
+
+  @override
+  String get aiUsers => '数字人';
+
+  @override
+  String get aiUsersEmpty => '暂无数字人';
 }

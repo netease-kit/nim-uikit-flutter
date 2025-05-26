@@ -163,6 +163,42 @@ abstract class ChatKitClientLocalizations {
   /// **'File'**
   String get chatMessageMoreFile;
 
+  /// No description provided for @chatMessageMoreTranslate.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate'**
+  String get chatMessageMoreTranslate;
+
+  /// No description provided for @chatTranslateTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate to'**
+  String get chatTranslateTo;
+
+  /// No description provided for @chatTranslateSure.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Translate'**
+  String get chatTranslateSure;
+
+  /// No description provided for @chatTranslating.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Translating...'**
+  String get chatTranslating;
+
+  /// No description provided for @chatTranslateUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate to'**
+  String get chatTranslateUse;
+
+  /// No description provided for @chatTranslateLanguageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use↓'**
+  String get chatTranslateLanguageTitle;
+
   /// No description provided for @chatMessageMoreLocation.
   ///
   /// In en, this message translates to:
@@ -414,6 +450,12 @@ abstract class ChatKitClientLocalizations {
   /// In en, this message translates to:
   /// **'Set session top'**
   String get chatMessageSetTop;
+
+  /// No description provided for @chatMessageSetPin.
+  ///
+  /// In en, this message translates to:
+  /// **'PIN'**
+  String get chatMessageSetPin;
 
   /// No description provided for @chatMessageSend.
   ///
@@ -924,6 +966,102 @@ abstract class ChatKitClientLocalizations {
   /// In en, this message translates to:
   /// **'Number of pin reaches the limit.'**
   String get chatMessagePinLimitTips;
+
+  /// No description provided for @chatMessageRemovedTip.
+  ///
+  /// In en, this message translates to:
+  /// **'The message was removed.'**
+  String get chatMessageRemovedTip;
+
+  /// No description provided for @chatAiSearchError.
+  ///
+  /// In en, this message translates to:
+  /// **'AI error'**
+  String get chatAiSearchError;
+
+  /// No description provided for @chatAiMessageTypeUnsupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsupported format'**
+  String get chatAiMessageTypeUnsupport;
+
+  /// No description provided for @chatAiErrorUserNotExist.
+  ///
+  /// In en, this message translates to:
+  /// **'User does not exist'**
+  String get chatAiErrorUserNotExist;
+
+  /// No description provided for @chatAiErrorFailedRequestToTheLlm.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed request to the language model'**
+  String get chatAiErrorFailedRequestToTheLlm;
+
+  /// No description provided for @chatAiErrorAiMessagesFunctionDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'AI messaging function not enabled'**
+  String get chatAiErrorAiMessagesFunctionDisabled;
+
+  /// No description provided for @chatAiErrorUserBanned.
+  ///
+  /// In en, this message translates to:
+  /// **'User banned'**
+  String get chatAiErrorUserBanned;
+
+  /// No description provided for @chatAiErrorUserChatBanned.
+  ///
+  /// In en, this message translates to:
+  /// **'User chat banned'**
+  String get chatAiErrorUserChatBanned;
+
+  /// No description provided for @chatAiErrorMessageHitAntispam.
+  ///
+  /// In en, this message translates to:
+  /// **'Message hit anti-spam'**
+  String get chatAiErrorMessageHitAntispam;
+
+  /// No description provided for @chatAiErrorNotAnAiAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Not an AI account'**
+  String get chatAiErrorNotAnAiAccount;
+
+  /// No description provided for @chatAiErrorTeamMemberNotExist.
+  ///
+  /// In en, this message translates to:
+  /// **'Team member does not exist'**
+  String get chatAiErrorTeamMemberNotExist;
+
+  /// No description provided for @chatAiErrorTeamNormalMemberChatBanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Team normal member chat banned'**
+  String get chatAiErrorTeamNormalMemberChatBanned;
+
+  /// No description provided for @chatAiErrorTeamMemberChatBanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Team member chat banned'**
+  String get chatAiErrorTeamMemberChatBanned;
+
+  /// No description provided for @chatAiErrorCannotBlocklistAnAiAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot blocklist an AI account'**
+  String get chatAiErrorCannotBlocklistAnAiAccount;
+
+  /// No description provided for @chatAiErrorRateLimitExceeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate limit exceeded'**
+  String get chatAiErrorRateLimitExceeded;
+
+  /// No description provided for @chatAiErrorParameter.
+  ///
+  /// In en, this message translates to:
+  /// **'Parameter error'**
+  String get chatAiErrorParameter;
 }
 
 class _ChatKitClientLocalizationsDelegate

@@ -10,15 +10,16 @@ import 'package:collection/collection.dart';
 import 'package:flutter/widgets.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
-import 'package:netease_corekit_im/im_kit_client.dart';
-import 'package:netease_corekit_im/model/ait/ait_contacts_model.dart';
-import 'package:netease_corekit_im/model/contact_info.dart';
-import 'package:netease_corekit_im/service_locator.dart';
-import 'package:netease_corekit_im/services/contact/contact_provider.dart';
-import 'package:netease_corekit_im/services/message/chat_message.dart';
-import 'package:netease_corekit_im/services/message/nim_chat_cache.dart';
+import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit/model/ait/ait_contacts_model.dart';
+import 'package:nim_chatkit/model/contact_info.dart';
+import 'package:nim_chatkit/service_locator.dart';
+import 'package:nim_chatkit/services/contact/contact_provider.dart';
+import 'package:nim_chatkit/services/message/chat_message.dart';
+import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
 import 'package:nim_chatkit/chatkit_client_repo.dart';
 import 'package:nim_chatkit/location.dart';
+import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit/message/message_revoke_info.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit/repo/chat_service_observer_repo.dart';
@@ -26,7 +27,9 @@ import 'package:nim_chatkit_ui/helper/chat_message_helper.dart';
 import 'package:nim_chatkit_ui/helper/merge_message_helper.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
+import 'package:uuid/uuid.dart';
 
+import '../chat_kit_client.dart';
 import '../l10n/S.dart';
 
 class ChatViewModel extends ChangeNotifier {
@@ -34,7 +37,25 @@ class ChatViewModel extends ChangeNotifier {
 
   static const String typeState = "typing";
 
+  //默认上下文的取值范围
+  static const int aiMessageSize = 30;
+
+  // 用于控制随机性和多样性的程度
+  static const double translateTemperature = 0.2;
+
+  // 获取翻译 prompt key
+  static const String translatePromptKey = "Language";
+
   String? _sessionId;
+
+  // 翻译 request id
+  String? translationLanguageRequestId;
+
+  // 数字人请求成功code
+  int aiUserRequestSuccess = 200;
+
+  // p2p 消息标记已读回执的时间戳
+  int markP2PMessageReadReceiptTime = 0;
 
   Future<String> get sessionId async {
     if (_sessionId?.isNotEmpty == true) {
@@ -250,10 +271,6 @@ class ChatViewModel extends ChangeNotifier {
             !_isFilterMessage(element);
       }).toList();
       if (list.isNotEmpty) {
-        final lastMessage = list.last;
-        if (lastMessage.conversationType == NIMConversationType.p2p) {
-          sendMessageP2PReceipt(lastMessage);
-        }
         var res = await ChatMessageRepo.fillUserInfo(list);
         //用户数据填充完成后再更新过滤
         //解决非常罕见的在填充数据时，消息状态更新回调，导致消息多一条的问题
@@ -389,6 +406,24 @@ class ChatViewModel extends ChangeNotifier {
       }));
     }
 
+    //监听消息修改
+    subscriptions
+        .add(ChatServiceObserverRepo.observeModifyMessage().listen((msgList) {
+      _logI('received modifyMessage notify and save a local message');
+      // 将 msgList 转换为 Map<messageId, Message>
+      final msgMap = {for (var msg in msgList) msg.messageClientId: msg};
+      // 生成新列表：存在则替换，否则保留原元素
+      List<ChatMessage> updatedList = messageList.map((msg) {
+        if (msgMap.containsKey(msg.nimMessage.messageClientId)) {
+          msg.nimMessage = msgMap[msg.nimMessage.messageClientId!]!;
+        }
+        return msg;
+      }).toList();
+      _messageList = updatedList;
+      notifyListeners();
+    }));
+
+    //监听消息撤回
     subscriptions
         .add(ChatServiceObserverRepo.observeRevokeMessage().listen((messages) {
       _logI('received revokeMessage notify and save a local message');
@@ -509,7 +544,7 @@ class ChatViewModel extends ChangeNotifier {
     _logI('initFetch -->>');
     hasMoreForwardMessages = true;
     hasMoreNewerMessages = false;
-    _fetchMoreMessage(anchor: null);
+    _fetchMoreMessage(anchor: null, init: true);
   }
 
   void loadMessageWithAnchor(NIMMessage anchor) {
@@ -580,7 +615,8 @@ class ChatViewModel extends ChangeNotifier {
   _fetchMoreMessage(
       {NIMMessage? anchor,
       int? limit,
-      NIMQueryDirection direction = NIMQueryDirection.desc}) {
+      NIMQueryDirection direction = NIMQueryDirection.desc,
+      bool init = false}) {
     _logI(
         '_fetchMoreMessage anchor ${anchor?.text}, time = ${anchor?.createTime!}, direction = $direction');
 
@@ -595,7 +631,21 @@ class ChatViewModel extends ChangeNotifier {
         .then((value) {
       if (value.isSuccess && value.data != null) {
         _logI('_fetchMoreMessage success, length = ${value.data?.length}');
-        _onListFetchSuccess(value.data!, direction);
+        if (init &&
+            value.data?.isNotEmpty != true &&
+            AIUserManager.instance.isAIUser(_sessionId)) {
+          //如果拉取不到消息，并且是数字人，则插入消息
+          final welcomeText =
+              AIUserManager.instance.getWelcomeText(_sessionId!);
+          if (welcomeText?.isNotEmpty == true) {
+            ChatMessageRepo.insertLocalTextMessage(conversationId, welcomeText!,
+                senderId: _sessionId);
+          }
+          isLoading = false;
+        } else {
+          _onListFetchSuccess(value.data!, direction);
+        }
+
         // }
       } else {
         _logI(
@@ -603,6 +653,14 @@ class ChatViewModel extends ChangeNotifier {
         _onListFetchFailed(value.code, value.errorDetails);
       }
     });
+  }
+
+  ///会话对象是否是数字人
+  bool isAIUser() {
+    if (conversationType != NIMConversationType.p2p) {
+      return false;
+    }
+    return AIUserManager.instance.isAIUser(_sessionId);
   }
 
   _onListFetchSuccess(List<ChatMessage>? list, NIMQueryDirection direction) {
@@ -614,10 +672,6 @@ class ChatViewModel extends ChangeNotifier {
       list = _successMessageFilter(list);
       if (list != null) {
         _insertMessages(list, toEnd: true);
-        if (list.isNotEmpty &&
-            list[0].nimMessage.conversationType == NIMConversationType.p2p) {
-          sendMessageP2PReceipt(list[0].nimMessage);
-        }
       }
     } else {
       hasMoreNewerMessages = list != null && list.isNotEmpty;
@@ -745,15 +799,20 @@ class ChatViewModel extends ChangeNotifier {
             forcePushContent: title ?? text,
             forcePushAccountIds: pushList);
       } else {
-        pushConfig = NIMMessagePushConfig(pushContent: title ?? text);
+        //兼容单聊@ 数字人的case，此处forcePush 不生效，只用于获取数字人agent
+        pushConfig = NIMMessagePushConfig(
+            pushContent: title ?? text, forcePushAccountIds: pushList);
       }
       if (aitMap != null) {
         msgBuildResult.data!.serverExtension = jsonEncode({
           ChatMessage.keyAitMsg: aitMap,
         });
       }
-      sendMessage(msgBuildResult.data!,
-          replyMsg: replyMsg, pushConfig: pushConfig);
+      sendMessage(
+        msgBuildResult.data!,
+        replyMsg: replyMsg,
+        pushConfig: pushConfig,
+      );
     }
   }
 
@@ -810,11 +869,80 @@ class ChatViewModel extends ChangeNotifier {
         .then((value) => sendMessage(value.data!, replyMsg: replyMsg));
   }
 
-  void sendMessage(NIMMessage message,
-      {NIMMessage? replyMsg, NIMMessagePushConfig? pushConfig}) async {
+  void resendMessage(ChatMessage message, {NIMMessage? replyMsg}) {}
+
+  ///发送消息最终实现
+  ///[message] 消息
+  ///[replyMsg] 回复消息
+  /// [pushConfig] 推送配置
+  /// [aiAgent] 消息发送的AI代理
+  void sendMessage(
+    NIMMessage message, {
+    NIMMessage? replyMsg,
+    NIMMessagePushConfig? pushConfig,
+  }) async {
     final params = await ChatMessageHelper.getSenderParams(
         message, conversationId,
         pushConfig: pushConfig);
+    //设置aiAgent
+    // 根据forcePushAccountIds 设置
+    NIMAIUser? aiAgent;
+    if (pushConfig?.forcePushAccountIds?.isNotEmpty == true ||
+        message.pushConfig?.forcePushAccountIds?.isNotEmpty == true) {
+      final pushList = pushConfig?.forcePushAccountIds?.isNotEmpty == true
+          ? pushConfig?.forcePushAccountIds
+          : message.pushConfig?.forcePushAccountIds;
+      for (var accId in pushList!) {
+        if (AIUserManager.instance.getAIUserById(accId!) != null) {
+          aiAgent = AIUserManager.instance.getAIUserById(accId);
+          break;
+        }
+      }
+    }
+    if (aiAgent == null && isAIUser()) {
+      //如果是AI用户，设置aiAgent 为单聊对象
+      aiAgent = AIUserManager.instance.getAIUserById(_sessionId!);
+    }
+    //处理重发的case，从消息的 Config 中获取
+    if (aiAgent == null && message.aiConfig?.accountId?.isNotEmpty == true) {
+      aiAgent =
+          AIUserManager.instance.getAIUserById(message.aiConfig!.accountId!);
+    }
+    //根据回复消息设置上下文
+    List<NIMAIModelCallMessage>? aiMessages;
+    if (aiAgent != null && replyMsg != null) {
+      final textMsg = ChatMessageHelper.getAIContentMsg(replyMsg);
+      if (textMsg != null) {
+        aiMessages = [
+          NIMAIModelCallMessage(
+              type: 0, msg: textMsg, role: NIMAIModelRoleType.user)
+        ];
+      }
+    }
+    NIMMessageAIConfigParams? aiConfigParams;
+    if (aiAgent != null) {
+      final aiStreamMode = await IMKitClient.enableAIStream;
+      // AI 参数处理
+      aiConfigParams = NIMMessageAIConfigParams(
+          accountId: aiAgent.accountId, aiStream: aiStreamMode);
+      if (ChatMessageHelper.getAIContentMsg(message)?.isNotEmpty == true) {
+        NIMAIModelCallContent content = NIMAIModelCallContent(
+            type: 0, msg: ChatMessageHelper.getAIContentMsg(message));
+        aiConfigParams.content = content;
+      }
+    }
+    //处理与数字人单聊的上下文
+    if (aiConfigParams != null) {
+      if (aiMessages?.isNotEmpty == true) {
+        aiConfigParams.messages = aiMessages;
+      } else if (isAIUser()) {
+        //如果没有AI上下文，则取最近的30条消息
+        aiConfigParams.messages = getAIMessages();
+      }
+    }
+
+    params.aiConfig = aiConfigParams;
+
     //处理重发case
     if (replyMsg == null &&
         message.sendingState == NIMMessageSendingState.failed &&
@@ -823,6 +951,11 @@ class ChatViewModel extends ChangeNotifier {
               .getMessageListByRefers(messageRefers: [message.threadReply!]))
           .data
           ?.first;
+    }
+
+    //发送前的对外回调
+    if (ChatKitClient.instance.messageAction != null) {
+      ChatKitClient.instance.messageAction!(message, conversationId, params);
     }
 
     if (replyMsg != null) {
@@ -844,6 +977,66 @@ class ChatViewModel extends ChangeNotifier {
         }
       });
     }
+  }
+
+  ///获取AI消息的上下文
+  ///仅对数字人单聊
+  List<NIMAIModelCallMessage?>? getAIMessages() {
+    int size = min(_messageList.length, aiMessageSize);
+    List<NIMAIModelCallMessage?>? aiMessages;
+    if (isAIUser() && _messageList.isNotEmpty) {
+      aiMessages = <NIMAIModelCallMessage?>[];
+      //第一条消息不能是数字人消息
+      // 标记是否已经设置过第一条消息
+      bool firstSet = false;
+      for (int index = 0; index < size; index++) {
+        final message = _messageList[index];
+        bool isFromAI =
+            AIUserManager.instance.isAIUser(message.nimMessage.senderId);
+        //1 如果第一条是数字人消息，则不再添加
+        //2 如果消息已经撤回，则不再添加
+        //3 如果消息没有服务器ID，说明不是发出去的消息，则不再添加
+        //4 如果没有消息内容，则不再添加
+        if ((!firstSet && !isFromAI) ||
+            message.isRevoke ||
+            message.nimMessage.messageServerId?.isNotEmpty != true ||
+            ChatMessageHelper.getAIContentMsg(message.nimMessage)?.isNotEmpty !=
+                true) {
+          continue;
+        }
+        firstSet = true;
+        aiMessages.add(NIMAIModelCallMessage(
+            type: 0,
+            msg: ChatMessageHelper.getAIContentMsg(message.nimMessage),
+            role: isFromAI
+                ? NIMAIModelRoleType.assistant
+                : NIMAIModelRoleType.user));
+      }
+    }
+    return aiMessages;
+  }
+
+  void translateInputText(String sourceText, String language) {
+    NIMProxyAIModelCallParams request = NIMProxyAIModelCallParams();
+    request.accountId = AIUserManager.instance.getAITranslateUser()?.accountId;
+
+    translationLanguageRequestId = Uuid().v4().toUpperCase();
+    request.requestId = translationLanguageRequestId;
+
+    NIMAIModelCallContent content = NIMAIModelCallContent(type: 0);
+    content.msg = sourceText;
+    request.content = content;
+
+    NIMAIModelConfigParams configParams = NIMAIModelConfigParams();
+    configParams.temperature = translateTemperature;
+    request.modelConfigParams = configParams;
+
+    String promptKey = translatePromptKey;
+    final Map<String, dynamic> promptVariables = {};
+    promptVariables[promptKey] = language;
+    request.promptVariables = jsonEncode(promptVariables);
+
+    NimCore.instance.aiService.proxyAIModelCall(request);
   }
 
   void _saveBlackListTips() {
@@ -1158,16 +1351,20 @@ class ChatViewModel extends ChangeNotifier {
     }
   }
 
+  //发送已读回执，只有当前的消息比之前发的新的时候才发
   void sendMessageP2PReceipt(NIMMessage message) {
-    ChatMessageRepo.markP2PMessageRead(message: message);
+    if ((message.createTime ?? 0) > markP2PMessageReadReceiptTime) {
+      ChatMessageRepo.markP2PMessageRead(message: message).then((result) {
+        if (result.isSuccess) {
+          markP2PMessageReadReceiptTime = message.createTime!;
+        }
+      });
+    }
   }
 
   void sendTeamMessageReceipt(ChatMessage message) {
     ChatMessageRepo.markTeamMessageRead([message.nimMessage]).then((result) {
-      Alog.d(
-          tag: logTag,
-          content:
-              ' markTeamMessageRead message = ${message.nimMessage.text} result ${result.isSuccess}');
+      //do nothing
     });
   }
 

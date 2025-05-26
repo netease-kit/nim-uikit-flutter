@@ -189,4 +189,7 @@ class DemoKitClientLocalizationsZh extends DemoKitClientLocalizations {
 
   @override
   String get swindleTips => '仅用于体验云信IM 产品功能，请勿轻信汇款、中奖等涉及钱款的信息，勿轻易拨打陌生电话，谨防上当受骗。';
+
+  @override
+  String get aiStreamMode => 'AI数字人流式输出';
 }

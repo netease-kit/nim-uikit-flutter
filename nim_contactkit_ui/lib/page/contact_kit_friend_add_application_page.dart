@@ -7,7 +7,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/base/base_state.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
-import 'package:netease_corekit_im/im_kit_client.dart';
+import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/model/system_notify_info.dart';
 import 'package:nim_chatkit/repo/contact_repo.dart';
 import 'package:nim_contactkit_ui/contact_kit_client.dart';

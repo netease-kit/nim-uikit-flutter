@@ -4,16 +4,16 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:netease_common/netease_common.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
-import 'package:netease_corekit_im/services/message/chat_message.dart';
+import 'package:nim_chatkit/services/message/chat_message.dart';
 import 'package:nim_chatkit/message/message_helper.dart';
 import 'package:nim_chatkit_ui/l10n/S.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
 import 'package:nim_core_v2/nim_core.dart';
-import 'package:super_tooltip/super_tooltip.dart';
 
 import '../../../chat_kit_client.dart';
+import '../../../helper/chat_message_helper.dart';
+import 'chat_kit_super_tooltip.dart';
 
 class ChatKitMessagePopMenu {
   static const String copyMessageId = 'copyMessage';
@@ -44,13 +44,8 @@ class ChatKitMessagePopMenu {
     //重设arrowTipDistance
     var resetDistance = true;
 
-    // 获取屏幕安全区域
-    final mediaQuery = MediaQuery.of(context);
-    final screenHeight = mediaQuery.size.height;
-    final visibleAreaTop = mediaQuery.padding.top;
-    final visibleAreaBottom = screenHeight - mediaQuery.padding.bottom;
-
     RenderBox? box = context.findRenderObject() as RenderBox?;
+    bool isTargetHeadVisible = true;
     if (box != null) {
       Offset position = box.localToGlobal(Offset.zero);
       if (position.dy < 240) {
@@ -81,23 +76,20 @@ class ChatKitMessagePopMenu {
 
         // 判断可见性
         if (popupDirection == TooltipDirection.down &&
-            (widgetScrollBottom + 20) > viewportBottom) {
+            (widgetScrollBottom + 30) > viewportBottom) {
           resetDistance = false;
           arrowTipDistance = (context.size!.height / 2).roundToDouble() -
-              ((widgetScrollBottom + 100) - viewportBottom);
+              ((widgetScrollBottom + 200) - viewportBottom);
           if (arrowTipDistance < 0) {
             popupDirection = TooltipDirection.up;
             arrowTipDistance = 0 - arrowTipDistance;
           }
+          isTargetHeadVisible = false;
         }
       }
     }
     if (resetDistance) {
       arrowTipDistance = (context.size!.height / 2).roundToDouble() + 10;
-    }
-
-    bool isSelf() {
-      return message.nimMessage.isSelf == true;
     }
 
     _tooltip = SuperTooltip(
@@ -106,13 +98,14 @@ class ChatKitMessagePopMenu {
       arrowTipDistance: arrowTipDistance,
       arrowBaseWidth: 10.0,
       arrowLength: 10.0,
-      right: isSelf() ? 60 : null,
-      left: isSelf() ? null : 60,
+      right: _isSelf(message.nimMessage) ? 60 : null,
+      left: _isSelf(message.nimMessage) ? null : 60,
       borderColor: Colors.white,
       backgroundColor: Colors.white,
       shadowColor: Colors.black26,
       hasShadow: true,
       borderWidth: 1.0,
+      isTargetHeadVisible: isTargetHeadVisible,
       showCloseButton: ShowCloseButton.none,
       touchThroughAreaShape: ClipAreaShape.rectangle,
       content: _getTooltipAction(context, chatUIConfig, message),
@@ -174,9 +167,16 @@ class ChatKitMessagePopMenu {
         message.nimMessage.sendingState != NIMMessageSendingState.failed;
   }
 
+  bool _isSelf(NIMMessage message) {
+    if (ChatMessageHelper.isReceivedMessageFromAi(message)) {
+      return false;
+    }
+    return message.isSelf == true;
+  }
+
   _buildLongPressTipItem(
       BuildContext context, ChatUIConfig? config, ChatMessage message) {
-    final shouldShowRevokeAction = message.nimMessage.isSelf == true;
+    final shouldShowRevokeAction = _isSelf(message.nimMessage);
     final firstRowList = [
       if (_showCopy(config, message))
         {

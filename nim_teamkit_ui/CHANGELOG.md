@@ -1,5 +1,10 @@
 # NimTeamKitUI ChangeLog
 
+## 10.2.0(May 27, 2025)
+
+### New Features
+* 支持AI数字人功能
+
 ## 10.1.0(Apr 21, 2025)
 
 ### New Features

@@ -446,6 +446,12 @@ abstract class DemoKitClientLocalizations {
   /// In en, this message translates to:
   /// **'For test only. Beware of money transfer, lottery winnings & strange call scams.'**
   String get swindleTips;
+
+  /// No description provided for @aiStreamMode.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Stream Mode'**
+  String get aiStreamMode;
 }
 
 class _DemoKitClientLocalizationsDelegate extends LocalizationsDelegate<DemoKitClientLocalizations> {
