@@ -190,4 +190,45 @@ class TeamKitClientLocalizationsEn extends TeamKitClientLocalizations {
 
   @override
   String get teamMemberEmpty => 'No member';
+
+  @override
+  String get teamEnterManager => 'Enter Manage';
+
+  @override
+  String get teamManageJoinNeedAccept => 'Invitation acceptance requirement ';
+
+  @override
+  String get teamManageJoinNeedAcceptDetail =>
+      'When enabled, inviting someone to join the team requires the invitee\'s approval before they can successfully join.';
+
+  @override
+  String get teamManageApplyNeedAccept => 'Require verification to join';
+
+  @override
+  String get teamManageApplyNeedAcceptDetail =>
+      'When enabled, members must obtain approval from the team owner or administrators before joining the team.';
+
+  @override
+  String teamId(String teamId) {
+    return 'Team ID：$teamId';
+  }
+
+  @override
+  String teamOwnerName(String userName) {
+    return 'Team Owner：$userName';
+  }
+
+  @override
+  String teamIntro(String intro) {
+    return 'Team Intro：$intro';
+  }
+
+  @override
+  String get teamJoinApply => 'Join Team';
+
+  @override
+  String get teamChat => 'Chat';
+
+  @override
+  String get teamJoinApplicationHaveSent => 'Application Have Sent';
 }

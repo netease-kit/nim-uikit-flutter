@@ -97,14 +97,25 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
                   width: 11,
                 ),
                 Expanded(
-                  child: Text(
-                    team.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontSize: 16, color: CommonColors.color_333333),
-                  ),
-                ),
+                    child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      team.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 16, color: CommonColors.color_333333),
+                    ),
+                    Text(
+                      S.of(context).teamId(team.teamId),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 12, color: CommonColors.color_666666),
+                    )
+                  ],
+                )),
                 const Icon(
                   Icons.keyboard_arrow_right_outlined,
                   color: CommonColors.color_999999,
@@ -569,12 +580,13 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
                         const SizedBox(
                           height: 16,
                         ),
-                        CardBackground(
-                            child: _actionButton(
-                                context,
-                                teamWithMember.team,
-                                teamWithMember.teamMember?.memberRole ==
-                                    NIMTeamMemberRole.memberRoleOwner)),
+                        if (teamWithMember.team.isValidTeam)
+                          CardBackground(
+                              child: _actionButton(
+                                  context,
+                                  teamWithMember.team,
+                                  teamWithMember.teamMember?.memberRole ==
+                                      NIMTeamMemberRole.memberRoleOwner)),
                         const SizedBox(
                           height: 16,
                         ),

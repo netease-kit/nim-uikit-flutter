@@ -27,6 +27,8 @@ import 'package:nim_teamkit_ui/team_kit_client.dart';
 import 'package:provider/provider.dart';
 import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_core_v2/nim_core.dart';
+import 'package:netease_common_ui/base/default_language.dart';
+import 'package:nim_chatkit/repo/config_repo.dart';
 
 void main() {
   SystemChrome.setSystemUIOverlayStyle(
@@ -107,9 +109,16 @@ class _MainAppState extends State<MainApp> {
     }
   }
 
+  ///设置默认的语言，不设置则根据系统语言
+  void _setDefaultLanguage() async {
+    CommonUIDefaultLanguage.commonDefaultLanguage =
+        await ConfigRepo.getLanguage();
+  }
+
   @override
   void initState() {
     super.initState();
+    _setDefaultLanguage();
     _updateTokenIOS();
     _initPlugins();
     _initAIUser();

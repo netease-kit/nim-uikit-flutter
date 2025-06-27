@@ -6,6 +6,8 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/base/default_language.dart';
+import 'package:nim_contactkit_ui/l10n/contact_localization/contact_kit_client_localizations_en.dart';
 
 import 'contact_localization/contact_kit_client_localizations.dart';
 import 'contact_localization/contact_kit_client_localizations_zh.dart';
@@ -16,6 +18,12 @@ class S {
 
   static ContactKitClientLocalizations of(BuildContext? context) {
     ContactKitClientLocalizations? localizations;
+    if (CommonUIDefaultLanguage.commonDefaultLanguage == languageZh) {
+      return ContactKitClientLocalizationsZh();
+    }
+    if (CommonUIDefaultLanguage.commonDefaultLanguage == languageEn) {
+      return ContactKitClientLocalizationsEn();
+    }
     if (context != null) {
       localizations = ContactKitClientLocalizations.of(context);
     }

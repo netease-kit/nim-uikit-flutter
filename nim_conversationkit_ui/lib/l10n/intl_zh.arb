@@ -32,5 +32,8 @@
   "fileMessageType": "[文件]",
   "notificationMessageType": "[通知消息]",
   "tipMessageType": "[提醒消息]",
-  "chatHistoryBrief": "[聊天记录]"
+  "chatHistoryBrief": "[聊天记录]",
+  "joinTeam": "加入群组",
+  "joinTeamSearchHint": "请输入群号",
+  "joinTeamSearchEmptyTips": "该群组不存在"
 }

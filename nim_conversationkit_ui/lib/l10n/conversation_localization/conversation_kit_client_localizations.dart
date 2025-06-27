@@ -258,6 +258,24 @@ abstract class ConversationKitClientLocalizations {
   /// In en, this message translates to:
   /// **'[Chat history]'**
   String get chatHistoryBrief;
+
+  /// No description provided for @joinTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'Join Team'**
+  String get joinTeam;
+
+  /// No description provided for @joinTeamSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter team Id'**
+  String get joinTeamSearchHint;
+
+  /// No description provided for @joinTeamSearchEmptyTips.
+  ///
+  /// In en, this message translates to:
+  /// **'This team does not exist'**
+  String get joinTeamSearchEmptyTips;
 }
 
 class _ConversationKitClientLocalizationsDelegate

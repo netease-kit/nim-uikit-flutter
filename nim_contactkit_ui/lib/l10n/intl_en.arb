@@ -154,5 +154,39 @@
   "contactFriendEmpty": "No Friend",
   "myFriend": "MY FRIENDS",
   "aiUsers": "AI USERS",
-  "aiUsersEmpty": "No AIUser"
+  "aiUsersEmpty": "No AIUser",
+  "team": "Team",
+  "friend":"Friend",
+  "teamJoinApply": "Apply to join:{teamName}",
+  "@teamJoinApply": {
+    "placeholders": {
+      "teamName": {
+        "type": "String"
+      }
+    }
+  },
+  "teamJoinApplyReject": "Reject your Apply join:{teamName}",
+  "@teamJoinApplyReject": {
+    "placeholders": {
+      "teamName": {
+        "type": "String"
+      }
+    }
+  },
+  "teamJoinInvitation": "Invite you join:{teamName}",
+  "@teamJoinInvitation": {
+    "placeholders": {
+      "teamName": {
+        "type": "String"
+      }
+    }
+  },
+  "teamJoinInvitationReject": "Reject your Invitation for :{teamName}",
+  "@teamJoinInvitationReject": {
+    "placeholders": {
+      "teamName": {
+        "type": "String"
+      }
+    }
+  }
 }

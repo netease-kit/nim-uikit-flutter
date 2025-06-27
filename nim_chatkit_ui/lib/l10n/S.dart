@@ -5,6 +5,8 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/base/default_language.dart';
+import 'package:nim_chatkit_ui/l10n/chat_localization/chat_kit_client_localizations_en.dart';
 
 import 'chat_localization/chat_kit_client_localizations.dart';
 import 'chat_localization/chat_kit_client_localizations_zh.dart';
@@ -15,6 +17,12 @@ class S {
 
   static ChatKitClientLocalizations of([BuildContext? context]) {
     ChatKitClientLocalizations? localizations;
+    if (CommonUIDefaultLanguage.commonDefaultLanguage == languageZh) {
+      return ChatKitClientLocalizationsZh();
+    }
+    if (CommonUIDefaultLanguage.commonDefaultLanguage == languageEn) {
+      return ChatKitClientLocalizationsEn();
+    }
     if (context != null) {
       localizations = ChatKitClientLocalizations.of(context);
     }

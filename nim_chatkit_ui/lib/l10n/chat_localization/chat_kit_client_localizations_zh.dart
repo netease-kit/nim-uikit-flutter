@@ -566,4 +566,10 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
 
   @override
   String get chatAiErrorParameter => '参数错误';
+
+  @override
+  String get chatUserOnline => '[在线]';
+
+  @override
+  String get chatUserOffline => '[离线]';
 }

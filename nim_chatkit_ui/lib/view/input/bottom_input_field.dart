@@ -792,7 +792,9 @@ class _BottomInputFieldState extends State<BottomInputField>
   }
 
   bool _isShowTitle() {
-    return !mute && (_isExpanded || titleController.text.trim().isNotEmpty);
+    return IMKitClient.enableRichTextMessage &&
+        !mute &&
+        (_isExpanded || titleController.text.trim().isNotEmpty);
   }
 
   @override
@@ -973,26 +975,28 @@ class _BottomInputFieldState extends State<BottomInputField>
                                   hintStyle: const TextStyle(
                                       color: Color(0xffb3b7bc), fontSize: 16),
                                   enabled: !mute,
-                                  suffixIcon: showTitle
-                                      ? null
-                                      : IconButton(
-                                          onPressed: () {
-                                            if (!mute) {
-                                              setState(() {
-                                                _isExpanded = !_isExpanded;
-                                                _titleFocusNode.unfocus();
-                                                _focusNode.unfocus();
-                                                hideKeyboard();
-                                              });
-                                            }
-                                          },
-                                          icon: SvgPicture.asset(
-                                            'images/ic_chat_input_expand.svg',
-                                            package: kPackage,
-                                            width: 24,
-                                            height: 24,
-                                          ),
-                                        )),
+                                  suffixIcon:
+                                      !IMKitClient.enableRichTextMessage ||
+                                              showTitle
+                                          ? null
+                                          : IconButton(
+                                              onPressed: () {
+                                                if (!mute) {
+                                                  setState(() {
+                                                    _isExpanded = !_isExpanded;
+                                                    _titleFocusNode.unfocus();
+                                                    _focusNode.unfocus();
+                                                    hideKeyboard();
+                                                  });
+                                                }
+                                              },
+                                              icon: SvgPicture.asset(
+                                                'images/ic_chat_input_expand.svg',
+                                                package: kPackage,
+                                                width: 24,
+                                                height: 24,
+                                              ),
+                                            )),
                               style: const TextStyle(
                                   color: CommonColors.color_333333,
                                   fontSize: 16),

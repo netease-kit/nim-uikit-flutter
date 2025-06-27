@@ -2,6 +2,8 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+
+
 import 'contact_kit_client_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -74,8 +76,7 @@ class ContactKitClientLocalizationsEn extends ContactKitClientLocalizations {
   String get contactAddFriend => 'Add Friend';
 
   @override
-  String get contactYouWillNeverReceiveAnyMessageFromThosePerson =>
-      'You will never receive any message from those person';
+  String get contactYouWillNeverReceiveAnyMessageFromThosePerson => 'You will never receive any message from those person';
 
   @override
   String get contactRelease => 'Release';
@@ -191,4 +192,30 @@ class ContactKitClientLocalizationsEn extends ContactKitClientLocalizations {
 
   @override
   String get aiUsersEmpty => 'No AIUser';
+
+  @override
+  String get team => 'Team';
+
+  @override
+  String get friend => 'Friend';
+
+  @override
+  String teamJoinApply(String teamName) {
+    return 'Apply to join:$teamName';
+  }
+
+  @override
+  String teamJoinApplyReject(String teamName) {
+    return 'Reject your Apply join:$teamName';
+  }
+
+  @override
+  String teamJoinInvitation(String teamName) {
+    return 'Invite you join:$teamName';
+  }
+
+  @override
+  String teamJoinInvitationReject(String teamName) {
+    return 'Reject your Invitation for :$teamName';
+  }
 }

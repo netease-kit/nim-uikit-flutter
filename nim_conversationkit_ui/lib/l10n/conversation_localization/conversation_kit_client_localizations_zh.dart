@@ -90,4 +90,13 @@ class ConversationKitClientLocalizationsZh
 
   @override
   String get chatHistoryBrief => '[聊天记录]';
+
+  @override
+  String get joinTeam => '加入群组';
+
+  @override
+  String get joinTeamSearchHint => '请输入群号';
+
+  @override
+  String get joinTeamSearchEmptyTips => '该群组不存在';
 }

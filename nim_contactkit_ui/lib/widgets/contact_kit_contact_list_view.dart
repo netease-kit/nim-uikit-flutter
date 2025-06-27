@@ -63,13 +63,32 @@ class ContactListViewState extends State<ContactListView> {
       item.add(widget.config!.contactItemBuilder!(contact));
     } else {
       item.addAll([
-        Avatar(
-          avatar: contact.user.avatar,
-          name: contact.getName(),
-          width: select ? 42 : 36,
-          height: select ? 42 : 36,
-          bgCode: AvatarColor.avatarColor(content: contact.user.accountId),
-          radius: listConfig?.avatarCornerRadius,
+        Stack(
+          children: [
+            Avatar(
+              avatar: contact.user.avatar,
+              name: contact.getName(),
+              width: select ? 42 : 36,
+              height: select ? 42 : 36,
+              bgCode: AvatarColor.avatarColor(content: contact.user.accountId),
+              radius: listConfig?.avatarCornerRadius,
+            ),
+            if (!widget.isCanSelectMemberItem)
+              Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: contact.isOnline
+                          ? '#84ED85'.toColor()
+                          : "#D4D9DA".toColor(),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                  ))
+          ],
         ),
         Container(
           alignment: Alignment.centerLeft,

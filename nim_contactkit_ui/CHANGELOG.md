@@ -1,5 +1,13 @@
 # NimContactKitUI ChangeLog
 
+## 10.3.0(Jun 27, 2025)
+
+### New Features
+* 支持查看用户在线状态
+* 支持群组验证
+* 支持语言设置
+
+
 ## 10.2.0(May 27, 2025)
 
 ### New Features

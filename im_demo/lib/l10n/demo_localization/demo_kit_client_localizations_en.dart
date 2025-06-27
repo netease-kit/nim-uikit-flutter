@@ -192,4 +192,16 @@ class DemoKitClientLocalizationsEn extends DemoKitClientLocalizations {
 
   @override
   String get aiStreamMode => 'AI Stream Mode';
+
+  @override
+  String get language => 'Language';
+
+  @override
+  String get languageChinese => '中文';
+
+  @override
+  String get languageEnglish => 'English';
+
+  @override
+  String get save => 'Save';
 }

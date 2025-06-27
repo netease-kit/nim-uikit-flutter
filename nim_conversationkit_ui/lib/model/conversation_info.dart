@@ -12,6 +12,9 @@ class ConversationInfo {
   bool haveBeenAit = false;
   String? _nickName;
 
+  ///是否在线，只有P2P 有效
+  bool isOnline = false;
+
   ConversationInfo(this.conversation) {
     _targetId =
         ChatKitUtils.getConversationTargetId(this.conversation.conversationId);

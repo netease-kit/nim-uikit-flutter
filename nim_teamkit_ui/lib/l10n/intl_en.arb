@@ -64,5 +64,37 @@
   "teamMemberSelect": "Select member",
   "teamPermissionDeny": "you have no permission",
   "teamManagerRemoveFailed": "Remove failed",
-  "teamMemberEmpty": "No member"
+  "teamMemberEmpty": "No member",
+  "teamEnterManager": "Enter Manage",
+  "teamManageJoinNeedAccept": "Invitation acceptance requirement ",
+  "teamManageJoinNeedAcceptDetail": "When enabled, inviting someone to join the team requires the invitee's approval before they can successfully join.",
+  "teamManageApplyNeedAccept": "Require verification to join",
+  "teamManageApplyNeedAcceptDetail": "When enabled, members must obtain approval from the team owner or administrators before joining the team.",
+  "teamId": "Team ID：{teamId}",
+  "@teamId": {
+    "placeholders": {
+      "teamId": {
+        "type": "String"
+      }
+    }
+  },
+  "teamOwnerName": "Team Owner：{userName}",
+  "@teamOwnerName": {
+    "placeholders": {
+      "userName": {
+        "type": "String"
+      }
+    }
+  },
+  "teamIntro": "Team Intro：{intro}",
+  "@teamIntro": {
+    "placeholders": {
+      "intro": {
+        "type": "String"
+      }
+    }
+  },
+  "teamJoinApply": "Join Team",
+  "teamChat": "Chat",
+  "teamJoinApplicationHaveSent": "Application Have Sent"
 }

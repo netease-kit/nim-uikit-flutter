@@ -6,9 +6,10 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:netease_common_ui/extension.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
+import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/unread_message.dart';
+import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit/model/custom_type_constant.dart';
 import 'package:nim_chatkit/services/message/chat_message.dart';
 import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
@@ -97,13 +98,13 @@ class ConversationItem extends StatelessWidget {
       if (attachmentRaw != null) {
         Map<String, dynamic> data = json.decode(attachmentRaw);
 
-        if (data?[CustomMessageKey.type] ==
+        if (data[CustomMessageKey.type] ==
             CustomMessageType.customMergeMessageType) {
           return S.of(context).chatHistoryBrief;
         }
-        if (data?[CustomMessageKey.type] ==
+        if (data[CustomMessageKey.type] ==
             CustomMessageType.customMultiLineMessageType) {
-          var dataMap = data?[CustomMessageKey.data] as Map?;
+          var dataMap = data[CustomMessageKey.data] as Map?;
           var title = dataMap?[ChatMessage.keyMultiLineTitle] as String?;
           if (title != null) {
             return title;
@@ -129,15 +130,39 @@ class ConversationItem extends StatelessWidget {
         children: [
           Align(
             alignment: Alignment.centerLeft,
+            widthFactor: 42,
+            heightFactor: 42,
             child: InkWell(
-              child: Avatar(
-                avatar: avatar,
-                name: conversationInfo.getName(),
-                bgCode:
-                    AvatarColor.avatarColor(content: conversationInfo.targetId),
-                height: 42,
-                width: 42,
-                radius: config.avatarCornerRadius,
+              child: Stack(
+                children: [
+                  Avatar(
+                    avatar: avatar,
+                    name: conversationInfo.getName(),
+                    bgCode: AvatarColor.avatarColor(
+                        content: conversationInfo.targetId),
+                    height: 42,
+                    width: 42,
+                    radius: config.avatarCornerRadius,
+                  ),
+                  if (conversationInfo.conversation.type ==
+                          NIMConversationType.p2p &&
+                      !AIUserManager.instance
+                          .isAIUser(conversationInfo.targetId))
+                    Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: conversationInfo.isOnline
+                                ? '#84ED85'.toColor()
+                                : "#D4D9DA".toColor(),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                        ))
+                ],
               ),
               onTap: () {
                 if (config.avatarClick != null &&

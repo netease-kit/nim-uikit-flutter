@@ -449,5 +449,7 @@
       "chatAiErrorTeamMemberChatBanned": "群成员被禁言",
       "chatAiErrorCannotBlocklistAnAiAccount": "不允许对数字人进行黑名单操作",
       "chatAiErrorRateLimitExceeded": "频率超限",
-      "chatAiErrorParameter": "参数错误"
+      "chatAiErrorParameter": "参数错误",
+      "chatUserOnline":"[在线]",
+      "chatUserOffline":"[离线]"
 }

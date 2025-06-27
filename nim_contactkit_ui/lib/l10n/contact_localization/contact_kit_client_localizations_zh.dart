@@ -2,6 +2,8 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+
+
 import 'contact_kit_client_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -74,8 +76,7 @@ class ContactKitClientLocalizationsZh extends ContactKitClientLocalizations {
   String get contactAddFriend => '添加好友';
 
   @override
-  String get contactYouWillNeverReceiveAnyMessageFromThosePerson =>
-      '你不会收到列表中任何联系人的消息';
+  String get contactYouWillNeverReceiveAnyMessageFromThosePerson => '你不会收到列表中任何联系人的消息';
 
   @override
   String get contactRelease => '解除';
@@ -191,4 +192,30 @@ class ContactKitClientLocalizationsZh extends ContactKitClientLocalizations {
 
   @override
   String get aiUsersEmpty => '暂无数字人';
+
+  @override
+  String get team => '群';
+
+  @override
+  String get friend => '好友';
+
+  @override
+  String teamJoinApply(String teamName) {
+    return '申请加入:$teamName';
+  }
+
+  @override
+  String teamJoinApplyReject(String teamName) {
+    return '拒绝了申请入群请求:$teamName';
+  }
+
+  @override
+  String teamJoinInvitation(String teamName) {
+    return '邀请你加入:$teamName';
+  }
+
+  @override
+  String teamJoinInvitationReject(String teamName) {
+    return '拒绝了入群邀请 :$teamName';
+  }
 }

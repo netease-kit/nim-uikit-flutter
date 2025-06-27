@@ -5,7 +5,8 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-
+import 'package:im_demo/l10n/demo_localization/demo_kit_client_localizations_en.dart';
+import 'package:netease_common_ui/base/default_language.dart';
 import 'demo_localization/demo_kit_client_localizations.dart';
 import 'demo_localization/demo_kit_client_localizations_zh.dart';
 
@@ -15,6 +16,12 @@ class S {
 
   static DemoKitClientLocalizations of([BuildContext? context]) {
     DemoKitClientLocalizations? localizations;
+    if (CommonUIDefaultLanguage.commonDefaultLanguage == languageZh) {
+      return DemoKitClientLocalizationsZh();
+    }
+    if (CommonUIDefaultLanguage.commonDefaultLanguage == languageEn) {
+      return DemoKitClientLocalizationsEn();
+    }
     if (context != null) {
       localizations = DemoKitClientLocalizations.of(context);
     }

@@ -450,6 +450,72 @@ abstract class TeamKitClientLocalizations {
   /// In en, this message translates to:
   /// **'No member'**
   String get teamMemberEmpty;
+
+  /// No description provided for @teamEnterManager.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter Manage'**
+  String get teamEnterManager;
+
+  /// No description provided for @teamManageJoinNeedAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Invitation acceptance requirement '**
+  String get teamManageJoinNeedAccept;
+
+  /// No description provided for @teamManageJoinNeedAcceptDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'When enabled, inviting someone to join the team requires the invitee\'s approval before they can successfully join.'**
+  String get teamManageJoinNeedAcceptDetail;
+
+  /// No description provided for @teamManageApplyNeedAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Require verification to join'**
+  String get teamManageApplyNeedAccept;
+
+  /// No description provided for @teamManageApplyNeedAcceptDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'When enabled, members must obtain approval from the team owner or administrators before joining the team.'**
+  String get teamManageApplyNeedAcceptDetail;
+
+  /// No description provided for @teamId.
+  ///
+  /// In en, this message translates to:
+  /// **'Team ID：{teamId}'**
+  String teamId(String teamId);
+
+  /// No description provided for @teamOwnerName.
+  ///
+  /// In en, this message translates to:
+  /// **'Team Owner：{userName}'**
+  String teamOwnerName(String userName);
+
+  /// No description provided for @teamIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Team Intro：{intro}'**
+  String teamIntro(String intro);
+
+  /// No description provided for @teamJoinApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Join Team'**
+  String get teamJoinApply;
+
+  /// No description provided for @teamChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get teamChat;
+
+  /// No description provided for @teamJoinApplicationHaveSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Application Have Sent'**
+  String get teamJoinApplicationHaveSent;
 }
 
 class _TeamKitClientLocalizationsDelegate

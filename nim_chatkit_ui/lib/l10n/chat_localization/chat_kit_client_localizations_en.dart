@@ -581,4 +581,10 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
 
   @override
   String get chatAiErrorParameter => 'Parameter error';
+
+  @override
+  String get chatUserOnline => '[Online]';
+
+  @override
+  String get chatUserOffline => '[Offline]';
 }
