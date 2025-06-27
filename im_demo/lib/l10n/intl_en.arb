@@ -72,5 +72,9 @@
    "localConversation": "Local Conversation",
     "settingAndResetTips": "The setting succeeds and takes effect after the restart",
     "swindleTips": "For test only. Beware of money transfer, lottery winnings & strange call scams.",
-    "aiStreamMode": "AI Stream Mode"
+    "aiStreamMode": "AI Stream Mode",
+  "language": "Language",
+  "languageChinese": "中文",
+  "languageEnglish": "English",
+  "save": "Save"
 }

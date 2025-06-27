@@ -1062,6 +1062,18 @@ abstract class ChatKitClientLocalizations {
   /// In en, this message translates to:
   /// **'Parameter error'**
   String get chatAiErrorParameter;
+
+  /// No description provided for @chatUserOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'[Online]'**
+  String get chatUserOnline;
+
+  /// No description provided for @chatUserOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'[Offline]'**
+  String get chatUserOffline;
 }
 
 class _ChatKitClientLocalizationsDelegate

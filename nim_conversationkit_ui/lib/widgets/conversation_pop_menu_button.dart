@@ -2,10 +2,9 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:netease_common_ui/extension.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
+import 'package:nim_chatkit/im_kit_config_center.dart';
 import 'package:nim_chatkit/router/imkit_router_constants.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_conversationkit_ui/page/add_friend_page.dart';
@@ -20,6 +19,15 @@ import 'package:yunxin_alog/yunxin_alog.dart';
 
 import '../conversation_kit_client.dart';
 import '../l10n/S.dart';
+import '../page/join_team_page.dart';
+
+const String keyAddFriend = 'add_friend';
+
+const String keyCreateGroupTeam = 'create_group_team';
+
+const String keyCreateAdvancedTeam = 'create_advanced_team';
+
+const String keyJoinTeam = 'join_team';
 
 class ConversationPopMenuButton extends StatelessWidget {
   const ConversationPopMenuButton({Key? key}) : super(key: key);
@@ -27,12 +35,16 @@ class ConversationPopMenuButton extends StatelessWidget {
   _onMenuSelected(BuildContext context, String value) async {
     Alog.i(tag: 'ConversationKit', content: "onMenuSelected: $value");
     switch (value) {
-      case "add_friend":
+      case keyAddFriend:
         Navigator.push(context,
             MaterialPageRoute(builder: (context) => const AddFriendPage()));
         break;
-      case "create_group_team":
-      case "create_advanced_team":
+      case keyJoinTeam:
+        Navigator.push(context,
+            MaterialPageRoute(builder: (context) => const JoinTeamPage()));
+        break;
+      case keyCreateGroupTeam:
+      case keyCreateAdvancedTeam:
         if (!(await haveConnectivity())) {
           return;
         }
@@ -83,18 +95,25 @@ class ConversationPopMenuButton extends StatelessWidget {
       {
         'image': 'images/icon_add_friend.svg',
         'name': S.of(context).addFriend,
-        'value': 'add_friend'
+        'value': keyAddFriend
       },
-      {
-        'image': 'images/icon_create_group_team.svg',
-        'name': S.of(context).createGroupTeam,
-        'value': 'create_group_team'
-      },
-      {
-        'image': 'images/icon_create_advanced_team.svg',
-        'name': S.of(context).createAdvancedTeam,
-        'value': 'create_advanced_team'
-      }
+      if (IMKitConfigCenter.enableTeam) ...[
+        {
+          'image': 'images/icon_join_team.svg',
+          'name': S.of(context).joinTeam,
+          'value': keyJoinTeam
+        },
+        {
+          'image': 'images/icon_create_group_team.svg',
+          'name': S.of(context).createGroupTeam,
+          'value': keyCreateGroupTeam
+        },
+        {
+          'image': 'images/icon_create_advanced_team.svg',
+          'name': S.of(context).createAdvancedTeam,
+          'value': keyCreateAdvancedTeam
+        }
+      ]
     ];
   }
 

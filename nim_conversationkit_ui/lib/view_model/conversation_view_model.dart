@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit/im_kit_config_center.dart';
 import 'package:nim_chatkit/service_locator.dart';
 import 'package:nim_chatkit/services/contact/contact_provider.dart';
 import 'package:nim_chatkit/services/login/im_login_service.dart';
@@ -19,6 +20,7 @@ import 'package:nim_conversationkit_ui/service/ait/ait_server.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
 import 'package:nim_chatkit/repo/contact_repo.dart';
+import 'package:nim_chatkit/manager/subscription_manager.dart';
 import '../model/conversation_info.dart';
 
 class ConversationViewModel extends ChangeNotifier {
@@ -193,7 +195,7 @@ class ConversationViewModel extends ChangeNotifier {
       doUnreadCallback();
     }));
 
-    // delete observer
+    // create observer
     subscriptions
         .add(ConversationRepo.onConversationCreated().listen((event) async {
       _logI('onConversationCreated ${event.conversationId}');
@@ -227,7 +229,8 @@ class ConversationViewModel extends ChangeNotifier {
       var conversationId =
           (await ConversationIdUtil().teamConversationId(team.teamId)).data;
       _logI('onTeamDismissed ${team.teamId}');
-      if (conversationId != null) {
+      if (IMKitConfigCenter.deleteTeamSessionWhenLeave &&
+          conversationId != null) {
         deleteConversationById(conversationId);
       }
     }));
@@ -239,9 +242,25 @@ class ConversationViewModel extends ChangeNotifier {
               .teamConversationId(teamLeftResult.team.teamId))
           .data;
       _logI('onTeamLeft ${teamLeftResult.team.teamId}');
-      if (conversationId != null) {
+      if (IMKitConfigCenter.deleteTeamSessionWhenLeave &&
+          conversationId != null) {
         deleteConversationById(conversationId);
       }
+    }));
+
+    subscriptions.add(NimCore.instance.subscriptionService.onUserStatusChanged
+        .listen((List<NIMUserStatus> userList) {
+      final Map<String, NIMUserStatus> userMap = {};
+      for (final user in userList) {
+        userMap[user.accountId] = user; // 直接以 id 为键，user 对象为值
+      }
+      conversationList.forEach((e) {
+        if (e.conversation.type == NIMConversationType.p2p) {
+          userMap.containsKey(e.targetId);
+          e.isOnline = userMap[e.targetId]?.statusType == 1;
+        }
+      });
+      notifyListeners();
     }));
 
     // 查询置顶AI数字人列表，数字人配置为置顶，并且当前账号没有取消置顶
@@ -279,9 +298,10 @@ class ConversationViewModel extends ChangeNotifier {
       final notificationType = (conversation.lastMessage?.attachment
               as NIMMessageNotificationAttachment)
           .type;
-      if (notificationType == NIMMessageNotificationType.teamDismiss ||
-          notificationType == NIMMessageNotificationType.teamKick ||
-          notificationType == NIMMessageNotificationType.teamLeave) {
+      if (IMKitConfigCenter.deleteTeamSessionWhenLeave &&
+          (notificationType == NIMMessageNotificationType.teamDismiss ||
+              notificationType == NIMMessageNotificationType.teamKick ||
+              notificationType == NIMMessageNotificationType.teamLeave)) {
         return false;
       }
     }
@@ -373,7 +393,8 @@ class ConversationViewModel extends ChangeNotifier {
 
         for (int index = resultList.length - 1; index >= 0; index--) {
           var element = resultList[index];
-          if (_isMineLeave(element)) {
+          if (IMKitConfigCenter.deleteTeamSessionWhenLeave &&
+              _haveLeftTeam(element)) {
             deleteConversation(element);
             _logI('queryConversationList ${element.getConversationId()}');
             resultList.remove(index);
@@ -388,6 +409,7 @@ class ConversationViewModel extends ChangeNotifier {
         }
         _conversationList.clear();
         _conversationList.addAll(resultList);
+        subscribeP2PUserStatus(resultList);
         notifyListeners();
       }
     }
@@ -417,7 +439,8 @@ class ConversationViewModel extends ChangeNotifier {
         List<String> userIdList = [];
         for (int index = resultList.length - 1; index >= 0; index--) {
           var element = resultList[index];
-          if (_isMineLeave(element)) {
+          if (IMKitConfigCenter.deleteTeamSessionWhenLeave &&
+              _haveLeftTeam(element)) {
             deleteConversation(element);
             resultList.remove(index);
           } else {
@@ -435,10 +458,21 @@ class ConversationViewModel extends ChangeNotifier {
           }
         }
         _conversationList.addAll(resultList);
+        subscribeP2PUserStatus(resultList);
         notifyListeners();
         fetchUserInfo(userIdList);
       }
       _isLoading = false;
+    }
+  }
+
+  void subscribeP2PUserStatus(List<ConversationInfo>? conversationList) {
+    if (conversationList != null) {
+      final userAccountIds = conversationList
+          .where((e) => e.conversation.type == NIMConversationType.p2p)
+          .map((e) => e.targetId)
+          .toList();
+      SubscriptionManager.instance.subscribeUserStatus(userAccountIds);
     }
   }
 
@@ -480,6 +514,7 @@ class ConversationViewModel extends ChangeNotifier {
     }
   }
 
+  ///删除会话
   void deleteConversation(ConversationInfo conversationInfo,
       {bool? clearMessageHistory}) async {
     if (!await haveConnectivity()) {
@@ -488,6 +523,7 @@ class ConversationViewModel extends ChangeNotifier {
     this.deleteConversationById(conversationInfo.getConversationId());
   }
 
+  ///通过ID 删除会话
   void deleteConversationById(String conversationId,
       {bool? clearMessageHistory}) {
     if (clearMessageHistory == null) {
@@ -497,7 +533,8 @@ class ConversationViewModel extends ChangeNotifier {
     ConversationRepo.deleteConversation(conversationId, clearMessageHistory);
   }
 
-  bool _isMineLeave(ConversationInfo conversationInfo) {
+  ///本人是否已经退出了群
+  bool _haveLeftTeam(ConversationInfo conversationInfo) {
     if (conversationInfo.getLastAttachment()
         is NIMMessageNotificationAttachment) {
       NIMMessageNotificationAttachment notify = conversationInfo
@@ -507,7 +544,7 @@ class ConversationViewModel extends ChangeNotifier {
       } else if (notify.type == NIMMessageNotificationType.teamKick) {
         var accId = getIt<IMLoginService>().userInfo?.accountId;
         var targetIds = notify.targetIds;
-        if (targetIds != null && targetIds!.contains(accId)) {
+        if (targetIds != null && targetIds.contains(accId)) {
           return true;
         }
       } else if (notify.type == NIMMessageNotificationType.teamLeave) {

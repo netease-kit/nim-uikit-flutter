@@ -11,6 +11,8 @@ import 'package:netease_common_ui/base/base_state.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/no_network_tip.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
+import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
 import 'package:nim_chatkit/router/imkit_router.dart';
 import 'package:nim_chatkit/router/imkit_router_constants.dart';
@@ -389,9 +391,18 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
         builder: (context, wg) {
           String title;
           String inputHint = context.watch<ChatViewModel>().chatTitle;
+          bool? isOnline = context.watch<ChatViewModel>().contactInfo?.isOnline;
           if (context.watch<ChatViewModel>().isTyping) {
             _setTyping(context);
             title = S.of(context).chatIsTyping;
+          } else if (widget.conversationType == NIMConversationType.p2p &&
+              !AIUserManager.instance.isAIUser(
+                  ChatKitUtils.getConversationTargetId(
+                      widget.conversationId))) {
+            title = inputHint +
+                (isOnline == true
+                    ? S.of(context).chatUserOnline
+                    : S.of(context).chatUserOffline);
           } else {
             title = inputHint;
           }

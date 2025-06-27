@@ -181,15 +181,15 @@ class _SearchKitGlobalState extends State<SearchKitGlobalSearchPage> {
                     text: TextSpan(children: [
                       if (record.start > 0)
                         TextSpan(
-                          text: team.name!.substring(0, record.start),
+                          text: team.name.substring(0, record.start),
                           style: normalStyle,
                         ),
                       TextSpan(
-                          text: team.name!.substring(record.start, record.end),
+                          text: team.name.substring(record.start, record.end),
                           style: highStyle),
-                      if (record.end <= team.name!.length - 1)
+                      if (record.end <= team.name.length - 1)
                         TextSpan(
-                            text: team.name!.substring(record.end),
+                            text: team.name.substring(record.end),
                             style: normalStyle)
                     ]),
                   )),

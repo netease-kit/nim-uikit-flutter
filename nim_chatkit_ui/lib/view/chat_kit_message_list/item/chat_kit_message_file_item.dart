@@ -18,6 +18,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
 
 import '../../../chat_kit_client.dart';
+import '../../../helper/text_utils.dart';
 
 const _file_type_map = {
   'doc': 'ic_file_doc.svg',
@@ -198,30 +199,6 @@ class ChatKitMessageFileState extends State<ChatKitMessageFileItem> {
     super.dispose();
   }
 
-  Widget _getSingleMiddleEllipsisText(String? data, {TextStyle? style}) {
-    return LayoutBuilder(builder: (context, constrain) {
-      String info = data ?? "";
-      final TextPainter textPainter = TextPainter(
-          text: TextSpan(text: info, style: style),
-          maxLines: 1,
-          textDirection: TextDirection.ltr)
-        ..layout(minWidth: 0, maxWidth: double.infinity);
-      final exceedWidth = (textPainter.size.width - constrain.maxWidth).toInt();
-      if (exceedWidth > 0) {
-        final exceedLength =
-            (exceedWidth / textPainter.size.width * info.length).toInt();
-        final index = (info.length - exceedLength) ~/ 2;
-        info =
-            "${info.substring(0, index)}...${info.substring(index + exceedLength + 4)}";
-      }
-      return Text(
-        info,
-        maxLines: 1,
-        style: style,
-      );
-    });
-  }
-
   String _getSizeFormat() {
     double size = attachment.size?.toDouble() ?? 0;
     if (size < 1000) {
@@ -362,7 +339,7 @@ class ChatKitMessageFileState extends State<ChatKitMessageFileItem> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      child: _getSingleMiddleEllipsisText(
+                      child: getSingleMiddleEllipsisText(
                         attachment.name,
                         style: TextStyle(
                             fontSize: 14, color: CommonColors.color_333333),

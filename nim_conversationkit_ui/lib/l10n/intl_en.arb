@@ -32,5 +32,8 @@
   "fileMessageType": "[File]",
   "notificationMessageType": "[Notification]",
   "tipMessageType": "[Tip]",
-  "chatHistoryBrief": "[Chat history]"
+  "chatHistoryBrief": "[Chat history]",
+  "joinTeam": "Join Team",
+  "joinTeamSearchHint": "Please enter team Id",
+  "joinTeamSearchEmptyTips": "This team does not exist"
 }

@@ -13,7 +13,7 @@ import 'l10n/S.dart';
 import 'page/contact_kit_black_list_page.dart';
 import 'page/contact_kit_contact_selector_page.dart';
 import 'page/contact_kit_detail_page.dart';
-import 'page/contact_kit_friend_add_application_page.dart';
+import 'page/contact_kit_verify_message_page.dart';
 import 'page/contact_kit_team_list_page.dart';
 import 'page/contact_page.dart';
 import 'widgets/contact_kit_contact_list_view.dart';
@@ -181,6 +181,6 @@ class ContactKitClient {
     );
 
     XKitReporter()
-        .register(moduleName: 'ContactUIKit', moduleVersion: '10.0.0');
+        .register(moduleName: 'ContactUIKit', moduleVersion: '10.3.0');
   }
 }

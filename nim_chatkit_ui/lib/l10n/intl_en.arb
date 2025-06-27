@@ -449,5 +449,7 @@
       "chatAiErrorTeamMemberChatBanned": "Team member chat banned",
       "chatAiErrorCannotBlocklistAnAiAccount": "Cannot blocklist an AI account",
       "chatAiErrorRateLimitExceeded": "Rate limit exceeded",
-      "chatAiErrorParameter": "Parameter error"
+      "chatAiErrorParameter": "Parameter error",
+       "chatUserOnline":"[Online]",
+        "chatUserOffline":"[Offline]"
 }

@@ -185,4 +185,43 @@ class TeamKitClientLocalizationsZh extends TeamKitClientLocalizations {
 
   @override
   String get teamMemberEmpty => '暂无成员';
+
+  @override
+  String get teamEnterManager => '进群管理';
+
+  @override
+  String get teamManageJoinNeedAccept => '入群邀请需同意';
+
+  @override
+  String get teamManageJoinNeedAcceptDetail => '开启后，拉入入群， 需被邀请人同意后才可成功';
+
+  @override
+  String get teamManageApplyNeedAccept => '入群审核';
+
+  @override
+  String get teamManageApplyNeedAcceptDetail => '开启后，成员入群时需要群主或管理同意后才可加入';
+
+  @override
+  String teamId(String teamId) {
+    return '群号：$teamId';
+  }
+
+  @override
+  String teamOwnerName(String userName) {
+    return '群主：$userName';
+  }
+
+  @override
+  String teamIntro(String intro) {
+    return '群介绍：$intro';
+  }
+
+  @override
+  String get teamJoinApply => '加入群组';
+
+  @override
+  String get teamChat => '聊天';
+
+  @override
+  String get teamJoinApplicationHaveSent => '申请已发送';
 }

@@ -35,6 +35,12 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
 
   late NIMTeamUpdateInfoMode updateInfoMode;
 
+  /// 申请入群模式
+  late NIMTeamJoinMode joinMode;
+
+  /// 被邀请人同意入群模式
+  late NIMTeamAgreeMode agreeMode;
+
   String aitPrivilege = aitPrivilegeAll;
 
   List<StreamSubscription> _teamSubs = [];
@@ -48,6 +54,8 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
   void initState() {
     inviteMode = (NIMChatCache.instance.teamInfo as NIMTeam).inviteMode;
     updateInfoMode = (NIMChatCache.instance.teamInfo as NIMTeam).updateInfoMode;
+    joinMode = (NIMChatCache.instance.teamInfo as NIMTeam).joinMode;
+    agreeMode = (NIMChatCache.instance.teamInfo as NIMTeam).agreeMode;
     _parseExtension(
         (NIMChatCache.instance.teamInfo as NIMTeam).serverExtension);
     _updateManagerCount(NIMChatCache.instance.teamMembers);
@@ -66,21 +74,19 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
   void _initListener() {
     _teamSubs.addAll([
       NIMChatCache.instance.teamInfoNotifier.listen((event) {
-        if (event is NIMTeam) {
-          inviteMode = event.inviteMode;
-          updateInfoMode = event.updateInfoMode;
-          _parseExtension(event.serverExtension);
-          if (mounted) {
-            setState(() {});
-          }
+        inviteMode = event.inviteMode;
+        updateInfoMode = event.updateInfoMode;
+        joinMode = event.joinMode;
+        agreeMode = event.agreeMode;
+        _parseExtension(event.serverExtension);
+        if (mounted) {
+          setState(() {});
         }
       }),
       NIMChatCache.instance.teamMembersNotifier.listen((event) {
-        if (event is List<UserInfoWithTeam>) {
-          _updateManagerCount(event);
-          if (mounted) {
-            setState(() {});
-          }
+        _updateManagerCount(event);
+        if (mounted) {
+          setState(() {});
         }
       }),
     ]);
@@ -104,7 +110,7 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
         0;
   }
 
-  Widget _setting(BuildContext context, NIMTeam team) {
+  Widget _friendApplicationSetting(BuildContext context, NIMTeam team) {
     return Column(
       children: ListTile.divideTiles(context: context, tiles: [
         ListTile(
@@ -229,6 +235,58 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
     );
   }
 
+  Widget _teamJoinSetting(BuildContext context, NIMTeam team) {
+    return Column(
+      children: ListTile.divideTiles(context: context, tiles: [
+        ListTile(
+          title: Text(
+            S.of(context).teamManageJoinNeedAccept,
+            style: style,
+          ),
+          subtitle: Text(
+            S.of(context).teamManageJoinNeedAcceptDetail,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style:
+                const TextStyle(fontSize: 14, color: CommonColors.color_999999),
+          ),
+          trailing: CupertinoSwitch(
+            activeTrackColor: CommonColors.color_337eff,
+            onChanged: (bool value) {
+              if (value != (agreeMode == NIMTeamAgreeMode.agreeModeAuth)) {
+                TeamRepo.updateBeInviteMode(team.teamId, team.teamType, value);
+              }
+            },
+            value: agreeMode == NIMTeamAgreeMode.agreeModeAuth,
+          ),
+        ),
+        ListTile(
+          title: Text(
+            S.of(context).teamManageApplyNeedAccept,
+            style: style,
+          ),
+          subtitle: Text(
+            S.of(context).teamManageApplyNeedAcceptDetail,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style:
+                const TextStyle(fontSize: 14, color: CommonColors.color_999999),
+          ),
+          trailing: CupertinoSwitch(
+            activeTrackColor: CommonColors.color_337eff,
+            onChanged: (bool value) {
+              if (value != (joinMode == NIMTeamJoinMode.joinModeApply)) {
+                TeamRepo.updateApplyAgreeMode(
+                    team.teamId, team.teamType, value);
+              }
+            },
+            value: joinMode == NIMTeamJoinMode.joinModeApply,
+          ),
+        ),
+      ]).toList(),
+    );
+  }
+
   String _updateTeamExtensionByAitPrivilegeAll(String aitModel) {
     var extension = widget.team.serverExtension;
     if (extension?.isNotEmpty == true) {
@@ -280,6 +338,7 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
         child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (NIMChatCache.instance.myTeamRole() ==
                     NIMTeamMemberRole.memberRoleOwner)
@@ -310,7 +369,13 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
                       },
                     ),
                   ),
-                CardBackground(child: _setting(context, widget.team)),
+                CardBackground(
+                    child: _friendApplicationSetting(context, widget.team)),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
+                  child: Text(S.of(context).teamEnterManager),
+                ),
+                CardBackground(child: _teamJoinSetting(context, widget.team))
               ],
             )),
       ),

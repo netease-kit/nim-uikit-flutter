@@ -192,4 +192,16 @@ class DemoKitClientLocalizationsZh extends DemoKitClientLocalizations {
 
   @override
   String get aiStreamMode => 'AI数字人流式输出';
+
+  @override
+  String get language => '语言';
+
+  @override
+  String get languageChinese => '中文';
+
+  @override
+  String get languageEnglish => 'English';
+
+  @override
+  String get save => '保存';
 }

@@ -216,8 +216,8 @@ class NotifyHelper {
   static Future<String> buildTeamTransOwnerNotification(String tid, String from,
       NIMMessageNotificationAttachment attachment) async {
     return S.of().chatTeamNotifyTransOwner(
-        (await getTeamMemberDisplayName(tid, from)),
-        await buildMemberListString(tid, attachment.targetIds!));
+        await buildMemberListString(tid, attachment.targetIds!),
+        (await getTeamMemberDisplayName(tid, from)));
   }
 
   static Future<String> buildTeamAddManagerNotification(

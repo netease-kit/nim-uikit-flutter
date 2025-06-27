@@ -64,5 +64,37 @@
   "teamMemberSelect": "人员选择",
   "teamPermissionDeny": "您暂无权限操作",
     "teamManagerRemoveFailed": "管理员移除失败",
-  "teamMemberEmpty": "暂无成员"
+  "teamMemberEmpty": "暂无成员",
+  "teamEnterManager": "进群管理",
+  "teamManageJoinNeedAccept": "入群邀请需同意",
+  "teamManageJoinNeedAcceptDetail": "开启后，拉入入群， 需被邀请人同意后才可成功",
+  "teamManageApplyNeedAccept": "入群审核",
+  "teamManageApplyNeedAcceptDetail": "开启后，成员入群时需要群主或管理同意后才可加入",
+  "teamId": "群号：{teamId}",
+  "@teamId": {
+    "placeholders": {
+      "teamId": {
+        "type": "String"
+      }
+    }
+  },
+  "teamOwnerName": "群主：{userName}",
+  "@teamOwnerName": {
+    "placeholders": {
+      "userName": {
+        "type": "String"
+      }
+    }
+  },
+  "teamIntro": "群介绍：{intro}",
+  "@teamIntro": {
+    "placeholders": {
+      "intro": {
+        "type": "String"
+      }
+    }
+  },
+  "teamJoinApply": "加入群组",
+  "teamChat": "聊天",
+  "teamJoinApplicationHaveSent": "申请已发送"
 }

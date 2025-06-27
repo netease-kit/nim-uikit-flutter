@@ -19,12 +19,14 @@ import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_
 import 'package:nim_chatkit_ui/view/input/actions.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/repo/contact_repo.dart';
+import 'package:nim_chatkit/repo/team_repo.dart';
 import 'package:nim_contactkit_ui/page/contact_page.dart';
 import 'package:nim_chatkit/repo/conversation_repo.dart';
 import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
 import 'package:nim_conversationkit_ui/page/conversation_page.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
+import 'package:nim_chatkit/repo/config_repo.dart';
 
 const channelName = "com.netease.yunxin.app.flutter.im/channel";
 const pushMethodName = "pushMessage";
@@ -45,6 +47,8 @@ class _HomePageState extends State<HomePage> {
   int chatUnreadCount = 0;
   int contactUnreadCount = 0;
 
+  int teamActionsUnreadCount = 0;
+
   initUnread() {
     ConversationRepo.getMsgUnreadCount().then((value) {
       if (value.isSuccess && value.data != null) {
@@ -56,6 +60,11 @@ class _HomePageState extends State<HomePage> {
     ContactRepo.addApplicationUnreadCountNotifier.listen((count) {
       setState(() {
         contactUnreadCount = count;
+      });
+    });
+    TeamRepo.teamActionsUnreadCountNotifier.listen((count) {
+      setState(() {
+        teamActionsUnreadCount = count;
       });
     });
   }
@@ -164,11 +173,18 @@ class _HomePageState extends State<HomePage> {
   Future<Map<String, dynamic>> _getPushPayload(
       NIMMessage message, String conversationId) async {
     Map<String, dynamic> pushPayload = Map();
-    var sessionId = message.conversationType == NIMConversationType.p2p
-        ? getIt<IMLoginService>().userInfo?.accountId
-        : ChatKitUtils.getConversationTargetId(conversationId)!;
-    var sessionType =
-        message.conversationType == NIMConversationType.p2p ? "p2p" : "team";
+    String? sessionId;
+    String? sessionType;
+    if ((await NimCore.instance.conversationIdUtil
+                .conversationType(conversationId))
+            .data ==
+        NIMConversationType.p2p) {
+      sessionId = getIt<IMLoginService>().userInfo?.accountId;
+      sessionType = "p2p";
+    } else {
+      sessionId = ChatKitUtils.getConversationTargetId(conversationId);
+      sessionType = "team";
+    }
     // 添加 apns payload
     // var alert = {
     //   "title" : "your title",
@@ -226,7 +242,8 @@ class _HomePageState extends State<HomePage> {
         clipBehavior: Clip.none,
         children: <Widget>[
           tabIcon,
-          if (contactUnreadCount > 0 || chatUnreadCount > 0)
+          if ((contactUnreadCount + teamActionsUnreadCount) > 0 ||
+              chatUnreadCount > 0)
             Positioned(
               top: -2.0,
               right: -3.0,
@@ -273,7 +290,8 @@ class _HomePageState extends State<HomePage> {
                   index == currentIndex
                       ? bottomNavigatorList()[index].selectedIcon
                       : bottomNavigatorList()[index].unselectedIcon,
-                  showRedPoint: (index == 1 && contactUnreadCount > 0) ||
+                  showRedPoint: (index == 1 &&
+                          (contactUnreadCount + teamActionsUnreadCount) > 0) ||
                       (index == 0 && chatUnreadCount > 0)),
               label: bottomNavigatorList()[index].title,
             ),

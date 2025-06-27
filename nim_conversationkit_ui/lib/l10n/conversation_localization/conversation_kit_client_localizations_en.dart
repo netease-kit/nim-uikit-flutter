@@ -91,4 +91,13 @@ class ConversationKitClientLocalizationsEn
 
   @override
   String get chatHistoryBrief => '[Chat history]';
+
+  @override
+  String get joinTeam => 'Join Team';
+
+  @override
+  String get joinTeamSearchHint => 'Please enter team Id';
+
+  @override
+  String get joinTeamSearchEmptyTips => 'This team does not exist';
 }

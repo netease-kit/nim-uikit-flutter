@@ -2,12 +2,15 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/base/base_state.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:nim_chatkit/manager/subscription_manager.dart';
 import 'package:nim_chatkit/router/imkit_router_constants.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
@@ -34,8 +37,8 @@ class ConversationList extends StatefulWidget {
 class _ConversationListState extends BaseState<ConversationList> {
   final ScrollController _scrollController = ScrollController();
   // 顶部AI数字人列表高度
-  final double conversationTopListHeight = 81;
-  final double conversationTopItemHeight = 72;
+  final double conversationTopListHeight = 84;
+  final double conversationTopItemHeight = 75;
   // 滚动监听
   void _scrollListener() {
     if (_scrollController.position.pixels >
@@ -44,10 +47,47 @@ class _ConversationListState extends BaseState<ConversationList> {
     }
   }
 
+  Timer? _scrollEndTimer;
+
+  List<String> _getVisibleP2PUser() {
+    double start = _scrollController.position.pixels;
+    double end = start + _scrollController.position.viewportDimension;
+
+    List<ConversationInfo> conversationList =
+        context.read<ConversationViewModel>().conversationList;
+
+    List<String> visibleP2PUser = [];
+    for (int i = 0; i < conversationList.length; i++) {
+      // 使用 RenderBox 来判断可见性
+      final itemKey = GlobalKey();
+      final RenderBox renderBox =
+          itemKey.currentContext?.findRenderObject() as RenderBox;
+
+      final offset = renderBox.localToGlobal(Offset.zero);
+      final conversation = conversationList[i];
+      if (conversation.conversation.type == NIMConversationType.p2p &&
+          (offset.dy >= start || offset.dy <= end)) {
+        visibleP2PUser.add(conversation.targetId);
+      }
+    }
+    return visibleP2PUser;
+  }
+
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_scrollListener);
+  }
+
+  void _subscribeUserStatus() {
+    List<String> users = _getVisibleP2PUser();
+    SubscriptionManager.instance.subscribeUserStatus(users);
+  }
+
+  @override
+  void dispose() {
+    _scrollEndTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -60,24 +100,39 @@ class _ConversationListState extends BaseState<ConversationList> {
     return Stack(
       children: [
         SlidableAutoCloseBehavior(
-          child: ListView.builder(
-            itemCount: conversationList.length + indexPos,
-            // itemExtent: conversationItemHeight,
-            itemExtentBuilder: (index, options) {
-              if (index == 0 && aiUserList.isNotEmpty) {
-                return conversationTopListHeight;
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (ScrollNotification notification) {
+              // 处理不同类型的滚动通知
+              if (notification is ScrollStartNotification ||
+                  notification is ScrollUpdateNotification) {
+                // 滚动开始或滚动中，取消之前的定时器
+                _scrollEndTimer?.cancel();
+              } else if (notification is ScrollEndNotification) {
+                // 滚动结束，设置定时器，延迟1秒后执行操作
+                _scrollEndTimer = Timer(
+                    const Duration(milliseconds: 100), _subscribeUserStatus);
               }
-              return conversationItemHeight;
+              return false; // 不阻止通知继续传递
             },
-            controller: _scrollController,
-            itemBuilder: (context, index) {
-              if (index == 0 && aiUserList.isNotEmpty) {
-                return _buildHorizontalGrid(aiUserList);
-              } else {
-                return _buildConversationListItem(
-                    conversationList, index - indexPos);
-              }
-            },
+            child: ListView.builder(
+              itemCount: conversationList.length + indexPos,
+              // itemExtent: conversationItemHeight,
+              itemExtentBuilder: (index, options) {
+                if (index == 0 && aiUserList.isNotEmpty) {
+                  return conversationTopListHeight;
+                }
+                return conversationItemHeight;
+              },
+              controller: _scrollController,
+              itemBuilder: (context, index) {
+                if (index == 0 && aiUserList.isNotEmpty) {
+                  return _buildHorizontalGrid(aiUserList);
+                } else {
+                  return _buildConversationListItem(
+                      conversationList, index - indexPos);
+                }
+              },
+            ),
           ),
         ),
         if (conversationList.isEmpty) // 条件判断

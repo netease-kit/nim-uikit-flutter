@@ -11,6 +11,7 @@ import 'package:flutter/widgets.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit/manager/subscription_manager.dart';
 import 'package:nim_chatkit/model/ait/ait_contacts_model.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
 import 'package:nim_chatkit/service_locator.dart';
@@ -98,8 +99,10 @@ class ChatViewModel extends ChangeNotifier {
   bool showReadAck;
 
   String chatTitle = '';
+  //联系人信息，P2P
   ContactInfo? contactInfo;
 
+  //群信息，群组
   NIMTeam? teamInfo;
 
   bool mute = false;
@@ -178,8 +181,10 @@ class ChatViewModel extends ChangeNotifier {
         .data;
     if (conversationType == NIMConversationType.p2p && _sessionId != null) {
       getIt<ContactProvider>().getContact(_sessionId!).then((value) {
-        contactInfo = value;
+        updateContactInfo(value);
+
         chatTitle = value!.getName();
+        initUserState(value.user.accountId!);
         notifyListeners();
       });
       ChatMessageRepo.getP2PMessageReceipt(conversationId).then((result) {
@@ -206,6 +211,24 @@ class ChatViewModel extends ChangeNotifier {
       });
     }
     _initFetch();
+  }
+
+  ///更新对方的用户信息
+  void updateContactInfo(ContactInfo? info) {
+    if (contactInfo == null) {
+      contactInfo = info;
+    } else {
+      final isOnline = contactInfo!.isOnline;
+      contactInfo = info;
+      contactInfo?.isOnline = isOnline;
+    }
+  }
+
+  ///初始化用户在线状态
+  void initUserState(String accountId) {
+    if (!AIUserManager.instance.isAIUser(accountId)) {
+      SubscriptionManager.instance.subscribeUserStatus([accountId]);
+    }
   }
 
   List<ChatMessage> _messageList = [];
@@ -332,7 +355,7 @@ class ChatViewModel extends ChangeNotifier {
     subscriptions.add(NIMChatCache.instance.contactInfoNotifier.listen((event) {
       if (conversationType == NIMConversationType.p2p &&
           event.user.accountId == _sessionId) {
-        contactInfo = event;
+        updateContactInfo(event);
         chatTitle = event.getName();
       }
       notifyListeners();
@@ -378,7 +401,7 @@ class ChatViewModel extends ChangeNotifier {
           }
         }
       }));
-    } else {
+    } else if (conversationType == NIMConversationType.p2p) {
       //p2p message receipt
       subscriptions
           .add(ChatServiceObserverRepo.observeMessageReceipt().listen((event) {
@@ -403,6 +426,16 @@ class ChatViewModel extends ChangeNotifier {
             notifyListeners();
           }
         });
+      }));
+
+      subscriptions.add(NimCore.instance.subscriptionService.onUserStatusChanged
+          .listen((List<NIMUserStatus> userList) {
+        for (final user in userList) {
+          if (user.accountId == contactInfo?.user.accountId) {
+            contactInfo?.isOnline = (user.statusType == 1);
+            notifyListeners();
+          }
+        }
       }));
     }
 

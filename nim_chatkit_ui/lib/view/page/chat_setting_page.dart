@@ -8,6 +8,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit/im_kit_config_center.dart';
 import 'package:nim_chatkit/router/imkit_router_constants.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_chatkit/services/team/team_provider.dart';
@@ -84,54 +85,55 @@ class _ChatSettingPageState extends State<ChatSettingPage> {
           const SizedBox(
             width: 16,
           ),
-          GestureDetector(
-            onTap: () {
-              goToContactSelector(context,
-                      mostCount: TeamProvider.createTeamInviteLimit,
-                      filter: [accountId],
-                      returnContact: true,
-                      includeAIUser: true)
-                  .then((contacts) {
-                if (contacts is List<ContactInfo> && contacts.isNotEmpty) {
-                  // add current friend
-                  contacts.add(widget.contactInfo);
-                  var selectName = contacts
-                      .map((e) => e.user.name ?? e.user.accountId!)
-                      .toList();
-                  getIt<TeamProvider>()
-                      .createTeam(
-                          contacts.map((e) => e.user.accountId!).toList(),
-                          selectNames: selectName,
-                          isGroup: true)
-                      .then((teamResult) {
-                    Alog.i(
-                        tag: 'ChatKit',
-                        moduleName: 'Chat Setting',
-                        content: 'create team ${teamResult?.team?.teamId}');
-                    if (teamResult != null && teamResult.team != null) {
-                      // pop and jump
-                      var teamConversationId = ChatKitUtils.conversationId(
-                          teamResult.team!.teamId, NIMConversationType.team);
-                      Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          RouterConstants.PATH_CHAT_PAGE,
-                          ModalRoute.withName(RouterConstants.PATH_CHAT_PAGE),
-                          arguments: {
-                            'conversationId': teamConversationId,
-                            'conversationType': NIMConversationType.team,
-                          });
-                    }
-                  });
-                }
-              });
-            },
-            child: SvgPicture.asset(
-              'images/ic_member_add.svg',
-              package: kPackage,
-              height: 42,
-              width: 42,
-            ),
-          )
+          if (IMKitConfigCenter.enableTeam)
+            GestureDetector(
+              onTap: () {
+                goToContactSelector(context,
+                        mostCount: TeamProvider.createTeamInviteLimit,
+                        filter: [accountId],
+                        returnContact: true,
+                        includeAIUser: true)
+                    .then((contacts) {
+                  if (contacts is List<ContactInfo> && contacts.isNotEmpty) {
+                    // add current friend
+                    contacts.add(widget.contactInfo);
+                    var selectName = contacts
+                        .map((e) => e.user.name ?? e.user.accountId!)
+                        .toList();
+                    getIt<TeamProvider>()
+                        .createTeam(
+                            contacts.map((e) => e.user.accountId!).toList(),
+                            selectNames: selectName,
+                            isGroup: true)
+                        .then((teamResult) {
+                      Alog.i(
+                          tag: 'ChatKit',
+                          moduleName: 'Chat Setting',
+                          content: 'create team ${teamResult?.team?.teamId}');
+                      if (teamResult != null && teamResult.team != null) {
+                        // pop and jump
+                        var teamConversationId = ChatKitUtils.conversationId(
+                            teamResult.team!.teamId, NIMConversationType.team);
+                        Navigator.pushNamedAndRemoveUntil(
+                            context,
+                            RouterConstants.PATH_CHAT_PAGE,
+                            ModalRoute.withName(RouterConstants.PATH_CHAT_PAGE),
+                            arguments: {
+                              'conversationId': teamConversationId,
+                              'conversationType': NIMConversationType.team,
+                            });
+                      }
+                    });
+                  }
+                });
+              },
+              child: SvgPicture.asset(
+                'images/ic_member_add.svg',
+                package: kPackage,
+                height: 42,
+                width: 42,
+              ),
+            )
         ],
       ),
     );

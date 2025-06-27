@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:im_demo/src/mine/setting/language_setting.dart';
 import 'package:netease_common_ui/ui/background.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/widgets/common_list_tile.dart';
@@ -10,7 +11,6 @@ import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/repo/config_repo.dart';
 import 'package:flutter/material.dart';
-import 'package:im_demo/src/mine/setting/clear_cache_page.dart';
 import 'package:im_demo/src/mine/setting/notify_setting_page.dart';
 
 import '../../../l10n/S.dart';
@@ -143,6 +143,37 @@ class _MineSettingPageState extends State<MineSettingPage> {
                 children:
                     ListTile.divideTiles(context: context, tiles: switchTiles)
                         .toList(),
+              ),
+            ),
+            _divider(),
+            CardBackground(
+              child: Column(
+                children: ListTile.divideTiles(context: context, tiles: [
+                  CommonListTile(
+                    title: S.of(context).language,
+                    trailingType: TrailingType.arrow,
+                    onTap: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  const LanguageSettingPage()));
+                    },
+                  ),
+                  // Visibility(
+                  //   visible: false,
+                  //   child: CommonListTile(
+                  //     title: S.of(context).settingClearCache,
+                  //     trailingType: TrailingType.arrow,
+                  //     onTap: () {
+                  //       Navigator.push(
+                  //           context,
+                  //           MaterialPageRoute(
+                  //               builder: (context) => const ClearCachePage()));
+                  //     },
+                  //   ),
+                  // ),
+                ]).toList(),
               ),
             ),
             _divider(),
