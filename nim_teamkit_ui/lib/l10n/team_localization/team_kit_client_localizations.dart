@@ -328,7 +328,7 @@ abstract class TeamKitClientLocalizations {
   /// No description provided for @teamManager.
   ///
   /// In en, this message translates to:
-  /// **'Team Manager'**
+  /// **'Admin'**
   String get teamManager;
 
   /// No description provided for @teamAddManagers.

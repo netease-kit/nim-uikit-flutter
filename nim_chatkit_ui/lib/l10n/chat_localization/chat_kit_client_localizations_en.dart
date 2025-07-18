@@ -289,10 +289,24 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
   }
 
   @override
-  String get chatTeamVerifyUpdateAsNeedVerify => 'update as need verify';
+  String chatTeamVerifyUpdateAsNeedVerify(String name) {
+    return '$name enabled group join approval';
+  }
 
   @override
-  String get chatTeamVerifyUpdateAsNeedNoVerify => 'update as need no verify';
+  String chatTeamVerifyUpdateAsNeedNoVerify(String name) {
+    return '$name disabled group join approval';
+  }
+
+  @override
+  String chatTeamInviteUpdateAsNeedVerify(String name) {
+    return '$name enabled invitation approval for joining the group';
+  }
+
+  @override
+  String chatTeamInviteUpdateAsNeedNoVerify(String name) {
+    return '$name disabled invitation approval for joining the group';
+  }
 
   @override
   String get chatTeamVerifyUpdateAsDisallowAnyoneJoin =>

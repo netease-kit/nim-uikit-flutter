@@ -66,15 +66,18 @@ import 'contact_kit_client_localizations_zh.dart';
 /// be consistent with the languages listed in the ContactKitClientLocalizations.supportedLocales
 /// property.
 abstract class ContactKitClientLocalizations {
-  ContactKitClientLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  ContactKitClientLocalizations(String locale)
+      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
   static ContactKitClientLocalizations? of(BuildContext context) {
-    return Localizations.of<ContactKitClientLocalizations>(context, ContactKitClientLocalizations);
+    return Localizations.of<ContactKitClientLocalizations>(
+        context, ContactKitClientLocalizations);
   }
 
-  static const LocalizationsDelegate<ContactKitClientLocalizations> delegate = _ContactKitClientLocalizationsDelegate();
+  static const LocalizationsDelegate<ContactKitClientLocalizations> delegate =
+      _ContactKitClientLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -86,7 +89,8 @@ abstract class ContactKitClientLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
     delegate,
     GlobalMaterialLocalizations.delegate,
     GlobalCupertinoLocalizations.delegate,
@@ -442,34 +446,37 @@ abstract class ContactKitClientLocalizations {
   String teamJoinInvitationReject(String teamName);
 }
 
-class _ContactKitClientLocalizationsDelegate extends LocalizationsDelegate<ContactKitClientLocalizations> {
+class _ContactKitClientLocalizationsDelegate
+    extends LocalizationsDelegate<ContactKitClientLocalizations> {
   const _ContactKitClientLocalizationsDelegate();
 
   @override
   Future<ContactKitClientLocalizations> load(Locale locale) {
-    return SynchronousFuture<ContactKitClientLocalizations>(lookupContactKitClientLocalizations(locale));
+    return SynchronousFuture<ContactKitClientLocalizations>(
+        lookupContactKitClientLocalizations(locale));
   }
 
   @override
-  bool isSupported(Locale locale) => <String>['en', 'zh'].contains(locale.languageCode);
+  bool isSupported(Locale locale) =>
+      <String>['en', 'zh'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_ContactKitClientLocalizationsDelegate old) => false;
 }
 
-ContactKitClientLocalizations lookupContactKitClientLocalizations(Locale locale) {
-
-
+ContactKitClientLocalizations lookupContactKitClientLocalizations(
+    Locale locale) {
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'en': return ContactKitClientLocalizationsEn();
-    case 'zh': return ContactKitClientLocalizationsZh();
+    case 'en':
+      return ContactKitClientLocalizationsEn();
+    case 'zh':
+      return ContactKitClientLocalizationsZh();
   }
 
   throw FlutterError(
-    'ContactKitClientLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-    'an issue with the localizations generation tool. Please file an issue '
-    'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.'
-  );
+      'ContactKitClientLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+      'an issue with the localizations generation tool. Please file an issue '
+      'on GitHub with a reproducible sample app and the gen-l10n configuration '
+      'that was used.');
 }

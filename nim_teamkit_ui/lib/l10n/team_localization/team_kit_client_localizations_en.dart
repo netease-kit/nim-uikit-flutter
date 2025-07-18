@@ -124,7 +124,7 @@ class TeamKitClientLocalizationsEn extends TeamKitClientLocalizations {
   String get teamAitPermission => 'Who can @all';
 
   @override
-  String get teamManager => 'Team Manager';
+  String get teamManager => 'Admin';
 
   @override
   String get teamAddManagers => 'Add Managers';

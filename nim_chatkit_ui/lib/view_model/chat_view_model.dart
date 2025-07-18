@@ -261,10 +261,10 @@ class ChatViewModel extends ChangeNotifier {
       var attachment = message.attachment as NIMMessageNotificationAttachment;
       if (attachment.type == NIMMessageNotificationType.teamUpdateTInfo) {
         // 过滤被邀请人相关通知消息
-        if (attachment.updatedTeamInfo?.agreeMode != null &&
-            attachment.updatedTeamInfo?.agreeMode != NIMTeamAgreeMode.unknown) {
-          return true;
-        }
+        // if (attachment.updatedTeamInfo?.agreeMode != null &&
+        //     attachment.updatedTeamInfo?.agreeMode != NIMTeamAgreeMode.unknown) {
+        //   return true;
+        // }
         // // 过滤群信息扩展参数变更通知消息
         // if (attachment.updatedTeamInfo?.serverExtension?.isNotEmpty == true) {
         //   return true;
@@ -281,6 +281,10 @@ class ChatViewModel extends ChangeNotifier {
     //new message
     subscriptions.add(
         NimCore.instance.messageService.onReceiveMessages.listen((event) async {
+      //非当前会话的消息不处理
+      if (event.first.conversationId != conversationId) {
+        return;
+      }
       _logI('receive msg -->> ${event.length}');
       //解决从搜索，PIN列表跳转的逻辑
       if (hasMoreNewerMessages) {
@@ -308,6 +312,10 @@ class ChatViewModel extends ChangeNotifier {
     //message status change
     subscriptions
         .add(NimCore.instance.messageService.onSendMessage.listen((msg) {
+          //非当前会话的消息不处理
+      if (msg.conversationId != conversationId) {
+        return;
+      }
       _logI(
           'onSendMessage ${msg.messageClientId} status change -->> ${msg.sendingState}, ${msg.attachmentUploadState}');
       if (hasMoreNewerMessages) {
@@ -460,7 +468,11 @@ class ChatViewModel extends ChangeNotifier {
     subscriptions
         .add(ChatServiceObserverRepo.observeRevokeMessage().listen((messages) {
       _logI('received revokeMessage notify and save a local message');
-      messages.forEach((e) => _onMessageRevokedNotify(e));
+      messages.forEach((e) {
+        if (e.messageRefer?.conversationId == conversationId) {
+          _onMessageRevokedNotify(e);
+        }
+      });
     }));
 
     //监听Pin消息变化
@@ -604,7 +616,7 @@ class ChatViewModel extends ChangeNotifier {
     if (newerMsgs.isSuccess) {
       hasMoreNewerMessages = newerMsgs.data?.isNotEmpty == true;
       if (newerMsgs.data?.isNotEmpty == true) {
-        _messageList.addAll(newerMsgs.data!);
+        _messageList.addAll(newerMsgs.data!.reversed);
       }
     }
 

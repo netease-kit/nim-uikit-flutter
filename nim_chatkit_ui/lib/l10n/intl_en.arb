@@ -240,8 +240,38 @@
       }
     }
   },
-  "chatTeamVerifyUpdateAsNeedVerify": "update as need verify",
-  "chatTeamVerifyUpdateAsNeedNoVerify": "update as need no verify",
+  "chatTeamVerifyUpdateAsNeedVerify": "{name} enabled group join approval",
+  "@chatTeamVerifyUpdateAsNeedVerify": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamVerifyUpdateAsNeedNoVerify": "{name} disabled group join approval",
+  "@chatTeamVerifyUpdateAsNeedNoVerify": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamInviteUpdateAsNeedVerify": "{name} enabled invitation approval for joining the group",
+  "@chatTeamInviteUpdateAsNeedVerify": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamInviteUpdateAsNeedNoVerify": "{name} disabled invitation approval for joining the group",
+  "@chatTeamInviteUpdateAsNeedNoVerify": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "chatTeamVerifyUpdateAsDisallowAnyoneJoin": "update as disallow anyone join",
   "chatTeamNotifyUpdateExtension": "team extension update as {name}",
   "@chatTeamNotifyUpdateExtension": {

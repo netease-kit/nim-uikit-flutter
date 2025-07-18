@@ -1,5 +1,10 @@
 # NimSearchKitUI ChangeLog
 
+## 10.3.1(Jul 18, 2025)
+
+### Bug Fix
+* 修复已知问题
+
 ## 10.3.0(Jun 27, 2025)
 
 ### New Features

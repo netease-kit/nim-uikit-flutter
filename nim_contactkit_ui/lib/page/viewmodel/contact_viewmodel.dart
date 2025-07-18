@@ -140,8 +140,9 @@ class ContactViewModel extends ChangeNotifier {
         userMap[user.accountId] = user; // 直接以 id 为键，user 对象为值
       }
       contacts.forEach((e) {
-        userMap.containsKey(e.user.accountId);
-        e.isOnline = userMap[e.user.accountId]?.statusType == 1;
+        if (userMap.containsKey(e.user.accountId)) {
+          e.isOnline = userMap[e.user.accountId]?.statusType == 1;
+        }
       });
       notifyListeners();
     }));

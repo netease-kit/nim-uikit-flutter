@@ -100,12 +100,14 @@ class NotifyHelper {
         attachment.updatedTeamInfo?.joinMode != NIMTeamJoinMode.unknown) {
       if (attachment.updatedTeamInfo?.joinMode ==
           NIMTeamJoinMode.joinModeApply) {
-        return S.of().chatTeamVerifyUpdateAsNeedVerify;
+        var fromName = await getTeamMemberDisplayName(tid, fromAccId);
+        return S.of().chatTeamVerifyUpdateAsNeedVerify(fromName);
       } else if (attachment.updatedTeamInfo?.joinMode ==
           NIMTeamJoinMode.joinModeInvite) {
         return S.of().chatTeamVerifyUpdateAsDisallowAnyoneJoin;
       } else {
-        return S.of().chatTeamVerifyUpdateAsNeedNoVerify;
+        var fromName = await getTeamMemberDisplayName(tid, fromAccId);
+        return S.of().chatTeamVerifyUpdateAsNeedNoVerify(fromName);
       }
     } else if (attachment.updatedTeamInfo?.serverExtension.isNotEmpty == true) {
       try {
@@ -139,10 +141,16 @@ class NotifyHelper {
           fromName,
           getTeamUpdatePermissionName(
               attachment.updatedTeamInfo!.updateInfoMode!));
-    } else if (attachment.updatedTeamInfo?.agreeMode != null &&
-        attachment.updatedTeamInfo?.agreeMode != NIMTeamAgreeMode.unknown) {
-      return S.of().chatTeamInvitedIdVerifyPermissionUpdate(
-          attachment.updatedTeamInfo!.agreeMode!.name);
+    } else if (attachment.updatedTeamInfo?.agreeMode != null) {
+      if (attachment.updatedTeamInfo?.agreeMode ==
+          NIMTeamAgreeMode.agreeModeAuth) {
+        var fromName = await getTeamMemberDisplayName(tid, fromAccId);
+        return S.of().chatTeamInviteUpdateAsNeedVerify(fromName);
+      } else if (attachment.updatedTeamInfo?.agreeMode ==
+          NIMTeamAgreeMode.agreeModeNoAuth) {
+        var fromName = await getTeamMemberDisplayName(tid, fromAccId);
+        return S.of().chatTeamInviteUpdateAsNeedNoVerify(fromName);
+      }
     } else if (attachment.updatedTeamInfo?.updateExtensionMode != null &&
         attachment.updatedTeamInfo?.updateExtensionMode !=
             NIMTeamUpdateExtensionMode.unknown) {

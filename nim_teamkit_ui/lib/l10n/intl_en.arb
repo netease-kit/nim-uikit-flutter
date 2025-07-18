@@ -37,7 +37,7 @@
   "teamNameMustNotEmpty": "Team name must not empty",
   "teamManage": "Team Manage",
   "teamAitPermission": "Who can @all",
-  "teamManager": "Team Manager",
+  "teamManager": "Admin",
   "teamAddManagers": "Add Managers",
   "teamOwnerManager": "Owner Add Manager",
   "teamMemberRemove": "Remove",

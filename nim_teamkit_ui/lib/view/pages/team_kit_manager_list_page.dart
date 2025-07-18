@@ -221,12 +221,12 @@ class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
                       widget.teamMember.userInfo!.accountId!);
                 },
                 child: Container(
-                  width: 50,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                   decoration: BoxDecoration(
                       border: Border.all(color: '#E6605C'.toColor(), width: 1),
                       borderRadius: BorderRadius.circular(10)),
+                  alignment: Alignment.center,
                   child: Text(
                     S.of(context).teamMemberRemove,
                     maxLines: 1,
