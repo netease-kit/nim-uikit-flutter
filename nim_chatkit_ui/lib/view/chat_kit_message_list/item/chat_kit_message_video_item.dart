@@ -53,7 +53,11 @@ class _ChatKitMessageVideoState extends State<ChatKitMessageVideoItem> {
   }
 
   Size _getVideoSize() {
-    if (attachment.width != null && attachment.height != null) {
+    // 检查 width 和 height 是否为有效正数
+    if (attachment.width != null &&
+        attachment.width! > 0 &&
+        attachment.height != null &&
+        attachment.height! > 0) {
       var ratio = attachment.width! / attachment.height!;
       double rat;
       if (ratio > 1) {
@@ -61,8 +65,13 @@ class _ChatKitMessageVideoState extends State<ChatKitMessageVideoItem> {
       } else {
         rat = attachment.height! / 190;
       }
+      // 再次检查，防止 rat 为 0 导致除法错误
+      if (rat == 0) {
+        return Size(110, 190);
+      }
       return Size(attachment.width! / rat, attachment.height! / rat);
     }
+    // 如果 width 或 height 无效，返回一个默认的安全尺寸
     return Size(110, 190);
   }
 

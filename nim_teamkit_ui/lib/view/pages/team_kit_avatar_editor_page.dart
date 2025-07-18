@@ -82,6 +82,7 @@ class TeamKitAvatarEditorState extends State<TeamKitAvatarEditorPage> {
             style: TextStyle(fontSize: 16, color: '#666666'.toColor()),
             maxLines: 1),
       ),
+      leadingWidth: 80,
       title: S.of(context).teamUpdateIcon,
       centerTitle: true,
       actions: [

@@ -245,13 +245,13 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
           ),
           subtitle: Text(
             S.of(context).teamManageJoinNeedAcceptDetail,
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style:
                 const TextStyle(fontSize: 14, color: CommonColors.color_999999),
           ),
           trailing: CupertinoSwitch(
-            activeTrackColor: CommonColors.color_337eff,
+            activeColor: CommonColors.color_337eff,
             onChanged: (bool value) {
               if (value != (agreeMode == NIMTeamAgreeMode.agreeModeAuth)) {
                 TeamRepo.updateBeInviteMode(team.teamId, team.teamType, value);
@@ -267,13 +267,13 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
           ),
           subtitle: Text(
             S.of(context).teamManageApplyNeedAcceptDetail,
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style:
                 const TextStyle(fontSize: 14, color: CommonColors.color_999999),
           ),
           trailing: CupertinoSwitch(
-            activeTrackColor: CommonColors.color_337eff,
+            activeColor: CommonColors.color_337eff,
             onChanged: (bool value) {
               if (value != (joinMode == NIMTeamJoinMode.joinModeApply)) {
                 TeamRepo.updateApplyAgreeMode(

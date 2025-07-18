@@ -183,8 +183,11 @@ class ChatKitMessageAudioState extends State<ChatKitMessageAudioItem>
       }
     });
     Future.delayed(Duration.zero, () {
-      IMKitRouter.instance.routeObserver
-          .subscribe(this, ModalRoute.of(context)!);
+      if (!mounted) return; // 增加此行
+      final route = ModalRoute.of(context);
+      if (route != null) {
+        IMKitRouter.instance.routeObserver.subscribe(this, route);
+      }
     });
   }
 

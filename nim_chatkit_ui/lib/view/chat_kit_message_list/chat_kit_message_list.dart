@@ -110,27 +110,20 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
       _logI('scrollToAnchor: messageList is empty');
       return;
     }
-    final lastTimestamp = context
-            .read<ChatViewModel>()
-            .getAnchor(NIMQueryDirection.desc)
-            ?.createTime ??
-        DateTime.now().millisecondsSinceEpoch;
-    if (anchor.createTime! >= lastTimestamp) {
+    int index = context.read<ChatViewModel>().messageList.indexWhere(
+        (element) =>
+            element.nimMessage.messageClientId == anchor.messageClientId!);
+    if (index >= 0) {
       // in range
       findAnchor = null;
-      int index = context.read<ChatViewModel>().messageList.indexWhere(
-          (element) =>
-              element.nimMessage.messageClientId == anchor.messageClientId!);
-      _logI(
-          'scrollToAnchor: found time:${anchor.createTime} >= $lastTimestamp, index found:$index');
-      if (index >= 0) {
+
+      _logI('scrollToAnchor: found anchor index found:$index');
+      widget.scrollController
+          .scrollToIndex(index, duration: Duration(milliseconds: 500))
+          .then((value) {
         widget.scrollController
-            .scrollToIndex(index, duration: Duration(milliseconds: 500))
-            .then((value) {
-          widget.scrollController
-              .scrollToIndex(index, preferPosition: AutoScrollPosition.middle);
-        });
-      }
+            .scrollToIndex(index, preferPosition: AutoScrollPosition.middle);
+      });
     } else {
       _logI(
           'scrollToAnchor: not found in ${list.length} items, _findAnchorRemote -->> ');

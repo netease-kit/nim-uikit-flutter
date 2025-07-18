@@ -176,8 +176,13 @@ class _BottomInputFieldState extends State<BottomInputField>
             msg: S.of(context).chatMessageFileSizeOverLimit("$overSize"));
         return;
       }
-      VideoPlayerController controller =
-          VideoPlayerController.file(File(video.path));
+      VideoPlayerController controller;
+      if (Platform.isAndroid) {
+        controller = VideoPlayerController.file(File(video.path),
+            viewType: VideoViewType.platformView);
+      } else {
+        controller = VideoPlayerController.file(File(video.path));
+      }
       controller.initialize().then((value) {
         _viewModel.sendVideoMessage(
             video.path,

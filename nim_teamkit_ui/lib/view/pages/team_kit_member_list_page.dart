@@ -397,7 +397,7 @@ class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
                       widget.teamMember.userInfo!.accountId!);
                 },
                 child: Container(
-                  width: 50,
+                  alignment: Alignment.center,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                   decoration: BoxDecoration(

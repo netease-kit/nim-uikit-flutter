@@ -51,8 +51,15 @@ class _VideoViewerState extends State<VideoViewer> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     attachment = widget.message.attachment as NIMMessageVideoAttachment;
-    _controller = VideoPlayerController.file(File(attachment.path!),
-        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: false));
+    if (Platform.isAndroid) {
+      _controller = VideoPlayerController.file(File(attachment.path!),
+          videoPlayerOptions: VideoPlayerOptions(mixWithOthers: false),
+          viewType: VideoViewType.platformView);
+    } else {
+      _controller = VideoPlayerController.file(File(attachment.path!),
+          videoPlayerOptions: VideoPlayerOptions(mixWithOthers: false));
+    }
+
     _controller.addListener(() {
       if (!_controller.value.isPlaying &&
           _controller.value.position == _controller.value.duration) {

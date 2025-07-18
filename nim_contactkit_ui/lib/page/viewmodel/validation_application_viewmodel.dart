@@ -531,10 +531,15 @@ class ValidationTeamMessageMerged {
   //如果相同，添加消息
   bool pushMessageIfSame(NIMTeamJoinActionInfo message) {
     if (isSameMessage(message)) {
-      msgList.add(lastMsg);
-      lastMsg = message;
+      if ((message.timestamp ?? 0) > (lastMsg.timestamp ?? 0)) {
+        msgList.add(lastMsg);
+        lastMsg = message;
+      } else {
+        msgList.add(message);
+      }
+
       if (readTime != null) {
-        unread = (message.timestamp ?? 0) > readTime!;
+        unread = (lastMsg.timestamp ?? 0) > readTime!;
       }
       return true;
     }
@@ -542,8 +547,8 @@ class ValidationTeamMessageMerged {
   }
 
   int messageUnreadCount() {
-    return ((lastMsg.timestamp ?? 0) > (readTime ?? 0) ? 0 : 1) +
-        msgList.where((e) => (lastMsg.timestamp ?? 0) > (readTime ?? 0)).length;
+    return ((lastMsg.timestamp ?? 0) > (readTime ?? 0) ? 1 : 0) +
+        msgList.where((e) => (e.timestamp ?? 0) > (readTime ?? 0)).length;
   }
 
   //是否相同消息，不包含附件，附言

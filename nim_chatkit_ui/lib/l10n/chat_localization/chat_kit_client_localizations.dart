@@ -574,14 +574,26 @@ abstract class ChatKitClientLocalizations {
   /// No description provided for @chatTeamVerifyUpdateAsNeedVerify.
   ///
   /// In en, this message translates to:
-  /// **'update as need verify'**
-  String get chatTeamVerifyUpdateAsNeedVerify;
+  /// **'{name} enabled group join approval'**
+  String chatTeamVerifyUpdateAsNeedVerify(String name);
 
   /// No description provided for @chatTeamVerifyUpdateAsNeedNoVerify.
   ///
   /// In en, this message translates to:
-  /// **'update as need no verify'**
-  String get chatTeamVerifyUpdateAsNeedNoVerify;
+  /// **'{name} disabled group join approval'**
+  String chatTeamVerifyUpdateAsNeedNoVerify(String name);
+
+  /// No description provided for @chatTeamInviteUpdateAsNeedVerify.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} enabled invitation approval for joining the group'**
+  String chatTeamInviteUpdateAsNeedVerify(String name);
+
+  /// No description provided for @chatTeamInviteUpdateAsNeedNoVerify.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} disabled invitation approval for joining the group'**
+  String chatTeamInviteUpdateAsNeedNoVerify(String name);
 
   /// No description provided for @chatTeamVerifyUpdateAsDisallowAnyoneJoin.
   ///

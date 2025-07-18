@@ -240,8 +240,38 @@
       }
     }
   },
-  "chatTeamVerifyUpdateAsNeedVerify": "群身份验证权限更新为需要身份验证",
-  "chatTeamVerifyUpdateAsNeedNoVerify": "群身份验证权限更新为不需要身份验证",
+  "chatTeamVerifyUpdateAsNeedVerify": "{name}开启了入群审核",
+  "@chatTeamVerifyUpdateAsNeedVerify": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamVerifyUpdateAsNeedNoVerify": "{name}关闭了入群审核",
+  "@chatTeamVerifyUpdateAsNeedNoVerify": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamInviteUpdateAsNeedVerify": "{name}开启了入群邀请需要同意",
+  "@chatTeamInviteUpdateAsNeedVerify": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatTeamInviteUpdateAsNeedNoVerify": "{name}关闭了入群邀请需要同意",
+  "@chatTeamInviteUpdateAsNeedNoVerify": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "chatTeamVerifyUpdateAsDisallowAnyoneJoin": "群身份验证权限更新为不容许任何人申请加入",
   "chatTeamNotifyUpdateExtension": "扩展字段被更新为{name}",
   "@chatTeamNotifyUpdateExtension": {

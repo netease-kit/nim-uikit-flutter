@@ -203,8 +203,14 @@ class _MorePanelState extends State<MorePanel> {
         moduleName: 'more action',
         content: 'take video path:${video?.path}');
     if (video != null) {
-      VideoPlayerController controller =
-          VideoPlayerController.file(File(video.path));
+      VideoPlayerController controller;
+      if (Platform.isAndroid) {
+        controller = VideoPlayerController.file(File(video.path),
+            viewType: VideoViewType.platformView);
+      } else {
+        controller = VideoPlayerController.file(File(video.path));
+      }
+
       controller.initialize().then((value) {
         context.read<ChatViewModel>().sendVideoMessage(
               video.path,

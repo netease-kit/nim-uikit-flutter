@@ -123,47 +123,29 @@ class ConversationViewModel extends ChangeNotifier {
       }
     }));
 
-    subscriptions.add(NimCore.instance.friendService.onFriendInfoChanged
-        .listen((event) async {
-      _logI('friendService onFriendInfoChanged');
-      for (var conversationInfo in conversationList) {
-        var sessionId = ChatKitUtils.getConversationTargetId(
-            conversationInfo.conversation.conversationId);
-        if (sessionId == event.accountId) {
-          if (event.alias?.isNotEmpty == true) {
-            conversationInfo.setNickName(event.alias);
-          } else {
-            var name = event.userProfile?.name ??
-                getIt<ContactProvider>()
-                    .getContactInCache(event.accountId)
-                    ?.user
-                    .name;
-            conversationInfo.setNickName(name);
+    // ios 端处理会话信息不更新的问题
+    if (Platform.isIOS) {
+      final contactInfoChange = getIt<ContactProvider>().onContactInfoUpdated;
+      if (contactInfoChange != null) {
+        subscriptions.add(contactInfoChange.listen((userInfo) {
+          for (var conversationInfo in conversationList) {
+            var sessionId = ChatKitUtils.getConversationTargetId(
+                conversationInfo.conversation.conversationId);
+            if (sessionId == userInfo.user.accountId) {
+              conversationInfo.conversation.name = userInfo.getName();
+              conversationInfo.conversation.avatar = userInfo.user.avatar;
+              notifyListeners();
+              return;
+            }
           }
-          notifyListeners();
-          return;
-        }
+        }));
       }
-    }));
+    }
 
     subscriptions.add(
         NimCore.instance.userService.onUserProfileChanged.listen((event) async {
       _logI('onUserProfileChanged -->> ${event.length}');
       for (var e in event) {
-        for (var conversationInfo in conversationList) {
-          var sessionId = ChatKitUtils.getConversationTargetId(
-              conversationInfo.conversation.conversationId);
-          if (sessionId == e.accountId) {
-            if (e.name?.isNotEmpty == true) {
-              conversationInfo.conversation.name = e.name;
-            }
-            if (e.avatar?.isNotEmpty == true) {
-              conversationInfo.conversation.avatar = e.avatar;
-            }
-            notifyListeners();
-            return;
-          }
-        }
         if (IMKitClient.enableAi && e.accountId == IMKitClient.account()) {
           // 个人信息更新，重新拉取置顶AI数字人。因为修改置顶信息在个人信息的扩展字段中保存
           queryTopAIUser();
@@ -208,6 +190,9 @@ class ConversationViewModel extends ChangeNotifier {
           IMKitClient.account() != null) {
         conversationInfo.haveBeenAit = await AitServer.instance
             .isAitConversation(event.conversationId, IMKitClient.account()!);
+      }
+      if (event.type == NIMConversationType.p2p) {
+        subscribeP2PUserStatus([conversationInfo]);
       }
       _addItem(conversationInfo);
       doUnreadCallback();
@@ -256,8 +241,9 @@ class ConversationViewModel extends ChangeNotifier {
       }
       conversationList.forEach((e) {
         if (e.conversation.type == NIMConversationType.p2p) {
-          userMap.containsKey(e.targetId);
-          e.isOnline = userMap[e.targetId]?.statusType == 1;
+          if (userMap.containsKey(e.targetId)) {
+            e.isOnline = userMap[e.targetId]?.statusType == 1;
+          }
         }
       });
       notifyListeners();

@@ -287,10 +287,24 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
   }
 
   @override
-  String get chatTeamVerifyUpdateAsNeedVerify => '群身份验证权限更新为需要身份验证';
+  String chatTeamVerifyUpdateAsNeedVerify(String name) {
+    return '$name开启了入群审核';
+  }
 
   @override
-  String get chatTeamVerifyUpdateAsNeedNoVerify => '群身份验证权限更新为不需要身份验证';
+  String chatTeamVerifyUpdateAsNeedNoVerify(String name) {
+    return '$name关闭了入群审核';
+  }
+
+  @override
+  String chatTeamInviteUpdateAsNeedVerify(String name) {
+    return '$name开启了入群邀请需要同意';
+  }
+
+  @override
+  String chatTeamInviteUpdateAsNeedNoVerify(String name) {
+    return '$name关闭了入群邀请需要同意';
+  }
 
   @override
   String get chatTeamVerifyUpdateAsDisallowAnyoneJoin => '群身份验证权限更新为不容许任何人申请加入';
