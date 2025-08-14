@@ -209,7 +209,7 @@ class _HomePageState extends State<HomePage> {
     // 添加vivo 推送参数
 
     var vivoField = {
-      "pushMode": 1 //推送模式 0：正式推送；1：测试推送，不填默认为0
+      "pushMode": 0 //推送模式 0：正式推送；1：测试推送，不填默认为0
     };
 
     pushPayload["vivoField"] = vivoField;
