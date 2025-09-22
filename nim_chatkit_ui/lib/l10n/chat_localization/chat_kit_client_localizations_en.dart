@@ -2,6 +2,8 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
 import 'chat_kit_client_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -601,4 +603,64 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
 
   @override
   String get chatUserOffline => '[Offline]';
+
+  @override
+  String get forwardSelect => 'Select';
+
+  @override
+  String get multiSelect => 'Multi-Select';
+
+  @override
+  String get forwardSearch => 'Search';
+
+  @override
+  String get forwardRecentForward => 'Recent Forward';
+
+  @override
+  String get forwardRecentConversation => 'Recent Chat';
+
+  @override
+  String get forwardMyFriends => 'Friends';
+
+  @override
+  String get forwardTeam => 'Teams';
+
+  @override
+  String get forwardConversationEmpty => 'No Conversation';
+
+  @override
+  String get forwardContactEmpty => 'No Friend';
+
+  @override
+  String get forwardTeamEmpty => 'No Team';
+
+  @override
+  String get messageSure => 'Sure';
+
+  @override
+  String get chatMessageCallError => 'Call Error';
+
+  @override
+  String get chatMessageCopyNumber => 'Copy Number';
+
+  @override
+  String get chatMessageCall => 'Call';
+
+  @override
+  String messagePhoneCallTips(String number) {
+    return '$number Maybe a phone number,you can';
+  }
+
+  @override
+  String searchResultEmpty(String keyword) {
+    return 'Have no result for $keyword';
+  }
+
+  @override
+  String maxSelectConversationLimit(String number) {
+    return 'Can not select more than $number chats';
+  }
+
+  @override
+  String get webConnectError => 'Web view loading error';
 }

@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:netease_common/netease_common.dart';
+import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:nim_chatkit/message/merge_message.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/mergedMessage/chat_kit_merged_message_item.dart';
@@ -64,24 +65,11 @@ class _MergedMessagePageState extends State<MergedMessagePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(
-              Icons.arrow_back_ios_rounded,
-              size: 26,
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-            },
-          ),
-          centerTitle: true,
-          title: Text(
-            S.of(context).chatMessageChatHistory,
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          elevation: 0.5,
-        ),
+    return TransparentScaffold(
+        centerTitle: true,
+        title: S.of(context).chatMessageChatHistory,
+        elevation: 0.5,
+        appBarBackgroundColor: Colors.white,
         body: Container(
           color: Colors.white,
           constraints: BoxConstraints.expand(),

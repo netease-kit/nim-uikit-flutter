@@ -481,5 +481,44 @@
       "chatAiErrorRateLimitExceeded": "Rate limit exceeded",
       "chatAiErrorParameter": "Parameter error",
        "chatUserOnline":"[Online]",
-        "chatUserOffline":"[Offline]"
+        "chatUserOffline":"[Offline]",
+  "forwardSelect":"Select",
+  "multiSelect":"Multi-Select",
+  "forwardSearch":"Search",
+  "forwardRecentForward":"Recent Forward",
+  "forwardRecentConversation":"Recent Chat",
+  "forwardMyFriends":"Friends",
+  "forwardTeam":"Teams",
+  "forwardConversationEmpty":"No Conversation",
+  "forwardContactEmpty":"No Friend",
+  "forwardTeamEmpty":"No Team",
+  "messageSure": "Sure",
+  "chatMessageCallError": "Call Error",
+  "chatMessageCopyNumber": "Copy Number",
+  "chatMessageCall": "Call",
+  "messagePhoneCallTips": "{number} Maybe a phone number,you can",
+  "@messagePhoneCallTips": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "searchResultEmpty": "Have no result for {keyword}",
+  "@searchResultEmpty": {
+    "placeholders": {
+      "keyword": {
+        "type": "String"
+      }
+    }
+  },
+  "maxSelectConversationLimit": "Can not select more than {number} chats",
+  "@maxSelectConversationLimit": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "webConnectError": "Web view loading error"
 }

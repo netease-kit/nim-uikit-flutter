@@ -481,5 +481,44 @@
       "chatAiErrorRateLimitExceeded": "频率超限",
       "chatAiErrorParameter": "参数错误",
       "chatUserOnline":"[在线]",
-      "chatUserOffline":"[离线]"
+      "chatUserOffline":"[离线]",
+  "forwardSelect":"选择",
+  "multiSelect":"多选",
+  "forwardSearch":"搜索",
+  "forwardRecentForward":"最近转发",
+  "forwardRecentConversation":"最近会话",
+  "forwardMyFriends":"我的好友",
+  "forwardTeam":"我的群聊",
+  "forwardConversationEmpty":"暂无会话",
+  "forwardContactEmpty":"暂无好友",
+  "forwardTeamEmpty":"暂无群组",
+  "messageSure": "确定",
+  "chatMessageCallError": "呼叫出错",
+  "chatMessageCopyNumber": "复制号码",
+  "chatMessageCall": "呼叫",
+  "messagePhoneCallTips": "{number}可能是一个电话号码，你可以",
+  "@messagePhoneCallTips": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "searchResultEmpty": "未搜索到{keyword}相关结果",
+  "@searchResultEmpty": {
+    "placeholders": {
+      "keyword": {
+        "type": "String"
+      }
+    }
+  },
+  "maxSelectConversationLimit": "最多只能选择{number}个会话",
+  "@maxSelectConversationLimit": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "webConnectError": "页面加载失败"
 }

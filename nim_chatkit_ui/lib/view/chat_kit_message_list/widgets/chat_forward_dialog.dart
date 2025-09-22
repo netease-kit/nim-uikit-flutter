@@ -11,6 +11,7 @@ import 'package:nim_chatkit/model/contact_info.dart';
 import 'package:nim_core_v2/nim_core.dart';
 
 import '../../../l10n/S.dart';
+import '../../../model/forward/forward_selected_beam.dart';
 
 ///弹出转发消息的对话框
 ///[context] 上下文
@@ -39,7 +40,7 @@ Future<ForwardResult?> showChatForwardDialog(
           margin: EdgeInsets.only(left: 8),
           alignment: Alignment.centerLeft,
           child: Text(
-            team.name!,
+            team.name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(fontSize: 14, color: '#333333'.toColor()),
@@ -88,6 +89,170 @@ Future<ForwardResult?> showChatForwardDialog(
                   avatar: user.user.avatar,
                   name: user.getName(),
                   bgCode: AvatarColor.avatarColor(content: user.user.accountId),
+                ),
+              );
+            }),
+      );
+    }
+
+    return Container();
+  }
+
+  Widget _getContent(double width) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          S.of(context).messageForwardTo,
+          style: TextStyle(fontSize: 16, color: '#333333'.toColor()),
+        ),
+        Container(height: 16),
+        _getTargetUser(),
+        Container(height: 12),
+        Container(
+          padding: EdgeInsets.only(left: 12, right: 12, top: 7, bottom: 9),
+          color: '#F2F4F5'.toColor(),
+          height: 38,
+          width: width,
+          child: getSingleMiddleEllipsisText(contentStr,
+              endLen: 5,
+              style: TextStyle(fontSize: 14, color: '#333333'.toColor())),
+        ),
+        Container(
+            margin: EdgeInsets.only(top: 12),
+            child: CupertinoTextField(
+              controller: _inputControl,
+              placeholder: S.of(context).chatMessagePostScript,
+              placeholderStyle: TextStyle(
+                  color: '#A6ADB6'.toColor(),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400),
+              style: TextStyle(
+                  color: '#333333'.toColor(),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400),
+              decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: '#A6ADB6'.toColor())),
+            ))
+      ],
+    );
+  }
+
+  return showDialog(
+      context: context,
+      builder: (context) {
+        double dialogWidth = MediaQuery.of(context).size.width;
+        return SimpleDialog(
+            backgroundColor: Colors.white,
+            contentPadding: EdgeInsets.zero,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10.0),
+            ),
+            children: [
+              Padding(
+                padding: EdgeInsets.all(14),
+                child: _getContent(dialogWidth - 28),
+              ),
+              Container(height: 1, color: '#E1E6E8'.toColor()),
+              SizedBox(
+                height: 50,
+                child: Row(
+                  children: [
+                    Expanded(
+                        child: TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pop<ForwardResult>(
+                                  ForwardResult(result: false));
+                            },
+                            child: Text(
+                              S.of(context).messageCancel,
+                              style: const TextStyle(
+                                  fontSize: 17,
+                                  color: CommonColors.color_666666),
+                            ))),
+                    Container(
+                      width: 1,
+                      height: 50,
+                      color: '#E1E6E8'.toColor(),
+                    ),
+                    Expanded(
+                        child: TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pop<ForwardResult>(
+                                  ForwardResult(
+                                      result: true,
+                                      postScript: _inputControl.text));
+                            },
+                            child: Text(
+                              S.of(context).chatMessageSend,
+                              style: const TextStyle(
+                                  fontSize: 17,
+                                  color: CommonColors.color_007aff),
+                            ))),
+                  ],
+                ),
+              ),
+            ]);
+      });
+}
+
+///弹出转发消息的对话框
+///适配合并转发器锁需要的新弹框
+///[context] 上下文
+///[contentStr] 转发的消息内容
+///[contacts] 转发的联系人
+///[team] 转发的群组
+Future<ForwardResult?> showChatForwardNewDialog(
+    {required BuildContext context,
+    required String contentStr,
+    List<SelectedBeam>? selectedBeams}) async {
+  TextEditingController _inputControl = TextEditingController();
+
+  Widget _getTargetUser() {
+    if (selectedBeams != null && selectedBeams.length == 1) {
+      var selected = selectedBeams[0];
+      return Row(children: [
+        Avatar(
+          height: 32,
+          width: 32,
+          avatar: selected.avatar,
+          name: selected.name,
+          bgCode: AvatarColor.avatarColor(content: selected.sessionId),
+        ),
+        Expanded(
+            child: Container(
+          margin: EdgeInsets.only(left: 8),
+          alignment: Alignment.centerLeft,
+          child: Text(
+            selected.name ?? selected.sessionId!,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 14, color: '#333333'.toColor()),
+          ),
+        ))
+      ]);
+    }
+    if (selectedBeams?.isNotEmpty == true) {
+      return Container(
+        height: 40,
+        width: 300,
+        child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: selectedBeams!.length,
+            shrinkWrap: true,
+            itemBuilder: (context, index) {
+              var selected = selectedBeams[index];
+              return Container(
+                padding: EdgeInsets.only(right: 10),
+                child: Avatar(
+                  height: 32,
+                  width: 32,
+                  avatar: selected.avatar,
+                  name: selected.name,
+                  bgCode: AvatarColor.avatarColor(content: selected.sessionId),
                 ),
               );
             }),

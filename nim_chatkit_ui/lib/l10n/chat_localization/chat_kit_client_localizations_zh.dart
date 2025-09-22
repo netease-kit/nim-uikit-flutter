@@ -2,6 +2,8 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
 import 'chat_kit_client_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -586,4 +588,64 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
 
   @override
   String get chatUserOffline => '[离线]';
+
+  @override
+  String get forwardSelect => '选择';
+
+  @override
+  String get multiSelect => '多选';
+
+  @override
+  String get forwardSearch => '搜索';
+
+  @override
+  String get forwardRecentForward => '最近转发';
+
+  @override
+  String get forwardRecentConversation => '最近会话';
+
+  @override
+  String get forwardMyFriends => '我的好友';
+
+  @override
+  String get forwardTeam => '我的群聊';
+
+  @override
+  String get forwardConversationEmpty => '暂无会话';
+
+  @override
+  String get forwardContactEmpty => '暂无好友';
+
+  @override
+  String get forwardTeamEmpty => '暂无群组';
+
+  @override
+  String get messageSure => '确定';
+
+  @override
+  String get chatMessageCallError => '呼叫出错';
+
+  @override
+  String get chatMessageCopyNumber => '复制号码';
+
+  @override
+  String get chatMessageCall => '呼叫';
+
+  @override
+  String messagePhoneCallTips(String number) {
+    return '$number可能是一个电话号码，你可以';
+  }
+
+  @override
+  String searchResultEmpty(String keyword) {
+    return '未搜索到$keyword相关结果';
+  }
+
+  @override
+  String maxSelectConversationLimit(String number) {
+    return '最多只能选择$number个会话';
+  }
+
+  @override
+  String get webConnectError => '页面加载失败';
 }

@@ -1086,6 +1086,114 @@ abstract class ChatKitClientLocalizations {
   /// In en, this message translates to:
   /// **'[Offline]'**
   String get chatUserOffline;
+
+  /// No description provided for @forwardSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get forwardSelect;
+
+  /// No description provided for @multiSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Multi-Select'**
+  String get multiSelect;
+
+  /// No description provided for @forwardSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get forwardSearch;
+
+  /// No description provided for @forwardRecentForward.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Forward'**
+  String get forwardRecentForward;
+
+  /// No description provided for @forwardRecentConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Chat'**
+  String get forwardRecentConversation;
+
+  /// No description provided for @forwardMyFriends.
+  ///
+  /// In en, this message translates to:
+  /// **'Friends'**
+  String get forwardMyFriends;
+
+  /// No description provided for @forwardTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'Teams'**
+  String get forwardTeam;
+
+  /// No description provided for @forwardConversationEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No Conversation'**
+  String get forwardConversationEmpty;
+
+  /// No description provided for @forwardContactEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No Friend'**
+  String get forwardContactEmpty;
+
+  /// No description provided for @forwardTeamEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No Team'**
+  String get forwardTeamEmpty;
+
+  /// No description provided for @messageSure.
+  ///
+  /// In en, this message translates to:
+  /// **'Sure'**
+  String get messageSure;
+
+  /// No description provided for @chatMessageCallError.
+  ///
+  /// In en, this message translates to:
+  /// **'Call Error'**
+  String get chatMessageCallError;
+
+  /// No description provided for @chatMessageCopyNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Number'**
+  String get chatMessageCopyNumber;
+
+  /// No description provided for @chatMessageCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get chatMessageCall;
+
+  /// No description provided for @messagePhoneCallTips.
+  ///
+  /// In en, this message translates to:
+  /// **'{number} Maybe a phone number,you can'**
+  String messagePhoneCallTips(String number);
+
+  /// No description provided for @searchResultEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Have no result for {keyword}'**
+  String searchResultEmpty(String keyword);
+
+  /// No description provided for @maxSelectConversationLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Can not select more than {number} chats'**
+  String maxSelectConversationLimit(String number);
+
+  /// No description provided for @webConnectError.
+  ///
+  /// In en, this message translates to:
+  /// **'Web view loading error'**
+  String get webConnectError;
 }
 
 class _ChatKitClientLocalizationsDelegate

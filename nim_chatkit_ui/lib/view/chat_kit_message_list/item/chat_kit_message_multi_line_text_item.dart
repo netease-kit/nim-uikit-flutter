@@ -59,8 +59,11 @@ class ChatKitMessageMultiLineState extends State<ChatKitMessageMultiLineItem> {
     if (matches.isNotEmpty) {
       for (final match in matches) {
         if (match.start > preIndex) {
-          spans.addAll(ChatMessageHelper.textSpan(
-              context, text.substring(preIndex, match.start), preIndex,
+          spans.addAll(ChatMessageHelper.buildTextSpansWithPhoneAndUrlDetection(
+              context,
+              widget.message.isSelf ?? false,
+              text.substring(preIndex, match.start),
+              preIndex,
               end: match.start,
               chatUIConfig: widget.chatUIConfig,
               remoteExtension: remoteExtension));
@@ -69,20 +72,25 @@ class ChatKitMessageMultiLineState extends State<ChatKitMessageMultiLineItem> {
         if (span != null) {
           spans.add(span);
         } else if (match.group(0)?.isNotEmpty == true) {
-          spans.addAll(ChatMessageHelper.textSpan(context, match.group(0)!, 0,
+          spans.addAll(ChatMessageHelper.buildTextSpansWithPhoneAndUrlDetection(
+              context, widget.message.isSelf ?? false, match.group(0)!, 0,
               chatUIConfig: widget.chatUIConfig,
               remoteExtension: remoteExtension));
         }
         preIndex = match.end;
       }
       if (preIndex < text.length) {
-        spans.addAll(ChatMessageHelper.textSpan(
-            context, text.substring(preIndex, text.length), preIndex,
+        spans.addAll(ChatMessageHelper.buildTextSpansWithPhoneAndUrlDetection(
+            context,
+            widget.message.isSelf ?? false,
+            text.substring(preIndex, text.length),
+            preIndex,
             chatUIConfig: widget.chatUIConfig,
             remoteExtension: remoteExtension));
       }
     } else {
-      spans.addAll(ChatMessageHelper.textSpan(context, text, 0,
+      spans.addAll(ChatMessageHelper.buildTextSpansWithPhoneAndUrlDetection(
+          context, widget.message.isSelf ?? false, text, 0,
           chatUIConfig: widget.chatUIConfig, remoteExtension: remoteExtension));
     }
     return Container(
@@ -98,8 +106,13 @@ class ChatKitMessageMultiLineState extends State<ChatKitMessageMultiLineItem> {
               overflow:
                   (widget.titleMaxLines != null) ? TextOverflow.ellipsis : null,
               style: TextStyle(
-                  fontSize: widget.chatUIConfig?.messageTextSize ?? 16,
-                  color: widget.chatUIConfig?.messageTextColor ??
+                  fontSize: (widget.message.isSelf == true
+                          ? widget.chatUIConfig?.sendMessageTextSize
+                          : widget.chatUIConfig?.receiveMessageTextSize) ??
+                      16,
+                  color: (widget.message.isSelf == true
+                          ? widget.chatUIConfig?.sendMessageTextColor
+                          : widget.chatUIConfig?.receiveMessageTextColor) ??
                       CommonColors.color_333333,
                   fontWeight: FontWeight.w600)),
           if (text.isNotEmpty)

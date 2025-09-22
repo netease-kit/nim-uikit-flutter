@@ -10,6 +10,7 @@ import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_common_ui/widgets/keepalive_wrapper.dart';
 import 'package:netease_common_ui/widgets/radio_button.dart';
+import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
 import 'package:nim_chatkit/manager/ai_user_manager.dart';
@@ -240,49 +241,37 @@ class _ContactSelectorState extends State<ContactKitSelectorPage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return TransparentScaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded),
-          onPressed: () {
-            Navigator.pop(context);
+      title: S.of(context).contactUserSelector,
+      centerTitle: true,
+      elevation: 0,
+      actions: [
+        InkWell(
+          onTap: () async {
+            if (selectedUser.isEmpty) {
+              Fluttertoast.showToast(msg: S.of(context).contactSelectEmptyTip);
+              return;
+            }
+            if (!(await haveConnectivity())) {
+              return;
+            }
+            Navigator.pop(
+                context,
+                widget.returnContact == true
+                    ? selectedUser
+                    : selectedUser.map((e) => e.user.accountId!).toList());
           },
-        ),
-        title: Text(
-          S.of(context).contactUserSelector,
-          style: TextStyle(fontSize: 16, color: '#333333'.toColor()),
-        ),
-        centerTitle: true,
-        elevation: 0,
-        actions: [
-          InkWell(
-            onTap: () async {
-              if (selectedUser.isEmpty) {
-                Fluttertoast.showToast(
-                    msg: S.of(context).contactSelectEmptyTip);
-                return;
-              }
-              if (!(await haveConnectivity())) {
-                return;
-              }
-              Navigator.pop(
-                  context,
-                  widget.returnContact == true
-                      ? selectedUser
-                      : selectedUser.map((e) => e.user.accountId!).toList());
-            },
-            child: Container(
-              alignment: Alignment.center,
-              padding: EdgeInsets.only(right: 20),
-              child: Text(
-                S.of(context).contactSureWithCount('${selectedUser.length}'),
-                style: TextStyle(fontSize: 16, color: '#337EFF'.toColor()),
-              ),
+          child: Container(
+            alignment: Alignment.center,
+            padding: EdgeInsets.only(right: 20),
+            child: Text(
+              S.of(context).contactSureWithCount('${selectedUser.length}'),
+              style: TextStyle(fontSize: 16, color: '#337EFF'.toColor()),
             ),
-          )
-        ],
-      ),
+          ),
+        )
+      ],
       body: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [

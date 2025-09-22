@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/im_kit_config_center.dart';
+import 'package:nim_chatkit/repo/team_repo.dart';
 import 'package:nim_chatkit/service_locator.dart';
 import 'package:nim_chatkit/services/contact/contact_provider.dart';
 import 'package:nim_chatkit/services/login/im_login_service.dart';
@@ -48,6 +49,14 @@ class ConversationViewModel extends ChangeNotifier {
   }
 
   Comparator<ConversationInfo> _comparator = (a, b) {
+    // 先比较 stickTop，true 在前
+    if (a.conversation.stickTop == true && b.conversation.stickTop != true) {
+      return -1;
+    }
+    if (a.conversation.stickTop != true && b.conversation.stickTop == true) {
+      return 1;
+    }
+    // stickTop 相同，比较 sortOrder（降序）
     return (b.conversation.sortOrder ?? 0) - (a.conversation.sortOrder ?? 0);
   };
 
@@ -181,7 +190,7 @@ class ConversationViewModel extends ChangeNotifier {
     subscriptions
         .add(ConversationRepo.onConversationCreated().listen((event) async {
       _logI('onConversationCreated ${event.conversationId}');
-      if (!_isValidConversation(event)) {
+      if (!(await _isValidConversation(event))) {
         deleteConversationById(event.conversationId);
         return;
       }
@@ -191,10 +200,10 @@ class ConversationViewModel extends ChangeNotifier {
         conversationInfo.haveBeenAit = await AitServer.instance
             .isAitConversation(event.conversationId, IMKitClient.account()!);
       }
+      _addItem(conversationInfo);
       if (event.type == NIMConversationType.p2p) {
         subscribeP2PUserStatus([conversationInfo]);
       }
-      _addItem(conversationInfo);
       doUnreadCallback();
     }));
 
@@ -277,7 +286,7 @@ class ConversationViewModel extends ChangeNotifier {
 
   ///是否合法的群
   ///如果最后一条消息是群退出，解散，被踢的消息，则非法
-  bool _isValidConversation(NIMConversation conversation) {
+  Future<bool> _isValidConversation(NIMConversation conversation) async {
     if (conversation.lastMessage?.messageType == NIMMessageType.notification &&
         conversation.lastMessage?.attachment
             is NIMMessageNotificationAttachment) {
@@ -288,6 +297,14 @@ class ConversationViewModel extends ChangeNotifier {
           (notificationType == NIMMessageNotificationType.teamDismiss ||
               notificationType == NIMMessageNotificationType.teamKick ||
               notificationType == NIMMessageNotificationType.teamLeave)) {
+        return false;
+      }
+    }
+    if (conversation.type == NIMConversationType.team) {
+      final team = await TeamRepo.getTeamInfo(
+          ChatKitUtils.getConversationTargetId(conversation.conversationId),
+          NIMTeamType.typeNormal);
+      if (team?.isValidTeam != true) {
         return false;
       }
     }
@@ -336,20 +353,36 @@ class ConversationViewModel extends ChangeNotifier {
           conversationInfo.haveBeenAit = true;
         }
       }
+      if (conversationInfo.getConversationType() == NIMConversationType.p2p) {
+        conversationInfo.isOnline = _conversationList[index].isOnline;
+      }
       _conversationList.removeAt(index);
       int insertIndex = _searchComparatorIndex(conversationInfo);
       _logI(
           'insertIndex:$insertIndex unread:${conversationInfo.conversation.unreadCount} haveBeenAit:${conversationInfo.haveBeenAit}');
       _conversationList.insert(insertIndex, conversationInfo);
     } else {
-      int insertIndex = _searchComparatorIndex(conversationInfo);
-      _conversationList.insert(insertIndex, conversationInfo);
+      bool isValid = true;
+      if (Platform.isIOS) {
+        final conversationUpdated = await ConversationRepo.getConversation(
+            conversationInfo.conversation.conversationId);
+        isValid = conversationUpdated.data != null;
+      }
+      if (isValid) {
+        int insertIndex = _searchComparatorIndex(conversationInfo);
+        _conversationList.insert(insertIndex, conversationInfo);
+        if (conversationInfo.getConversationType() == NIMConversationType.p2p) {
+          subscribeP2PUserStatus([conversationInfo]);
+        }
+      }
     }
     notifyListeners();
   }
 
   _deleteItem(List<String> idList) {
     for (String conversationId in idList) {
+      // 清除@消息
+      AitServer.instance.clearAitMessage(conversationId);
       int index = _conversationList.indexWhere(
           (element) => element.getConversationId() == conversationId);
       if (index > -1) {
@@ -393,8 +426,19 @@ class ConversationViewModel extends ChangeNotifier {
             }
           }
         }
+        List<String> onlineUserList = _conversationList
+            .where((conversation) => conversation.isOnline)
+            .map((e) => e.targetId)
+            .toList();
         _conversationList.clear();
         _conversationList.addAll(resultList);
+        for (var conversation in _conversationList) {
+          if (conversation.conversation.type == NIMConversationType.p2p) {
+            if (onlineUserList.contains(conversation.targetId)) {
+              conversation.isOnline = true;
+            }
+          }
+        }
         subscribeP2PUserStatus(resultList);
         notifyListeners();
       }

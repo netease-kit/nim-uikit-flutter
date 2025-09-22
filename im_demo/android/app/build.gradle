@@ -43,9 +43,9 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    compileSdkVersion 34
+    compileSdkVersion 35
 
-    buildToolsVersion "34.0.0"
+    buildToolsVersion "35.0.0"
 
     namespace 'com.netease.yunxin.app.flutter.im'
 

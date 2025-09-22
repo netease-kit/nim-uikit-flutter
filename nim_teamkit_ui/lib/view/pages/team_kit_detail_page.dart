@@ -9,6 +9,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
+import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:nim_chatkit/repo/team_repo.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_chatkit/service_locator.dart';
@@ -36,6 +37,8 @@ class _TeamKitDetailPageState extends State<TeamKitDetailPage> {
 
   String? teamOwnerName;
 
+  final int errorCodeHaveEnter = 109311;
+
   @override
   void initState() {
     super.initState();
@@ -62,15 +65,17 @@ class _TeamKitDetailPageState extends State<TeamKitDetailPage> {
     }));
   }
 
+  ///获取群主
   void getTeamOwner() async {
     if (team?.ownerAccountId != null) {
       final teamMember = (await NimCore.instance.teamService
               .getTeamMemberListByIds(
                   widget.teamId, team!.teamType, [team!.ownerAccountId]))
           .data
-          ?.first;
+          ?.firstOrNull;
       if (teamMember?.teamNick?.isNotEmpty == true) {
         teamOwnerName = teamMember?.teamNick;
+        setState(() {});
         return;
       } else {
         final userInfo = (await NimCore.instance.userService
@@ -79,6 +84,7 @@ class _TeamKitDetailPageState extends State<TeamKitDetailPage> {
             ?.first;
 
         teamOwnerName = userInfo?.name ?? team!.ownerAccountId;
+        setState(() {});
       }
     }
   }
@@ -151,16 +157,22 @@ class _TeamKitDetailPageState extends State<TeamKitDetailPage> {
     TeamRepo.applyJoinTeam(widget.teamId, NIMTeamType.typeNormal)
         .then((result) {
       if (result.isSuccess) {
-        if (team?.joinMode == NIMTeamJoinMode.joinModeFree) {
+        if (result.data?.joinMode == NIMTeamJoinMode.joinModeFree) {
           //直接去聊天页面
           goToTeamChat(context, widget.teamId);
         } else {
-          Navigator.pop(context);
+          // Navigator.pop(context);
           Fluttertoast.showToast(
               msg: S.of(context).teamJoinApplicationHaveSent);
         }
       } else {
-        Fluttertoast.showToast(msg: result.errorDetails ?? '');
+        if (result.code == errorCodeHaveEnter) {
+          //直接去聊天页面
+          goToTeamChat(context, widget.teamId);
+        } else {
+          Fluttertoast.showToast(
+              msg: S.of(context).teamJoinApplicationSendError);
+        }
       }
     });
   }
@@ -181,17 +193,10 @@ class _TeamKitDetailPageState extends State<TeamKitDetailPage> {
       color: Color(0xffeff1f4),
     );
 
-    return Scaffold(
+    return TransparentScaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-        elevation: 0,
-      ),
+      elevation: 0,
+      title: '',
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

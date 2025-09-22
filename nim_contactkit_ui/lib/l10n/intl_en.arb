@@ -188,5 +188,9 @@
         "type": "String"
       }
     }
-  }
+  },
+  "teamMemberLimited": "Team member limited.",
+  "teamMemberAlreadyExist": "Team member already exist",
+  "teamNotExist": "Team have Dismissed",
+  "teamVerifyNoPermission": "Have No Permission"
 }

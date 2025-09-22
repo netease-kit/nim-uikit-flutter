@@ -15,6 +15,7 @@ import 'package:im_demo/src/mine/about.dart';
 import 'package:im_demo/src/mine/setting/mine_setting.dart';
 import 'package:im_demo/src/mine/user_info_page.dart';
 import 'package:nim_core_v2/nim_core.dart';
+import 'package:nim_chatkit/repo/config_repo.dart';
 
 class MinePage extends StatefulWidget {
   const MinePage({Key? key}) : super(key: key);
@@ -28,7 +29,7 @@ class _MinePageState extends State<MinePage> {
 
   IMLoginService _loginService = getIt<IMLoginService>();
 
-  StreamSubscription? _sub;
+  List<StreamSubscription> _subs = [];
 
   @override
   void initState() {
@@ -38,12 +39,22 @@ class _MinePageState extends State<MinePage> {
 
     _refreshUserInfo();
 
-    _sub = NimCore.instance.loginService.onDataSync.listen((event) {
-      if (event.type == NIMDataSyncType.nimDataSyncMain &&
-          event.state == NIMDataSyncState.nimDataSyncStateCompleted) {
-        _refreshUserInfo();
-      }
-    });
+    _subs.addAll([
+      NimCore.instance.loginService.onDataSync.listen((event) {
+        if (event.type == NIMDataSyncType.nimDataSyncMain &&
+            event.state == NIMDataSyncState.nimDataSyncStateCompleted) {
+          _refreshUserInfo();
+        }
+      }),
+      NimCore.instance.userService.onUserProfileChanged.listen((event) {
+        for (var user in event) {
+          if (user.accountId == _userInfo?.accountId) {
+            _userInfo = user;
+            setState(() {});
+          }
+        }
+      })
+    ]);
   }
 
   void _refreshUserInfo() {
@@ -56,7 +67,8 @@ class _MinePageState extends State<MinePage> {
 
   @override
   void dispose() {
-    _sub?.cancel();
+    _subs.length > 0 ? _subs.forEach((element) => element.cancel()) : null;
+    _subs.clear();
     super.dispose();
   }
 
@@ -81,9 +93,9 @@ class _MinePageState extends State<MinePage> {
           InkWell(
             onTap: () {
               Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const UserInfoPage()))
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const UserInfoPage()))
                   .then((value) {
                 setState(() {});
               });

@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_contactkit_ui/page/viewmodel/team_list_viewmodel.dart';
 import 'package:nim_core_v2/nim_core.dart';
@@ -80,25 +81,11 @@ class _TeamListPageState extends State<ContactKitTeamListPage> {
       builder: (context, child) {
         List<NIMTeam> teams =
             context.watch<TeamListViewModel>().teamList.toList();
-        return Scaffold(
+        return TransparentScaffold(
           backgroundColor: Colors.white,
-          appBar: AppBar(
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_rounded),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
-            title: Text(
-              S.of(context).contactTeam,
-              style: TextStyle(
-                  fontSize: 16,
-                  color: '#333333'.toColor(),
-                  fontWeight: FontWeight.bold),
-            ),
-            centerTitle: true,
-            elevation: 0,
-          ),
+          title: S.of(context).contactTeam,
+          centerTitle: true,
+          elevation: 0,
           body: ListView.separated(
             itemBuilder: (context, index) {
               final team = teams[index];

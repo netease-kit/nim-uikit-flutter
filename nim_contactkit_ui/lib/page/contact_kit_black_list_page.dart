@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_chatkit/service_locator.dart';
@@ -98,45 +99,31 @@ class _BlackListPageState extends State<ContactKitBlackListPage> {
       builder: (context, child) {
         List<NIMUserInfo> users =
             context.watch<BlackListViewModel>().blackListUsers.toList();
-        return Scaffold(
+        return TransparentScaffold(
           backgroundColor: Colors.white,
-          appBar: AppBar(
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_rounded),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
-            title: Text(
-              S.of(context).contactBlackList,
-              style: TextStyle(
-                  fontSize: 16,
+          title: S.of(context).contactBlackList,
+          centerTitle: true,
+          elevation: 0,
+          actions: [
+            IconButton(
+                onPressed: () {
+                  //选择器
+                  goToContactSelector(context,
+                          filter: users.map((e) => e.accountId!).toList())
+                      .then((value) {
+                    if (value is List<String> && value.isNotEmpty) {
+                      context
+                          .read<BlackListViewModel>()
+                          .addUserListToBlackList(value);
+                    }
+                  });
+                },
+                icon: Icon(
+                  Icons.add,
+                  size: 26,
                   color: '#333333'.toColor(),
-                  fontWeight: FontWeight.bold),
-            ),
-            centerTitle: true,
-            elevation: 0,
-            actions: [
-              IconButton(
-                  onPressed: () {
-                    //选择器
-                    goToContactSelector(context,
-                            filter: users.map((e) => e.accountId!).toList())
-                        .then((value) {
-                      if (value is List<String> && value.isNotEmpty) {
-                        context
-                            .read<BlackListViewModel>()
-                            .addUserListToBlackList(value);
-                      }
-                    });
-                  },
-                  icon: Icon(
-                    Icons.add,
-                    size: 26,
-                    color: '#333333'.toColor(),
-                  ))
-            ],
-          ),
+                ))
+          ],
           body: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

@@ -357,8 +357,20 @@ class _BottomInputFieldState extends State<BottomInputField>
       return EmojiPanel(
         onEmojiSelected: (emoji) {
           final text = inputController.text;
-          inputController.text = "$text$emoji";
+          final selection = inputController.selection;
+          int cursorPos = selection.baseOffset;
+          if (cursorPos < 0) {
+            inputController.text = emoji;
+          } else {
+            inputController.text =
+                (cursorPos > 0 ? text.substring(0, cursorPos) : '') +
+                    emoji +
+                    (cursorPos < text.length ? text.substring(cursorPos) : '');
+          }
           inputText = inputController.text;
+          inputController.selection = TextSelection.fromPosition(TextPosition(
+              offset: (cursorPos < 0 ? 0 : cursorPos) + emoji.length));
+
           Future.delayed(Duration(milliseconds: 20), () {
             _scrollController
                 .jumpTo(_scrollController.position.maxScrollExtent);
@@ -366,33 +378,42 @@ class _BottomInputFieldState extends State<BottomInputField>
         },
         onEmojiDelete: () {
           final selection = inputController.selection;
-
           int cursorPos = selection.baseOffset;
-
           String originText = inputController.text;
 
           if (cursorPos < 0) {
-            cursorPos = inputController.text.length;
+            cursorPos = originText.length;
           }
-
           String text;
+          int newCursorPos;
+
           final emojiStartIndex = _findMatchingBracket(originText, cursorPos);
           if (emojiStartIndex >= 0) {
+            // 删除表情
             text = (emojiStartIndex > 0
                     ? originText.substring(0, emojiStartIndex)
                     : '') +
                 (cursorPos >= originText.length
                     ? ''
                     : originText.substring(cursorPos));
-          } else {
-            text = originText;
+            newCursorPos = emojiStartIndex;
+          } else if (cursorPos > 0) {
+            // 删除普通字符
             text = originText.substring(0, cursorPos - 1) +
                 (cursorPos < originText.length
                     ? originText.substring(cursorPos)
                     : '');
+            newCursorPos = cursorPos - 1;
+          } else {
+            // 光标在最前面，无需删除
+            text = originText;
+            newCursorPos = cursorPos;
           }
-          inputController.text = "$text";
-          inputText = inputController.text;
+
+          inputController.text = text;
+          inputController.selection =
+              TextSelection.collapsed(offset: newCursorPos);
+          inputText = text;
         },
         onEmojiSendClick: _sendTextMessage,
       );
@@ -706,6 +727,11 @@ class _BottomInputFieldState extends State<BottomInputField>
           inputController.selection =
               TextSelection.fromPosition(TextPosition(offset: indexMoved));
         }
+      }
+      //处理剪切的case
+      if (inputController.text.isEmpty &&
+          _aitManager?.haveAitMember() == true) {
+        _aitManager?.cleanAit();
       }
     });
     titleController.addListener(() {
