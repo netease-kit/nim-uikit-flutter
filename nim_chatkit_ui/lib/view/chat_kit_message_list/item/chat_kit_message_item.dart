@@ -237,8 +237,27 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
     var message = widget.chatMessage;
     return isSelf() &&
         revokedMessageInfo != null &&
-        DateTime.now().millisecondsSinceEpoch - message.nimMessage.createTime! <
+        DateTime.now().millisecondsSinceEpoch -
+                (revokedMessageInfo.revokeTime ??
+                    message.nimMessage.createTime!) <
             reeditTime;
+  }
+
+  double getRevokeMessageTextSize() {
+    if (isSelf() && widget.chatUIConfig?.sendMessageTextSize != null) {
+      return widget.chatUIConfig!.sendMessageTextSize!;
+    } else {
+      return widget.chatUIConfig?.receiveMessageTextSize ?? 16;
+    }
+  }
+
+  Color getRevokeMessageTextColor() {
+    if (isSelf() && widget.chatUIConfig?.sendMessageTextColor != null) {
+      return widget.chatUIConfig!.sendMessageTextColor!;
+    } else {
+      return widget.chatUIConfig?.receiveMessageTextColor ??
+          '#333333'.toColor();
+    }
   }
 
   Widget _buildRevokedMessage(ChatMessage message) {
@@ -262,7 +281,9 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(S.of().chatMessageHaveBeenRevoked,
-              style: TextStyle(fontSize: 16, color: '#333333'.toColor())),
+              style: TextStyle(
+                  fontSize: getRevokeMessageTextSize(),
+                  color: getRevokeMessageTextColor())),
           if (_showReeditText(revokedMessageInfo))
             InkWell(
               onTap: () {
@@ -271,7 +292,9 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
               },
               child: Text(S.of().chatMessageReedit,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: '#1861DF'.toColor())),
+                  style: TextStyle(
+                      fontSize: getRevokeMessageTextSize(),
+                      color: '#1861DF'.toColor())),
             )
         ],
       ),

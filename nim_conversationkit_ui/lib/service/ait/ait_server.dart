@@ -82,7 +82,8 @@ class AitServer {
             remoteExtension = jsonDecode(messageNotify.serverExtension!);
           }
           if (remoteExtension?[ChatMessage.keyAitMsg] != null) {
-            var aitMap = (remoteExtension as Map).cast<String, dynamic>();
+            var aitMap = (remoteExtension![ChatMessage.keyAitMsg] as Map)
+                .cast<String, dynamic>();
             final aitContact = AitContactsModel.fromMap(aitMap);
             final myId = getIt<IMLoginService>().userInfo?.accountId;
             var conversationId = messageNotify.messageRefer?.conversationId;

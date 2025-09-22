@@ -2,6 +2,7 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
@@ -133,30 +134,23 @@ class _MessageAckState extends State<ChatMessageAckPage> {
     return DefaultTabController(
         length: 2,
         initialIndex: 0,
-        child: Scaffold(
-          appBar: AppBar(
-            title: Text(
-              S.of(context).messageReadStatus,
-              style: TextStyle(fontSize: 16, color: '#333333'.toColor()),
-            ),
-            bottom: TabBar(
-              unselectedLabelColor: '#333333'.toColor(),
-              labelColor: '#337EFF'.toColor(),
-              tabs: [
-                Text(
-                  S
-                      .of(context)
-                      .messageReadWithNumber(readList.length.toString()),
-                ),
-                Text(
-                  S
-                      .of(context)
-                      .messageUnreadWithNumber(unreadList.length.toString()),
-                )
-              ],
-            ),
-            centerTitle: true,
+        child: TransparentScaffold(
+          title: S.of(context).messageReadStatus,
+          bottom: TabBar(
+            unselectedLabelColor: '#333333'.toColor(),
+            labelColor: '#337EFF'.toColor(),
+            tabs: [
+              Text(
+                S.of(context).messageReadWithNumber(readList.length.toString()),
+              ),
+              Text(
+                S
+                    .of(context)
+                    .messageUnreadWithNumber(unreadList.length.toString()),
+              )
+            ],
           ),
+          centerTitle: true,
           body: TabBarView(children: [
             KeepAliveWrapper(child: _getAckList(readList, true)),
             KeepAliveWrapper(child: _getAckList(unreadList, false)),

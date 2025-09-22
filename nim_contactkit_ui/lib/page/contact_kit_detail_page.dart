@@ -12,6 +12,7 @@ import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
+import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:netease_common_ui/widgets/update_text_info_page.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
@@ -302,17 +303,9 @@ class _ContactKitDetailPageState extends State<ContactKitDetailPage> {
       color: Color(0xffF5F8FC),
     );
 
-    return Scaffold(
+    return TransparentScaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-        elevation: 0,
-      ),
+      title: '',
       body: FutureBuilder<ContactInfo?>(
         future: _getFriend(widget.accId),
         builder: (context, snapshot) {
@@ -355,8 +348,6 @@ class _ContactKitDetailPageState extends State<ContactKitDetailPage> {
                                       maxLines: 1,
                                       privilege: true,
                                       onSave: _saveAlias,
-                                      leading:
-                                          Icon(Icons.arrow_back_ios_rounded),
                                       sureStr: S.of(context).contactSave,
                                     ))).then((value) {
                           setState(() {});

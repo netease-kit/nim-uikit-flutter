@@ -36,6 +36,18 @@ class ValidationMessageViewModel extends ChangeNotifier {
   //失效，已经在群里了
   static const alreadyInTeamCode = 109311;
 
+  //同意邀请时群成员达到上限
+  static const teamInvitationNotExist = 109313;
+
+  //接受邀请时群成员达到上限
+  static const teamMemberLimitInvited = 108437;
+
+  //群不存在
+  static const teamNotExist = 108404;
+
+  //暂无权限
+  static const noPermission = 109432;
+
   bool haveMore = true;
 
   NIMFriendAddApplication? lastMessage;
@@ -203,10 +215,20 @@ class ValidationMessageViewModel extends ChangeNotifier {
         // 该验证消息已在其他端处理
         Fluttertoast.showToast(msg: S.of(context).verifyMessageHaveBeenHandled);
         _handTeamActionExpired(mergeMessage, context);
+      } else if (result.code == teamMemberLimitInvited) {
+        Fluttertoast.showToast(msg: S.of(context).teamMemberLimited);
+      } else if (result.code == teamInvitationNotExist) {
+        Fluttertoast.showToast(msg: S.of(context).verifyMessageHaveBeenHandled);
+        _handTeamActionExpired(mergeMessage, context);
+      } else if (result.code == alreadyInTeamCode) {
+        _handTeamActionExpired(mergeMessage, context);
+        Fluttertoast.showToast(msg: S.of(context).teamMemberAlreadyExist);
+      } else if (result.code == teamNotExist) {
+        _handTeamActionExpired(mergeMessage, context);
+        Fluttertoast.showToast(msg: S.of(context).teamNotExist);
+      } else if (result.code == noPermission) {
+        Fluttertoast.showToast(msg: S.of(context).teamVerifyNoPermission);
       } else {
-        if (result.code == alreadyInTeamCode) {
-          _handTeamActionExpired(mergeMessage, context);
-        }
         Fluttertoast.showToast(
             msg: S.of(context).operationFailed(result.code.toString()));
       }
@@ -375,10 +397,20 @@ class ValidationMessageViewModel extends ChangeNotifier {
         // 该验证消息已在其他端处理
         Fluttertoast.showToast(msg: S.of(context).verifyMessageHaveBeenHandled);
         _handTeamActionExpired(messageMerged, context);
+      } else if (result.code == teamMemberLimitInvited) {
+        Fluttertoast.showToast(msg: S.of(context).teamMemberLimited);
+      } else if (result.code == teamInvitationNotExist) {
+        Fluttertoast.showToast(msg: S.of(context).verifyMessageHaveBeenHandled);
+        _handTeamActionExpired(messageMerged, context);
+      } else if (result.code == alreadyInTeamCode) {
+        _handTeamActionExpired(messageMerged, context);
+        Fluttertoast.showToast(msg: S.of(context).teamMemberAlreadyExist);
+      } else if (result.code == teamNotExist) {
+        _handTeamActionExpired(messageMerged, context);
+        Fluttertoast.showToast(msg: S.of(context).teamNotExist);
+      } else if (result.code == noPermission) {
+        Fluttertoast.showToast(msg: S.of(context).teamVerifyNoPermission);
       } else {
-        if (result.code == alreadyInTeamCode) {
-          _handTeamActionExpired(messageMerged, context);
-        }
         Fluttertoast.showToast(
             msg: S.of(context).operationFailed(result.code.toString()));
       }

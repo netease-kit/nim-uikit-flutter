@@ -7,15 +7,21 @@ import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:netease_common/netease_common.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_common_ui/widgets/common_browse_page.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/model/ait/ait_contacts_model.dart';
 import 'package:nim_chatkit/model/ait/ait_msg.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
 import 'package:nim_chatkit/model/custom_type_constant.dart';
+import 'package:nim_chatkit/model/recent_forward.dart';
 import 'package:nim_chatkit/model/team_models.dart';
+import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit/repo/config_repo.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_chatkit/service_locator.dart';
@@ -26,9 +32,12 @@ import 'package:nim_chatkit/message/message_helper.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_chatkit_ui/l10n/S.dart';
 import 'package:nim_chatkit_ui/view/input/emoji/emoji_text.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../model/forward/forward_selected_beam.dart';
 import '../view/chat_kit_message_list/item/chat_kit_message_multi_line_text_item.dart';
 import '../view/chat_kit_message_list/widgets/chat_forward_dialog.dart';
+import '../view/page/chat_forward_page.dart';
 import 'chat_message_user_helper.dart';
 import 'merge_message_helper.dart';
 import 'package:nim_core_v2/nim_core.dart';
@@ -39,6 +48,17 @@ import 'package:nim_core_v2/nim_core.dart';
 ///[conversationId] 会话id
 typedef ForwardMessageFunction = Function(String conversationId,
     {String? postScript, bool isLastUser});
+
+/// 电话号码正则表达式
+final RegExp phoneRegex = RegExp(
+  r'(?<![a-zA-Z0-9])(?:(?:\+86|86)[-\s]?)?1[3-9]\d{9}(?![a-zA-Z0-9])|(?<![a-zA-Z0-9])0\d{2,3}[-\s]?\d{7,8}(?![a-zA-Z0-9])',
+);
+
+/// URL链接正则表达式
+final RegExp urlRegex = RegExp(
+  r'https?://[^\s\u4e00-\u9fa5<>"\[\]{}|\\^`]+|www\.[a-zA-Z0-9][a-zA-Z0-9\-._]*\.[a-zA-Z]{2,6}(?:/[^\s\u4e00-\u9fa5<>"\[\]{}|\\^`]*)?',
+  caseSensitive: false,
+);
 
 class NotifyHelper {
   static Future<String> getNotificationText(NIMMessage message) async {
@@ -141,7 +161,8 @@ class NotifyHelper {
           fromName,
           getTeamUpdatePermissionName(
               attachment.updatedTeamInfo!.updateInfoMode!));
-    } else if (attachment.updatedTeamInfo?.agreeMode != null) {
+    } else if (attachment.updatedTeamInfo?.agreeMode != null &&
+        attachment.updatedTeamInfo?.agreeMode != NIMTeamAgreeMode.unknown) {
       if (attachment.updatedTeamInfo?.agreeMode ==
           NIMTeamAgreeMode.agreeModeAuth) {
         var fromName = await getTeamMemberDisplayName(tid, fromAccId);
@@ -447,6 +468,52 @@ class ChatMessageHelper {
     });
   }
 
+  /// 跳转转发选择器
+  static void showForwardSelector(
+      BuildContext context, ForwardMessageFunction forwardMessage,
+      {List<String>? filterUser,
+      required String sessionName,
+      ForwardType type = ForwardType.normal}) {
+    Navigator.push(context, MaterialPageRoute(builder: (context) {
+      return ChatForwardPage(
+        filterSession: filterUser,
+      );
+    })).then((selectedList) {
+      if (selectedList is List<SelectedBeam>) {
+        String forwardStr;
+        if (type == ForwardType.normal) {
+          forwardStr = S.of(context).messageForwardMessageTips(sessionName);
+        } else if (type == ForwardType.merge) {
+          forwardStr =
+              S.of(context).messageForwardMessageMergedTips(sessionName);
+        } else {
+          forwardStr =
+              S.of(context).messageForwardMessageOneByOneTips(sessionName);
+        }
+        showChatForwardNewDialog(
+                context: context,
+                contentStr: forwardStr,
+                selectedBeams: selectedList)
+            .then((result) async {
+          if (result != null && result.result == true) {
+            var recentList = selectedList
+                .map((selected) =>
+                    RecentForward(selected.sessionId!, selected.type))
+                .toList(growable: false);
+            ChatMessageRepo.saveRecentForward(recentList);
+            for (int i = 0; i < selectedList.length; i++) {
+              var selected = selectedList[i];
+              var conversationId = selected.conversationId;
+              forwardMessage(conversationId ?? '',
+                  postScript: result.postScript,
+                  isLastUser: i == selectedList.length - 1);
+            }
+          }
+        });
+      }
+    });
+  }
+
   //转发到群
   static void _goTeamSelector(
       BuildContext context, ForwardMessageFunction forwardMessage,
@@ -530,15 +597,363 @@ class ChatMessageHelper {
     return null;
   }
 
+  ///解析包含电话号码和URL链接的文本消息
+  static List<InlineSpan> buildTextSpansWithPhoneAndUrlDetection(
+    BuildContext context,
+    bool isSelf,
+    String text,
+    int startIndex, {
+    int? end,
+    ChatUIConfig? chatUIConfig,
+    dynamic remoteExtension,
+  }) {
+    List<InlineSpan> spans = [];
+
+    // 获取所有匹配项，URL优先匹配
+    List<TextMatch> matches = [];
+
+    // 首先添加URL匹配
+    urlRegex.allMatches(text).forEach((match) {
+      matches.add(TextMatch(
+        start: match.start,
+        end: match.end,
+        text: match.group(0)!,
+        type: MatchType.url,
+      ));
+    });
+
+    // 然后添加电话号码匹配
+    phoneRegex.allMatches(text).forEach((match) {
+      matches.add(TextMatch(
+        start: match.start,
+        end: match.end,
+        text: match.group(0)!,
+        type: MatchType.phone,
+      ));
+    });
+
+    // 如果没有匹配项，使用原有逻辑
+    if (matches.isEmpty) {
+      return ChatMessageHelper.textSpan(
+        context,
+        isSelf,
+        text,
+        startIndex,
+        end: end,
+        chatUIConfig: chatUIConfig,
+        remoteExtension: remoteExtension,
+      );
+    }
+
+    // 去重重叠的匹配项，URL优先
+    List<TextMatch> filteredMatches = removeOverlapping(matches);
+
+    // 定义文本字体大小和颜色
+    final textSize = (isSelf
+            ? chatUIConfig?.sendMessageTextSize
+            : chatUIConfig?.receiveMessageTextSize) ??
+        16;
+    final textAitColor =
+        chatUIConfig?.messageLinkColor ?? CommonColors.color_007aff;
+
+    int lastEnd = 0;
+    for (final match in filteredMatches) {
+      // 添加匹配项前的文本
+      if (match.start > lastEnd) {
+        spans.addAll(ChatMessageHelper.textSpan(
+          context,
+          isSelf,
+          text.substring(lastEnd, match.start),
+          startIndex + lastEnd,
+          chatUIConfig: chatUIConfig,
+          remoteExtension: remoteExtension,
+        ));
+      }
+
+      // 添加高亮文本（电话号码或URL）
+      spans.add(TextSpan(
+        text: match.text,
+        style: TextStyle(
+          color: textAitColor,
+          fontSize: textSize,
+          decoration: TextDecoration.underline,
+        ),
+        recognizer: TapGestureRecognizer()
+          ..onTap = () {
+            if (match.type == MatchType.phone) {
+              showPhoneDialog(context, match.text);
+            } else if (match.type == MatchType.url) {
+              handleUrlClick(context, match.text);
+            }
+          },
+      ));
+
+      lastEnd = match.end;
+    }
+
+    // 添加剩余文本
+    if (lastEnd < text.length) {
+      spans.addAll(ChatMessageHelper.textSpan(
+        context,
+        isSelf,
+        text.substring(lastEnd),
+        startIndex + lastEnd,
+        chatUIConfig: chatUIConfig,
+        remoteExtension: remoteExtension,
+      ));
+    }
+
+    return spans;
+  }
+
+  // 去除重叠的匹配项，URL优先于电话号码
+  static List<TextMatch> removeOverlapping(List<TextMatch> matches) {
+    List<TextMatch> result = [];
+
+    // 按类型和位置排序，URL优先
+    matches.sort((a, b) {
+      int cmp = a.start.compareTo(b.start);
+      if (cmp != 0) return cmp;
+      // 如果位置相同，URL类型优先
+      if (a.type == MatchType.url && b.type == MatchType.phone) return -1;
+      if (a.type == MatchType.phone && b.type == MatchType.url) return 1;
+      return 0;
+    });
+
+    for (TextMatch current in matches) {
+      bool shouldAdd = true;
+
+      // 检查是否与已添加的匹配项重叠
+      for (int i = 0; i < result.length; i++) {
+        TextMatch existing = result[i];
+
+        if (isOverlapping(current, existing)) {
+          // 如果重叠，URL优先于电话号码
+          if (current.type == MatchType.url &&
+              existing.type == MatchType.phone) {
+            result.removeAt(i);
+            break; // 移除电话号码，准备添加URL
+          } else {
+            shouldAdd = false; // 已有URL或相同类型，不添加当前项
+            break;
+          }
+        }
+      }
+
+      if (shouldAdd) {
+        result.add(current);
+      }
+    }
+
+    // 重新按位置排序
+    result.sort((a, b) => a.start.compareTo(b.start));
+    return result;
+  }
+
+// 检查两个匹配项是否重叠
+  static bool isOverlapping(TextMatch a, TextMatch b) {
+    return !(a.end <= b.start || b.end <= a.start);
+  }
+
+// 处理URL点击事件
+  static void handleUrlClick(BuildContext context, String url) {
+    // 格式化URL，确保有正确的协议前缀
+    String formattedUrl = _formatUrl(url);
+    // 可以在这里添加打开浏览器、显示预览等功能
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => CommonBrowser(
+                url: formattedUrl,
+                onHttpError: (error) {
+                  // Fluttertoast.showToast(msg: S.of(context).webConnectError);
+                },
+                onWebResourceError: (error) {
+                  // Fluttertoast.showToast(msg: S.of(context).webConnectError);
+                })));
+  }
+
+  // 格式化URL，确保有正确的协议前缀
+  static String _formatUrl(String url) {
+    // 移除首尾空格
+    url = url.trim();
+
+    // 如果已经有协议前缀，直接返回
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+
+    // 如果以www.开头，添加https://前缀
+    if (url.startsWith('www.')) {
+      return 'https://$url';
+    }
+
+    // 如果是纯域名格式（如 baidu.com），添加https://www.前缀
+    if (_isDomainFormat(url)) {
+      return 'https://www.$url';
+    }
+
+    // 默认添加https://前缀
+    return 'https://$url';
+  }
+
+// 检查是否是域名格式
+  static bool _isDomainFormat(String url) {
+    // 简单的域名格式检查：包含点号且不包含空格和特殊字符
+    return url.contains('.') &&
+        !url.contains(' ') &&
+        !url.contains('/') &&
+        url.length > 3;
+  }
+
+  ///显示号码弹窗
+  static void showPhoneDialog(BuildContext context, String phoneNumber) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return Container(
+          margin: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 主弹窗
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    // 标题文本
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 20),
+                      child: Text(
+                        S.of().messagePhoneCallTips(phoneNumber),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: CommonColors.color_999999,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    // 分割线
+                    Container(
+                      height: 1,
+                      color: '#DEDEDE'.toColor(),
+                    ),
+                    // 呼叫按钮
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context);
+                        makePhoneCall(phoneNumber);
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Text(
+                          S.of().chatMessageCall,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: CommonColors.color_333333,
+                            fontWeight: FontWeight.w400,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                    // 分割线
+                    Container(
+                      height: 1,
+                      color: '#DEDEDE'.toColor(),
+                    ),
+                    // 复制号码按钮
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context);
+                        copyPhoneNumber(phoneNumber);
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Text(
+                          S.of().chatMessageCopyNumber,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: CommonColors.color_333333,
+                            fontWeight: FontWeight.w400,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              // 取消按钮
+              GestureDetector(
+                onTap: () {
+                  Navigator.pop(context);
+                },
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Text(
+                    S.of().messageCancel,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: CommonColors.color_333333,
+                      fontWeight: FontWeight.w400,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+              // 底部安全区域
+              SizedBox(height: MediaQuery.of(context).padding.bottom),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  static void makePhoneCall(String phoneNumber) async {
+    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+    if (await canLaunchUrl(phoneUri)) {
+      await launchUrl(phoneUri);
+    } else {
+      Fluttertoast.showToast(msg: S.of().chatMessageCallError);
+    }
+  }
+
+  static void copyPhoneNumber(String phoneNumber) {
+    Clipboard.setData(ClipboardData(text: phoneNumber));
+    Fluttertoast.showToast(msg: S.of().chatMessageCopySuccess);
+  }
+
   ///解析Text消息，将@消息和普通文本分开
-  static List<TextSpan> textSpan(BuildContext context, String text, int start,
+  static List<TextSpan> textSpan(
+      BuildContext context, bool isSelf, String text, int start,
       {int? end,
       ChatUIConfig? chatUIConfig,
       Map<String, dynamic>? remoteExtension}) {
     //定义文本字体大小和颜色
-    final textSize = chatUIConfig?.messageTextSize ?? 16;
-    final textColor =
-        chatUIConfig?.messageTextColor ?? CommonColors.color_333333;
+    final textSize = (isSelf
+            ? chatUIConfig?.sendMessageTextSize
+            : chatUIConfig?.receiveMessageTextSize) ??
+        16;
+    final textColor = (isSelf
+            ? chatUIConfig?.sendMessageTextColor
+            : chatUIConfig?.receiveMessageTextColor) ??
+        CommonColors.color_333333;
     final textAitColor =
         chatUIConfig?.messageLinkColor ?? CommonColors.color_007aff;
 
@@ -717,4 +1132,24 @@ enum ForwardType {
   normal,
   oneByOne,
   merge,
+}
+
+// 辅助类和方法
+class TextMatch {
+  final int start;
+  final int end;
+  final String text;
+  final MatchType type;
+
+  TextMatch({
+    required this.start,
+    required this.end,
+    required this.text,
+    required this.type,
+  });
+}
+
+enum MatchType {
+  phone,
+  url,
 }

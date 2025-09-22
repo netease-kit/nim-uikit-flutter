@@ -2,6 +2,8 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
 import 'team_kit_client_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -231,4 +233,7 @@ class TeamKitClientLocalizationsEn extends TeamKitClientLocalizations {
 
   @override
   String get teamJoinApplicationHaveSent => 'Application Have Sent';
+
+  @override
+  String get teamJoinApplicationSendError => 'Application send error';
 }

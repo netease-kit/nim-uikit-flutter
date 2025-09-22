@@ -43,14 +43,20 @@ class ChatUIConfig {
   ///不设置头像的用户所展示的文字头像中的文字字体大小
   double? userNickTextSize;
 
-  ///文本消息字体颜色
-  Color? messageTextColor;
+  ///接收文本消息字体颜色
+  Color? receiveMessageTextColor;
+
+  ///发送文本消息字体颜色
+  Color? sendMessageTextColor;
+
+  ///接收文本消息字体大小
+  double? receiveMessageTextSize;
+
+  ///发送文本消息字体大小
+  double? sendMessageTextSize;
 
   ///文本消息链接颜色，包括@用户显示的颜色
   Color? messageLinkColor;
-
-  ///文本消息字体大小
-  double? messageTextSize;
 
   ///头像的圆角
   double? avatarCornerRadius;
@@ -122,6 +128,10 @@ class ChatUIConfig {
   ///展示时间的消息间隔，单位ms，默认5分钟
   int showTimeInterval;
 
+  ///群被踢或者解散之后的处理方法，如果返回true则完全有此方法处理
+  ///如果返回false，此方法处理万之后 会退回到根目录
+  bool Function()? onTeamDismissOrLeave;
+
   ChatUIConfig(
       {this.showTeamMessageStatus,
       this.receiveMessageBg,
@@ -130,8 +140,10 @@ class ChatUIConfig {
       this.signalBgColor,
       this.timeTextColor,
       this.timeTextSize,
-      this.messageTextSize,
-      this.messageTextColor,
+      this.receiveMessageTextColor,
+      this.sendMessageTextColor,
+      this.receiveMessageTextSize,
+      this.sendMessageTextSize,
       this.userNickTextSize,
       this.userNickColor,
       this.avatarCornerRadius,
@@ -151,6 +163,7 @@ class ChatUIConfig {
       this.getMessageBrief,
       this.showTimeInterval = 5 * 60 * 1000,
       this.isShowAvatar,
+      this.onTeamDismissOrLeave,
       this.messageLinkColor});
 }
 

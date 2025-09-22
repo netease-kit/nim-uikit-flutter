@@ -11,7 +11,9 @@ import 'package:netease_common_ui/base/base_state.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/no_network_tip.dart';
+import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
+import 'package:nim_chatkit/im_kit_config_center.dart';
 import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
 import 'package:nim_chatkit/router/imkit_router.dart';
@@ -141,6 +143,8 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
         null, widget.conversationType, widget.conversationId);
   }
 
+  bool hasShowTeamDismissDialog = false;
+
   @override
   void initState() {
     super.initState();
@@ -212,7 +216,7 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
             showNavigate: false)
         .then((value) {
       if (value == true) {
-        Navigator.popUntil(context, ModalRoute.withName('/'));
+        _onTeamDismissOrKicked();
       }
     });
   }
@@ -226,9 +230,17 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
             showNavigate: false)
         .then((value) {
       if (value == true) {
-        Navigator.popUntil(context, ModalRoute.withName('/'));
+        _onTeamDismissOrKicked();
       }
     });
+  }
+
+  ///踢出群后的处理逻辑
+  void _onTeamDismissOrKicked() {
+    if (widget.chatUIConfig?.onTeamDismissOrLeave?.call() == true) {
+      return;
+    }
+    Navigator.popUntil(context, ModalRoute.withName('/'));
   }
 
   @override
@@ -306,7 +318,7 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
 
     // 处理合并转发
     var sessionName = context.read<ChatViewModel>().chatTitle;
-    ChatMessageHelper.showForwardMessageDialog(context, (conversationId,
+    ChatMessageHelper.showForwardSelector(context, (conversationId,
         {String? postScript, bool? isLastUser}) {
       context.read<ChatViewModel>().mergedMessageForward(conversationId,
           postScript: postScript,
@@ -355,7 +367,7 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
       return;
     }
     var sessionName = context.read<ChatViewModel>().chatTitle;
-    ChatMessageHelper.showForwardMessageDialog(context, (conversationId,
+    ChatMessageHelper.showForwardSelector(context, (conversationId,
         {String? postScript, bool? isLastUser}) {
       context.read<ChatViewModel>().forwardMessageOneByOne(conversationId,
           postScript: postScript, exitMultiMode: isLastUser == true);
@@ -385,97 +397,97 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
             widget.conversationType) {
       _setChattingAccount();
     }
+
     return ChangeNotifierProvider(
         create: (context) =>
             ChatViewModel(widget.conversationId, widget.conversationType),
         builder: (context, wg) {
           String title;
+          String? subTitle;
           String inputHint = context.watch<ChatViewModel>().chatTitle;
           bool? isOnline = context.watch<ChatViewModel>().contactInfo?.isOnline;
           if (context.watch<ChatViewModel>().isTyping) {
             _setTyping(context);
             title = S.of(context).chatIsTyping;
-          } else if (widget.conversationType == NIMConversationType.p2p &&
+          } else if (IMKitConfigCenter.enableOnlineStatus &&
+              widget.conversationType == NIMConversationType.p2p &&
               !AIUserManager.instance.isAIUser(
                   ChatKitUtils.getConversationTargetId(
                       widget.conversationId))) {
-            title = inputHint +
-                (isOnline == true
-                    ? S.of(context).chatUserOnline
-                    : S.of(context).chatUserOffline);
+            title = inputHint;
+
+            subTitle = isOnline == true
+                ? S.of(context).chatUserOnline
+                : S.of(context).chatUserOffline;
           } else {
             title = inputHint;
           }
           bool haveSelectedMessage =
               context.watch<ChatViewModel>().selectedMessages.isNotEmpty;
-          return WillPopScope(
-              child: Scaffold(
+
+          final chatViewModel = context.watch<ChatViewModel>();
+          // 检查群组有效性
+          if (widget.conversationType == NIMConversationType.team &&
+              chatViewModel.teamInfo != null &&
+              chatViewModel.teamInfo!.isValidTeam == false &&
+              !hasShowTeamDismissDialog) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _showTeamDismissDialog();
+            });
+            hasShowTeamDismissDialog = true;
+          }
+          return PopScope(
+              child: TransparentScaffold(
                   backgroundColor: Colors.white,
-                  appBar: AppBar(
-                    leading: IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back_ios_rounded,
-                        size: 26,
-                      ),
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                    ),
-                    centerTitle: true,
-                    title: Text(
-                      title,
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    elevation: 0,
-                    actions: [
-                      context.watch<ChatViewModel>().isMultiSelected
-                          ? TextButton(
-                              onPressed: () {
-                                context.read<ChatViewModel>().isMultiSelected =
-                                    false;
-                              },
-                              child: Text(S.of(context).messageCancel,
-                                  maxLines: 1,
-                                  style: TextStyle(
-                                      fontSize: 16,
-                                      color: '#333333'.toColor())))
-                          : IconButton(
-                              onPressed: () async {
-                                if (widget.conversationType ==
-                                    NIMConversationType.p2p) {
-                                  ContactInfo? info =
-                                      context.read<ChatViewModel>().contactInfo;
-                                  if (info != null) {
-                                    Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) =>
-                                                ChatSettingPage(info,
-                                                    widget.conversationId)));
-                                  }
-                                } else if (widget.conversationType ==
-                                    NIMConversationType.team) {
-                                  Navigator.pushNamed(context,
-                                      RouterConstants.PATH_TEAM_SETTING_PAGE,
-                                      arguments: {
-                                        'teamId': await getSessionId(
-                                            widget.conversationId)
-                                      }).then((value) {
-                                    if (value == true) {
-                                      Navigator.pop(context);
-                                    }
-                                  });
+                  centerTitle: true,
+                  title: title,
+                  subTitle: subTitle,
+                  elevation: 0,
+                  actions: [
+                    context.watch<ChatViewModel>().isMultiSelected
+                        ? TextButton(
+                            onPressed: () {
+                              context.read<ChatViewModel>().isMultiSelected =
+                                  false;
+                            },
+                            child: Text(S.of(context).messageCancel,
+                                maxLines: 1,
+                                style: TextStyle(
+                                    fontSize: 16, color: '#333333'.toColor())))
+                        : IconButton(
+                            onPressed: () async {
+                              if (widget.conversationType ==
+                                  NIMConversationType.p2p) {
+                                ContactInfo? info =
+                                    context.read<ChatViewModel>().contactInfo;
+                                if (info != null) {
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => ChatSettingPage(
+                                              info, widget.conversationId)));
                                 }
-                              },
-                              icon: SvgPicture.asset(
-                                'images/ic_setting.svg',
-                                width: 26,
-                                height: 26,
-                                package: kPackage,
-                              ))
-                    ],
-                  ),
+                              } else if (widget.conversationType ==
+                                  NIMConversationType.team) {
+                                Navigator.pushNamed(context,
+                                    RouterConstants.PATH_TEAM_SETTING_PAGE,
+                                    arguments: {
+                                      'teamId': await getSessionId(
+                                          widget.conversationId)
+                                    }).then((value) {
+                                  if (value == true) {
+                                    Navigator.pop(context);
+                                  }
+                                });
+                              }
+                            },
+                            icon: SvgPicture.asset(
+                              'images/ic_setting.svg',
+                              width: 26,
+                              height: 26,
+                              package: kPackage,
+                            ))
+                  ],
                   body: Stack(
                     alignment: Alignment.topCenter,
                     children: [
@@ -616,12 +628,11 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
                       ),
                     ],
                   )),
-              onWillPop: () async {
+              canPop: context.watch<ChatViewModel>().isMultiSelected != true,
+              onPopInvokedWithResult: (bool didPop, result) async {
                 if (context.read<ChatViewModel>().isMultiSelected) {
                   context.read<ChatViewModel>().isMultiSelected = false;
-                  return false;
                 }
-                return true;
               });
         });
   }

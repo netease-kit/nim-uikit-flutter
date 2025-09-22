@@ -65,9 +65,18 @@ class ContactViewModel extends ChangeNotifier {
           tag: 'ContactKit',
           moduleName: 'ContactViewModel',
           content: 'onContactListComplete size:${value.length}');
+      List<String> onlineUsers = contacts
+          .where((contact) => contact.isOnline)
+          .map((e) => e.user.accountId!)
+          .toList();
       contacts.clear();
       value.removeWhere((e) => e.isInBlack == true);
       contacts.addAll(value);
+      for (var contact in contacts) {
+        if (onlineUsers.contains(contact.user.accountId)) {
+          contact.isOnline = true;
+        }
+      }
       notifyListeners();
     }));
 

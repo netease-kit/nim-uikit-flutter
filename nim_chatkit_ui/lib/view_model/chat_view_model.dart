@@ -10,6 +10,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/widgets.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/manager/subscription_manager.dart';
 import 'package:nim_chatkit/model/ait/ait_contacts_model.dart';
@@ -99,6 +100,7 @@ class ChatViewModel extends ChangeNotifier {
   bool showReadAck;
 
   String chatTitle = '';
+
   //联系人信息，P2P
   ContactInfo? contactInfo;
 
@@ -312,7 +314,7 @@ class ChatViewModel extends ChangeNotifier {
     //message status change
     subscriptions
         .add(NimCore.instance.messageService.onSendMessage.listen((msg) {
-          //非当前会话的消息不处理
+      //非当前会话的消息不处理
       if (msg.conversationId != conversationId) {
         return;
       }
@@ -669,6 +671,7 @@ class ChatViewModel extends ChangeNotifier {
     NIMMessageListOption option = NIMMessageListOption(
         conversationId: conversationId,
         limit: limit ?? messageLimit,
+        strictMode: init,
         direction: direction,
         anchorMessage: anchor);
     ChatMessageRepo.getMessageList(option,
@@ -1278,17 +1281,57 @@ class ChatViewModel extends ChangeNotifier {
   void forwardMessage(NIMMessage message, String conversationId,
       {String? postScript}) async {
     if (await haveConnectivity()) {
+      NIMMessageAIConfigParams? aiConfigParams;
+
+      if ((await ConversationIdUtil().conversationType(conversationId)).data ==
+          NIMConversationType.p2p) {
+        NIMAIUser? aiAgent = AIUserManager.instance.getAIUserById(
+            ChatKitUtils.getConversationTargetId(conversationId));
+        if (aiAgent != null) {
+          final aiStreamMode = await IMKitClient.enableAIStream;
+          // AI 参数处理
+          aiConfigParams = NIMMessageAIConfigParams(
+              accountId: aiAgent.accountId, aiStream: aiStreamMode);
+          if (ChatMessageHelper.getAIContentMsg(message)?.isNotEmpty == true) {
+            NIMAIModelCallContent content = NIMAIModelCallContent(
+                type: 0, msg: ChatMessageHelper.getAIContentMsg(message));
+            aiConfigParams.content = content;
+          }
+        }
+      }
+
       final params =
           await ChatMessageHelper.getSenderParams(message, conversationId);
+      params.aiConfig = aiConfigParams;
       ChatMessageRepo.forwardMessage(message, conversationId, params: params)
-          .then((value) {
+          .then((value) async {
         if (value.code == ChatMessageRepo.errorInBlackList) {
           ChatMessageRepo.saveTipsMessage(
               conversationId, S.of().chatMessageSendFailedByBlackList);
         }
         if (postScript?.isNotEmpty == true) {
+          //处理AI Config
+          NIMMessageAIConfigParams? aiConfigParams;
+
+          if ((await ConversationIdUtil().conversationType(conversationId))
+                  .data ==
+              NIMConversationType.p2p) {
+            NIMAIUser? aiAgent = AIUserManager.instance.getAIUserById(
+                ChatKitUtils.getConversationTargetId(conversationId));
+            if (aiAgent != null) {
+              final aiStreamMode = await IMKitClient.enableAIStream;
+              // AI 参数处理
+              aiConfigParams = NIMMessageAIConfigParams(
+                  accountId: aiAgent.accountId, aiStream: aiStreamMode);
+              NIMAIModelCallContent content =
+                  NIMAIModelCallContent(type: 0, msg: postScript);
+              aiConfigParams.content = content;
+            }
+          }
           ChatMessageRepo.sendTextMessageWithMessageAck(
-                  conversationId: conversationId, text: postScript!)
+                  conversationId: conversationId,
+                  text: postScript!,
+                  aiConfigParams: aiConfigParams)
               .then((msgSend) {
             if (msgSend.code == ChatMessageRepo.errorInBlackList) {
               ChatMessageRepo.saveTipsMessage(
@@ -1373,7 +1416,10 @@ class ChatViewModel extends ChangeNotifier {
   ///撤回消息
   Future<NIMResult<void>> revokeMessage(ChatMessage message) {
     revokeMessageId = message.nimMessage.messageClientId;
-    return ChatMessageRepo.revokeMessage(message.nimMessage).then((value) {
+    return ChatMessageRepo.revokeMessage(message.nimMessage,
+        revokeParams: NIMMessageRevokeParams(
+          serverExtension: message.nimMessage.serverExtension,
+        )).then((value) {
       if (value.isSuccess) {
         _logI('revokeMessage success and save a local message');
         _onMessageRevoked(message);

@@ -516,6 +516,12 @@ abstract class TeamKitClientLocalizations {
   /// In en, this message translates to:
   /// **'Application Have Sent'**
   String get teamJoinApplicationHaveSent;
+
+  /// No description provided for @teamJoinApplicationSendError.
+  ///
+  /// In en, this message translates to:
+  /// **'Application send error'**
+  String get teamJoinApplicationSendError;
 }
 
 class _TeamKitClientLocalizationsDelegate

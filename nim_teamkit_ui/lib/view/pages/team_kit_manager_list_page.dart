@@ -9,6 +9,7 @@ import 'package:netease_common_ui/base/base_state.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:nim_chatkit/model/team_models.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_chatkit/service_locator.dart';
@@ -60,22 +61,13 @@ class TeamKitManagerListPageState extends State<TeamKitManagerListPage> {
             .toList();
         memberList?.sort(
             (a, b) => a.teamInfo.joinTime.compareTo(b.teamInfo.joinTime));
-        return Scaffold(
-          appBar: AppBar(
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_rounded),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-              ),
-              title: Text(S.of(context).teamManagers,
-                  style: TextStyle(color: '#333333'.toColor(), fontSize: 16)),
-              backgroundColor: Colors.white,
-              iconTheme: Theme.of(context)
-                  .primaryIconTheme
-                  .copyWith(color: Colors.grey),
-              elevation: 0,
-              centerTitle: true),
+        return TransparentScaffold(
+          title: S.of(context).teamManagers,
+          appBarBackgroundColor: Colors.white,
+          iconTheme:
+              Theme.of(context).primaryIconTheme.copyWith(color: Colors.grey),
+          elevation: 0,
+          centerTitle: true,
           body: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             color: Colors.white,
@@ -95,6 +87,7 @@ class TeamKitManagerListPageState extends State<TeamKitManagerListPage> {
                                   tId: widget.tId,
                                   showOwnerAndManager: false,
                                   isSelectModel: true,
+                                  showAIMember: false,
                                 ))).then((value) {
                       if (value is List<String>) {
                         context

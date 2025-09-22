@@ -50,26 +50,46 @@ class _ConversationListState extends BaseState<ConversationList> {
   Timer? _scrollEndTimer;
 
   List<String> _getVisibleP2PUser() {
-    double start = _scrollController.position.pixels;
-    double end = start + _scrollController.position.viewportDimension;
-
     List<ConversationInfo> conversationList =
         context.read<ConversationViewModel>().conversationList;
+    List<NIMAIUser> aiUserList =
+        context.read<ConversationViewModel>().topAIUserList;
 
     List<String> visibleP2PUser = [];
-    for (int i = 0; i < conversationList.length; i++) {
-      // 使用 RenderBox 来判断可见性
-      final itemKey = GlobalKey();
-      final RenderBox renderBox =
-          itemKey.currentContext?.findRenderObject() as RenderBox;
 
-      final offset = renderBox.localToGlobal(Offset.zero);
-      final conversation = conversationList[i];
+    if (!_scrollController.hasClients) {
+      return visibleP2PUser;
+    }
+
+    double scrollOffset = _scrollController.offset;
+    double viewportHeight = _scrollController.position.viewportDimension;
+
+    // 计算可见区域
+    double visibleStart = scrollOffset;
+    double visibleEnd = scrollOffset + viewportHeight;
+
+    // AI用户列表的偏移量
+    double currentOffset =
+        aiUserList.isNotEmpty ? conversationTopListHeight : 0;
+
+    for (int i = 0; i < conversationList.length; i++) {
+      ConversationInfo conversation = conversationList[i];
+
+      // 计算当前会话项的位置
+      double itemTop = currentOffset;
+      double itemBottom = currentOffset + conversationItemHeight;
+
+      // 检查是否在可见区域内
+      bool isVisible = itemBottom > visibleStart && itemTop < visibleEnd;
+
       if (conversation.conversation.type == NIMConversationType.p2p &&
-          (offset.dy >= start || offset.dy <= end)) {
+          isVisible) {
         visibleP2PUser.add(conversation.targetId);
       }
+
+      currentOffset += conversationItemHeight;
     }
+
     return visibleP2PUser;
   }
 

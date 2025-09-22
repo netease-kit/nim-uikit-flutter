@@ -4,6 +4,7 @@
 
 import 'dart:convert';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -37,6 +38,11 @@ class ChatKitMessageTextItem extends StatefulWidget {
 }
 
 class ChatKitMessageTextState extends State<ChatKitMessageTextItem> {
+  // 电话号码正则表达式
+  static final RegExp _phoneRegex = RegExp(
+    r'(?:(?:\+86)|(?:86))?\s*1[3-9]\d{9}|(?:0\d{2,3}[-\s]?)?\d{7,8}',
+  );
+
   @override
   Widget build(BuildContext context) {
     //处理数字人返回的消息
@@ -80,7 +86,7 @@ class ChatKitMessageTextState extends State<ChatKitMessageTextItem> {
     if (matches.isNotEmpty) {
       for (final match in matches) {
         if (match.start > preIndex) {
-          spans.addAll(ChatMessageHelper.textSpan(
+          spans.addAll(_buildTextSpans(
               context, text.substring(preIndex, match.start), preIndex,
               end: match.start,
               chatUIConfig: widget.chatUIConfig,
@@ -90,20 +96,20 @@ class ChatKitMessageTextState extends State<ChatKitMessageTextItem> {
         if (span != null) {
           spans.add(span);
         } else if (match.group(0)?.isNotEmpty == true) {
-          spans.addAll(ChatMessageHelper.textSpan(context, match.group(0)!, 0,
+          spans.addAll(_buildTextSpans(context, match.group(0)!, 0,
               chatUIConfig: widget.chatUIConfig,
               remoteExtension: remoteExtension));
         }
         preIndex = match.end;
       }
       if (preIndex < text.length) {
-        spans.addAll(ChatMessageHelper.textSpan(
+        spans.addAll(_buildTextSpans(
             context, text.substring(preIndex, text.length), preIndex,
             chatUIConfig: widget.chatUIConfig,
             remoteExtension: remoteExtension));
       }
     } else {
-      spans.addAll(ChatMessageHelper.textSpan(context, text, 0,
+      spans.addAll(_buildTextSpans(context, text, 0,
           chatUIConfig: widget.chatUIConfig, remoteExtension: remoteExtension));
     }
     return Container(
@@ -118,6 +124,38 @@ class ChatKitMessageTextState extends State<ChatKitMessageTextItem> {
               maxLines: widget.maxLines,
               overflow: TextOverflow.ellipsis,
             ),
+    );
+  }
+
+  List<InlineSpan> _buildTextSpans(
+    BuildContext context,
+    String text,
+    int startIndex, {
+    int? end,
+    ChatUIConfig? chatUIConfig,
+    dynamic remoteExtension,
+  }) {
+    // 如果是数字人消息，使用原有逻辑
+    if (ChatMessageHelper.isReceivedMessageFromAi(widget.message)) {
+      return ChatMessageHelper.textSpan(
+        context,
+        false,
+        text,
+        startIndex,
+        end: end,
+        chatUIConfig: chatUIConfig,
+        remoteExtension: remoteExtension,
+      );
+    }
+
+    return ChatMessageHelper.buildTextSpansWithPhoneAndUrlDetection(
+      context,
+      widget.message.isSelf ?? false,
+      text,
+      startIndex,
+      end: end,
+      chatUIConfig: chatUIConfig,
+      remoteExtension: remoteExtension,
     );
   }
 }

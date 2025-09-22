@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_chatkit/service_locator.dart';
@@ -79,25 +80,11 @@ class _AIUserListPageState extends State<ContactKitAIUserListPage> {
       builder: (context, child) {
         List<NIMAIUser> users =
             context.watch<AIUserListViewModel>().aiUserList.toList();
-        return Scaffold(
+        return TransparentScaffold(
           backgroundColor: Colors.white,
-          appBar: AppBar(
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_rounded),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
-            title: Text(
-              S.of(context).contactAIUserList,
-              style: TextStyle(
-                  fontSize: 16,
-                  color: '#333333'.toColor(),
-                  fontWeight: FontWeight.bold),
-            ),
-            centerTitle: true,
-            elevation: 0,
-          ),
+          title: S.of(context).contactAIUserList,
+          centerTitle: true,
+          elevation: 0,
           body: users.isNotEmpty
               ? Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

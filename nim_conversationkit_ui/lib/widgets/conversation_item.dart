@@ -9,6 +9,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/unread_message.dart';
+import 'package:nim_chatkit/im_kit_config_center.dart';
 import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit/model/custom_type_constant.dart';
 import 'package:nim_chatkit/services/message/chat_message.dart';
@@ -144,7 +145,8 @@ class ConversationItem extends StatelessWidget {
                     width: 42,
                     radius: config.avatarCornerRadius,
                   ),
-                  if (conversationInfo.conversation.type ==
+                  if (IMKitConfigCenter.enableOnlineStatus &&
+                      conversationInfo.conversation.type ==
                           NIMConversationType.p2p &&
                       !AIUserManager.instance
                           .isAIUser(conversationInfo.targetId))

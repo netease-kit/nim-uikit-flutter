@@ -14,6 +14,7 @@ import 'package:nim_chatkit/message/message_helper.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit_ui/l10n/S.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
+import 'package:nim_chatkit_ui/view/page/chat_forward_page.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:provider/provider.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
@@ -160,16 +161,13 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
     }
     // 转发
     var sessionName = context.read<ChatViewModel>().chatTitle;
-    var filterUser =
-        context.read<ChatViewModel>().p2pUserAccId?.isNotEmpty == true
-            ? [context.read<ChatViewModel>().p2pUserAccId!]
-            : null;
-    ChatMessageHelper.showForwardMessageDialog(context, (conversationId,
+    ChatMessageHelper.showForwardSelector(context, (conversationId,
         {String? postScript, bool? isLastUser}) {
       context.read<ChatViewModel>().forwardMessage(
           message.nimMessage, conversationId,
           postScript: postScript);
-    }, filterUser: filterUser, sessionName: sessionName);
+    }, sessionName: sessionName);
+
     return true;
   }
 

@@ -4,6 +4,7 @@
 
 import 'package:netease_common_ui/extension.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
+import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_core_v2/nim_core.dart';
 
 class ConversationInfo {
@@ -40,6 +41,10 @@ class ConversationInfo {
   }
 
   String? getAvatar() {
+    if (conversation.avatar?.isNotEmpty != true &&
+        AIUserManager.instance.isAIUser(targetId)) {
+      return AIUserManager.instance.getAIUserById(targetId)?.avatar;
+    }
     return conversation.avatar;
   }
 

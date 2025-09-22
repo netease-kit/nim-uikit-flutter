@@ -96,5 +96,6 @@
   },
   "teamJoinApply": "Join Team",
   "teamChat": "Chat",
-  "teamJoinApplicationHaveSent": "Application Have Sent"
+  "teamJoinApplicationHaveSent": "Application Have Sent",
+  "teamJoinApplicationSendError": "Application send error"
 }

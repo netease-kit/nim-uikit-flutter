@@ -252,7 +252,10 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
           ),
           trailing: CupertinoSwitch(
             activeColor: CommonColors.color_337eff,
-            onChanged: (bool value) {
+            onChanged: (bool value) async {
+              if (!await haveConnectivity()) {
+                return;
+              }
               if (value != (agreeMode == NIMTeamAgreeMode.agreeModeAuth)) {
                 TeamRepo.updateBeInviteMode(team.teamId, team.teamType, value);
               }
@@ -274,7 +277,10 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
           ),
           trailing: CupertinoSwitch(
             activeColor: CommonColors.color_337eff,
-            onChanged: (bool value) {
+            onChanged: (bool value) async {
+              if (!await haveConnectivity()) {
+                return;
+              }
               if (value != (joinMode == NIMTeamJoinMode.joinModeApply)) {
                 TeamRepo.updateApplyAgreeMode(
                     team.teamId, team.teamType, value);

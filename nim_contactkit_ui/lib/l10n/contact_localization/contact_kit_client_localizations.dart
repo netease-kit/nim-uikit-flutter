@@ -444,6 +444,30 @@ abstract class ContactKitClientLocalizations {
   /// In en, this message translates to:
   /// **'Reject your Invitation for :{teamName}'**
   String teamJoinInvitationReject(String teamName);
+
+  /// No description provided for @teamMemberLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Team member limited.'**
+  String get teamMemberLimited;
+
+  /// No description provided for @teamMemberAlreadyExist.
+  ///
+  /// In en, this message translates to:
+  /// **'Team member already exist'**
+  String get teamMemberAlreadyExist;
+
+  /// No description provided for @teamNotExist.
+  ///
+  /// In en, this message translates to:
+  /// **'Team have Dismissed'**
+  String get teamNotExist;
+
+  /// No description provided for @teamVerifyNoPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'Have No Permission'**
+  String get teamVerifyNoPermission;
 }
 
 class _ContactKitClientLocalizationsDelegate

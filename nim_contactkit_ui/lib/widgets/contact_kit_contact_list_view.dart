@@ -10,6 +10,7 @@ import 'package:lpinyin/lpinyin.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/radio_button.dart';
+import 'package:nim_chatkit/im_kit_config_center.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
 import 'package:nim_contactkit_ui/widgets/az_lsit_view_container.dart';
 
@@ -73,7 +74,8 @@ class ContactListViewState extends State<ContactListView> {
               bgCode: AvatarColor.avatarColor(content: contact.user.accountId),
               radius: listConfig?.avatarCornerRadius,
             ),
-            if (!widget.isCanSelectMemberItem)
+            if (IMKitConfigCenter.enableOnlineStatus &&
+                !widget.isCanSelectMemberItem)
               Positioned(
                   bottom: 0,
                   right: 0,

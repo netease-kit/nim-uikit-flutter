@@ -2,6 +2,8 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
 import 'contact_kit_client_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -217,4 +219,16 @@ class ContactKitClientLocalizationsEn extends ContactKitClientLocalizations {
   String teamJoinInvitationReject(String teamName) {
     return 'Reject your Invitation for :$teamName';
   }
+
+  @override
+  String get teamMemberLimited => 'Team member limited.';
+
+  @override
+  String get teamMemberAlreadyExist => 'Team member already exist';
+
+  @override
+  String get teamNotExist => 'Team have Dismissed';
+
+  @override
+  String get teamVerifyNoPermission => 'Have No Permission';
 }

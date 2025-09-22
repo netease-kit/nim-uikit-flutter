@@ -66,7 +66,7 @@ class _SystemNotifyPageState
               ? S.of(context).contactAccepted
               : '';
         case NIMFriendAddApplicationStatus
-            .nimFriendAddApplicationStatusRejected:
+              .nimFriendAddApplicationStatusRejected:
           return message.operatorAccountId == IMKitClient.account()
               ? S.of(context).contactRejected
               : '';

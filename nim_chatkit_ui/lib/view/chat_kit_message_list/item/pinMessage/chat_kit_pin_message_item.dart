@@ -281,8 +281,8 @@ class _ChatKitPinMessageItemState extends State<ChatKitPinMessageItem> {
 
   void _showForwardMessageDialog(ChatMessage message) {
     final NIMMessage msg = message.nimMessage;
-    ChatMessageHelper.showForwardMessageDialog(context, (conversationId,
-            {String? postScript, bool? isLastUser}) {
+    ChatMessageHelper.showForwardSelector(context, (conversationId,
+        {String? postScript, bool? isLastUser}) {
       if (mounted) {
         context.read<ChatPinViewModel>().forwardMessage(msg, conversationId);
       } else {
@@ -303,12 +303,7 @@ class _ChatKitPinMessageItemState extends State<ChatKitPinMessageItem> {
         ChatMessageRepo.sendTextMessageWithMessageAck(
             conversationId: conversationId, text: postScript!);
       }
-    },
-        filterUser: widget.chatMessage.nimMessage.conversationType ==
-                NIMConversationType.p2p
-            ? [widget.chatMessage.nimMessage.senderId!]
-            : null,
-        sessionName: widget.chatTitle);
+    }, sessionName: widget.chatTitle);
   }
 
   @override

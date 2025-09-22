@@ -188,5 +188,9 @@
         "type": "String"
       }
     }
-  }
+  },
+  "teamMemberLimited": "群组人数达到上限",
+  "teamMemberAlreadyExist": "已在群组",
+  "teamNotExist": "群组已解散",
+  "teamVerifyNoPermission": "暂无权限"
 }

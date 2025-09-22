@@ -72,7 +72,9 @@ class _NotifySettingPageState extends State<NotifySettingPage> {
                   if (Platform.isAndroid) {
                     ConfigRepo.updateMessageNotification(value);
                   }
-                  ConfigRepo.updateMixNotification(value).then((success) {
+                  ConfigRepo.updateMixNotification(value,
+                      showDetail: !showNoDetail)
+                      .then((success) {
                     Fluttertoast.showToast(
                         msg: success
                             ? S.of(context).settingSuccess

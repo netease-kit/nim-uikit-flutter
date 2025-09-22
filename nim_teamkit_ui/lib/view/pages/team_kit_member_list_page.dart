@@ -10,6 +10,8 @@ import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/radio_button.dart';
+import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
+import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit/model/team_models.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_chatkit/service_locator.dart';
@@ -37,12 +39,15 @@ class TeamKitMemberListPage extends StatefulWidget {
 
   final bool isSelectModel;
 
+  final bool showAIMember;
+
   const TeamKitMemberListPage(
       {Key? key,
       required this.tId,
       this.showOwnerAndManager = true,
       this.isGroupTeam = false,
-      this.isSelectModel = false})
+      this.isSelectModel = false,
+      this.showAIMember = true})
       : super(key: key);
 
   @override
@@ -101,78 +106,77 @@ class TeamKitMemberListPageState extends BaseState<TeamKitMemberListPage> {
                   e.teamInfo.memberRole != NIMTeamMemberRole.memberRoleManager)
               .toList();
         }
-        return Scaffold(
-          appBar: AppBar(
-            leading: IconButton(
-              icon: widget.isSelectModel
-                  ? Text(
-                      S.of(context).teamCancel,
-                      style:
-                          TextStyle(color: '#666666'.toColor(), fontSize: 16),
-                    )
-                  : const Icon(Icons.arrow_back_ios_rounded),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
-            title: Text(
-                widget.isSelectModel
-                    ? S.of(context).teamMemberSelect
-                    : S.of(context).teamMemberTitle,
-                style: TextStyle(color: '#333333'.toColor(), fontSize: 16)),
-            backgroundColor: Colors.white,
-            iconTheme:
-                Theme.of(context).primaryIconTheme.copyWith(color: Colors.grey),
-            elevation: 0,
-            centerTitle: true,
-            actions: [
-              if (widget.isSelectModel)
-                TextButton(
-                    onPressed: () {
-                      if (!checkNetwork()) {
+        if (!widget.showAIMember) {
+          memberList = memberList
+              ?.where(
+                  (e) => !AIUserManager.instance.isAIUser(e.teamInfo.accountId))
+              .toList();
+        }
+        return TransparentScaffold(
+          leading: IconButton(
+            icon: widget.isSelectModel
+                ? Text(
+                    S.of(context).teamCancel,
+                    style: TextStyle(color: '#666666'.toColor(), fontSize: 16),
+                  )
+                : const Icon(Icons.arrow_back_ios_rounded),
+            onPressed: () {
+              Navigator.pop(context);
+            },
+          ),
+          title: widget.isSelectModel
+              ? S.of(context).teamMemberSelect
+              : S.of(context).teamMemberTitle,
+          backgroundColor: Colors.white,
+          iconTheme:
+              Theme.of(context).primaryIconTheme.copyWith(color: Colors.grey),
+          elevation: 0,
+          centerTitle: true,
+          actions: [
+            if (widget.isSelectModel)
+              TextButton(
+                  onPressed: () {
+                    if (!checkNetwork()) {
+                      return;
+                    }
+                    if (context
+                        .read<TeamSettingViewModel>()
+                        .selectedList
+                        .isNotEmpty) {
+                      int managerLimit =
+                          TeamKitClient.instance.teamManagerLimit ??
+                              teamManagersLimitDefault;
+                      int teamManagersCount =
+                          NIMChatCache.instance.getTeamManagers()?.length ?? 0;
+                      if (teamManagersCount +
+                              context
+                                  .read<TeamSettingViewModel>()
+                                  .selectedList
+                                  .length >
+                          managerLimit) {
+                        Fluttertoast.showToast(
+                            msg: S
+                                .of(context)
+                                .teamManagerLimit(managerLimit.toString()));
                         return;
                       }
-                      if (context
-                          .read<TeamSettingViewModel>()
-                          .selectedList
-                          .isNotEmpty) {
-                        int managerLimit =
-                            TeamKitClient.instance.teamManagerLimit ??
-                                teamManagersLimitDefault;
-                        int teamManagersCount =
-                            NIMChatCache.instance.getTeamManagers()?.length ??
-                                0;
-                        if (teamManagersCount +
-                                context
-                                    .read<TeamSettingViewModel>()
-                                    .selectedList
-                                    .length >
-                            managerLimit) {
-                          Fluttertoast.showToast(
-                              msg: S
-                                  .of(context)
-                                  .teamManagerLimit(managerLimit.toString()));
-                          return;
-                        }
-                        Navigator.pop(
-                            context,
-                            context
-                                .read<TeamSettingViewModel>()
-                                .selectedList
-                                .map((e) => e.teamInfo.accountId)
-                                .toList());
-                      } else {
-                        Fluttertoast.showToast(
-                            msg: S.of(context).teamSelectMembers);
-                      }
-                    },
-                    child: Text(
-                      '${S.of(context).teamConfirm}(${context.read<TeamSettingViewModel>().selectedList.length})',
-                      style:
-                          TextStyle(color: '#337EFF'.toColor(), fontSize: 16),
-                    ))
-            ],
-          ),
+                      Navigator.pop(
+                          context,
+                          context
+                              .read<TeamSettingViewModel>()
+                              .selectedList
+                              .map((e) => e.teamInfo.accountId)
+                              .toList());
+                    } else {
+                      Fluttertoast.showToast(
+                          msg: S.of(context).teamSelectMembers);
+                    }
+                  },
+                  child: Text(
+                    '${S.of(context).teamConfirm}(${context.read<TeamSettingViewModel>().selectedList.length})',
+                    style: TextStyle(color: '#337EFF'.toColor(), fontSize: 16),
+                  ))
+          ],
           body: Container(
             padding: const EdgeInsets.all(20),
             color: Colors.white,
