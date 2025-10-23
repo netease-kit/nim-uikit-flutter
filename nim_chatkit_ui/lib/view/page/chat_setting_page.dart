@@ -114,14 +114,8 @@ class _ChatSettingPageState extends State<ChatSettingPage> {
                         // pop and jump
                         var teamConversationId = ChatKitUtils.conversationId(
                             teamResult.team!.teamId, NIMConversationType.team);
-                        Navigator.pushNamedAndRemoveUntil(
-                            context,
-                            RouterConstants.PATH_CHAT_PAGE,
-                            ModalRoute.withName(RouterConstants.PATH_CHAT_PAGE),
-                            arguments: {
-                              'conversationId': teamConversationId,
-                              'conversationType': NIMConversationType.team,
-                            });
+                        goToChatAndClearStack(context, teamConversationId!,
+                            NIMConversationType.team);
                       }
                     });
                   }
@@ -155,12 +149,12 @@ class _ChatSettingPageState extends State<ChatSettingPage> {
             ),
             trailing: const Icon(Icons.keyboard_arrow_right_outlined),
             onTap: () {
-              Navigator.pushNamed(context, RouterConstants.PATH_CHAT_PIN_PAGE,
-                  arguments: {
-                    'conversationId': widget.conversationId,
-                    'conversationType': NIMConversationType.p2p,
-                    'chatTitle': widget.contactInfo.getName()
-                  });
+              goToPinPage(
+                context,
+                widget.conversationId,
+                NIMConversationType.p2p,
+                widget.contactInfo.getName(),
+              );
             }),
         ListTile(
           title: Text(

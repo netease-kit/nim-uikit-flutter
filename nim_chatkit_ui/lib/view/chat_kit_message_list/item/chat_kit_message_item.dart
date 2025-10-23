@@ -15,6 +15,7 @@ import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/string_utils.dart';
 import 'package:netease_common_ui/widgets/radio_button.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit/repo/config_repo.dart';
 import 'package:nim_chatkit/service_locator.dart';
 import 'package:nim_chatkit/services/contact/contact_provider.dart';
 import 'package:nim_chatkit/services/login/im_login_service.dart';
@@ -49,6 +50,7 @@ import 'package:provider/provider.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../helper/merge_message_helper.dart';
+import 'chat_kit_message_avChat_item.dart';
 import 'chat_kit_message_multi_line_text_item.dart';
 import 'chat_kit_message_text_item.dart';
 
@@ -62,6 +64,7 @@ class ChatKitMessageBuilder {
   ChatMessageItemBuilder? notifyMessageBuilder;
   ChatMessageItemBuilder? tipsMessageBuilder;
   ChatMessageItemBuilder? fileMessageBuilder;
+  ChatMessageItemBuilder? avChatMessageBuilder;
   ChatMessageItemBuilder? locationMessageBuilder;
   ChatMessageItemBuilder? mergedMessageBuilder;
   Map<NIMMessageType, ChatMessageItemBuilder?>? extendBuilder;
@@ -214,7 +217,7 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
         !isSelf();
   }
 
-  _onLongPress(BuildContext context) {
+  _onLongPress(BuildContext context) async {
     //如果是正在流式消息，Stream 或者PlaceHolder 长按无反应
     if (ChatMessageHelper.isReceivedMessageFromAi(
             widget.chatMessage.nimMessage) &&
@@ -228,7 +231,10 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
     }
     _popMenu?.clean();
     _popMenu = null;
-    _popMenu = ChatKitMessagePopMenu(widget.chatMessage, context,
+    int v = await ConfigRepo.getAudioPlayModel();
+    bool voiceFromSpeaker = v == ConfigRepo.audioPlayOutside;
+    _popMenu = ChatKitMessagePopMenu(
+        widget.chatMessage, voiceFromSpeaker, context,
         popMenuAction: widget.popMenuAction, chatUIConfig: widget.chatUIConfig);
     _popMenu!.show();
   }
@@ -399,6 +405,13 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
           return messageItemBuilder!.fileMessageBuilder!(message.nimMessage);
         }
         return ChatKitMessageFileItem(message: message.nimMessage);
+
+      case NIMMessageType.call:
+        if (messageItemBuilder?.avChatMessageBuilder != null) {
+          return messageItemBuilder!.avChatMessageBuilder!
+              .call(message.nimMessage);
+        }
+        return ChatKitMessageAvChatItem(message: message.nimMessage);
 
       case NIMMessageType.location:
       default:
@@ -574,11 +587,8 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
     }
     if (widget.chatMessage.nimMessage.conversationType ==
         NIMConversationType.team) {
-      var teamId = (await NimCore.instance.conversationIdUtil
-              .conversationTargetId(
-                  widget.chatMessage.nimMessage.conversationId!))
-          .data;
-      return getUserNickInTeam(teamId!, accId);
+      var teamId = await _getTeamIdByConversationId();
+      return getUserNickInTeam(teamId, accId);
     } else {
       return accId.getUserName();
     }
@@ -586,10 +596,12 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
 
   // 根据ConversationID 获取TeamId
   Future<String> _getTeamIdByConversationId() async {
-    var teamId = (await NimCore.instance.conversationIdUtil
-            .conversationTargetId(
-                widget.chatMessage.nimMessage.conversationId!))
-        .data;
+    var teamId = widget.teamInfo?.teamId;
+    if (teamId == null) {
+      teamId = (await NimCore.instance.conversationIdUtil.conversationTargetId(
+              widget.chatMessage.nimMessage.conversationId!))
+          .data;
+    }
     return teamId!;
   }
 
@@ -610,7 +622,7 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
               : accId.getUserName()));
       String? avatar = await accId.getAvatar();
 
-      String? avatarName = await accId.getUserName(needAlias: true);
+      String? avatarName = await accId.getUserName(needAlias: false);
       _userAvatarInfo =
           UserAvatarInfo(name, avatar: avatar, avatarName: avatarName);
     }

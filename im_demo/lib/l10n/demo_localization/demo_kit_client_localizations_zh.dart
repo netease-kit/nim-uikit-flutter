@@ -2,8 +2,8 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-
-
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
 import 'demo_kit_client_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -188,7 +188,8 @@ class DemoKitClientLocalizationsZh extends DemoKitClientLocalizations {
   String get settingAndResetTips => '设置成功，重启后生效';
 
   @override
-  String get swindleTips => '仅用于体验云信IM 产品功能，请勿轻信汇款、中奖等涉及钱款的信息，勿轻易拨打陌生电话，谨防上当受骗。';
+  String get swindleTips =>
+      '仅用于体验云信IM 产品功能，请勿轻信汇款、中奖等涉及钱款的信息，勿轻易拨打陌生电话，谨防上当受骗。';
 
   @override
   String get aiStreamMode => 'AI数字人流式输出';
@@ -204,4 +205,7 @@ class DemoKitClientLocalizationsZh extends DemoKitClientLocalizations {
 
   @override
   String get save => '保存';
+
+  @override
+  String get kickedOff => '您已被踢下线';
 }

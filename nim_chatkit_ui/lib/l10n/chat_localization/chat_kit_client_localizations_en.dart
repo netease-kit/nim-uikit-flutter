@@ -663,4 +663,79 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
 
   @override
   String get webConnectError => 'Web view loading error';
+
+  @override
+  String get chatMessageCallFile => 'Call';
+
+  @override
+  String get chatMessageVideoCallAction => 'Video Call';
+
+  @override
+  String get chatMessageAudioCallAction => 'Voice Call';
+
+  @override
+  String get chatMessageBriefVideoCall => '[Video Call]';
+
+  @override
+  String get chatMessageBriefAudioCall => '[Voice Call]';
+
+  @override
+  String get chatMessageAudioCallText => '[Voice Call]';
+
+  @override
+  String get chatMessageVideoCallText => '[Video Call]';
+
+  @override
+  String get chatMessageCallCancel => 'Canceled';
+
+  @override
+  String get chatMessageCallRefused => 'Refused';
+
+  @override
+  String get chatMessageCallTimeout => 'Time Out';
+
+  @override
+  String get chatMessageCallBusy => 'Busy';
+
+  @override
+  String get chatMessageCallCompleted => 'Call';
+
+  @override
+  String get chatVoiceFromSpeaker => 'turn on speaker';
+
+  @override
+  String get chatVoiceFromEarSpeaker => 'turn off speaker';
+
+  @override
+  String get chatVoiceFromSpeakerTips => 'turn on speaker';
+
+  @override
+  String get chatVoiceFromEarSpeakerTips =>
+      'Switched to ear speaker，Move phone to ear to hear audio';
+
+  @override
+  String get chatBeenBlockByOthers => 'You have been blocked.';
+
+  @override
+  String get chatPermissionSystemCheck =>
+      'Failed to get permission. Please go to system settings to grant it.';
+
+  @override
+  String get permissionCameraTitle => 'The camera is used for';
+
+  @override
+  String get permissionCameraContent =>
+      'Photo-taking, video records, video calls, ...';
+
+  @override
+  String get permissionStorageTitle => 'The storage is used for';
+
+  @override
+  String get permissionStorageContent => 'Files, photos, videos, ...';
+
+  @override
+  String get permissionAudioTitle => 'The micro is used for';
+
+  @override
+  String get permissionAudioContent => 'Voice records, voice calls, ...';
 }

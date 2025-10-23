@@ -276,6 +276,18 @@ abstract class ConversationKitClientLocalizations {
   /// In en, this message translates to:
   /// **'This team does not exist'**
   String get joinTeamSearchEmptyTips;
+
+  /// No description provided for @chatMessageBriefVideoCall.
+  ///
+  /// In en, this message translates to:
+  /// **'[Video Call]'**
+  String get chatMessageBriefVideoCall;
+
+  /// No description provided for @chatMessageBriefAudioCall.
+  ///
+  /// In en, this message translates to:
+  /// **'[Voice Call]'**
+  String get chatMessageBriefAudioCall;
 }
 
 class _ConversationKitClientLocalizationsDelegate

@@ -29,7 +29,7 @@ class ChatKitMessageAudioItem extends StatefulWidget {
 }
 
 class ChatKitMessageAudioState extends State<ChatKitMessageAudioItem>
-    with RouteAware {
+    with RouteAware, WidgetsBindingObserver {
   final List<String> toAniList = [
     'images/ic_sound_to_1.svg',
     'images/ic_sound_to_2.svg',
@@ -183,12 +183,22 @@ class ChatKitMessageAudioState extends State<ChatKitMessageAudioItem>
       }
     });
     Future.delayed(Duration.zero, () {
-      if (!mounted) return; // 增加此行
+      if (!mounted) return;
       final route = ModalRoute.of(context);
       if (route != null) {
         IMKitRouter.instance.routeObserver.subscribe(this, route);
       }
     });
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    if (state == AppLifecycleState.paused) {
+      _stopAudioPlay();
+    }
   }
 
   @override
@@ -201,6 +211,7 @@ class ChatKitMessageAudioState extends State<ChatKitMessageAudioItem>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
     _timer?.cancel();
     IMKitRouter.instance.routeObserver.unsubscribe(this);

@@ -43,7 +43,7 @@ class _BlackListPageState extends State<ContactKitBlackListPage> {
                   width: 36,
                   height: 36,
                   avatar: user.avatar,
-                  name: contact?.getName() ?? user.accountId,
+                  name: contact?.getName(needAlias: false) ?? user.accountId,
                   bgCode: AvatarColor.avatarColor(content: user.accountId),
                   radius: widget.listConfig?.avatarCornerRadius,
                 ),

@@ -5,10 +5,10 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:im_demo/l10n/demo_localization/demo_kit_client_localizations_en.dart';
 import 'package:netease_common_ui/base/default_language.dart';
 import 'demo_localization/demo_kit_client_localizations.dart';
 import 'demo_localization/demo_kit_client_localizations_zh.dart';
+import 'demo_localization/demo_kit_client_localizations_en.dart';
 
 class S {
   static const LocalizationsDelegate<DemoKitClientLocalizations> delegate =
@@ -30,7 +30,7 @@ class S {
       try {
         localizations = lookupDemoKitClientLocalizations(local);
       } catch (e) {
-        localizations = DemoKitClientLocalizationsZh();
+        localizations = DemoKitClientLocalizationsEn();
       }
     }
     return localizations;

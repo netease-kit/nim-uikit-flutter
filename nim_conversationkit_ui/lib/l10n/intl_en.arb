@@ -35,5 +35,7 @@
   "chatHistoryBrief": "[Chat history]",
   "joinTeam": "Join Team",
   "joinTeamSearchHint": "Please enter team Id",
-  "joinTeamSearchEmptyTips": "This team does not exist"
+  "joinTeamSearchEmptyTips": "This team does not exist",
+  "chatMessageBriefVideoCall": "[Video Call]",
+  "chatMessageBriefAudioCall": "[Voice Call]"
 }

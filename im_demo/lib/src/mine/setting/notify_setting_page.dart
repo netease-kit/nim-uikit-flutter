@@ -73,7 +73,7 @@ class _NotifySettingPageState extends State<NotifySettingPage> {
                     ConfigRepo.updateMessageNotification(value);
                   }
                   ConfigRepo.updateMixNotification(value,
-                      showDetail: !showNoDetail)
+                          showDetail: !showNoDetail)
                       .then((success) {
                     Fluttertoast.showToast(
                         msg: success

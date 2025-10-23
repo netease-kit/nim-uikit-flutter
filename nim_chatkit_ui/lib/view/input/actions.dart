@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:netease_common_ui/widgets/permission_request.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:netease_common_ui/ui/dialog.dart';
 
 typedef NIMMessageSender = Function(NIMMessage session);
 
@@ -14,9 +15,13 @@ class ActionItem {
   Widget icon;
   String? title;
   Function(BuildContext context, String conversationId,
-          NIMConversationType sessionType, {NIMMessageSender? messageSender})?
-      onTap;
+      NIMConversationType conversationType,
+      {NIMMessageSender? messageSender})? onTap;
   List<Permission>? permissions;
+  //权限标题
+  String? permissionTitle;
+  //权限描述
+  String? permissionDesc;
   //权限拒绝后的提示
   String? deniedTip;
 
@@ -29,6 +34,8 @@ class ActionItem {
       this.onTap,
       this.permissions,
       this.enable = true,
+      this.permissionTitle,
+      this.permissionDesc,
       this.deniedTip});
 }
 
@@ -42,6 +49,7 @@ class ActionConstants {
   static const String translate = 'translate';
   static const String emoji = 'emoji';
   static const String more = 'more';
+  static const String call = 'call'; //呼叫
 
   /// more panel action type
   static const String shoot = "shoot";
@@ -66,9 +74,18 @@ class InputTextAction extends StatelessWidget {
     if (enable) {
       _tap = action.permissions != null
           ? () {
+              if (action.permissionDesc?.isNotEmpty == true) {
+                showTopWarningDialog(
+                    context: context,
+                    title: action.permissionTitle,
+                    content: action.permissionDesc ?? '');
+              }
               PermissionsHelper.requestPermission(action.permissions!,
                       deniedTip: action.deniedTip)
                   .then((value) {
+                if (action.permissionDesc?.isNotEmpty == true) {
+                  Navigator.of(context).pop();
+                }
                 if (value) {
                   onTap();
                 }

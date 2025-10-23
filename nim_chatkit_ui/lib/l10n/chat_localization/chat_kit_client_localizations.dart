@@ -1194,6 +1194,150 @@ abstract class ChatKitClientLocalizations {
   /// In en, this message translates to:
   /// **'Web view loading error'**
   String get webConnectError;
+
+  /// No description provided for @chatMessageCallFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get chatMessageCallFile;
+
+  /// No description provided for @chatMessageVideoCallAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Video Call'**
+  String get chatMessageVideoCallAction;
+
+  /// No description provided for @chatMessageAudioCallAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice Call'**
+  String get chatMessageAudioCallAction;
+
+  /// No description provided for @chatMessageBriefVideoCall.
+  ///
+  /// In en, this message translates to:
+  /// **'[Video Call]'**
+  String get chatMessageBriefVideoCall;
+
+  /// No description provided for @chatMessageBriefAudioCall.
+  ///
+  /// In en, this message translates to:
+  /// **'[Voice Call]'**
+  String get chatMessageBriefAudioCall;
+
+  /// No description provided for @chatMessageAudioCallText.
+  ///
+  /// In en, this message translates to:
+  /// **'[Voice Call]'**
+  String get chatMessageAudioCallText;
+
+  /// No description provided for @chatMessageVideoCallText.
+  ///
+  /// In en, this message translates to:
+  /// **'[Video Call]'**
+  String get chatMessageVideoCallText;
+
+  /// No description provided for @chatMessageCallCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Canceled'**
+  String get chatMessageCallCancel;
+
+  /// No description provided for @chatMessageCallRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'Refused'**
+  String get chatMessageCallRefused;
+
+  /// No description provided for @chatMessageCallTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Time Out'**
+  String get chatMessageCallTimeout;
+
+  /// No description provided for @chatMessageCallBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'Busy'**
+  String get chatMessageCallBusy;
+
+  /// No description provided for @chatMessageCallCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get chatMessageCallCompleted;
+
+  /// No description provided for @chatVoiceFromSpeaker.
+  ///
+  /// In en, this message translates to:
+  /// **'turn on speaker'**
+  String get chatVoiceFromSpeaker;
+
+  /// No description provided for @chatVoiceFromEarSpeaker.
+  ///
+  /// In en, this message translates to:
+  /// **'turn off speaker'**
+  String get chatVoiceFromEarSpeaker;
+
+  /// No description provided for @chatVoiceFromSpeakerTips.
+  ///
+  /// In en, this message translates to:
+  /// **'turn on speaker'**
+  String get chatVoiceFromSpeakerTips;
+
+  /// No description provided for @chatVoiceFromEarSpeakerTips.
+  ///
+  /// In en, this message translates to:
+  /// **'Switched to ear speaker，Move phone to ear to hear audio'**
+  String get chatVoiceFromEarSpeakerTips;
+
+  /// No description provided for @chatBeenBlockByOthers.
+  ///
+  /// In en, this message translates to:
+  /// **'You have been blocked.'**
+  String get chatBeenBlockByOthers;
+
+  /// No description provided for @chatPermissionSystemCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to get permission. Please go to system settings to grant it.'**
+  String get chatPermissionSystemCheck;
+
+  /// No description provided for @permissionCameraTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The camera is used for'**
+  String get permissionCameraTitle;
+
+  /// No description provided for @permissionCameraContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo-taking, video records, video calls, ...'**
+  String get permissionCameraContent;
+
+  /// No description provided for @permissionStorageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The storage is used for'**
+  String get permissionStorageTitle;
+
+  /// No description provided for @permissionStorageContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Files, photos, videos, ...'**
+  String get permissionStorageContent;
+
+  /// No description provided for @permissionAudioTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The micro is used for'**
+  String get permissionAudioTitle;
+
+  /// No description provided for @permissionAudioContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice records, voice calls, ...'**
+  String get permissionAudioContent;
 }
 
 class _ChatKitClientLocalizationsDelegate

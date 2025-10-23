@@ -11,6 +11,7 @@ import 'package:im_demo/src/config.dart';
 import 'package:im_demo/src/home/home_page.dart';
 import 'package:im_demo/src/home/welcome_page.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:provider/provider.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
@@ -78,12 +79,16 @@ class _SplashState extends State<SplashPage> {
     //fixme 将您的云信IM账号(accid)和Token设置在这里即可
     String account = "your account";
     String token = "your token";
-    IMKitClient.loginIM(
+    IMKitClient.loginIMWithResult(
          account,
-        token)
+        token,
+        option: NIMLoginOption(
+        syncLevel: NIMDataSyncLevel.dataSyncLevelBasic))
         .then((value) {
-      if(value){
+      if(value.isSuccess){
         updateAPNsToken();
+        //登录成功之后，初始化CallKit
+        ChatKitClient.instance.setupCallKit(appKey: IMDemoConfig.AppKey, accountId: account);
         setState((){
           haveLogin = true;
         });

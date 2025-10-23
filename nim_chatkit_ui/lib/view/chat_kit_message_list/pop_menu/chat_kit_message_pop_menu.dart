@@ -25,6 +25,7 @@ class ChatKitMessagePopMenu {
   static const String multiSelectId = 'multiSelect';
   static const String deleteMessageId = 'deleteMessage';
   static const String revokeMessageId = 'revokeMessage';
+  static const String speakerMessageId = 'speakerMessage';
 
   SuperTooltip? _tooltip;
 
@@ -36,7 +37,9 @@ class ChatKitMessagePopMenu {
 
   ChatUIConfig? chatUIConfig;
 
-  ChatKitMessagePopMenu(this.message, this.context,
+  bool isVoiceFromSpeaker = true;
+
+  ChatKitMessagePopMenu(this.message, this.isVoiceFromSpeaker, this.context,
       {this.popMenuAction, this.chatUIConfig}) {
     double arrowTipDistance = 30;
     TooltipDirection popupDirection = TooltipDirection.up;
@@ -118,7 +121,7 @@ class ChatKitMessagePopMenu {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         child: ConstrainedBox(
           constraints: const BoxConstraints(
-            maxWidth: 250,
+            maxWidth: 260,
           ),
           child: Wrap(
             direction: Axis.horizontal,
@@ -152,10 +155,16 @@ class ChatKitMessagePopMenu {
     return false;
   }
 
+  bool _showSpeaker(ChatUIConfig? config, ChatMessage message) {
+    return config?.popMenuConfig?.enableVoiceSwitch != false &&
+        message.nimMessage.messageType == NIMMessageType.audio;
+  }
+
   bool _showForward(ChatUIConfig? config, ChatMessage message) {
     if (config?.popMenuConfig?.enableForward != false &&
         _enableStatus(message)) {
-      if (message.nimMessage.messageType != NIMMessageType.audio) {
+      if (message.nimMessage.messageType != NIMMessageType.audio &&
+          message.nimMessage.messageType != NIMMessageType.call) {
         return true;
       }
     }
@@ -167,6 +176,33 @@ class ChatKitMessagePopMenu {
         message.nimMessage.sendingState != NIMMessageSendingState.failed;
   }
 
+  /// 是否展示回复
+  bool _showReply(ChatUIConfig? config, ChatMessage message) {
+    if (message.nimMessage.messageType == NIMMessageType.call) {
+      return false;
+    }
+    return config?.popMenuConfig?.enableReply != false &&
+        _enableStatus(message);
+  }
+
+  /// 是否展示pin
+  bool _showPin(ChatUIConfig? config, ChatMessage message) {
+    if (message.nimMessage.messageType == NIMMessageType.call) {
+      return false;
+    }
+    return config?.popMenuConfig?.enablePin != false && _enableStatus(message);
+  }
+
+  ///是否展示撤回
+  bool _showRevoke(ChatUIConfig? config, ChatMessage message) {
+    if (message.nimMessage.messageType == NIMMessageType.call) {
+      return false;
+    }
+    return _isSelf(message.nimMessage) &&
+        config?.popMenuConfig?.enableRevoke != false &&
+        _enableStatus(message);
+  }
+
   bool _isSelf(NIMMessage message) {
     if (ChatMessageHelper.isReceivedMessageFromAi(message)) {
       return false;
@@ -176,15 +212,24 @@ class ChatKitMessagePopMenu {
 
   _buildLongPressTipItem(
       BuildContext context, ChatUIConfig? config, ChatMessage message) {
-    final shouldShowRevokeAction = _isSelf(message.nimMessage);
     final firstRowList = [
+      if (_showSpeaker(config, message))
+        {
+          "label": !isVoiceFromSpeaker
+              ? S.of(context).chatVoiceFromSpeaker
+              : S.of(context).chatVoiceFromEarSpeaker,
+          "id": speakerMessageId,
+          "icon": !isVoiceFromSpeaker
+              ? "images/ic_speaker.svg"
+              : "images/ic_ear.svg"
+        },
       if (_showCopy(config, message))
         {
           "label": S.of(context).chatMessageActionCopy,
           "id": copyMessageId,
           "icon": "images/ic_chat_copy.svg"
         },
-      if (config?.popMenuConfig?.enableReply != false && _enableStatus(message))
+      if (_showReply(config, message))
         {
           "label": S.of(context).chatMessageActionReply,
           "id": replyMessageId,
@@ -196,7 +241,7 @@ class ChatKitMessagePopMenu {
           "id": forwardMessageId,
           "icon": "images/ic_chat_forward.svg"
         },
-      if (config?.popMenuConfig?.enablePin != false && _enableStatus(message))
+      if (_showPin(config, message))
         {
           "label": _messageHavePined(message)
               ? S.of(context).chatMessageActionUnPin
@@ -223,9 +268,7 @@ class ChatKitMessagePopMenu {
           "id": multiSelectId,
           "icon": "images/ic_chat_select.svg"
         },
-      if (shouldShowRevokeAction &&
-          config?.popMenuConfig?.enableRevoke != false &&
-          _enableStatus(message))
+      if (_showRevoke(config, message))
         {
           "label": S.of(context).chatMessageActionRevoke,
           "id": revokeMessageId,
@@ -330,6 +373,11 @@ class ChatKitMessagePopMenu {
           popMenuAction?.onMessageMultiSelect!(message);
         }
         break;
+      case speakerMessageId:
+        if (popMenuAction?.onVoiceSpeakerSwitch != null) {
+          popMenuAction?.onVoiceSpeakerSwitch!.call(!isVoiceFromSpeaker);
+        }
+        break;
     }
   }
 
@@ -338,7 +386,7 @@ class ChatKitMessagePopMenu {
     GestureTapCallback? onTap,
   }) {
     return SizedBox(
-      width: 58,
+      width: 60,
       child: InkWell(
         onTap: onTap,
         child: Container(

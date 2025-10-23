@@ -76,5 +76,6 @@
   "language": "Language",
   "languageChinese": "中文",
   "languageEnglish": "English",
-  "save": "Save"
+  "save": "Save",
+  "kickedOff": "Kicked Off"
 }

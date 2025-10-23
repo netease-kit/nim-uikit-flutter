@@ -17,6 +17,7 @@ import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
 import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
 import 'package:nim_conversationkit_ui/l10n/S.dart';
 import 'package:nim_core_v2/nim_core.dart';
+import 'package:nim_chatkit/message/message_helper.dart';
 
 import '../model/conversation_info.dart';
 
@@ -70,7 +71,15 @@ class ConversationItem extends StatelessWidget {
       case NIMMessageType.location:
         return S.of(context).locationMessageType;
       case NIMMessageType.call:
-        return S.of(context).chatMessageNonsupportType;
+        final attachment = conversationInfo.getLastMessage()?.attachment
+            as NIMMessageCallAttachment;
+        if (attachment.type == BillMessage.videoBill) {
+          return S.of(context).chatMessageBriefVideoCall;
+        } else if (attachment.type == BillMessage.voiceBill) {
+          return S.of(context).chatMessageBriefAudioCall;
+        } else {
+          return S.of(context).chatMessageNonsupportType;
+        }
       case NIMMessageType.custom:
         var customLastMessageContent =
             _getCustomLastMessageBrief(context, conversationInfo);

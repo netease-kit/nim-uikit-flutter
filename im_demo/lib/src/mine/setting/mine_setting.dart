@@ -54,19 +54,19 @@ class _MineSettingPageState extends State<MineSettingPage> {
   @override
   Widget build(BuildContext context) {
     List<Widget> switchTiles = [
-      CommonListTile(
-        title: S.of(context).settingPlayMode,
-        trailingType: TrailingType.onOff,
-        switchValue: audioPlayMode,
-        onSwitchChanged: (value) {
-          ConfigRepo.updateAudioPlayMode(value
-              ? ConfigRepo.audioPlayEarpiece
-              : ConfigRepo.audioPlayOutside);
-          setState(() {
-            audioPlayMode = value;
-          });
-        },
-      ),
+      // CommonListTile(
+      //   title: S.of(context).settingPlayMode,
+      //   trailingType: TrailingType.onOff,
+      //   switchValue: audioPlayMode,
+      //   onSwitchChanged: (value) {
+      //     ConfigRepo.updateAudioPlayMode(value
+      //         ? ConfigRepo.audioPlayEarpiece
+      //         : ConfigRepo.audioPlayOutside);
+      //     setState(() {
+      //       audioPlayMode = value;
+      //     });
+      //   },
+      // ),
       CommonListTile(
         title: S.of(context).settingMessageReadMode,
         trailingType: TrailingType.onOff,

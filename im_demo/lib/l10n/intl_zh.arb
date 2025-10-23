@@ -76,5 +76,6 @@
   "language": "语言",
   "languageChinese": "中文",
   "languageEnglish": "English",
-  "save": "保存"
+  "save": "保存",
+  "kickedOff": "您已被踢下线"
 }

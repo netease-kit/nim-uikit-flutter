@@ -154,8 +154,6 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
           Rect.fromLTRB(0, 0, 0, MediaQuery.of(context).padding.bottom),
       axis: Axis.vertical,
     );
-    //初始化语音播放器
-    ChatAudioPlayer.instance.initAudioPlayer();
     ChatKitClient.instance.registerRevokedMessage();
     if (widget.conversationType == NIMConversationType.team) {
       _teamDismissSub =
@@ -296,7 +294,7 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
         return true;
       }
       return e.sendingState == NIMMessageSendingState.failed ||
-          e.messageType == NIMMessageType.avChat ||
+          e.messageType == NIMMessageType.call ||
           e.sendingState == NIMMessageSendingState.sending;
     }).toList();
     if (cannotMergeMessage.isNotEmpty) {
@@ -347,7 +345,7 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
     var cannotMergeMessage = selectedMessages.where((e) {
       return e.sendingState == NIMMessageSendingState.failed ||
           e.sendingState == NIMMessageSendingState.sending ||
-          e.messageType == NIMMessageType.avChat ||
+          e.messageType == NIMMessageType.call ||
           e.messageType == NIMMessageType.audio;
     }).toList();
     if (cannotMergeMessage.isNotEmpty) {
@@ -425,6 +423,16 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
           bool haveSelectedMessage =
               context.watch<ChatViewModel>().selectedMessages.isNotEmpty;
 
+          Widget? subTitleWidget =
+              context.watch<ChatViewModel>().voiceFromSpeaker
+                  ? null
+                  : SvgPicture.asset(
+                      "images/ic_ear.svg",
+                      package: kPackage,
+                      width: 18,
+                      height: 18,
+                    );
+
           final chatViewModel = context.watch<ChatViewModel>();
           // 检查群组有效性
           if (widget.conversationType == NIMConversationType.team &&
@@ -442,6 +450,7 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
                   centerTitle: true,
                   title: title,
                   subTitle: subTitle,
+                  subTitleWidget: subTitleWidget,
                   elevation: 0,
                   actions: [
                     context.watch<ChatViewModel>().isMultiSelected
@@ -469,12 +478,11 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
                                 }
                               } else if (widget.conversationType ==
                                   NIMConversationType.team) {
-                                Navigator.pushNamed(context,
-                                    RouterConstants.PATH_TEAM_SETTING_PAGE,
-                                    arguments: {
-                                      'teamId': await getSessionId(
-                                          widget.conversationId)
-                                    }).then((value) {
+                                goToTeamSettingPage(
+                                        context,
+                                        await getSessionId(
+                                            widget.conversationId))
+                                    .then((value) {
                                   if (value == true) {
                                     Navigator.pop(context);
                                   }

@@ -30,7 +30,7 @@ class S {
       try {
         localizations = lookupSearchKitClientLocalizations(local);
       } catch (e) {
-        localizations = SearchKitClientLocalizationsZh();
+        localizations = SearchKitClientLocalizationsEn();
       }
     }
     return localizations;

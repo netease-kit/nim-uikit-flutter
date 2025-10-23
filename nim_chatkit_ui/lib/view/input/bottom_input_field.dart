@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 import 'dart:io';
-import 'dart:ui';
 
 import 'package:extended_text_field/extended_text_field.dart';
 import 'package:flutter/cupertino.dart';
@@ -11,12 +10,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:netease_common/netease_common.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
-import 'package:netease_common_ui/widgets/permission_request.dart';
-import 'package:netease_common_ui/widgets/platform_utils.dart';
+import 'package:netease_common_ui/widgets/imagePicker/wechat_assets_picker.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/model/ait/ait_contacts_model.dart';
 import 'package:nim_chatkit/service_locator.dart';
@@ -36,7 +33,6 @@ import 'package:nim_core_v2/nim_core.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
-import 'package:video_player/video_player.dart';
 
 import '../../chat_kit_client.dart';
 import '../../l10n/S.dart';
@@ -75,8 +71,6 @@ class _BottomInputFieldState extends State<BottomInputField>
   late FocusNode _focusNode;
   late FocusNode _titleFocusNode;
   late ChatViewModel _viewModel;
-
-  final ImagePicker _picker = ImagePicker();
 
   String inputText = '';
 
@@ -139,58 +133,41 @@ class _BottomInputFieldState extends State<BottomInputField>
     setState(() {});
   }
 
-  _pickImage() async {
-    final List<XFile>? pickedFileList = await _picker.pickMultiImage();
-    if (pickedFileList != null) {
-      for (XFile image in pickedFileList) {
-        Alog.d(
-            tag: 'ChatKit',
-            moduleName: 'bottom input',
-            content: 'pick image path:${image.path}');
-
-        String? imageType;
-        if (image.path.lastIndexOf('.') + 1 < image.path.length) {
-          imageType = image.path.substring(image.path.lastIndexOf('.') + 1);
+  void showImagePicker(
+      BuildContext context, RequestType requestType, int maxAssets) async {
+    final List<AssetEntity>? result = await AssetPicker.pickAssets(context,
+        pickerConfig: AssetPickerConfig(
+          requestType: requestType,
+          shouldRevertGrid: false,
+          maxAssets: maxAssets,
+          limitedPermissionOverlayPredicate: (state) => false,
+        ));
+    if (result != null) {
+      for (var entity in result) {
+        final File? file = await entity.originFile;
+        if (file != null) {
+          if (requestType == RequestType.image) {
+            String? imageType;
+            if (file.path.lastIndexOf('.') + 1 < file.path.length) {
+              imageType = file.path.substring(file.path.lastIndexOf('.') + 1);
+            }
+            _viewModel.sendImageMessage(
+                file.path, entity.title, entity.width, entity.height,
+                imageType: imageType);
+          } else if (requestType == RequestType.video) {
+            var size = await file.length();
+            int overSize =
+                ChatKitClient.instance.chatUIConfig.maxVideoSize ?? 200;
+            if (size > overSize * 1024 * 1024) {
+              Fluttertoast.showToast(
+                  msg: S.of(context).chatMessageFileSizeOverLimit("$overSize"));
+              return;
+            }
+            _viewModel.sendVideoMessage(file.path, entity.title,
+                entity.duration * 1000, entity.width, entity.height);
+          }
         }
-        final codec =
-            await instantiateImageCodec(File(image.path).readAsBytesSync());
-        final frame = await codec.getNextFrame();
-        _viewModel.sendImageMessage(
-            image.path, image.name, frame.image.width, frame.image.height,
-            imageType: imageType);
       }
-    }
-  }
-
-  _pickVideo() async {
-    final XFile? video = await _picker.pickVideo(source: ImageSource.gallery);
-    Alog.d(
-        tag: 'ChatKit',
-        moduleName: 'bottom input',
-        content: 'pick video path:${video?.path}');
-    if (video != null) {
-      var length = await video.length();
-      int overSize = ChatKitClient.instance.chatUIConfig.maxVideoSize ?? 200;
-      if (length > overSize * 1024 * 1024) {
-        Fluttertoast.showToast(
-            msg: S.of(context).chatMessageFileSizeOverLimit("$overSize"));
-        return;
-      }
-      VideoPlayerController controller;
-      if (Platform.isAndroid) {
-        controller = VideoPlayerController.file(File(video.path),
-            viewType: VideoViewType.platformView);
-      } else {
-        controller = VideoPlayerController.file(File(video.path));
-      }
-      controller.initialize().then((value) {
-        _viewModel.sendVideoMessage(
-            video.path,
-            video.name,
-            controller.value.duration.inMilliseconds,
-            controller.value.size.width.toInt(),
-            controller.value.size.height.toInt());
-      });
     }
   }
 
@@ -226,31 +203,39 @@ class _BottomInputFieldState extends State<BottomInputField>
             showCancel: true)
         .then((value) async {
       if (value == 1 || value == 2) {
-        final permissionList;
-        if (Platform.isIOS) {
-          permissionList = [Permission.photos];
-        } else if (Platform.isAndroid) {
-          if (await PlatformUtils.isAboveAndroidT()) {
-            permissionList = [Permission.photos, Permission.videos];
-          } else {
-            permissionList = [Permission.storage];
+        final requestType = value == 1 ? RequestType.image : RequestType.video;
+
+        // 显示顶部说明弹框
+        showTopWarningDialog(
+            context: context,
+            title: S.of(context).permissionStorageTitle,
+            content: S.of(context).permissionStorageContent);
+
+        // 权限检查
+        final PermissionState ps = await AssetPicker.permissionCheck(
+            requestOption: PermissionRequestOption(
+              androidPermission: AndroidPermission(
+                type: requestType,
+                mediaLocation: false,
+              ),
+            ),
+            returnResultDenied: true);
+
+        // 关闭说明弹框
+        Navigator.of(context).pop();
+
+        if (ps == PermissionState.authorized || ps == PermissionState.limited) {
+          if (value == 1) {
+            showImagePicker(context, RequestType.image, 9);
+          } else if (value == 2) {
+            showImagePicker(context, RequestType.video, 1);
           }
         } else {
-          permissionList = [];
-        }
-        if (await PermissionsHelper.requestPermission(permissionList)) {
-          if (value == 1) {
-            _pickImage();
-          } else if (value == 2) {
-            _pickVideo();
-          }
+          Fluttertoast.showToast(msg: S.of(context).chatPermissionSystemCheck);
         }
       }
     });
   }
-
-  // _onFileActionTap() {
-  // }
 
   _onMoreActionTap(
       BuildContext context, String sessionId, NIMConversationType sessionType,
@@ -280,11 +265,15 @@ class _BottomInputFieldState extends State<BottomInputField>
   List<ActionItem> _defaultInputActions() {
     return [
       ActionItem(
-          type: ActionConstants.record,
-          icon: _actionIcon('images/ic_send_voice.svg', ActionConstants.record),
-          permissions: [Permission.microphone],
-          onTap: _onRecordActionTap,
-          deniedTip: S.of(context).microphoneDeniedTips),
+        type: ActionConstants.record,
+        icon: _actionIcon('images/ic_send_voice.svg', ActionConstants.record),
+        permissions: [Permission.microphone],
+        onTap: _onRecordActionTap,
+        deniedTip: S.of(context).microphoneDeniedTips,
+        permissionTitle: S.of(context).permissionAudioTitle,
+        permissionDesc: S.of(context).permissionAudioContent,
+      ),
+
       ActionItem(
           type: ActionConstants.emoji,
           icon: _actionIcon('images/ic_send_emoji.svg', ActionConstants.emoji),
@@ -348,8 +337,8 @@ class _BottomInputFieldState extends State<BottomInputField>
       return MorePanel(
         moreActions: widget.chatUIConfig?.moreActions,
         keepDefault: widget.chatUIConfig?.keepDefaultMoreAction ?? true,
-        sessionId: widget.conversationId,
-        sessionType: widget.conversationType,
+        conversationId: widget.conversationId,
+        conversationType: widget.conversationType,
         onTranslateClick: _onTranslateActionTap,
       );
     }

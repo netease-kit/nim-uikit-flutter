@@ -93,9 +93,9 @@ class _MinePageState extends State<MinePage> {
           InkWell(
             onTap: () {
               Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const UserInfoPage()))
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const UserInfoPage()))
                   .then((value) {
                 setState(() {});
               });

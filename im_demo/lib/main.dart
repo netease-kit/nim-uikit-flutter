@@ -3,13 +3,13 @@
 // found in the LICENSE file.
 
 import 'dart:io';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:im_demo/l10n/S.dart';
-import 'package:im_demo/src/config.dart';
 import 'package:im_demo/src/home/home_page.dart';
 import 'package:im_demo/src/home/splash_page.dart';
 import 'package:im_demo/src/mine/user_info_page.dart';
@@ -29,6 +29,7 @@ import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:netease_common_ui/base/default_language.dart';
 import 'package:nim_chatkit/repo/config_repo.dart';
+import 'package:netease_callkit_ui/ne_callkit_ui.dart';
 
 void main() {
   SystemChrome.setSystemUIOverlayStyle(
@@ -142,9 +143,13 @@ class _MainAppState extends State<MainApp> {
             ContactKitClient.delegate,
             TeamKitClient.delegate,
             SearchKitClient.delegate,
+            NECallKitUI.delegate,
             ...GlobalMaterialLocalizations.delegates,
           ],
-          navigatorObservers: [IMKitRouter.instance.routeObserver],
+          navigatorObservers: [
+            IMKitRouter.instance.routeObserver,
+            NECallKitUI.navigatorObserver
+          ],
           supportedLocales: IMKitClient.supportedLocales,
           theme: ThemeData(
               primaryColor: CommonColors.color_337eff,

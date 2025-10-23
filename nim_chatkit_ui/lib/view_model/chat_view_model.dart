@@ -15,6 +15,7 @@ import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/manager/subscription_manager.dart';
 import 'package:nim_chatkit/model/ait/ait_contacts_model.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
+import 'package:nim_chatkit/repo/config_repo.dart';
 import 'package:nim_chatkit/service_locator.dart';
 import 'package:nim_chatkit/services/contact/contact_provider.dart';
 import 'package:nim_chatkit/services/message/chat_message.dart';
@@ -33,6 +34,7 @@ import 'package:uuid/uuid.dart';
 
 import '../chat_kit_client.dart';
 import '../l10n/S.dart';
+import '../media/audio_player.dart';
 
 class ChatViewModel extends ChangeNotifier {
   static const String logTag = 'ChatViewModel';
@@ -175,9 +177,15 @@ class ChatViewModel extends ChangeNotifier {
       {this.showReadAck = true}) {
     _setNIMMessageListener();
     initData();
+    //初始化语音播放器
+    ChatAudioPlayer.instance.initAudioPlayer();
   }
 
+  bool voiceFromSpeaker = false;
+
   initData() async {
+    int v = await ConfigRepo.getAudioPlayModel();
+    voiceFromSpeaker = v == ConfigRepo.audioPlayOutside;
     _sessionId = (await NimCore.instance.conversationIdUtil
             .conversationTargetId(conversationId))
         .data;
@@ -213,6 +221,19 @@ class ChatViewModel extends ChangeNotifier {
       });
     }
     _initFetch();
+  }
+
+  ///更新语音消息的播放模式
+  void updateVoicePlayModel(bool isVoiceFromSpeaker) async {
+    await ConfigRepo.updateAudioPlayMode(voiceFromSpeaker
+        ? ConfigRepo.audioPlayEarpiece
+        : ConfigRepo.audioPlayOutside);
+    voiceFromSpeaker = !voiceFromSpeaker;
+    //切换后重新初始化
+    ChatAudioPlayer.instance.stopAll();
+    ChatAudioPlayer.instance.release();
+    ChatAudioPlayer.instance.initAudioPlayer();
+    notifyListeners();
   }
 
   ///更新对方的用户信息
@@ -1485,6 +1506,7 @@ class ChatViewModel extends ChangeNotifier {
     for (var sub in subscriptions) {
       sub.cancel();
     }
+    ChatAudioPlayer.instance.release();
     super.dispose();
   }
 }

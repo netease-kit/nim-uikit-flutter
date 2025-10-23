@@ -31,7 +31,7 @@ class S {
       try {
         localizations = lookupTeamKitClientLocalizations(local);
       } catch (e) {
-        localizations = TeamKitClientLocalizationsZh();
+        localizations = TeamKitClientLocalizationsEn();
       }
     }
     return localizations;
