@@ -62,20 +62,20 @@ class MediaBottomActionOverlay extends StatelessWidget {
   }
 
   void _saveFile(BuildContext context) async {
-    // if (Platform.isIOS) {
-    //   var result;
-    //   var attachment = message.attachment;
-    //   if (attachment is NIMMessageImageAttachment) {
-    //     var response = await Dio().get(attachment.url!,
-    //         options: Options(responseType: ResponseType.bytes));
-    //     result = await ImageGallerySaverPlus.saveImage(response.data,
-    //         name: attachment.name);
-    //   } else if (attachment is NIMMessageVideoAttachment) {
-    //     result = await ImageGallerySaverPlus.saveFile(attachment.path!);
-    //   }
-    //   _saveFinish(context, result);
-    //   return;
-    // }
+    if (Platform.isIOS) {
+      var result;
+      var attachment = message.attachment;
+      if (attachment is NIMMessageImageAttachment) {
+        var response = await Dio().get(attachment.url!,
+            options: Options(responseType: ResponseType.bytes));
+        result = await ImageGallerySaverPlus.saveImage(response.data,
+            name: attachment.name);
+      } else if (attachment is NIMMessageVideoAttachment) {
+        result = await ImageGallerySaverPlus.saveFile(attachment.path!);
+      }
+      _saveFinish(context, result);
+      return;
+    }
     if (message.isFileDownload()) {
       NIMMessageFileAttachment attachment =
           message.attachment as NIMMessageFileAttachment;
@@ -150,7 +150,12 @@ class MediaBottomActionOverlay extends StatelessWidget {
                   PermissionsHelper.requestPermission(permissionList)
                       .then((value) {
                     if (value) {
-                      _saveFile(context);
+                      if (value) {
+                        _saveFile(context);
+                      } else {
+                        Fluttertoast.showToast(
+                            msg: S.of(context).chatPermissionSystemCheck);
+                      }
                     }
                   });
                 },

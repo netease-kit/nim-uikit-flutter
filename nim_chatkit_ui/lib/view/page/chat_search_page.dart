@@ -10,6 +10,7 @@ import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/text_search.dart';
 import 'package:netease_common_ui/widgets/search_page.dart';
 import 'package:nim_chatkit/router/imkit_router_constants.dart';
+import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_chatkit/services/message/chat_message.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_user_helper.dart';
@@ -71,13 +72,9 @@ class ChatSearchResult extends StatelessWidget {
                           .instance.conversationIdUtil
                           .teamConversationId(teamId))
                       .data!;
-                  Navigator.pushNamedAndRemoveUntil(context,
-                      RouterConstants.PATH_CHAT_PAGE, ModalRoute.withName('/'),
-                      arguments: {
-                        'conversationId': conversationId,
-                        'conversationType': NIMConversationType.team,
-                        'anchor': item.nimMessage
-                      });
+                  goToChatAndKeepHome(
+                      context, conversationId, NIMConversationType.team,
+                      message: item.nimMessage);
                 },
                 child: SearchItem(item, keyword),
               );

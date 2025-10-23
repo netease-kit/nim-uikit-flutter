@@ -648,4 +648,76 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
 
   @override
   String get webConnectError => '页面加载失败';
+
+  @override
+  String get chatMessageCallFile => '音视频通话';
+
+  @override
+  String get chatMessageVideoCallAction => '视频通话';
+
+  @override
+  String get chatMessageAudioCallAction => '语音通话';
+
+  @override
+  String get chatMessageBriefVideoCall => '[视频通话]';
+
+  @override
+  String get chatMessageBriefAudioCall => '[语音通话]';
+
+  @override
+  String get chatMessageAudioCallText => '[语音通话]';
+
+  @override
+  String get chatMessageVideoCallText => '[视频通话]';
+
+  @override
+  String get chatMessageCallCancel => '已取消';
+
+  @override
+  String get chatMessageCallRefused => '已拒绝';
+
+  @override
+  String get chatMessageCallTimeout => '未接听';
+
+  @override
+  String get chatMessageCallBusy => '忙线未接听';
+
+  @override
+  String get chatMessageCallCompleted => '通话时长';
+
+  @override
+  String get chatVoiceFromSpeaker => '扬声器';
+
+  @override
+  String get chatVoiceFromEarSpeaker => '听筒播放';
+
+  @override
+  String get chatVoiceFromSpeakerTips => '扬声器播放';
+
+  @override
+  String get chatVoiceFromEarSpeakerTips => '切换听筒播放模式，请贴近手机聆听';
+
+  @override
+  String get chatBeenBlockByOthers => '您已被对方拉黑';
+
+  @override
+  String get chatPermissionSystemCheck => '权限获取失败，请前往系统设置页面设置';
+
+  @override
+  String get permissionCameraTitle => '相机权限使用说明';
+
+  @override
+  String get permissionCameraContent => '用户拍照，视频录制， 视频通话等场景';
+
+  @override
+  String get permissionStorageTitle => '存储权限使用说明';
+
+  @override
+  String get permissionStorageContent => '用户发送文件、图片、视频等场景';
+
+  @override
+  String get permissionAudioTitle => '麦克风权限使用说明';
+
+  @override
+  String get permissionAudioContent => '用户录制， 音频通话等场景';
 }

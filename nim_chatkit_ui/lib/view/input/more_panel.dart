@@ -11,17 +11,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:netease_callkit_ui/ne_callkit_ui.dart';
+import 'package:netease_callkit/netease_callkit.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/permission_request.dart';
 import 'package:netease_common_ui/widgets/platform_utils.dart';
 import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
+import 'package:nim_chatkit/im_kit_config_center.dart';
 import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
+import 'package:netease_common_ui/base/base_state.dart';
+import 'package:nim_chatkit/repo/chat_message_repo.dart';
 
 import '../../chat_kit_client.dart';
 import '../../l10n/S.dart';
@@ -31,8 +37,8 @@ import 'actions.dart';
 class MorePanel extends StatefulWidget {
   const MorePanel(
       {Key? key,
-      required this.sessionId,
-      required this.sessionType,
+      required this.conversationId,
+      required this.conversationType,
       required this.onTranslateClick,
       this.moreActions,
       this.keepDefault = true})
@@ -41,33 +47,33 @@ class MorePanel extends StatefulWidget {
   final bool keepDefault;
   final List<ActionItem>? moreActions;
 
-  final String sessionId;
+  final String conversationId;
 
-  final NIMConversationType sessionType;
+  final NIMConversationType conversationType;
 
   final Function(BuildContext context, String conversationId,
-          NIMConversationType sessionType, {NIMMessageSender? messageSender})?
-      onTranslateClick;
+      NIMConversationType conversationType,
+      {NIMMessageSender? messageSender})? onTranslateClick;
 
   @override
   State<StatefulWidget> createState() => _MorePanelState();
 }
 
-class _MorePanelState extends State<MorePanel> {
+class _MorePanelState extends BaseState<MorePanel> {
   static const int pageSize = 8;
   final ImagePicker _picker = ImagePicker();
 
-  List<ActionItem> getActions() {
+  List<ActionItem> getActions(NIMConversationType conversationType) {
     if (widget.moreActions != null) {
       return [
-        if (widget.keepDefault) ..._defaultMoreActions(),
+        if (widget.keepDefault) ..._defaultMoreActions(conversationType),
         ...widget.moreActions!,
       ];
     }
-    return _defaultMoreActions();
+    return _defaultMoreActions(conversationType);
   }
 
-  List<ActionItem> _defaultMoreActions() {
+  List<ActionItem> _defaultMoreActions(NIMConversationType conversationType) {
     final List<ActionItem> defaultActions = [
       ActionItem(
           type: ActionConstants.shoot,
@@ -77,7 +83,20 @@ class _MorePanelState extends State<MorePanel> {
           ),
           title: S.of(context).chatMessageMoreShoot,
           permissions: [Permission.camera],
+          permissionTitle: S.of(context).permissionCameraTitle,
+          permissionDesc: S.of(context).permissionCameraContent,
+          deniedTip: S.of(context).chatPermissionSystemCheck,
           onTap: _onShootActionTap),
+      if (IMKitConfigCenter.enableCallKit &&
+          conversationType == NIMConversationType.p2p)
+        ActionItem(
+            type: ActionConstants.call,
+            icon: SvgPicture.asset(
+              'images/ic_call.svg',
+              package: kPackage,
+            ),
+            title: S.of(context).chatMessageCallFile,
+            onTap: _onCallActionTap),
       ActionItem(
           type: ActionConstants.file,
           icon: SvgPicture.asset(
@@ -103,7 +122,8 @@ class _MorePanelState extends State<MorePanel> {
     var pluginActions = NimPluginCoreKit()
         .itemPool
         .getMoreActions()
-        .where((action) => action.enable?.call(widget.sessionType) != false)
+        .where(
+            (action) => action.enable?.call(widget.conversationType) != false)
         .map((e) => ActionItem(
             type: e.type,
             icon: e.icon,
@@ -115,18 +135,80 @@ class _MorePanelState extends State<MorePanel> {
     return defaultActions;
   }
 
+  //语音通话
+  _onCallActionTap(BuildContext context, String conversationId,
+      NIMConversationType sessionType,
+      {NIMMessageSender? messageSender}) async {
+    //判断网络
+    if (!checkNetwork()) {
+      return;
+    }
+    String targetId = ChatKitUtils.getConversationTargetId(conversationId);
+    _showCallActionSelectDialog((value) {
+      if (value != null) {
+        NECallKitUI.instance
+            .call(
+          targetId, // 被呼叫用户的 userID
+          value == 1 ? NECallType.video : NECallType.audio, // 通话类型：音频或视频
+        )
+            .then((result) {
+          if (result.code == ChatMessageRepo.errorInBlackList) {
+            Fluttertoast.showToast(msg: S.of(context).chatBeenBlockByOthers);
+          }
+        });
+      }
+    });
+  }
+
+  //音视频呼叫方式选择弹框
+  void _showCallActionSelectDialog(ValueChanged<int?> onChoose) {
+    var style = const TextStyle(fontSize: 16, color: CommonColors.color_333333);
+    showBottomChoose(
+            context: context,
+            actions: [
+              CupertinoActionSheetAction(
+                onPressed: () {
+                  Navigator.pop(context, 1);
+                },
+                child: Text(
+                  S.of(context).chatMessageVideoCallAction,
+                  style: style,
+                ),
+              ),
+              CupertinoActionSheetAction(
+                onPressed: () {
+                  Navigator.pop(context, 2);
+                },
+                child: Text(
+                  S.of(context).chatMessageAudioCallAction,
+                  style: style,
+                ),
+              ),
+            ],
+            showCancel: true)
+        .then((value) => onChoose(value));
+  }
+
   _onFileActionTap(
       BuildContext context, String sessionId, NIMConversationType sessionType,
       {NIMMessageSender? messageSender}) async {
     final permissionList;
     if (Platform.isAndroid && await PlatformUtils.isAboveAndroidT()) {
-      permissionList = [Permission.photos];
+      permissionList = [Permission.photos, Permission.videos, Permission.audio];
     } else {
       permissionList = [Permission.storage];
     }
+    showTopWarningDialog(
+      context: context,
+      title: S.of(context).permissionStorageTitle,
+      content: S.of(context).permissionStorageContent,
+    );
     if (!(await PermissionsHelper.requestPermission(permissionList))) {
+      Navigator.of(context).pop();
+      Fluttertoast.showToast(msg: S.of(context).chatPermissionSystemCheck);
       return;
     }
+    Navigator.of(context).pop();
     FilePickerResult? result = await FilePicker.platform.pickFiles();
     final platformFile = result?.files.single;
     if (platformFile?.path != null) {
@@ -225,7 +307,7 @@ class _MorePanelState extends State<MorePanel> {
 
   @override
   Widget build(BuildContext context) {
-    List<ActionItem> moreActions = getActions();
+    List<ActionItem> moreActions = getActions(widget.conversationType);
     List<Widget> pages = [];
     int size = (moreActions.length / pageSize).ceil();
     for (int i = 0; i < size; ++i) {
@@ -235,8 +317,8 @@ class _MorePanelState extends State<MorePanel> {
           : start + pageSize;
       pages.add(MoreActionPage(
         actions: moreActions.sublist(start, end),
-        sessionId: widget.sessionId,
-        sessionType: widget.sessionType,
+        conversationId: widget.conversationId,
+        conversationType: widget.conversationType,
         messageSender: (message) {
           context.read<ChatViewModel>().sendMessage(message);
         },
@@ -253,16 +335,16 @@ class MoreActionPage extends StatelessWidget {
   const MoreActionPage({
     Key? key,
     required this.actions,
-    required this.sessionId,
-    required this.sessionType,
+    required this.conversationId,
+    required this.conversationType,
     this.messageSender,
   }) : super(key: key);
 
   final List<ActionItem> actions;
 
-  final String sessionId;
+  final String conversationId;
 
-  final NIMConversationType sessionType;
+  final NIMConversationType conversationType;
 
   final NIMMessageSender? messageSender;
 
@@ -279,8 +361,8 @@ class MoreActionPage extends StatelessWidget {
           children: actions.map((action) {
             return MoreItemAction(
                 action: action,
-                sessionId: sessionId,
-                sessionType: sessionType,
+                conversationId: conversationId,
+                conversationType: conversationType,
                 messageSender: messageSender);
           }).toList(),
         ),
@@ -293,16 +375,16 @@ class MoreItemAction extends StatelessWidget {
   const MoreItemAction(
       {Key? key,
       required this.action,
-      required this.sessionId,
-      required this.sessionType,
+      required this.conversationId,
+      required this.conversationType,
       this.messageSender})
       : super(key: key);
 
   final ActionItem action;
 
-  final String sessionId;
+  final String conversationId;
 
-  final NIMConversationType sessionType;
+  final NIMConversationType conversationType;
 
   final NIMMessageSender? messageSender;
 
@@ -313,18 +395,27 @@ class MoreItemAction extends StatelessWidget {
         GestureDetector(
           onTap: action.permissions != null
               ? () {
+                  if (action.permissionDesc?.isNotEmpty == true) {
+                    showTopWarningDialog(
+                        context: context,
+                        title: action.permissionTitle,
+                        content: action.permissionDesc ?? '');
+                  }
                   PermissionsHelper.requestPermission(action.permissions!,
                           deniedTip: action.deniedTip)
                       .then((value) {
+                    if (action.permissionDesc?.isNotEmpty == true) {
+                      Navigator.of(context).pop();
+                    }
                     if (value && action.onTap != null) {
-                      action.onTap!(context, sessionId, sessionType,
+                      action.onTap!(context, conversationId, conversationType,
                           messageSender: messageSender);
                     }
                   });
                 }
               : () {
                   if (action.onTap != null) {
-                    action.onTap!(context, sessionId, sessionType,
+                    action.onTap!(context, conversationId, conversationType,
                         messageSender: messageSender);
                   }
                 },

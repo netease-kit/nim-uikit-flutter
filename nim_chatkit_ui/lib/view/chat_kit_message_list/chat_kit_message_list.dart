@@ -14,7 +14,6 @@ import 'package:nim_chatkit/message/message_helper.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit_ui/l10n/S.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
-import 'package:nim_chatkit_ui/view/page/chat_forward_page.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:provider/provider.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
@@ -222,6 +221,21 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
         .sendMessage(message.nimMessage, replyMsg: message.replyMsg);
   }
 
+  bool _onVoicePlayModelChange(bool isVoiceFromSpeaker) {
+    var customActions = widget.popMenuAction;
+    if (customActions?.onVoiceSpeakerSwitch != null &&
+        customActions!.onVoiceSpeakerSwitch!(isVoiceFromSpeaker)) {
+      return true;
+    }
+    if (isVoiceFromSpeaker) {
+      Fluttertoast.showToast(msg: S.of().chatVoiceFromSpeakerTips);
+    } else {
+      Fluttertoast.showToast(msg: S.of().chatVoiceFromEarSpeakerTips);
+    }
+    context.read<ChatViewModel>().updateVoicePlayModel(isVoiceFromSpeaker);
+    return true;
+  }
+
   bool _onMessageRevoke(ChatMessage message) {
     var customActions = widget.popMenuAction;
     if (customActions?.onMessageRevoke != null &&
@@ -292,6 +306,7 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
     actions.onMessageMultiSelect = _onMessageMultiSelect;
     actions.onMessageDelete = _onMessageDelete;
     actions.onMessageRevoke = _onMessageRevoke;
+    actions.onVoiceSpeakerSwitch = _onVoicePlayModelChange;
     return actions;
   }
 

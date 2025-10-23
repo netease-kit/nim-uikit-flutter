@@ -68,7 +68,7 @@ class ContactListViewState extends State<ContactListView> {
           children: [
             Avatar(
               avatar: contact.user.avatar,
-              name: contact.getName(),
+              name: contact.getName(needAlias: false),
               width: select ? 42 : 36,
               height: select ? 42 : 36,
               bgCode: AvatarColor.avatarColor(content: contact.user.accountId),

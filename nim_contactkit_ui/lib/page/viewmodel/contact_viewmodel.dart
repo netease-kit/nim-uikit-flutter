@@ -61,7 +61,7 @@ class ContactViewModel extends ChangeNotifier {
     //注册监听，在登录后获取全量联系人数据
     subscriptions
         .add(getIt<ContactProvider>().onContactListComplete?.listen((value) {
-      Alog.i(
+      Alog.d(
           tag: 'ContactKit',
           moduleName: 'ContactViewModel',
           content: 'onContactListComplete size:${value.length}');
@@ -72,9 +72,11 @@ class ContactViewModel extends ChangeNotifier {
       contacts.clear();
       value.removeWhere((e) => e.isInBlack == true);
       contacts.addAll(value);
-      for (var contact in contacts) {
-        if (onlineUsers.contains(contact.user.accountId)) {
-          contact.isOnline = true;
+      if (onlineUsers.isNotEmpty) {
+        for (var contact in contacts) {
+          if (onlineUsers.contains(contact.user.accountId)) {
+            contact.isOnline = true;
+          }
         }
       }
       notifyListeners();

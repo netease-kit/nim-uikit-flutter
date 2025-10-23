@@ -1,6 +1,6 @@
 name: nim_chatkit_ui
 description: Chat UI base on ChatKit.
-version: 10.4.0
+version: 10.5.0
 homepage: https://github.com/netease-kit/nim-uikit-flutter
 
 environment:
@@ -17,7 +17,7 @@ dependencies:
     sdk: flutter
 
   netease_common_ui:
-    ">=10.4.0 <10.5.0"
+    ">=10.5.0 <10.6.0"
 #    path: ../../common/netease_common_ui
 
 
@@ -25,7 +25,7 @@ dependencies:
     ">=1.3.0 <1.4.0"
 #    path: ../../netease_corekit/netease_corekit
   nim_chatkit:
-    ">=10.4.0 <10.5.0"
+    ">=10.5.0 <10.6.0"
 #    path: ../nim_chatkit
   netease_plugin_core_kit:
     ^10.0.0
@@ -36,8 +36,14 @@ dependencies:
 #    path: ../../common/common
 
   nim_core_v2:
-    ^10.9.3+1
+    ^10.9.3+2
 #    path: ../../nim_core_v2/nim_core_v2
+
+#  呼叫组件
+  netease_callkit_ui:
+    ^3.7.1+2
+#    path: ../../callkit/callkit_ui
+  netease_callkit: ^3.7.1+1
 
   scroll_to_index: ^3.0.1
   image_picker: ^1.0.1
@@ -49,10 +55,9 @@ dependencies:
   image_gallery_saver_plus: ^4.0.1
   fluttertoast: ^8.2.4
   dio: ^5.3.0
-  intl: ^0.19.0
+  intl: any
   flutter_svg: ^2.0.7
   provider: ^6.0.0
-  permission_handler: ^11.0.1
   yunxin_alog: ^2.0.0
   connectivity_plus: ^6.0.2
   path_provider: ^2.0.11
@@ -68,6 +73,7 @@ dependencies:
   uuid: ^4.4.0
   url_launcher: ^6.3.0
   lpinyin: ^2.0.3
+  permission_handler: ^11.0.1
 
 dependency_overrides:
   flutter_sound_web: null

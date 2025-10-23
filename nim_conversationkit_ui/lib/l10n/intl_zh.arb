@@ -35,5 +35,7 @@
   "chatHistoryBrief": "[聊天记录]",
   "joinTeam": "加入群组",
   "joinTeamSearchHint": "请输入群号",
-  "joinTeamSearchEmptyTips": "该群组不存在"
+  "joinTeamSearchEmptyTips": "该群组不存在",
+  "chatMessageBriefVideoCall": "[视频通话]",
+  "chatMessageBriefAudioCall": "[语音通话]"
 }

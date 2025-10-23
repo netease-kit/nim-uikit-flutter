@@ -5,7 +5,9 @@
 import 'dart:core';
 
 import 'package:flutter/material.dart';
+import 'package:netease_callkit_ui/ne_callkit_ui.dart';
 import 'package:netease_corekit/report/xkit_report.dart';
+import 'package:nim_chatkit/im_kit_config_center.dart';
 import 'package:nim_chatkit/router/imkit_router.dart';
 import 'package:nim_chatkit/router/imkit_router_constants.dart';
 import 'package:nim_chatkit/services/message/chat_message.dart';
@@ -195,6 +197,9 @@ class PopMenuConfig {
   ///复制
   bool? enableCopy;
 
+  ///扬声器切换
+  bool? enableVoiceSwitch;
+
   ///回复
   bool? enableReply;
 
@@ -221,7 +226,8 @@ class PopMenuConfig {
       this.enableMultiSelect,
       this.enableCollect,
       this.enableDelete,
-      this.enableRevoke});
+      this.enableRevoke,
+      this.enableVoiceSwitch});
 }
 
 ///全局配置，全局生效，优先级低于参数配置
@@ -250,7 +256,7 @@ class ChatKitClient {
     ChatKitClientRepo.instance.unregisterRevoke();
   }
 
-  static init() {
+  static init({bool enableCallKit = true}) {
     ChatKitClientRepo.init();
     IMKitRouter.instance.registerRouter(
         RouterConstants.PATH_CHAT_PAGE,
@@ -281,5 +287,24 @@ class ChatKitClient {
             ));
 
     XKitReporter().register(moduleName: 'ChatUIKit', moduleVersion: '10.0.0');
+
+    if (enableCallKit) {
+      CallState.instance.registerEngineObserver();
+      NECallKitUI.instance.enableFloatWindow(true);
+    }
+  }
+
+  ///初始化呼叫组件,
+  /// 在IM登录后初始化调用
+  /// [appKey]      appKey
+  /// [accountId]     accountId
+  /// [extraConfig]  额外配置参数，包含 lckConfig 等
+  void setupCallKit(
+      {required String appKey,
+      required String accountId,
+      NEExtraConfig? extraConfig}) {
+    NECallKitUI.instance
+        .setupEngine(appKey, accountId, extraConfig: extraConfig);
+    IMKitConfigCenter.enableCallKit = true;
   }
 }

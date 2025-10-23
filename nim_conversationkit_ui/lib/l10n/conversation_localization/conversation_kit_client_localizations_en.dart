@@ -2,6 +2,8 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
 import 'conversation_kit_client_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -100,4 +102,10 @@ class ConversationKitClientLocalizationsEn
 
   @override
   String get joinTeamSearchEmptyTips => 'This team does not exist';
+
+  @override
+  String get chatMessageBriefVideoCall => '[Video Call]';
+
+  @override
+  String get chatMessageBriefAudioCall => '[Voice Call]';
 }

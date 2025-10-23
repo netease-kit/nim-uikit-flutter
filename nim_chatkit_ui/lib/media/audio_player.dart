@@ -125,6 +125,7 @@ class ChatAudioPlayer {
     for (var player in players.values) {
       player.stop();
     }
+    _stopAction?.call();
   }
 
   void release() {

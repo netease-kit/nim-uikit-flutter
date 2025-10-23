@@ -709,7 +709,7 @@ class _ChatForwardPageState extends State<ChatForwardPage>
                     avatar: friend.data.user.avatar,
                     width: 48,
                     height: 48,
-                    name: friend.data.getName(),
+                    name: friend.data.getName(needAlias: false),
                     bgCode: AvatarColor.avatarColor(
                       content: accountId,
                     ),

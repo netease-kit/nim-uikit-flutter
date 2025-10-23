@@ -31,7 +31,7 @@ class S {
       try {
         localizations = lookupConversationKitClientLocalizations(local);
       } catch (e) {
-        localizations = ConversationKitClientLocalizationsZh();
+        localizations = ConversationKitClientLocalizationsEn();
       }
     }
     return localizations;

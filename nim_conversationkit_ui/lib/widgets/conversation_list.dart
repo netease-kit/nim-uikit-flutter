@@ -272,11 +272,8 @@ class _ConversationListState extends BaseState<ConversationList> {
               widget.config.itemClick!(conversationInfo, index)) {
             return;
           }
-          Navigator.pushNamed(context, RouterConstants.PATH_CHAT_PAGE,
-              arguments: {
-                'conversationId': conversationInfo.getConversationId(),
-                'conversationType': conversationInfo.getConversationType()
-              });
+          goToChatPage(context, conversationInfo.getConversationId(),
+              conversationInfo.getConversationType());
         },
       ),
       endActionPane: ActionPane(

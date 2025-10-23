@@ -21,6 +21,8 @@ class PopMenuAction {
 
   bool Function(ChatMessage message)? onMessageRevoke;
 
+  bool Function(bool isVoiceFromSpeaker)? onVoiceSpeakerSwitch;
+
   PopMenuAction(
       {this.onMessageCollect,
       this.onMessageCopy,
@@ -29,5 +31,6 @@ class PopMenuAction {
       this.onMessagePin,
       this.onMessageMultiSelect,
       this.onMessageDelete,
-      this.onMessageRevoke});
+      this.onMessageRevoke,
+      this.onVoiceSpeakerSwitch});
 }

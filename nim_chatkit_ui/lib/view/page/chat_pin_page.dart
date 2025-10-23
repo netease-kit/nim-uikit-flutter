@@ -7,6 +7,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/base/base_state.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:nim_chatkit/router/imkit_router_constants.dart';
+import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/pinMessage/chat_kit_pin_message_item.dart';
 import 'package:nim_chatkit_ui/view_model/chat_pin_view_model.dart';
 import 'package:nim_core_v2/nim_core.dart';
@@ -102,15 +103,9 @@ class _ChatPinPageState extends BaseState<ChatPinPage> {
                     var message = model.pinnedMessages[index];
                     return InkWell(
                       onTap: () {
-                        Navigator.pushNamedAndRemoveUntil(
-                            context,
-                            RouterConstants.PATH_CHAT_PAGE,
-                            ModalRoute.withName('/'),
-                            arguments: {
-                              'conversationId': widget.conversationId,
-                              'conversationType': widget.conversationType,
-                              'anchor': message.nimMessage
-                            });
+                        goToChatAndKeepHome(context, widget.conversationId,
+                            widget.conversationType,
+                            message: message.nimMessage);
                       },
                       child: ChatKitPinMessageItem(
                         chatMessage: message,

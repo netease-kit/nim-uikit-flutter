@@ -281,12 +281,12 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
             NimCore.instance.conversationIdUtil
                 .teamConversationId(widget.teamId)
                 .then((result) {
-              Navigator.pushNamed(context, RouterConstants.PATH_CHAT_PIN_PAGE,
-                  arguments: {
-                    'conversationId': result.data!,
-                    'conversationType': NIMConversationType.team,
-                    'chatTitle': teamMember.team.name ?? '',
-                  });
+              goToPinPage(
+                context,
+                result.data!,
+                NIMConversationType.team,
+                teamMember.team.name ?? '',
+              );
             });
           },
         ),
@@ -297,8 +297,7 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
           ),
           trailing: const Icon(Icons.keyboard_arrow_right_outlined),
           onTap: () {
-            Navigator.pushNamed(context, RouterConstants.PATH_CHAT_SEARCH_PAGE,
-                arguments: {'teamId': widget.teamId});
+            goToTeamChatHistoryPage(context, widget.teamId);
           },
         ),
         if (getIt<TeamProvider>().isGroupTeam(teamMember.team)) ...[

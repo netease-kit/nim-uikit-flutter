@@ -31,7 +31,7 @@ class S {
       try {
         localizations = lookupChatKitClientLocalizations(local);
       } catch (e) {
-        localizations = ChatKitClientLocalizationsZh();
+        localizations = ChatKitClientLocalizationsEn();
       }
     }
     return localizations;

@@ -405,9 +405,16 @@ class ChatMessageHelper {
       case NIMMessageType.file:
         brief = S.of().chatMessageBriefFile;
         break;
-      case NIMMessageType.avChat:
-        //todo avChat
-        brief = S.of().chatMessageNonsupport;
+      case NIMMessageType.call:
+        // brief = S.of().chatMessageNonsupport;
+        if (message.attachment is NIMMessageCallAttachment) {
+          final attachment = message.attachment as NIMMessageCallAttachment;
+          if (attachment.type == BillMessage.videoBill) {
+            brief = S.of().chatMessageBriefVideoCall;
+          } else if (attachment.type == BillMessage.voiceBill) {
+            brief = S.of().chatMessageBriefAudioCall;
+          }
+        }
         break;
       case NIMMessageType.custom:
         var mergedMessage = MergeMessageHelper.parseMergeMessage(message);
