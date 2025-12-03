@@ -14,6 +14,7 @@ import 'package:netease_common_ui/ui/progress_ring.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/string_utils.dart';
 import 'package:netease_common_ui/widgets/radio_button.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/repo/config_repo.dart';
 import 'package:nim_chatkit/service_locator.dart';
@@ -50,7 +51,6 @@ import 'package:provider/provider.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../helper/merge_message_helper.dart';
-import 'chat_kit_message_avChat_item.dart';
 import 'chat_kit_message_multi_line_text_item.dart';
 import 'chat_kit_message_text_item.dart';
 
@@ -394,7 +394,8 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
         if (messageItemBuilder?.notifyMessageBuilder != null) {
           return messageItemBuilder!.notifyMessageBuilder!(message.nimMessage);
         }
-        return ChatKitMessageNotificationItem(message: message.nimMessage);
+        return ChatKitMessageNotificationItem(
+            message: message.nimMessage, teamInfo: widget.teamInfo);
       case NIMMessageType.tip:
         if (messageItemBuilder?.tipsMessageBuilder != null) {
           return messageItemBuilder!.tipsMessageBuilder!(message.nimMessage);
@@ -406,18 +407,16 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
         }
         return ChatKitMessageFileItem(message: message.nimMessage);
 
-      case NIMMessageType.call:
-        if (messageItemBuilder?.avChatMessageBuilder != null) {
-          return messageItemBuilder!.avChatMessageBuilder!
-              .call(message.nimMessage);
-        }
-        return ChatKitMessageAvChatItem(message: message.nimMessage);
-
       case NIMMessageType.location:
       default:
         if (message.nimMessage.messageType == NIMMessageType.location &&
             messageItemBuilder?.locationMessageBuilder != null) {
           return messageItemBuilder!.locationMessageBuilder!
+              .call(message.nimMessage);
+        }
+        if (message.nimMessage.messageType == NIMMessageType.call &&
+            messageItemBuilder?.avChatMessageBuilder != null) {
+          return messageItemBuilder!.avChatMessageBuilder!
               .call(message.nimMessage);
         }
         if (message.nimMessage.messageType == NIMMessageType.custom) {
@@ -482,6 +481,8 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   bool _showMessageStatus(ChatMessage message) {
     return message.nimMessage.sendingState == NIMMessageSendingState.sending ||
         message.nimMessage.sendingState == NIMMessageSendingState.failed ||
+        message.nimMessage.messageStatus?.errorCode ==
+            ChatMessage.SERVER_ANTISPAM ||
         message.nimMessage.conversationType == NIMConversationType.p2p ||
         message.nimMessage.messageConfig?.unreadEnabled == true;
   }
@@ -531,6 +532,11 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
         child: SvgPicture.asset('images/ic_failed.svg',
             package: kPackage, width: 16, height: 16),
       );
+    } else if (message.nimMessage.messageStatus?.errorCode ==
+        ChatMessage.SERVER_ANTISPAM) {
+      //反垃圾显示
+      return SvgPicture.asset('images/ic_antispam.svg',
+          package: kPackage, width: 16, height: 16);
     } else if (_showMsgAck(message)) {
       return InkWell(
         onTap: () async {
@@ -598,11 +604,10 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   Future<String> _getTeamIdByConversationId() async {
     var teamId = widget.teamInfo?.teamId;
     if (teamId == null) {
-      teamId = (await NimCore.instance.conversationIdUtil.conversationTargetId(
-              widget.chatMessage.nimMessage.conversationId!))
-          .data;
+      teamId = ChatKitUtils.getConversationTargetId(
+          widget.chatMessage.nimMessage.conversationId!);
     }
-    return teamId!;
+    return teamId;
   }
 
   //获取对方的用户信息

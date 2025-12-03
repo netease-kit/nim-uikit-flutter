@@ -1,0 +1,18 @@
+{
+  "@@locale": "zh",
+  "messageCancel": "取消",
+  "chatMessageSend": "发送",
+  "chatMessageCallTitle": "音视频通话",
+  "chatMessageVideoCallAction": "视频通话",
+  "chatMessageAudioCallAction": "语音通话",
+  "chatMessageBriefVideoCall": "[视频通话]",
+  "chatMessageBriefAudioCall": "[语音通话]",
+  "chatMessageAudioCallText": "[语音通话]",
+  "chatMessageVideoCallText": "[视频通话]",
+  "chatMessageCallCancel": "已取消",
+  "chatMessageCallRefused": "已拒绝",
+  "chatMessageCallTimeout": "未接听",
+  "chatMessageCallBusy": "忙线未接听",
+  "chatMessageCallCompleted": "通话时长",
+  "chatBeenBlockByOthers": "您已被对方拉黑"
+}

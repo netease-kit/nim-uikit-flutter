@@ -2,10 +2,6 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'dart:async';
-import 'dart:io';
-
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -14,20 +10,12 @@ import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/message/message_helper.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
-import 'package:nim_chatkit/repo/chat_service_observer_repo.dart';
-import 'package:nim_chatkit_ui/media/audio_player.dart';
 import 'package:nim_core_v2/nim_core.dart';
-import 'package:open_filex/open_filex.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:yunxin_alog/yunxin_alog.dart';
 import 'package:netease_callkit/netease_callkit.dart';
-import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:netease_common_ui/base/base_state.dart';
 
-import '../../../chat_kit_client.dart';
-import '../../../helper/chat_message_helper.dart';
-import '../../../helper/text_utils.dart';
 import '../../../l10n/S.dart';
+import 'nim_chatkit_callkit.dart';
 
 class ChatKitMessageAvChatItem extends StatefulWidget {
   final NIMMessage message;
@@ -36,8 +24,7 @@ class ChatKitMessageAvChatItem extends StatefulWidget {
   final bool enableCallback;
 
   const ChatKitMessageAvChatItem(
-      {Key? key, required this.message, this.enableCallback = true})
-      : super(key: key);
+      {Key? key, required this.message, this.enableCallback = true}): super(key: key);
 
   @override
   State<StatefulWidget> createState() => ChatKitMessageAvChatState();

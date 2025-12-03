@@ -720,4 +720,46 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
 
   @override
   String get permissionAudioContent => '用户录制， 音频通话等场景';
+
+  @override
+  String get chatMessageAntispamPornography => '色情';
+
+  @override
+  String get chatMessageAntispamAdvertising => '广告';
+
+  @override
+  String get chatMessageAntispamIllegalAdvertising => '广告法';
+
+  @override
+  String get chatMessageAntispamViolenceTerrorism => '暴恐';
+
+  @override
+  String get chatMessageAntispamContraband => '违禁';
+
+  @override
+  String get chatMessageAntispamPoliticalSensitivity => '涉政';
+
+  @override
+  String get chatMessageAntispamAbuse => '谩骂';
+
+  @override
+  String get chatMessageAntispamSpam => '灌水';
+
+  @override
+  String get chatMessageAntispamOther => '其他';
+
+  @override
+  String get chatMessageAntispamInappropriateValues => '涉价值观';
+
+  @override
+  String chatMessageAntispamTips(String reason) {
+    return '内容可能涉及$reason, 请调整后发送';
+  }
+
+  @override
+  String get chatMessageWarningTips =>
+      '仅用于体验云信IM产品功能，请勿轻信汇款，中奖等涉及钱款的信息，勿轻易拨打陌生电话，谨防上当受骗，';
+
+  @override
+  String get chatMessageTapToReport => '点击举报';
 }

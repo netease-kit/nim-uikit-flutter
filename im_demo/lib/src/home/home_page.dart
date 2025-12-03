@@ -115,6 +115,7 @@ class _HomePageState extends State<HomePage> {
     _handleMessageFromNative();
 
     // todo 以下演示添加自定义消息发送，客户根据自己需求定制
+    ChatKitClient.instance.showWarningTyps = true;
     var messageBuilder = ChatKitMessageBuilder();
     messageBuilder.extendBuilder = {
       NIMMessageType.custom: (NIMMessage msg) {

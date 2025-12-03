@@ -77,5 +77,6 @@
   "languageChinese": "中文",
   "languageEnglish": "English",
   "save": "保存",
-  "kickedOff": "您已被踢下线"
+  "kickedOff": "您已被踢下线",
+  "textSafetyNotice": "文本安全提示"
 }

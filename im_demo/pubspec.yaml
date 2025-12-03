@@ -15,7 +15,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 10.4.0
+version: 10.6.1
 
 environment:
   sdk: ">=2.16.1 <4.0.0"
@@ -42,6 +42,9 @@ dependencies:
     path: ../nim_contactkit_ui
   nim_searchkit_ui:
     path: ../nim_searchkit_ui
+  #  语音视频呼叫
+  nim_chatkit_callkit:
+    path: ../nim_chatkit_callkit
 #  地理位置消息支持
 #  nim_chatkit_location:
 #    path: ../nim_chatkit_location

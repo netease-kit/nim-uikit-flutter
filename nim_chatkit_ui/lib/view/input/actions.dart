@@ -27,6 +27,10 @@ class ActionItem {
 
   bool enable;
 
+  /// item index
+  /// from 0
+  int? index;
+
   ActionItem(
       {required this.type,
       required this.icon,
@@ -36,6 +40,7 @@ class ActionItem {
       this.enable = true,
       this.permissionTitle,
       this.permissionDesc,
+      this.index,
       this.deniedTip});
 }
 

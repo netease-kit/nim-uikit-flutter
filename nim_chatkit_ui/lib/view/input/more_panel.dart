@@ -11,8 +11,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:netease_callkit_ui/ne_callkit_ui.dart';
-import 'package:netease_callkit/netease_callkit.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/permission_request.dart';
@@ -87,16 +85,6 @@ class _MorePanelState extends BaseState<MorePanel> {
           permissionDesc: S.of(context).permissionCameraContent,
           deniedTip: S.of(context).chatPermissionSystemCheck,
           onTap: _onShootActionTap),
-      if (IMKitConfigCenter.enableCallKit &&
-          conversationType == NIMConversationType.p2p)
-        ActionItem(
-            type: ActionConstants.call,
-            icon: SvgPicture.asset(
-              'images/ic_call.svg',
-              package: kPackage,
-            ),
-            title: S.of(context).chatMessageCallFile,
-            onTap: _onCallActionTap),
       ActionItem(
           type: ActionConstants.file,
           icon: SvgPicture.asset(
@@ -122,71 +110,25 @@ class _MorePanelState extends BaseState<MorePanel> {
     var pluginActions = NimPluginCoreKit()
         .itemPool
         .getMoreActions()
-        .where(
-            (action) => action.enable?.call(widget.conversationType) != false)
+        .where((action) =>
+            action.enable
+                ?.call(widget.conversationId, widget.conversationType) !=
+            false)
         .map((e) => ActionItem(
             type: e.type,
             icon: e.icon,
             title: e.title,
             permissions: e.permissions,
             deniedTip: e.deniedTip,
+            index: e.index,
             onTap: e.onTap));
-    defaultActions.addAll(pluginActions);
-    return defaultActions;
-  }
-
-  //语音通话
-  _onCallActionTap(BuildContext context, String conversationId,
-      NIMConversationType sessionType,
-      {NIMMessageSender? messageSender}) async {
-    //判断网络
-    if (!checkNetwork()) {
-      return;
+    defaultActions
+        .addAll(pluginActions.where((action) => action.index == null));
+    var indexActions = pluginActions.where((action) => action.index != null);
+    for (var action in indexActions) {
+      defaultActions.insert(action.index!, action);
     }
-    String targetId = ChatKitUtils.getConversationTargetId(conversationId);
-    _showCallActionSelectDialog((value) {
-      if (value != null) {
-        NECallKitUI.instance
-            .call(
-          targetId, // 被呼叫用户的 userID
-          value == 1 ? NECallType.video : NECallType.audio, // 通话类型：音频或视频
-        )
-            .then((result) {
-          if (result.code == ChatMessageRepo.errorInBlackList) {
-            Fluttertoast.showToast(msg: S.of(context).chatBeenBlockByOthers);
-          }
-        });
-      }
-    });
-  }
-
-  //音视频呼叫方式选择弹框
-  void _showCallActionSelectDialog(ValueChanged<int?> onChoose) {
-    var style = const TextStyle(fontSize: 16, color: CommonColors.color_333333);
-    showBottomChoose(
-            context: context,
-            actions: [
-              CupertinoActionSheetAction(
-                onPressed: () {
-                  Navigator.pop(context, 1);
-                },
-                child: Text(
-                  S.of(context).chatMessageVideoCallAction,
-                  style: style,
-                ),
-              ),
-              CupertinoActionSheetAction(
-                onPressed: () {
-                  Navigator.pop(context, 2);
-                },
-                child: Text(
-                  S.of(context).chatMessageAudioCallAction,
-                  style: style,
-                ),
-              ),
-            ],
-            showCancel: true)
-        .then((value) => onChoose(value));
+    return defaultActions;
   }
 
   _onFileActionTap(

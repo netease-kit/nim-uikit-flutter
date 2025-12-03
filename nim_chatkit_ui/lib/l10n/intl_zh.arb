@@ -544,5 +544,25 @@
   "permissionStorageTitle":"存储权限使用说明",
   "permissionStorageContent":"用户发送文件、图片、视频等场景",
   "permissionAudioTitle":"麦克风权限使用说明",
-  "permissionAudioContent":"用户录制， 音频通话等场景"
+  "permissionAudioContent":"用户录制， 音频通话等场景",
+  "chatMessageAntispamPornography": "色情",
+  "chatMessageAntispamAdvertising": "广告",
+  "chatMessageAntispamIllegalAdvertising": "广告法",
+  "chatMessageAntispamViolenceTerrorism": "暴恐",
+  "chatMessageAntispamContraband": "违禁",
+  "chatMessageAntispamPoliticalSensitivity": "涉政",
+  "chatMessageAntispamAbuse": "谩骂",
+  "chatMessageAntispamSpam": "灌水",
+  "chatMessageAntispamOther": "其他",
+  "chatMessageAntispamInappropriateValues": "涉价值观",
+  "chatMessageAntispamTips": "内容可能涉及{reason}, 请调整后发送",
+  "@chatMessageAntispamTips": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "chatMessageWarningTips": "仅用于体验云信IM产品功能，请勿轻信汇款，中奖等涉及钱款的信息，勿轻易拨打陌生电话，谨防上当受骗，",
+  "chatMessageTapToReport": "点击举报"
 }

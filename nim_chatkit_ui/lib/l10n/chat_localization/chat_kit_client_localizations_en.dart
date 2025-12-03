@@ -738,4 +738,46 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
 
   @override
   String get permissionAudioContent => 'Voice records, voice calls, ...';
+
+  @override
+  String get chatMessageAntispamPornography => 'Pornography';
+
+  @override
+  String get chatMessageAntispamAdvertising => 'Advertising';
+
+  @override
+  String get chatMessageAntispamIllegalAdvertising => 'Illegal Advertising';
+
+  @override
+  String get chatMessageAntispamViolenceTerrorism => 'Violence & Terrorism';
+
+  @override
+  String get chatMessageAntispamContraband => 'Contraband';
+
+  @override
+  String get chatMessageAntispamPoliticalSensitivity => 'Political Sensitivity';
+
+  @override
+  String get chatMessageAntispamAbuse => 'Abuse';
+
+  @override
+  String get chatMessageAntispamSpam => 'Spam';
+
+  @override
+  String get chatMessageAntispamOther => 'Other';
+
+  @override
+  String get chatMessageAntispamInappropriateValues => 'Inappropriate Values';
+
+  @override
+  String chatMessageAntispamTips(String reason) {
+    return 'The content may involve $reason. Please adjust it before sending.';
+  }
+
+  @override
+  String get chatMessageWarningTips =>
+      'For Yunxin IM product demo use only. Do not trust messages involving money transfers or winning prizes. Do not call unknown numbers. Beware of scams.';
+
+  @override
+  String get chatMessageTapToReport => 'Tap to report';
 }

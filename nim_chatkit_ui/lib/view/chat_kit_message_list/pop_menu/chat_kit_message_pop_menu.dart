@@ -173,7 +173,9 @@ class ChatKitMessagePopMenu {
 
   bool _enableStatus(ChatMessage message) {
     return message.nimMessage.sendingState != NIMMessageSendingState.sending &&
-        message.nimMessage.sendingState != NIMMessageSendingState.failed;
+        message.nimMessage.sendingState != NIMMessageSendingState.failed &&
+        message.nimMessage.messageStatus?.errorCode !=
+            ChatMessage.SERVER_ANTISPAM;
   }
 
   /// 是否展示回复
