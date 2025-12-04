@@ -1338,6 +1338,84 @@ abstract class ChatKitClientLocalizations {
   /// In en, this message translates to:
   /// **'Voice records, voice calls, ...'**
   String get permissionAudioContent;
+
+  /// No description provided for @chatMessageAntispamPornography.
+  ///
+  /// In en, this message translates to:
+  /// **'Pornography'**
+  String get chatMessageAntispamPornography;
+
+  /// No description provided for @chatMessageAntispamAdvertising.
+  ///
+  /// In en, this message translates to:
+  /// **'Advertising'**
+  String get chatMessageAntispamAdvertising;
+
+  /// No description provided for @chatMessageAntispamIllegalAdvertising.
+  ///
+  /// In en, this message translates to:
+  /// **'Illegal Advertising'**
+  String get chatMessageAntispamIllegalAdvertising;
+
+  /// No description provided for @chatMessageAntispamViolenceTerrorism.
+  ///
+  /// In en, this message translates to:
+  /// **'Violence & Terrorism'**
+  String get chatMessageAntispamViolenceTerrorism;
+
+  /// No description provided for @chatMessageAntispamContraband.
+  ///
+  /// In en, this message translates to:
+  /// **'Contraband'**
+  String get chatMessageAntispamContraband;
+
+  /// No description provided for @chatMessageAntispamPoliticalSensitivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Political Sensitivity'**
+  String get chatMessageAntispamPoliticalSensitivity;
+
+  /// No description provided for @chatMessageAntispamAbuse.
+  ///
+  /// In en, this message translates to:
+  /// **'Abuse'**
+  String get chatMessageAntispamAbuse;
+
+  /// No description provided for @chatMessageAntispamSpam.
+  ///
+  /// In en, this message translates to:
+  /// **'Spam'**
+  String get chatMessageAntispamSpam;
+
+  /// No description provided for @chatMessageAntispamOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get chatMessageAntispamOther;
+
+  /// No description provided for @chatMessageAntispamInappropriateValues.
+  ///
+  /// In en, this message translates to:
+  /// **'Inappropriate Values'**
+  String get chatMessageAntispamInappropriateValues;
+
+  /// No description provided for @chatMessageAntispamTips.
+  ///
+  /// In en, this message translates to:
+  /// **'The content may involve {reason}. Please adjust it before sending.'**
+  String chatMessageAntispamTips(String reason);
+
+  /// No description provided for @chatMessageWarningTips.
+  ///
+  /// In en, this message translates to:
+  /// **'For Yunxin IM product demo use only. Do not trust messages involving money transfers or winning prizes. Do not call unknown numbers. Beware of scams.'**
+  String get chatMessageWarningTips;
+
+  /// No description provided for @chatMessageTapToReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to report'**
+  String get chatMessageTapToReport;
 }
 
 class _ChatKitClientLocalizationsDelegate

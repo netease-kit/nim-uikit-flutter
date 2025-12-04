@@ -96,6 +96,9 @@ class ConversationItem extends StatelessWidget {
         return conversationInfo.getLastMessage()?.text ??
             S.of(context).chatMessageNonsupportType;
       default:
+        if (conversationInfo.getLastMessage() == null) {
+          return '';
+        }
         return conversationInfo.getLastMessage()?.text ??
             S.of(context).chatMessageNonsupportType;
     }

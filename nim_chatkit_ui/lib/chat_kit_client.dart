@@ -5,7 +5,6 @@
 import 'dart:core';
 
 import 'package:flutter/material.dart';
-import 'package:netease_callkit_ui/ne_callkit_ui.dart';
 import 'package:netease_corekit/report/xkit_report.dart';
 import 'package:nim_chatkit/im_kit_config_center.dart';
 import 'package:nim_chatkit/router/imkit_router.dart';
@@ -237,6 +236,9 @@ class ChatKitClient {
   ///消息发送之前的回调，可使用其添加扩展
   NIMMessageAction? messageAction;
 
+  ///是否展示警告消息
+  bool showWarningTyps = false;
+
   ChatKitClient._();
 
   static final ChatKitClient instance = ChatKitClient._();
@@ -288,23 +290,23 @@ class ChatKitClient {
 
     XKitReporter().register(moduleName: 'ChatUIKit', moduleVersion: '10.0.0');
 
-    if (enableCallKit) {
-      CallState.instance.registerEngineObserver();
-      NECallKitUI.instance.enableFloatWindow(true);
-    }
+    // if (enableCallKit) {
+    //   CallState.instance.registerEngineObserver();
+    //   NECallKitUI.instance.enableFloatWindow(true);
+    // }
   }
 
-  ///初始化呼叫组件,
-  /// 在IM登录后初始化调用
-  /// [appKey]      appKey
-  /// [accountId]     accountId
-  /// [extraConfig]  额外配置参数，包含 lckConfig 等
-  void setupCallKit(
-      {required String appKey,
-      required String accountId,
-      NEExtraConfig? extraConfig}) {
-    NECallKitUI.instance
-        .setupEngine(appKey, accountId, extraConfig: extraConfig);
-    IMKitConfigCenter.enableCallKit = true;
-  }
+  // ///初始化呼叫组件,
+  // /// 在IM登录后初始化调用
+  // /// [appKey]      appKey
+  // /// [accountId]     accountId
+  // /// [extraConfig]  额外配置参数，包含 lckConfig 等
+  // void setupCallKit(
+  //     {required String appKey,
+  //     required String accountId,
+  //     NEExtraConfig? extraConfig}) {
+  //   NECallKitUI.instance
+  //       .setupEngine(appKey, accountId, extraConfig: extraConfig);
+  //   IMKitConfigCenter.enableCallKit = true;
+  // }
 }

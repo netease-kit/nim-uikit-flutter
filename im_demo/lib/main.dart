@@ -18,6 +18,7 @@ import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/router/imkit_router.dart';
 import 'package:nim_chatkit/router/imkit_router_constants.dart';
+import 'package:nim_chatkit_callkit/nim_chatkit_callkit.dart';
 // import 'package:nim_chatkit_location/chat_kit_location.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_contactkit_ui/contact_kit_client.dart';
@@ -143,6 +144,7 @@ class _MainAppState extends State<MainApp> {
             ContactKitClient.delegate,
             TeamKitClient.delegate,
             SearchKitClient.delegate,
+            ChatKitCall.delegate,
             NECallKitUI.delegate,
             ...GlobalMaterialLocalizations.delegates,
           ],

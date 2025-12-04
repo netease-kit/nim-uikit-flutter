@@ -11,7 +11,10 @@ import '../../../helper/chat_message_helper.dart';
 class ChatKitMessageNotificationItem extends StatefulWidget {
   final NIMMessage message;
 
-  const ChatKitMessageNotificationItem({Key? key, required this.message})
+  final NIMTeam? teamInfo;
+
+  const ChatKitMessageNotificationItem(
+      {Key? key, required this.message, this.teamInfo})
       : super(key: key);
 
   @override
@@ -25,7 +28,8 @@ class ChatKitMessageNotificationState
     return Container(
       padding: const EdgeInsets.only(left: 16, top: 12, right: 16, bottom: 8),
       child: FutureBuilder<String>(
-        future: NotifyHelper.getNotificationText(widget.message),
+        future: NotifyHelper.getNotificationText(widget.message,
+            teamInfo: widget.teamInfo),
         builder: (context, snap) {
           return Text(
             snap.data ?? '',

@@ -4,6 +4,7 @@
 
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -17,7 +18,7 @@ import 'package:nim_chatkit/im_kit_config_center.dart';
 import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
 import 'package:nim_chatkit/router/imkit_router.dart';
-import 'package:nim_chatkit/router/imkit_router_constants.dart';
+import 'package:netease_common_ui/widgets/common_browse_page.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_chatkit/service_locator.dart';
 import 'package:nim_chatkit/services/login/im_login_service.dart';
@@ -387,6 +388,71 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
             });
   }
 
+  Widget getSwindleWidget(BuildContext context) {
+    return Container(
+      // 背景颜色：浅黄色
+      color: const Color(0xfffff5e1),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start, // 顶部对齐，适应多行文字
+        children: [
+          // 左侧红色警告图标
+          const Padding(
+            padding: EdgeInsets.only(top: 2.0), // 微调图标位置以对齐文字
+            child: Icon(Icons.error, color: Colors.red, size: 20),
+          ),
+          const SizedBox(width: 4), // 间距
+
+          // 中间可换行的富文本
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                style: const TextStyle(fontSize: 14, color: Color(0xffeb9718)),
+                children: [
+                  TextSpan(
+                    text: S.of(context).chatMessageWarningTips,
+                  ),
+                  TextSpan(
+                    text: S.of(context).chatMessageTapToReport,
+                    style: const TextStyle(
+                      color: Colors.blue, // 蓝色字体
+                      fontWeight: FontWeight.bold,
+                    ),
+                    // 点击事件识别器
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () {
+                        //点击逻辑
+                        String url = 'https://yunxin.163.com/survey/report';
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => CommonBrowser(
+                                      url: url,
+                                    )));
+                      },
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 8), // 间距
+
+          // 右侧关闭图标
+          GestureDetector(
+            onTap: () {
+              context.read<ChatViewModel>().showWarningTips = false;
+            },
+            child: const Padding(
+              padding: EdgeInsets.only(top: 2.0),
+              child: Icon(Icons.close, color: Colors.grey, size: 20),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (NIMChatCache.instance.currentChatSession?.conversationId !=
@@ -503,6 +569,8 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           if (!hasNetWork) NoNetWorkTip(),
+                          if (context.watch<ChatViewModel>().showWarningTips)
+                            getSwindleWidget(context),
                           Expanded(
                             child: GestureDetector(
                               onTap: () {

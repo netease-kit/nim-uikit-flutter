@@ -21,7 +21,6 @@ import 'package:nim_core_v2/nim_core.dart';
 
 import '../../../../helper/merge_message_helper.dart';
 import '../../../../l10n/S.dart';
-import '../chat_kit_message_avChat_item.dart';
 import '../chat_kit_message_item.dart';
 import '../chat_kit_message_merged_item.dart';
 import '../chat_kit_message_multi_line_text_item.dart';
@@ -105,14 +104,6 @@ class _ChatKitMergedMessageItemState extends State<ChatKitMergedMessageItem> {
         return ChatKitMessageFileItem(
           message: message,
           independentFile: true,
-        );
-      case NIMMessageType.call:
-        if (messageItemBuilder?.avChatMessageBuilder != null) {
-          return messageItemBuilder!.avChatMessageBuilder!.call(message);
-        }
-        return ChatKitMessageAvChatItem(
-          message: message,
-          enableCallback: false,
         );
 
       case NIMMessageType.location:

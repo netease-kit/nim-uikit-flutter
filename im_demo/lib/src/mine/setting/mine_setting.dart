@@ -28,6 +28,7 @@ class _MineSettingPageState extends State<MineSettingPage> {
   bool messageReadMode = false;
   bool enableCloudConversation = false;
   bool enableAIStream = true;
+  bool enableSafetyTips = true;
 
   Widget _divider() {
     return const SizedBox(
@@ -41,6 +42,7 @@ class _MineSettingPageState extends State<MineSettingPage> {
     messageReadMode = await ConfigRepo.getShowReadStatus();
     enableCloudConversation = await IMKitClient.enableCloudConversation;
     enableAIStream = await IMKitClient.enableAIStream;
+    enableSafetyTips = await IMKitClient.enableSafetyTips;
 
     setState(() {});
   }
@@ -98,6 +100,17 @@ class _MineSettingPageState extends State<MineSettingPage> {
           IMKitClient.setEnableAIStream(value);
           setState(() {
             enableAIStream = value;
+          });
+        },
+      ),
+      CommonListTile(
+        title: S.of(context).textSafetyNotice,
+        trailingType: TrailingType.onOff,
+        switchValue: enableSafetyTips,
+        onSwitchChanged: (value) {
+          IMKitClient.setEnableSafetyTips(value);
+          setState(() {
+            enableSafetyTips = value;
           });
         },
       ),

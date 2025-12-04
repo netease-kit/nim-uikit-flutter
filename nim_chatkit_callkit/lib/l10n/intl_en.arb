@@ -1,0 +1,18 @@
+{
+  "@@locale": "en",
+  "messageCancel": "Cancel",
+  "chatMessageSend": "Send",
+  "chatMessageCallTitle": "Call",
+  "chatMessageVideoCallAction": "Video Call",
+  "chatMessageAudioCallAction": "Voice Call",
+  "chatMessageBriefVideoCall": "[Video Call]",
+  "chatMessageBriefAudioCall": "[Voice Call]",
+  "chatMessageAudioCallText": "[Voice Call]",
+  "chatMessageVideoCallText": "[Video Call]",
+  "chatMessageCallCancel": "Canceled",
+  "chatMessageCallRefused": "Refused",
+  "chatMessageCallTimeout": "Time Out",
+  "chatMessageCallBusy": "Busy",
+  "chatMessageCallCompleted": "Call",
+  "chatBeenBlockByOthers": "You have been blocked."
+}

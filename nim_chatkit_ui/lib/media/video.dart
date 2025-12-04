@@ -5,7 +5,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:netease_callkit/netease_callkit.dart';
 import 'package:netease_common_ui/extension.dart';
 import 'package:nim_chatkit_ui/media/media_bottom_actions.dart';
 import 'package:flutter/material.dart';
@@ -47,7 +46,7 @@ class _VideoViewerState extends State<VideoViewer> with WidgetsBindingObserver {
     }
   }
 
-  late NECallEngineDelegate _callDelegate;
+  // late NECallEngineDelegate _callDelegate;
 
   @override
   void initState() {
@@ -78,14 +77,14 @@ class _VideoViewerState extends State<VideoViewer> with WidgetsBindingObserver {
     _isPlaying = true;
     _controller.play();
     _playProgressAutoHide();
-    _callDelegate = NECallEngineDelegate(onReceiveInvited: (info) {
-      if (_isPlaying) {
-        _isPlaying = false;
-        _controller.pause();
-        setState(() {});
-      }
-    });
-    NECallEngine.instance.addCallDelegate(_callDelegate);
+    // _callDelegate = NECallEngineDelegate(onReceiveInvited: (info) {
+    //   if (_isPlaying) {
+    //     _isPlaying = false;
+    //     _controller.pause();
+    //     setState(() {});
+    //   }
+    // });
+    // NECallEngine.instance.addCallDelegate(_callDelegate);
   }
 
   @override
@@ -107,7 +106,7 @@ class _VideoViewerState extends State<VideoViewer> with WidgetsBindingObserver {
     _timer?.cancel();
     _phoneStateSub?.cancel();
     _phoneStateSub = null;
-    NECallEngine.instance.removeCallDelegate(_callDelegate);
+    // NECallEngine.instance.removeCallDelegate(_callDelegate);
     super.dispose();
   }
 

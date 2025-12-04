@@ -11,6 +11,7 @@ import 'package:im_demo/src/config.dart';
 import 'package:im_demo/src/home/home_page.dart';
 import 'package:im_demo/src/home/welcome_page.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit_callkit/nim_chatkit_callkit.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:provider/provider.dart';
@@ -88,7 +89,9 @@ class _SplashState extends State<SplashPage> {
       if(value.isSuccess){
         updateAPNsToken();
         //登录成功之后，初始化CallKit
-        ChatKitClient.instance.setupCallKit(appKey: IMDemoConfig.AppKey, accountId: account);
+        ChatKitCall.instance.init(
+            appKey: IMDemoConfig.AppKey,
+            accountId: account);
         setState((){
           haveLogin = true;
         });

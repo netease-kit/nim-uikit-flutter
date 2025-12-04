@@ -1,0 +1,8 @@
+arb-dir: lib/l10n
+output-dir: lib/l10n/chatCall_localization
+template-arb-file: intl_en.arb
+output-localization-file: chat_kit_call_client_localizations.dart
+output-class: ChatKitCallClientLocalizations
+header-file: header.txt
+synthetic-package: false
+untranslated-messages-file: untranslated.txt

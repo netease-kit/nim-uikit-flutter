@@ -28,6 +28,7 @@ import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit/repo/chat_service_observer_repo.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_helper.dart';
 import 'package:nim_chatkit_ui/helper/merge_message_helper.dart';
+import 'package:nim_chatkit_ui/model/chat_message_antispam_result.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
 import 'package:uuid/uuid.dart';
@@ -60,6 +61,16 @@ class ChatViewModel extends ChangeNotifier {
 
   // p2p 消息标记已读回执的时间戳
   int markP2PMessageReadReceiptTime = 0;
+
+  //是否展示警告提醒
+  bool _showWarningTips = false;
+
+  bool get showWarningTips => _showWarningTips;
+
+  set showWarningTips(bool value) {
+    _showWarningTips = value;
+    notifyListeners();
+  }
 
   Future<String> get sessionId async {
     if (_sessionId?.isNotEmpty == true) {
@@ -179,6 +190,7 @@ class ChatViewModel extends ChangeNotifier {
     initData();
     //初始化语音播放器
     ChatAudioPlayer.instance.initAudioPlayer();
+    showWarningTips = ChatKitClient.instance.showWarningTyps;
   }
 
   bool voiceFromSpeaker = false;
@@ -1031,21 +1043,100 @@ class ChatViewModel extends ChangeNotifier {
       ChatMessageRepo.replyMessage(
               msg: message, replyMsg: replyMsg, params: params)
           .then((result) {
-        //如果是被拉黑，则提示
-        if (result.code == ChatMessageRepo.errorInBlackList) {
-          _saveBlackListTips();
-        }
+        _handleMessageSendResult(result);
       });
     } else {
       ChatMessageRepo.sendMessage(
               message: message, conversationId: conversationId, params: params)
           .then((result) {
-        //如果是被拉黑，则提示
-        if (result.code == ChatMessageRepo.errorInBlackList) {
-          _saveBlackListTips();
-        }
+        _handleMessageSendResult(result);
       });
     }
+  }
+
+  void _handleMessageSendResult(NIMResult<NIMSendMessageResult> result) async {
+    //如果是被拉黑，则提示
+    if (result.code == ChatMessageRepo.errorInBlackList) {
+      _saveBlackListTips();
+    }
+    //反垃圾命中
+    final enableSafetyNotice = await IMKitClient.enableSafetyTips;
+    if (enableSafetyNotice && result.data?.antispamResult?.isNotEmpty == true) {
+      int labelCode = 0;
+      try {
+        Map<String, dynamic> jsonMap = jsonDecode(result.data!.antispamResult!);
+        AntispamResult antispamResult = AntispamResult.fromJson(jsonMap);
+        labelCode = antispamResult.ext?.antispam?.label ?? 0;
+      } catch (e) {}
+      ;
+      if (labelCode == 0) {
+        //通过正则表达式获取 到 labelCode
+        RegExp regExp = RegExp(r'\\?"label\\?"\s*:\s*(\d+)');
+
+        // 1. 获取第一个匹配项
+        Match? match = regExp.firstMatch(result.data!.antispamResult!);
+        if (match != null) {
+          // group(1) 获取第一个捕获组的内容，即数字部分
+          String? labelValue = match.group(1);
+          if (labelValue != null) {
+            labelCode = int.parse(labelValue);
+          }
+        }
+      }
+      if (labelCode != 0) {
+        //本地插入消息
+        _saveAntispamTips(labelCode);
+      }
+    }
+  }
+
+  void _saveAntispamTips(int code) {
+    String reason = '';
+    switch (code) {
+      case pornography:
+        reason = S.of().chatMessageAntispamPornography;
+        break;
+      case advertising:
+        reason = S.of().chatMessageAntispamAdvertising;
+        break;
+      case adLawViolation:
+        reason = S.of().chatMessageAntispamIllegalAdvertising;
+        break;
+      case violence:
+        reason = S.of().chatMessageAntispamViolenceTerrorism;
+        break;
+      case contraband:
+        reason = S.of().chatMessageAntispamContraband;
+        break;
+      case political:
+        reason = S.of().chatMessageAntispamPoliticalSensitivity;
+        break;
+      case abuse:
+        reason = S.of().chatMessageAntispamAbuse;
+        break;
+      case spam:
+        reason = S.of().chatMessageAntispamSpam;
+        break;
+      case other:
+        reason = S.of().chatMessageAntispamOther;
+        break;
+      case inappropriateValues:
+        reason = S.of().chatMessageAntispamInappropriateValues;
+        break;
+    }
+    MessageCreator.createTipsMessage(S.of().chatMessageAntispamTips(reason))
+        .then((value) {
+      if (value.isSuccess && value.data != null) {
+        value.data!.pushConfig = NIMMessagePushConfig(pushEnabled: false);
+        value.data!.messageConfig = NIMMessageConfig(unreadEnabled: false);
+        NimCore.instance.messageService.insertMessageToLocal(
+          message: value.data!,
+          conversationId: conversationId,
+        );
+        _messageList.insert(0, ChatMessage(value.data!));
+        notifyListeners();
+      }
+    });
   }
 
   ///获取AI消息的上下文

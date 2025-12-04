@@ -66,18 +66,15 @@ import 'demo_kit_client_localizations_zh.dart';
 /// be consistent with the languages listed in the DemoKitClientLocalizations.supportedLocales
 /// property.
 abstract class DemoKitClientLocalizations {
-  DemoKitClientLocalizations(String locale)
-      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  DemoKitClientLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
   static DemoKitClientLocalizations? of(BuildContext context) {
-    return Localizations.of<DemoKitClientLocalizations>(
-        context, DemoKitClientLocalizations);
+    return Localizations.of<DemoKitClientLocalizations>(context, DemoKitClientLocalizations);
   }
 
-  static const LocalizationsDelegate<DemoKitClientLocalizations> delegate =
-      _DemoKitClientLocalizationsDelegate();
+  static const LocalizationsDelegate<DemoKitClientLocalizations> delegate = _DemoKitClientLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -89,8 +86,7 @@ abstract class DemoKitClientLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
-      <LocalizationsDelegate<dynamic>>[
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
     delegate,
     GlobalMaterialLocalizations.delegate,
     GlobalCupertinoLocalizations.delegate,
@@ -486,38 +482,42 @@ abstract class DemoKitClientLocalizations {
   /// In en, this message translates to:
   /// **'Kicked Off'**
   String get kickedOff;
+
+  /// No description provided for @textSafetyNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Text Safety Notice'**
+  String get textSafetyNotice;
 }
 
-class _DemoKitClientLocalizationsDelegate
-    extends LocalizationsDelegate<DemoKitClientLocalizations> {
+class _DemoKitClientLocalizationsDelegate extends LocalizationsDelegate<DemoKitClientLocalizations> {
   const _DemoKitClientLocalizationsDelegate();
 
   @override
   Future<DemoKitClientLocalizations> load(Locale locale) {
-    return SynchronousFuture<DemoKitClientLocalizations>(
-        lookupDemoKitClientLocalizations(locale));
+    return SynchronousFuture<DemoKitClientLocalizations>(lookupDemoKitClientLocalizations(locale));
   }
 
   @override
-  bool isSupported(Locale locale) =>
-      <String>['en', 'zh'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => <String>['en', 'zh'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_DemoKitClientLocalizationsDelegate old) => false;
 }
 
 DemoKitClientLocalizations lookupDemoKitClientLocalizations(Locale locale) {
+
+
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'en':
-      return DemoKitClientLocalizationsEn();
-    case 'zh':
-      return DemoKitClientLocalizationsZh();
+    case 'en': return DemoKitClientLocalizationsEn();
+    case 'zh': return DemoKitClientLocalizationsZh();
   }
 
   throw FlutterError(
-      'DemoKitClientLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
+    'DemoKitClientLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.'
+  );
 }

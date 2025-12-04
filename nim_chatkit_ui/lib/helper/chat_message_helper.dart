@@ -61,21 +61,27 @@ final RegExp urlRegex = RegExp(
 );
 
 class NotifyHelper {
-  static Future<String> getNotificationText(NIMMessage message) async {
+  static Future<String> getNotificationText(NIMMessage message,
+      {NIMTeam? teamInfo}) async {
     if (message.attachment is NIMMessageNotificationAttachment) {
       NIMMessageNotificationAttachment attachment =
           message.attachment as NIMMessageNotificationAttachment;
-      var teamId = (await NimCore.instance.conversationIdUtil
-              .conversationTargetId(message.conversationId!))
-          .data!;
+
+      var teamId = (teamInfo?.teamId) ??
+          (await NimCore.instance.conversationIdUtil
+                  .conversationTargetId(message.conversationId!))
+              .data!;
       switch (attachment.type) {
         case NIMMessageNotificationType.teamInvite:
           return buildInviteMemberNotification(
-              teamId, message.senderId!, attachment);
+              teamId, message.senderId!, attachment,
+              team: teamInfo);
         case NIMMessageNotificationType.teamKick:
-          return buildKickMemberNotification(teamId, attachment);
+          return buildKickMemberNotification(teamId, attachment,
+              team: teamInfo);
         case NIMMessageNotificationType.teamLeave:
-          return buildMemberLeaveNotification(teamId, message.senderId!);
+          return buildMemberLeaveNotification(teamId, message.senderId!,
+              team: teamInfo);
         case NIMMessageNotificationType.teamDismiss:
           return buildTeamDismissNotification(teamId, message.senderId!);
         case NIMMessageNotificationType.teamUpdateTInfo:
@@ -188,14 +194,17 @@ class NotifyHelper {
     return S.of().chatMessageUnknownNotification;
   }
 
-  static Future<String> buildInviteMemberNotification(String tid,
-      String fromAccId, NIMMessageNotificationAttachment attachment) async {
+  static Future<String> buildInviteMemberNotification(
+      String tid, String fromAccId, NIMMessageNotificationAttachment attachment,
+      {NIMTeam? team}) async {
     var fromName = await getTeamMemberDisplayName(tid, fromAccId);
     var memberNames = await buildMemberListString(tid, attachment.targetIds!,
         fromAccount: fromAccId, needTeamNick: false);
-    var team = (await NimCore.instance.teamService
-            .getTeamInfo(tid, NIMTeamType.typeNormal))
-        .data;
+    if (team == null) {
+      team = (await NimCore.instance.teamService
+              .getTeamInfo(tid, NIMTeamType.typeNormal))
+          .data;
+    }
     if (team != null && !getIt<TeamProvider>().isGroupTeam(team)) {
       return S.of().chatAdviceTeamNotifyInvite(fromName, memberNames);
     } else {
@@ -204,10 +213,13 @@ class NotifyHelper {
   }
 
   static Future<String> buildKickMemberNotification(
-      String tid, NIMMessageNotificationAttachment attachment) async {
-    var team = (await NimCore.instance.teamService
-            .getTeamInfo(tid, NIMTeamType.typeNormal))
-        .data;
+      String tid, NIMMessageNotificationAttachment attachment,
+      {NIMTeam? team}) async {
+    if (team == null) {
+      team = (await NimCore.instance.teamService
+              .getTeamInfo(tid, NIMTeamType.typeNormal))
+          .data;
+    }
     var members = await buildMemberListString(tid, attachment.targetIds!);
     if (team != null && !getIt<TeamProvider>().isGroupTeam(team)) {
       return S.of().chatAdvancedTeamNotifyRemove(members);
@@ -217,10 +229,13 @@ class NotifyHelper {
   }
 
   static Future<String> buildMemberLeaveNotification(
-      String tid, String fromAccId) async {
-    var team = (await NimCore.instance.teamService
-            .getTeamInfo(tid, NIMTeamType.typeNormal))
-        .data;
+      String tid, String fromAccId,
+      {NIMTeam? team}) async {
+    if (team == null) {
+      team = (await NimCore.instance.teamService
+              .getTeamInfo(tid, NIMTeamType.typeNormal))
+          .data;
+    }
     var members = await getTeamMemberDisplayName(tid, fromAccId);
     if (team != null && !getIt<TeamProvider>().isGroupTeam(team)) {
       return S.of().chatAdvancedTeamNotifyLeave(members);

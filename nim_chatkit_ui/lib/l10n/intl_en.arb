@@ -544,5 +544,25 @@
   "permissionStorageTitle":"The storage is used for",
   "permissionStorageContent":"Files, photos, videos, ...",
   "permissionAudioTitle":"The micro is used for",
-  "permissionAudioContent":"Voice records, voice calls, ..."
+  "permissionAudioContent":"Voice records, voice calls, ...",
+  "chatMessageAntispamPornography": "Pornography",
+  "chatMessageAntispamAdvertising": "Advertising",
+  "chatMessageAntispamIllegalAdvertising": "Illegal Advertising",
+  "chatMessageAntispamViolenceTerrorism": "Violence & Terrorism",
+  "chatMessageAntispamContraband": "Contraband",
+  "chatMessageAntispamPoliticalSensitivity": "Political Sensitivity",
+  "chatMessageAntispamAbuse": "Abuse",
+  "chatMessageAntispamSpam": "Spam",
+  "chatMessageAntispamOther": "Other",
+  "chatMessageAntispamInappropriateValues": "Inappropriate Values",
+  "chatMessageAntispamTips": "The content may involve {reason}. Please adjust it before sending.",
+  "@chatMessageAntispamTips": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "chatMessageWarningTips": "For Yunxin IM product demo use only. Do not trust messages involving money transfers or winning prizes. Do not call unknown numbers. Beware of scams.",
+  "chatMessageTapToReport": "Tap to report"
 }
