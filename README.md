@@ -75,3 +75,4 @@ IM UIKit 采用 （Model–View–ViewModel）MVVM 架构模型，实现 UI 展�
 
 - IM UIKit 的功能清单，请参考 [IM UIKit 功能概览](https://doc.yunxin.163.com/messaging-uikit/concept/zMzMDQ2MTg)。
 - IM UIKit 的集成流程，请参考 [集成 IM UIKit](https://doc.yunxin.163.com/messaging-uikit/guide/DA2MzEzNTA?platform=flutter)。
+- IM UIKit 已支持音视频通话，具体实现流程请参考 [实现音视频通话功能](https://doc.yunxin.163.com/messaging-uikit/guide/zQzMjAxNzk?platform=flutter)。
