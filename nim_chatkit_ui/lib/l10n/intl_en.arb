@@ -350,7 +350,7 @@
     }
   },
   "chatMessageYou": "you",
-  "messageSearchTitle": "Search History",
+  "messageSearchTitle": "Search Message",
   "messageSearchHint": "Search chat content",
   "messageSearchEmpty": "No chat history",
   "messageForwardToP2p": "Forward to person",
@@ -564,5 +564,68 @@
     }
   },
   "chatMessageWarningTips": "For Yunxin IM product demo use only. Do not trust messages involving money transfers or winning prizes. Do not call unknown numbers. Beware of scams.",
-  "chatMessageTapToReport": "Tap to report"
+  "chatMessageTapToReport": "Tap to report",
+  "chatMessageQuickSearch": "Quick Search Message",
+  "chatMessageSearchHistory": "Search History Message",
+  "chatQuickSearchTeamMember": "Team Member",
+  "chatQuickSearchPicture": "Picture",
+  "chatQuickSearchVideo": "Video",
+  "chatQuickSearchDate": "Date",
+  "chatQuickSearchFile": "File",
+  "chatQuickSearchByDate": "Filter by date",
+  "chatDateYearMonth": "{month}/{year}",
+  "@chatDateYearMonth": {
+    "placeholders": {
+      "year": {
+        "type": "String"
+      },
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "chatDateMonth": "{month}",
+  "@chatDateMonth": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "chatDateToday": "Today",
+  "chatDateRecent7Days": "Last 7 days",
+  "chatDateRecent30Days": "Last 30 days",
+  "chatHistoryLoadMore": "Load more messages",
+  "chatHistoryDateFormatMonthDay": "MM/dd",
+  "chatHistoryDateFormaYearMonthDay": "yy/MM/dd",
+  "chatHistoryFinish": "Sure",
+  "chatHistorySelectChatDate": "Select Chat Date",
+  "chatHistorySearchByMember": "Search By Member",
+  "chatHistoryDateFormatYearMonthDayHourMine": "yy/MM/dd/ HH:mm",
+  "chatHistoryDateFormatMonthDayHourMine": "MM/dd/ HH:mm",
+  "chatHistoryDateFormatHourMine": "HH:mm",
+  "chatHistoryMessageNotAnyMore": "Not Any More",
+  "chatHistoryOrientation":"Find in chat",
+  "chatCollectionFrom": "From{name}",
+  "@chatCollectionFrom": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatNewMessage": "{number}new message",
+  "@chatNewMessage": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "chatMessageCollectedLimit": "Message Collected Limited",
+  "chatHaveNoCollectionMessage": "NO Collection",
+  "chatCollectionDeleteConfirm": "Delete this collection？",
+  "chatSearchImageMessageEmpty": "NO Picture Message",
+  "chatSearchVideoMessageEmpty": "NO Video Message",
+  "chatSearchFileMessageEmpty": "NO File Message"
 }

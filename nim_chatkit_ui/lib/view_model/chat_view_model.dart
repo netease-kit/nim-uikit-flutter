@@ -10,30 +10,30 @@ import 'package:collection/collection.dart';
 import 'package:flutter/widgets.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
+import 'package:nim_chatkit/chatkit_client_repo.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit/location.dart';
+import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit/manager/subscription_manager.dart';
+import 'package:nim_chatkit/message/message_revoke_info.dart';
 import 'package:nim_chatkit/model/ait/ait_contacts_model.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
+import 'package:nim_chatkit/repo/chat_message_repo.dart';
+import 'package:nim_chatkit/repo/chat_service_observer_repo.dart';
 import 'package:nim_chatkit/repo/config_repo.dart';
 import 'package:nim_chatkit/service_locator.dart';
 import 'package:nim_chatkit/services/contact/contact_provider.dart';
 import 'package:nim_chatkit/services/message/chat_message.dart';
 import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
-import 'package:nim_chatkit/chatkit_client_repo.dart';
-import 'package:nim_chatkit/location.dart';
-import 'package:nim_chatkit/manager/ai_user_manager.dart';
-import 'package:nim_chatkit/message/message_revoke_info.dart';
-import 'package:nim_chatkit/repo/chat_message_repo.dart';
-import 'package:nim_chatkit/repo/chat_service_observer_repo.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_helper.dart';
 import 'package:nim_chatkit_ui/helper/merge_message_helper.dart';
 import 'package:nim_chatkit_ui/model/chat_message_antispam_result.dart';
 import 'package:nim_core_v2/nim_core.dart';
-import 'package:yunxin_alog/yunxin_alog.dart';
 import 'package:uuid/uuid.dart';
 
 import '../chat_kit_client.dart';
+import '../helper/chat_message_user_helper.dart';
 import '../l10n/S.dart';
 import '../media/audio_player.dart';
 
@@ -72,13 +72,11 @@ class ChatViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<String> get sessionId async {
+  String get sessionId {
     if (_sessionId?.isNotEmpty == true) {
       return _sessionId!;
     }
-    _sessionId = (await NimCore.instance.conversationIdUtil
-            .conversationTargetId(conversationId))
-        .data;
+    _sessionId = ChatKitUtils.getConversationTargetId(conversationId);
     return _sessionId!;
   }
 
@@ -130,6 +128,10 @@ class ChatViewModel extends ChangeNotifier {
 
   RevokedMessageInfo? get reeditMessage => _reeditMessage;
 
+  List<ChatMessage> newMessages = [];
+
+  bool showNewMessage = true;
+
   set reeditMessage(RevokedMessageInfo? value) {
     _reeditMessage = value;
     _replyMessage = null;
@@ -171,6 +173,9 @@ class ChatViewModel extends ChangeNotifier {
 
   bool get isMultiSelected => _isMultiSelected;
 
+  //锚点时间
+  int? findAnchorDate;
+
   set isMultiSelected(bool value) {
     _isMultiSelected = value;
     if (!value) {
@@ -185,9 +190,13 @@ class ChatViewModel extends ChangeNotifier {
   List<NIMMessage> get selectedMessages => _selectedMessages.toList();
 
   ChatViewModel(this.conversationId, this.conversationType,
-      {this.showReadAck = true}) {
+      {this.showReadAck = true,
+      NIMMessage? anchorMessage,
+      this.findAnchorDate}) {
     _setNIMMessageListener();
-    initData();
+    initData(
+      anchorMessage: anchorMessage,
+    );
     //初始化语音播放器
     ChatAudioPlayer.instance.initAudioPlayer();
     showWarningTips = ChatKitClient.instance.showWarningTyps;
@@ -195,7 +204,7 @@ class ChatViewModel extends ChangeNotifier {
 
   bool voiceFromSpeaker = false;
 
-  initData() async {
+  initData({NIMMessage? anchorMessage}) async {
     int v = await ConfigRepo.getAudioPlayModel();
     voiceFromSpeaker = v == ConfigRepo.audioPlayOutside;
     _sessionId = (await NimCore.instance.conversationIdUtil
@@ -232,7 +241,13 @@ class ChatViewModel extends ChangeNotifier {
         }
       });
     }
-    _initFetch();
+    if (anchorMessage != null) {
+      loadMessageWithAnchor(anchorMessage!);
+    } else if (this.findAnchorDate != null) {
+      loadMessageWithAnchorDate(this.findAnchorDate!);
+    } else {
+      _initFetch();
+    }
   }
 
   ///更新语音消息的播放模式
@@ -257,6 +272,25 @@ class ChatViewModel extends ChangeNotifier {
       contactInfo = info;
       contactInfo?.isOnline = isOnline;
     }
+  }
+
+  void srollToNewMessage({bool scrollToEnd = true}) {
+    if (hasMoreNewerMessages) {
+      _messageList.clear();
+      showNewMessage = true;
+      newMessages.clear();
+      _initFetch(scrollToBottom: true);
+      return;
+    }
+    if (newMessages.isNotEmpty) {
+      _messageList.insertAll(0, newMessages);
+      newMessages.clear();
+    }
+    showNewMessage = true;
+    if (scrollToEnd) {
+      _scrollToEnd?.call();
+    }
+    notifyListeners();
   }
 
   ///初始化用户在线状态
@@ -321,12 +355,6 @@ class ChatViewModel extends ChangeNotifier {
         return;
       }
       _logI('receive msg -->> ${event.length}');
-      //解决从搜索，PIN列表跳转的逻辑
-      if (hasMoreNewerMessages) {
-        _messageList.clear();
-        _initFetch();
-        return;
-      }
       List<NIMMessage> list = event.where((element) {
         return element.conversationId == conversationId &&
             element.messageServerId != null &&
@@ -334,6 +362,11 @@ class ChatViewModel extends ChangeNotifier {
       }).toList();
       if (list.isNotEmpty) {
         var res = await ChatMessageRepo.fillUserInfo(list);
+        if (!showNewMessage) {
+          newMessages.insertAll(0, res);
+          notifyListeners();
+          return;
+        }
         //用户数据填充完成后再更新过滤
         //解决非常罕见的在填充数据时，消息状态更新回调，导致消息多一条的问题
         _insertMessages(
@@ -353,9 +386,15 @@ class ChatViewModel extends ChangeNotifier {
       }
       _logI(
           'onSendMessage ${msg.messageClientId} status change -->> ${msg.sendingState}, ${msg.attachmentUploadState}');
+      //多端同步case 处理
+      if (!showNewMessage) {
+        _insertOrUpdateNewMessage(ChatMessage(msg));
+        notifyListeners();
+        return;
+      }
       if (hasMoreNewerMessages) {
         _messageList.clear();
-        _initFetch();
+        _initFetch(scrollToBottom: true);
       } else {
         if (_updateNimMessage(msg,
                     resort:
@@ -369,6 +408,11 @@ class ChatViewModel extends ChangeNotifier {
           }
           //如果更新失败则添加
           _insertMessages([ChatMessage(msg)], toEnd: false);
+        }
+        // 如果是发送中或者发送成功，则滚动到最底部
+        if (msg.sendingState == NIMMessageSendingState.sending ||
+            msg.sendingState == NIMMessageSendingState.succeeded) {
+          _scrollToEnd?.call();
         }
       }
     }));
@@ -408,8 +452,8 @@ class ChatViewModel extends ChangeNotifier {
       //team message receipt
       subscriptions.add(
           ChatServiceObserverRepo.observeTeamMessageReceipt().listen((event) {
-        for (var element in event) {
-          _updateTeamReceipt(element);
+        for (var message in event) {
+          _updateTeamReceipt(message);
         }
       }));
 
@@ -496,6 +540,14 @@ class ChatViewModel extends ChangeNotifier {
         return msg;
       }).toList();
       _messageList = updatedList;
+      //新消息列表，如果有更新则更新
+      List<ChatMessage> updatedNewList = newMessages.map((msg) {
+        if (msgMap.containsKey(msg.nimMessage.messageClientId)) {
+          msg.nimMessage = msgMap[msg.nimMessage.messageClientId!]!;
+        }
+        return msg;
+      }).toList();
+      newMessages = updatedNewList;
       notifyListeners();
     }));
 
@@ -531,6 +583,35 @@ class ChatViewModel extends ChangeNotifier {
     }));
   }
 
+  void _insertOrUpdateNewMessage(ChatMessage message) {
+    int indexShowMessages = _messageList.indexWhere((m) =>
+        m.nimMessage.messageClientId == message.nimMessage.messageClientId);
+    if (indexShowMessages >= 0) {
+      _messageList[indexShowMessages] = message;
+      notifyListeners();
+      return;
+    }
+
+    //本地消息，不添加
+    if (message.nimMessage.messageServerId?.isNotEmpty != true) {
+      return;
+    }
+
+    int index = newMessages.indexWhere((m) =>
+        m.nimMessage.messageClientId == message.nimMessage.messageClientId);
+    if (index >= 0) {
+      newMessages[index] = message;
+    } else {
+      int indexInsert = newMessages.indexWhere(
+          (m) => m.nimMessage.createTime! <= message.nimMessage.createTime!);
+      if (indexInsert >= 0) {
+        newMessages.insert(indexInsert, message);
+      } else {
+        newMessages.insert(0, message);
+      }
+    }
+  }
+
   void _onMessageRevokedNotify(
       NIMMessageRevokeNotification notification) async {
     //不处理自己revoke的消息
@@ -550,6 +631,14 @@ class ChatViewModel extends ChangeNotifier {
         _selectedMessages.removeWhere((element) =>
             element.messageClientId ==
             notification.messageRefer?.messageClientId);
+        notifyListeners();
+        return;
+      }
+      int posNew = newMessages.indexWhere((e) =>
+          e.nimMessage.messageClientId ==
+          notification.messageRefer?.messageClientId);
+      if (posNew >= 0) {
+        newMessages[posNew] = ChatMessage(localMessage.data!);
         notifyListeners();
       }
     }
@@ -620,25 +709,91 @@ class ChatViewModel extends ChangeNotifier {
     ChatMessageRepo.sendCustomNotification(conversationId, json, params);
   }
 
-  void _initFetch() async {
+  void _initFetch({bool scrollToBottom = false}) async {
     _logI('initFetch -->>');
     hasMoreForwardMessages = true;
     hasMoreNewerMessages = false;
-    _fetchMoreMessage(anchor: null, init: true);
+    _fetchMoreMessage(
+        limit: messageLimit,
+        anchor: null,
+        init: true,
+        scrollToBottomAfterFetch: scrollToBottom);
   }
 
   void loadMessageWithAnchor(NIMMessage anchor) {
     _logI('initFetch -->> anchor:${anchor.text}');
-    _messageList.clear();
     hasMoreForwardMessages = true;
     hasMoreNewerMessages = true;
     _fetchMessageListBothDirect(anchor);
+  }
+
+  void loadMessageWithAnchorDate(int date) async {
+    _logI('initFetch -->> anchor date:$date');
+    hasMoreForwardMessages = true;
+    hasMoreNewerMessages = true;
+    _fetchMessageListBothDirectByAnchorDate(date);
+  }
+
+  void _fetchMessageListBothDirectByAnchorDate(int anchorDate) async {
+    _logI('_fetchMessageListBothDirectByAnchorDate');
+
+    isLoading = true;
+
+    bool haveClean = false;
+
+    NIMMessageListOption optionNewer = NIMMessageListOption(
+        conversationId: conversationId,
+        limit: (messageLimit / 2).toInt(),
+        direction: NIMQueryDirection.asc,
+        beginTime: anchorDate);
+    final newerMsgs = await ChatMessageRepo.getMessageListEx(optionNewer,
+        enablePin: IMKitClient.enablePin, addUserInfo: true);
+
+    if (newerMsgs.isSuccess) {
+      if (!haveClean) {
+        _messageList.clear();
+        haveClean = true;
+      }
+      hasMoreNewerMessages =
+          (newerMsgs.data?.length ?? 0) >= (messageLimit / 2).toInt();
+      if (newerMsgs.data?.isNotEmpty == true) {
+        _messageList.addAll(newerMsgs.data!.reversed);
+      }
+    }
+
+    NIMMessageListOption optionOlder = NIMMessageListOption(
+        conversationId: conversationId,
+        limit: (messageLimit / 2).toInt(),
+        direction: NIMQueryDirection.desc,
+        endTime: anchorDate);
+    final olderMsgs = await ChatMessageRepo.getMessageListEx(optionOlder,
+        enablePin: IMKitClient.enablePin, addUserInfo: true);
+    if (olderMsgs.isSuccess) {
+      if (!haveClean) {
+        _messageList.clear();
+        haveClean = true;
+      }
+      hasMoreForwardMessages =
+          (olderMsgs.data?.length ?? 0) >= (messageLimit / 2).toInt();
+      if (olderMsgs.data?.isNotEmpty == true) {
+        _messageList.addAll(olderMsgs.data!);
+      }
+    }
+
+    isLoading = false;
+    if (_messageList.isNotEmpty &&
+        _messageList.last.nimMessage.createTime! > anchorDate) {
+      this.findAnchorDate = _messageList.last.nimMessage.createTime!;
+    }
+    notifyListeners();
   }
 
   _fetchMessageListBothDirect(NIMMessage anchor) async {
     _logI('fetchMessageListBothDirect');
 
     isLoading = true;
+
+    bool haveClean = false;
 
     NIMMessageListOption optionNewer = NIMMessageListOption(
         conversationId: conversationId,
@@ -649,7 +804,12 @@ class ChatViewModel extends ChangeNotifier {
         enablePin: IMKitClient.enablePin, addUserInfo: true);
 
     if (newerMsgs.isSuccess) {
-      hasMoreNewerMessages = newerMsgs.data?.isNotEmpty == true;
+      if (!haveClean) {
+        _messageList.clear();
+        haveClean = true;
+      }
+      hasMoreNewerMessages =
+          (newerMsgs.data?.length ?? 0) >= (messageLimit / 2).toInt();
       if (newerMsgs.data?.isNotEmpty == true) {
         _messageList.addAll(newerMsgs.data!.reversed);
       }
@@ -677,7 +837,12 @@ class ChatViewModel extends ChangeNotifier {
     final olderMsgs = await ChatMessageRepo.getMessageList(optionOlder,
         enablePin: IMKitClient.enablePin, addUserInfo: true);
     if (olderMsgs.isSuccess) {
-      hasMoreForwardMessages = olderMsgs.data?.isNotEmpty == true;
+      if (!haveClean) {
+        _messageList.clear();
+        haveClean = true;
+      }
+      hasMoreForwardMessages =
+          (olderMsgs.data?.length ?? 0) >= (messageLimit / 2).toInt();
       if (olderMsgs.data?.isNotEmpty == true) {
         _messageList.addAll(olderMsgs.data!);
       }
@@ -689,16 +854,24 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   fetchMoreMessage(NIMQueryDirection direction) {
-    _fetchMoreMessage(anchor: getAnchor(direction), direction: direction);
+    _fetchMoreMessage(
+        anchor: getAnchor(direction),
+        direction: direction,
+        limit: messageLimit);
   }
 
   _fetchMoreMessage(
       {NIMMessage? anchor,
-      int? limit,
+      required int limit,
       NIMQueryDirection direction = NIMQueryDirection.desc,
-      bool init = false}) {
+      bool init = false,
+      bool scrollToBottomAfterFetch = false}) {
     _logI(
         '_fetchMoreMessage anchor ${anchor?.text}, time = ${anchor?.createTime!}, direction = $direction');
+
+    if (isLoading) {
+      return;
+    }
 
     isLoading = true;
     NIMMessageListOption option = NIMMessageListOption(
@@ -724,7 +897,8 @@ class ChatViewModel extends ChangeNotifier {
           }
           isLoading = false;
         } else {
-          _onListFetchSuccess(value.data!, direction);
+          _onListFetchSuccess(value.data!, direction, limit,
+              scrollToBottom: scrollToBottomAfterFetch);
         }
 
         // }
@@ -744,7 +918,9 @@ class ChatViewModel extends ChangeNotifier {
     return AIUserManager.instance.isAIUser(_sessionId);
   }
 
-  _onListFetchSuccess(List<ChatMessage>? list, NIMQueryDirection direction) {
+  _onListFetchSuccess(
+      List<ChatMessage>? list, NIMQueryDirection direction, int limit,
+      {bool scrollToBottom = false}) {
     if (direction == NIMQueryDirection.desc) {
       //先判断是否有更多，在过滤
       hasMoreForwardMessages = (list != null && list.isNotEmpty);
@@ -755,7 +931,17 @@ class ChatViewModel extends ChangeNotifier {
         _insertMessages(list, toEnd: true);
       }
     } else {
-      hasMoreNewerMessages = list != null && list.isNotEmpty;
+      hasMoreNewerMessages = (list?.length ?? 0) >= limit;
+      //移除newMessages 中与list重复的消息
+      if (!hasMoreNewerMessages &&
+          newMessages.isNotEmpty &&
+          list?.isNotEmpty == true) {
+        newMessages.removeWhere((element) =>
+            list?.any((e) =>
+                e.nimMessage.messageClientId ==
+                element.nimMessage.messageClientId) ==
+            true);
+      }
       list = _successMessageFilter(list);
       _logI('newer load has more:$hasMoreNewerMessages');
       if (list != null) {
@@ -764,6 +950,9 @@ class ChatViewModel extends ChangeNotifier {
       }
     }
     isLoading = false;
+    if (scrollToBottom) {
+      _scrollToEnd?.call();
+    }
   }
 
   //请求列表成功后过滤掉不需要添加的消息
@@ -870,7 +1059,7 @@ class ChatViewModel extends ChangeNotifier {
     var pushConfig = null;
 
     var msgBuildResult = (title?.isNotEmpty == true)
-        ? (await MessageCreator.createCustomMessage("", customJson))
+        ? (await MessageCreator.createCustomMessage(title!, customJson))
         : (await MessageCreator.createTextMessage(text));
     if (msgBuildResult.isSuccess && msgBuildResult.data != null) {
       if (conversationType == NIMConversationType.team && pushList != null) {
@@ -902,6 +1091,7 @@ class ChatViewModel extends ChangeNotifier {
     MessageCreator.createAudioMessage(filePath, name, null, duration)
         .then((value) {
       if (value.isSuccess) {
+        value.data?.text = name;
         sendMessage(value.data!, replyMsg: replyMsg);
       }
     });
@@ -916,6 +1106,7 @@ class ChatViewModel extends ChangeNotifier {
           value.data!.serverExtension =
               jsonEncode({ChatMessage.keyImageType: imageType});
         }
+        value.data?.text = name;
         sendMessage(value.data!, replyMsg: replyMsg);
       }
     });
@@ -940,14 +1131,17 @@ class ChatViewModel extends ChangeNotifier {
             videoPath, name, null, duration, width, height)
         .then((value) {
       if (value.isSuccess) {
+        value.data?.text = name;
         sendMessage(value.data!, replyMsg: replyMsg);
       }
     });
   }
 
   void sendFileMessage(String filePath, String name, {NIMMessage? replyMsg}) {
-    MessageCreator.createFileMessage(filePath, name, null)
-        .then((value) => sendMessage(value.data!, replyMsg: replyMsg));
+    MessageCreator.createFileMessage(filePath, name, null).then((value) {
+      value.data?.text = name;
+      sendMessage(value.data!, replyMsg: replyMsg);
+    });
   }
 
   void resendMessage(ChatMessage message, {NIMMessage? replyMsg}) {}
@@ -1498,8 +1692,46 @@ class ChatViewModel extends ChangeNotifier {
     });
   }
 
-  void collectMessage(NIMMessage message) {
-    ChatMessageRepo.collectMessage(message);
+  void collectMessage(ChatMessage message) async {
+    if (!await haveConnectivity()) {
+      return;
+    }
+    String senderName = message.getNickName();
+    String? avatar = message.fromUser?.avatar;
+    if (ChatMessageHelper.isReceivedMessageFromAi(message.nimMessage)) {
+      final aiUser = AIUserManager.instance
+          .getAIUserById(message.nimMessage.aiConfig!.accountId!);
+      senderName = aiUser?.name ?? aiUser?.accountId ?? '';
+      avatar = aiUser?.avatar;
+    } else if (message.nimMessage.conversationType == NIMConversationType.p2p) {
+      if (message.nimMessage.isSelf != true && contactInfo != null) {
+        senderName = contactInfo!.getName();
+        avatar = contactInfo?.user.avatar;
+      } else {
+        final selfInfo = IMKitClient.getUserInfo();
+        if (message.nimMessage.isSelf == true &&
+            selfInfo?.name?.isNotEmpty == true) {
+          senderName = selfInfo!.name!;
+        }
+        if (message.nimMessage.isSelf == true) {
+          avatar = selfInfo?.avatar;
+        }
+      }
+    } else {
+      final teamMemberInfo = await getUserAvatarInfoInTeam(
+          sessionId, message.nimMessage.senderId!);
+      senderName = teamMemberInfo.name;
+      avatar = teamMemberInfo.avatar;
+    }
+    ChatMessageRepo.addCollectMessage(message.nimMessage,
+            senderName: senderName, avatar: avatar, conversationName: chatTitle)
+        .then((v) {
+      if (v.isSuccess) {
+        Fluttertoast.showToast(msg: S.of().chatMessageCollectSuccess);
+      } else if (v.code == ChatMessage.CollectionMessageLimit) {
+        Fluttertoast.showToast(msg: S.of().chatMessageCollectedLimit);
+      }
+    });
   }
 
   ///delete message

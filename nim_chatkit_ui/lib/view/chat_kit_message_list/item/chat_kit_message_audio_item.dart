@@ -18,10 +18,10 @@ import '../../../media/audio_player.dart';
 class ChatKitMessageAudioItem extends StatefulWidget {
   final NIMMessage message;
 
-  final bool isPin;
+  final bool showDirection;
 
   const ChatKitMessageAudioItem(
-      {Key? key, required this.message, this.isPin = false})
+      {Key? key, required this.message, this.showDirection = false})
       : super(key: key);
 
   @override
@@ -69,7 +69,7 @@ class ChatKitMessageAudioState extends State<ChatKitMessageAudioItem>
   }
 
   Widget _getAudioUI(NIMMessage message) {
-    if (message.isSelf == true && !widget.isPin) {
+    if (message.isSelf == true && !widget.showDirection) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [

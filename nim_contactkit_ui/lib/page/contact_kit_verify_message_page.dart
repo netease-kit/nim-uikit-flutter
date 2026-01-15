@@ -10,7 +10,6 @@ import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/im_kit_config_center.dart';
 import 'package:nim_chatkit/model/system_notify_info.dart';
-import 'package:nim_chatkit/repo/config_repo.dart';
 import 'package:nim_chatkit/repo/contact_repo.dart';
 import 'package:nim_chatkit/repo/team_repo.dart';
 import 'package:nim_contactkit_ui/contact_kit_client.dart';

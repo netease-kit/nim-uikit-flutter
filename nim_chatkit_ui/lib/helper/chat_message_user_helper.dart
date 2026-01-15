@@ -69,6 +69,28 @@ Future<String> getUserNickInTeam(String tId, String accId,
   }
 }
 
+Future<UserAvatarInfo> getUserAvatarInfoInTeam(
+  String tId,
+  String accId,
+) async {
+  var teamUserInfo = await NIMChatCache.instance.getTeamMemberById(accId, tId);
+  if (teamUserInfo != null) {
+    return UserAvatarInfo(
+      teamUserInfo.getName(needAlias: true),
+      avatar: teamUserInfo.userInfo?.avatar,
+      avatarName: teamUserInfo.getName(needAlias: false, needTeamNick: false),
+    );
+  } else {
+    //可能已经不在群里了
+    var userInfo = await getIt<ContactProvider>().getContact(accId);
+    return UserAvatarInfo(
+      userInfo?.getName() ?? accId,
+      avatar: userInfo?.user.avatar,
+      avatarName: userInfo?.getName(needAlias: false),
+    );
+  }
+}
+
 class UserAvatarInfo {
   String name;
 

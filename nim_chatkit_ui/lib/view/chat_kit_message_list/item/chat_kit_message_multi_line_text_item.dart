@@ -4,11 +4,11 @@
 
 import 'dart:convert';
 
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
-import 'package:nim_chatkit/model/ait/ait_msg.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_helper.dart';
+import 'package:nim_chatkit_ui/view/page/chat_kit_message_detail_text_page.dart';
 import 'package:nim_core_v2/nim_core.dart';
 
 class ChatKitMessageMultiLineItem extends StatefulWidget {
@@ -26,12 +26,15 @@ class ChatKitMessageMultiLineItem extends StatefulWidget {
 
   final int? bodyMaxLines;
 
+  final bool checkDetailEnable;
+
   const ChatKitMessageMultiLineItem(
       {Key? key,
       required this.message,
       this.chatUIConfig,
       this.body,
       this.needPadding = true,
+      this.checkDetailEnable = false,
       this.titleMaxLines,
       this.bodyMaxLines,
       required this.title})
@@ -93,7 +96,7 @@ class ChatKitMessageMultiLineState extends State<ChatKitMessageMultiLineItem> {
           context, widget.message.isSelf ?? false, text, 0,
           chatUIConfig: widget.chatUIConfig, remoteExtension: remoteExtension));
     }
-    return Container(
+    Widget content = Container(
       //放到里面
       padding: widget.needPadding
           ? const EdgeInsets.only(left: 16, top: 12, right: 16, bottom: 12)
@@ -125,13 +128,21 @@ class ChatKitMessageMultiLineState extends State<ChatKitMessageMultiLineItem> {
         ],
       ),
     );
+    if (widget.checkDetailEnable) {
+      return GestureDetector(
+        onTap: () {
+          Navigator.push(context, MaterialPageRoute(builder: (context) {
+            return ChatKitMessageDetailTextPage(
+              title: widget.title,
+              content: widget.body ?? '',
+              chatUIConfig: widget.chatUIConfig,
+            );
+          }));
+        },
+        child: content,
+      );
+    } else {
+      return content;
+    }
   }
-}
-
-class AitItemModel {
-  String account;
-  String text;
-  AitSegment segment;
-
-  AitItemModel(this.account, this.text, this.segment);
 }

@@ -2,11 +2,12 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:netease_callkit_ui/ne_callkit_ui.dart';
 import 'package:netease_callkit/netease_callkit.dart';
+import 'package:netease_callkit_ui/ne_callkit_ui.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_corekit/report/xkit_report.dart';
@@ -16,7 +17,6 @@ import 'package:nim_chatkit/im_kit_config_center.dart';
 import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_core_v2/nim_core.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 
 import 'chat_kit_message_avChat_item.dart';
 import 'l10n/S.dart';
@@ -92,7 +92,6 @@ class ChatKitCall {
 
     _setupCallKit(
         appKey: appKey, accountId: accountId, extraConfig: extraConfig);
-    CallState.instance.registerEngineObserver();
     NECallKitUI.instance.enableFloatWindow(true);
   }
 

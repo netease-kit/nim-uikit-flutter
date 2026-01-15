@@ -4,6 +4,7 @@
 
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'chat_kit_client_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -368,7 +369,7 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
   String get chatMessageYou => 'you';
 
   @override
-  String get messageSearchTitle => 'Search History';
+  String get messageSearchTitle => 'Search Message';
 
   @override
   String get messageSearchHint => 'Search chat content';
@@ -780,4 +781,108 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
 
   @override
   String get chatMessageTapToReport => 'Tap to report';
+
+  @override
+  String get chatMessageQuickSearch => 'Quick Search Message';
+
+  @override
+  String get chatMessageSearchHistory => 'Search History Message';
+
+  @override
+  String get chatQuickSearchTeamMember => 'Team Member';
+
+  @override
+  String get chatQuickSearchPicture => 'Picture';
+
+  @override
+  String get chatQuickSearchVideo => 'Video';
+
+  @override
+  String get chatQuickSearchDate => 'Date';
+
+  @override
+  String get chatQuickSearchFile => 'File';
+
+  @override
+  String get chatQuickSearchByDate => 'Filter by date';
+
+  @override
+  String chatDateYearMonth(String year, String month) {
+    return '$month/$year';
+  }
+
+  @override
+  String chatDateMonth(String month) {
+    return '$month';
+  }
+
+  @override
+  String get chatDateToday => 'Today';
+
+  @override
+  String get chatDateRecent7Days => 'Last 7 days';
+
+  @override
+  String get chatDateRecent30Days => 'Last 30 days';
+
+  @override
+  String get chatHistoryLoadMore => 'Load more messages';
+
+  @override
+  String get chatHistoryDateFormatMonthDay => 'MM/dd';
+
+  @override
+  String get chatHistoryDateFormaYearMonthDay => 'yy/MM/dd';
+
+  @override
+  String get chatHistoryFinish => 'Sure';
+
+  @override
+  String get chatHistorySelectChatDate => 'Select Chat Date';
+
+  @override
+  String get chatHistorySearchByMember => 'Search By Member';
+
+  @override
+  String get chatHistoryDateFormatYearMonthDayHourMine => 'yy/MM/dd/ HH:mm';
+
+  @override
+  String get chatHistoryDateFormatMonthDayHourMine => 'MM/dd/ HH:mm';
+
+  @override
+  String get chatHistoryDateFormatHourMine => 'HH:mm';
+
+  @override
+  String get chatHistoryMessageNotAnyMore => 'Not Any More';
+
+  @override
+  String get chatHistoryOrientation => 'Find in chat';
+
+  @override
+  String chatCollectionFrom(String name) {
+    return 'From$name';
+  }
+
+  @override
+  String chatNewMessage(String number) {
+    return '${number}new message';
+  }
+
+  @override
+  String get chatMessageCollectedLimit => 'Message Collected Limited';
+
+  @override
+  String get chatHaveNoCollectionMessage => 'NO Collection';
+
+  @override
+  String get chatCollectionDeleteConfirm => 'Delete this collection？';
+
+  @override
+  String get chatSearchImageMessageEmpty => 'NO Picture Message';
+
+  @override
+  String get chatSearchVideoMessageEmpty => 'NO Video Message';
+
+  @override
+  String get chatSearchFileMessageEmpty => 'NO File Message';
 }

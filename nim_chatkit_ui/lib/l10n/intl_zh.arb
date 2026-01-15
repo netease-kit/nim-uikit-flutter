@@ -43,7 +43,7 @@
   "chatMessageActionDelete": "删除",
   "chatMessageActionRevoke": "撤回",
   "chatMessageCopySuccess": "复制成功",
-  "chatMessageCollectSuccess": "收藏成功",
+  "chatMessageCollectSuccess": "已收藏",
   "chatMessageDeleteConfirm": "删除此消息？",
   "chatMessageRevokeConfirm": "撤回此消息？",
   "chatMessagePinMessage": "{userName}标记了这条信息，对话内容双方均可见",
@@ -350,9 +350,9 @@
     }
   },
   "chatMessageYou": "你",
-  "messageSearchTitle": "历史记录",
+  "messageSearchTitle": "查找聊天内容",
   "messageSearchHint": "搜索聊天内容",
-  "messageSearchEmpty": "暂无聊天记录",
+  "messageSearchEmpty": "暂无搜索结果",
   "messageForwardToP2p": "转发到个人",
   "messageForwardToTeam": "转发到群组",
   "messageForwardTo": "发送给",
@@ -564,5 +564,68 @@
     }
   },
   "chatMessageWarningTips": "仅用于体验云信IM产品功能，请勿轻信汇款，中奖等涉及钱款的信息，勿轻易拨打陌生电话，谨防上当受骗，",
-  "chatMessageTapToReport": "点击举报"
+  "chatMessageTapToReport": "点击举报",
+  "chatMessageQuickSearch": "快速搜索聊天消息",
+  "chatMessageSearchHistory": "搜索聊天记录",
+  "chatQuickSearchTeamMember": "群成员",
+  "chatQuickSearchPicture": "图片",
+  "chatQuickSearchVideo": "视频",
+  "chatQuickSearchDate": "日期",
+  "chatQuickSearchFile": "文件",
+  "chatQuickSearchByDate": "按日期筛选",
+  "chatDateYearMonth": "{year}年{month}月",
+  "@chatDateYearMonth": {
+    "placeholders": {
+      "year": {
+        "type": "String"
+      },
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "chatDateMonth": "{month}月",
+  "@chatDateMonth": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "chatDateToday": "今天",
+  "chatDateRecent7Days": "最近7天",
+  "chatDateRecent30Days": "最近30天",
+  "chatHistoryLoadMore": "加载更多消息",
+  "chatHistoryDateFormatMonthDay": "M月d日",
+  "chatHistoryDateFormaYearMonthDay": "y年M月d日",
+  "chatHistoryFinish": "完成",
+  "chatHistorySelectChatDate": "选择聊天日期",
+  "chatHistorySearchByMember": "按群成员查找",
+  "chatHistoryDateFormatYearMonthDayHourMine": "yyyy年MM月dd日 HH:mm",
+  "chatHistoryDateFormatMonthDayHourMine": "MM月dd日 HH:mm",
+  "chatHistoryDateFormatHourMine": "HH:mm",
+  "chatHistoryMessageNotAnyMore": "没有更多了",
+  "chatHistoryOrientation":"定位到聊天",
+  "chatCollectionFrom": "来自于{name}",
+  "@chatCollectionFrom": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatNewMessage": "{number}条新消息",
+  "@chatNewMessage": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "chatMessageCollectedLimit": "收藏数已达到限制值",
+  "chatHaveNoCollectionMessage": "暂无收藏",
+  "chatCollectionDeleteConfirm": "删除此收藏？",
+  "chatSearchImageMessageEmpty": "暂无图片",
+  "chatSearchVideoMessageEmpty": "暂无视频",
+  "chatSearchFileMessageEmpty": "暂无文件"
 }

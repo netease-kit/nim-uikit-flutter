@@ -4,6 +4,7 @@
 
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'team_kit_client_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -49,7 +50,7 @@ class TeamKitClientLocalizationsEn extends TeamKitClientLocalizations {
   String get teamMark => 'Mark';
 
   @override
-  String get teamHistory => 'History';
+  String get teamHistory => 'Search Message';
 
   @override
   String get teamMessageTip => 'Open message notice';
@@ -236,4 +237,9 @@ class TeamKitClientLocalizationsEn extends TeamKitClientLocalizations {
 
   @override
   String get teamJoinApplicationSendError => 'Application send error';
+
+  @override
+  String teamMemberSelectLimit(String number) {
+    return 'Limit $number member';
+  }
 }

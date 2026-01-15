@@ -14,13 +14,13 @@ import 'package:netease_common/netease_common.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/imagePicker/wechat_assets_picker.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit/model/ait/ait_contacts_model.dart';
 import 'package:nim_chatkit/service_locator.dart';
 import 'package:nim_chatkit/services/login/im_login_service.dart';
 import 'package:nim_chatkit/services/message/chat_message.dart';
-import 'package:nim_chatkit/chatkit_utils.dart';
-import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_helper.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_user_helper.dart';
 import 'package:nim_chatkit_ui/view/ait/ait_manager.dart';
@@ -141,6 +141,14 @@ class _BottomInputFieldState extends State<BottomInputField>
           shouldRevertGrid: false,
           maxAssets: maxAssets,
           limitedPermissionOverlayPredicate: (state) => false,
+          filterOptions: FilterOptionGroup(
+            imageOption: const FilterOption(
+              needTitle: true,
+            ),
+            videoOption: const FilterOption(
+              needTitle: true,
+            ),
+          ),
         ));
     if (result != null) {
       for (var entity in result) {
@@ -625,16 +633,7 @@ class _BottomInputFieldState extends State<BottomInputField>
   }
 
   void _scrollToBottom() {
-    Future.delayed(const Duration(milliseconds: 16), () {
-      if (widget.scrollController.positions.isNotEmpty &&
-          widget.scrollController.positions.length == 1) {
-        widget.scrollController.animateTo(
-          widget.scrollController.position.minScrollExtent,
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.ease,
-        );
-      }
-    });
+    context.read<ChatViewModel>().srollToNewMessage();
   }
 
   onViewModelChange() {
@@ -746,9 +745,7 @@ class _BottomInputFieldState extends State<BottomInputField>
     });
     _viewModel.addListener(onViewModelChange);
     if (enableAit()) {
-      _viewModel.sessionId.then((sessionId) {
-        _aitManager = AitManager(sessionId);
-      });
+      _aitManager = AitManager(_viewModel.sessionId);
     }
   }
 

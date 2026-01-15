@@ -4,6 +4,7 @@
 
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'chat_kit_client_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -123,7 +124,7 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
   String get chatMessageCopySuccess => '复制成功';
 
   @override
-  String get chatMessageCollectSuccess => '收藏成功';
+  String get chatMessageCollectSuccess => '已收藏';
 
   @override
   String get chatMessageDeleteConfirm => '删除此消息？';
@@ -365,13 +366,13 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
   String get chatMessageYou => '你';
 
   @override
-  String get messageSearchTitle => '历史记录';
+  String get messageSearchTitle => '查找聊天内容';
 
   @override
   String get messageSearchHint => '搜索聊天内容';
 
   @override
-  String get messageSearchEmpty => '暂无聊天记录';
+  String get messageSearchEmpty => '暂无搜索结果';
 
   @override
   String get messageForwardToP2p => '转发到个人';
@@ -762,4 +763,108 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
 
   @override
   String get chatMessageTapToReport => '点击举报';
+
+  @override
+  String get chatMessageQuickSearch => '快速搜索聊天消息';
+
+  @override
+  String get chatMessageSearchHistory => '搜索聊天记录';
+
+  @override
+  String get chatQuickSearchTeamMember => '群成员';
+
+  @override
+  String get chatQuickSearchPicture => '图片';
+
+  @override
+  String get chatQuickSearchVideo => '视频';
+
+  @override
+  String get chatQuickSearchDate => '日期';
+
+  @override
+  String get chatQuickSearchFile => '文件';
+
+  @override
+  String get chatQuickSearchByDate => '按日期筛选';
+
+  @override
+  String chatDateYearMonth(String year, String month) {
+    return '$year年$month月';
+  }
+
+  @override
+  String chatDateMonth(String month) {
+    return '$month月';
+  }
+
+  @override
+  String get chatDateToday => '今天';
+
+  @override
+  String get chatDateRecent7Days => '最近7天';
+
+  @override
+  String get chatDateRecent30Days => '最近30天';
+
+  @override
+  String get chatHistoryLoadMore => '加载更多消息';
+
+  @override
+  String get chatHistoryDateFormatMonthDay => 'M月d日';
+
+  @override
+  String get chatHistoryDateFormaYearMonthDay => 'y年M月d日';
+
+  @override
+  String get chatHistoryFinish => '完成';
+
+  @override
+  String get chatHistorySelectChatDate => '选择聊天日期';
+
+  @override
+  String get chatHistorySearchByMember => '按群成员查找';
+
+  @override
+  String get chatHistoryDateFormatYearMonthDayHourMine => 'yyyy年MM月dd日 HH:mm';
+
+  @override
+  String get chatHistoryDateFormatMonthDayHourMine => 'MM月dd日 HH:mm';
+
+  @override
+  String get chatHistoryDateFormatHourMine => 'HH:mm';
+
+  @override
+  String get chatHistoryMessageNotAnyMore => '没有更多了';
+
+  @override
+  String get chatHistoryOrientation => '定位到聊天';
+
+  @override
+  String chatCollectionFrom(String name) {
+    return '来自于$name';
+  }
+
+  @override
+  String chatNewMessage(String number) {
+    return '$number条新消息';
+  }
+
+  @override
+  String get chatMessageCollectedLimit => '收藏数已达到限制值';
+
+  @override
+  String get chatHaveNoCollectionMessage => '暂无收藏';
+
+  @override
+  String get chatCollectionDeleteConfirm => '删除此收藏？';
+
+  @override
+  String get chatSearchImageMessageEmpty => '暂无图片';
+
+  @override
+  String get chatSearchVideoMessageEmpty => '暂无视频';
+
+  @override
+  String get chatSearchFileMessageEmpty => '暂无文件';
 }

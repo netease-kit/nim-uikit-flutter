@@ -212,4 +212,7 @@ class DemoKitClientLocalizationsEn extends DemoKitClientLocalizations {
 
   @override
   String get textSafetyNotice => 'Text Safety Notice';
+
+  @override
+  String get enableCloudMessageSearch => 'Search Message From Cloud';
 }

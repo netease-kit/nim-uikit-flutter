@@ -178,7 +178,7 @@ abstract class TeamKitClientLocalizations {
   /// No description provided for @teamHistory.
   ///
   /// In en, this message translates to:
-  /// **'History'**
+  /// **'Search Message'**
   String get teamHistory;
 
   /// No description provided for @teamMessageTip.
@@ -522,6 +522,12 @@ abstract class TeamKitClientLocalizations {
   /// In en, this message translates to:
   /// **'Application send error'**
   String get teamJoinApplicationSendError;
+
+  /// No description provided for @teamMemberSelectLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Limit {number} member'**
+  String teamMemberSelectLimit(String number);
 }
 
 class _TeamKitClientLocalizationsDelegate

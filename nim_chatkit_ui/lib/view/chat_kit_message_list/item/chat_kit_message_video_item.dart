@@ -5,19 +5,15 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/extension.dart';
-import 'package:netease_common_ui/widgets/neListView/frame_separate_widget.dart';
 import 'package:nim_chatkit/extension.dart';
 import 'package:nim_chatkit/repo/chat_service_observer_repo.dart';
 import 'package:nim_chatkit_ui/media/audio_player.dart';
 import 'package:nim_chatkit_ui/media/video.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/widgets/chat_thumb_view.dart';
 import 'package:nim_core_v2/nim_core.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:yunxin_alog/yunxin_alog.dart';
 
 import '../../../chat_kit_client.dart';
 
@@ -145,10 +141,13 @@ class _ChatKitMessageVideoState extends State<ChatKitMessageVideoItem> {
               NIMSize(width: attachment.width, height: attachment.height),
           messageClientId: widget.message.messageClientId);
       NimCore.instance.storageService.downloadAttachment(params).then((result) {
+        if (!mounted) return;
         if (result.data?.isNotEmpty == true) {
           _localPath = result.data;
           _progress.add(1);
-          _goVideoViewer(_localPath);
+          if (ModalRoute.of(context)?.isCurrent == true) {
+            _goVideoViewer(_localPath);
+          }
         }
       });
     }
@@ -192,54 +191,44 @@ class _ChatKitMessageVideoState extends State<ChatKitMessageVideoItem> {
     //   NimCore.instance.messageService
     //       .downloadAttachment(message: widget.message, thumb: true);
     // }
-    return FrameSeparateWidget.builder(
-      id: widget.message.messageClientId,
-      placeHolder: Container(
-        width: _getVideoSize().width,
-        height: _getVideoSize().height,
-      ),
-      builder: (context) {
-        return GestureDetector(
-          onTap: _videoOnTap,
-          child: Stack(
-            children: [
-              ChatThumbView(
-                message: widget.message,
-                radius: const BorderRadius.all(Radius.circular(12)),
-                thumbFromRemote: true,
-              ),
-              Positioned.fill(
-                child: Visibility(
-                  visible: url.isNotEmpty,
-                  child: Center(
-                    child: _buildLoading(),
-                  ),
-                ),
-              ),
-              Visibility(
-                visible: url.isNotEmpty && attachment.duration != null,
-                child: Positioned(
-                    right: 6,
-                    bottom: 6,
-                    child: Container(
-                      decoration: const BoxDecoration(
-                          borderRadius: BorderRadius.all(Radius.circular(4)),
-                          color: Color(0x99000000)),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 1, horizontal: 2),
-                        child: Text(
-                          _videoDuration(),
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 10),
-                        ),
-                      ),
-                    )),
-              )
-            ],
+    return GestureDetector(
+      onTap: _videoOnTap,
+      child: Stack(
+        children: [
+          ChatThumbView(
+            message: widget.message,
+            radius: const BorderRadius.all(Radius.circular(12)),
+            thumbFromRemote: true,
           ),
-        );
-      },
+          Positioned.fill(
+            child: Visibility(
+              visible: url.isNotEmpty,
+              child: Center(
+                child: _buildLoading(),
+              ),
+            ),
+          ),
+          Visibility(
+            visible: url.isNotEmpty && attachment.duration != null,
+            child: Positioned(
+                right: 6,
+                bottom: 6,
+                child: Container(
+                  decoration: const BoxDecoration(
+                      borderRadius: BorderRadius.all(Radius.circular(4)),
+                      color: Color(0x99000000)),
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 1, horizontal: 2),
+                    child: Text(
+                      _videoDuration(),
+                      style: const TextStyle(color: Colors.white, fontSize: 10),
+                    ),
+                  ),
+                )),
+          )
+        ],
+      ),
     );
   }
 }

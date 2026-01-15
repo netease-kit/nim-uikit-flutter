@@ -2,32 +2,23 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'dart:convert';
-
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:netease_common_ui/utils/connectivity_checker.dart';
-import 'package:nim_chatkit/chatkit_utils.dart';
-import 'package:nim_chatkit/im_kit_client.dart';
-import 'package:nim_chatkit/im_kit_config_center.dart';
-import 'package:nim_chatkit/router/imkit_router_constants.dart';
-import 'package:nim_chatkit/router/imkit_router_factory.dart';
-import 'package:nim_chatkit/services/team/team_provider.dart';
-import 'package:nim_chatkit/manager/ai_user_manager.dart';
-import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/background.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
+import 'package:nim_chatkit/im_kit_config_center.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
+import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_chatkit/service_locator.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:nim_chatkit/repo/contact_repo.dart';
-import 'package:nim_chatkit/repo/conversation_repo.dart';
+import 'package:nim_chatkit/services/team/team_provider.dart';
 import 'package:nim_chatkit_ui/view_model/chat_setting_view_model.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:provider/provider.dart';
-import 'package:yunxin_alog/yunxin_alog.dart';
 
 import '../../chat_kit_client.dart';
 import '../../l10n/S.dart';
@@ -155,6 +146,16 @@ class _ChatSettingPageState extends State<ChatSettingPage> {
                 NIMConversationType.p2p,
                 widget.contactInfo.getName(),
               );
+            }),
+        ListTile(
+            title: Text(
+              S.of(context).messageSearchTitle,
+              style: style,
+            ),
+            trailing: const Icon(Icons.keyboard_arrow_right_outlined),
+            onTap: () {
+              goToChatHistoryPage(
+                  context, widget.conversationId, NIMConversationType.p2p);
             }),
         ListTile(
           title: Text(

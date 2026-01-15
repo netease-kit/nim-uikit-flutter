@@ -12,7 +12,7 @@
   "teamIntroduceTitle": "Team introduce",
   "teamMyNicknameTitle": "My nickname in Team",
   "teamMark": "Mark",
-  "teamHistory": "History",
+  "teamHistory": "Search Message",
   "teamMessageTip": "Open message notice",
   "teamSessionPin": "Set session top",
   "teamMute": "Mute",
@@ -97,5 +97,13 @@
   "teamJoinApply": "Join Team",
   "teamChat": "Chat",
   "teamJoinApplicationHaveSent": "Application Have Sent",
-  "teamJoinApplicationSendError": "Application send error"
+  "teamJoinApplicationSendError": "Application send error",
+  "teamMemberSelectLimit": "Limit {number} member",
+  "@teamMemberSelectLimit": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -7,21 +7,21 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/im_kit_config_center.dart';
+import 'package:nim_chatkit/manager/ai_user_manager.dart';
+import 'package:nim_chatkit/manager/subscription_manager.dart';
+import 'package:nim_chatkit/repo/contact_repo.dart';
+import 'package:nim_chatkit/repo/conversation_repo.dart';
 import 'package:nim_chatkit/repo/team_repo.dart';
 import 'package:nim_chatkit/service_locator.dart';
 import 'package:nim_chatkit/services/contact/contact_provider.dart';
 import 'package:nim_chatkit/services/login/im_login_service.dart';
-import 'package:nim_chatkit/chatkit_utils.dart';
-import 'package:nim_chatkit/manager/ai_user_manager.dart';
-import 'package:nim_chatkit/repo/conversation_repo.dart';
 import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
 import 'package:nim_conversationkit_ui/service/ait/ait_server.dart';
 import 'package:nim_core_v2/nim_core.dart';
-import 'package:yunxin_alog/yunxin_alog.dart';
-import 'package:nim_chatkit/repo/contact_repo.dart';
-import 'package:nim_chatkit/manager/subscription_manager.dart';
+
 import '../model/conversation_info.dart';
 
 class ConversationViewModel extends ChangeNotifier {
@@ -49,13 +49,6 @@ class ConversationViewModel extends ChangeNotifier {
   }
 
   Comparator<ConversationInfo> _comparator = (a, b) {
-    // 先比较 stickTop，true 在前
-    if (a.conversation.stickTop == true && b.conversation.stickTop != true) {
-      return -1;
-    }
-    if (a.conversation.stickTop != true && b.conversation.stickTop == true) {
-      return 1;
-    }
     // stickTop 相同，比较 sortOrder（降序）
     return (b.conversation.sortOrder ?? 0) - (a.conversation.sortOrder ?? 0);
   };
@@ -166,7 +159,6 @@ class ConversationViewModel extends ChangeNotifier {
     // change observer
     subscriptions
         .add(ConversationRepo.onConversationChanged().listen((event) async {
-      _logI('onConversationChanged ${event.length}');
       List<ConversationInfo>? result = convertConversationInfo(event);
       if (result != null) {
         for (var conversationInfo in result) {
@@ -271,9 +263,6 @@ class ConversationViewModel extends ChangeNotifier {
   }
 
   int _searchComparatorIndex(ConversationInfo data) {
-    if (data.isStickTop()) {
-      return 0;
-    }
     int index = _conversationList.length;
     for (int i = 0; i < _conversationList.length; ++i) {
       if (_comparator(data, _conversationList[i]) < 1) {

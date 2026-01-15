@@ -4,14 +4,16 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:netease_common/netease_common.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
+import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/neListView/size_cache_widget.dart';
-import 'package:nim_chatkit/router/imkit_router.dart';
-import 'package:nim_chatkit/services/message/chat_message.dart';
 import 'package:nim_chatkit/message/message_helper.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
+import 'package:nim_chatkit/router/imkit_router.dart';
+import 'package:nim_chatkit/services/message/chat_message.dart';
 import 'package:nim_chatkit_ui/l10n/S.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
 import 'package:nim_core_v2/nim_core.dart';
@@ -44,10 +46,13 @@ class ChatKitMessageList extends StatefulWidget {
 
   final ChatUIConfig? chatUIConfig;
 
+  final int? anchorDate;
+
   ChatKitMessageList(
       {Key? key,
       required this.scrollController,
       this.anchor,
+      this.anchorDate,
       this.messageBuilder,
       this.popMenuAction,
       this.onTapAvatar,
@@ -66,8 +71,23 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
     with RouteAware {
   NIMMessage? findAnchor;
 
+  int? findAnchorDate;
+
   //是否在当前页面
   bool isInCurrentPage = true;
+
+  bool _showScrollToBottom = false;
+
+  bool? _enableShrinkWrap;
+
+  final GlobalKey _firstItemKey = GlobalKey();
+  double _firstItemHeight = 0;
+
+  final Key _centerKey = GlobalKey();
+  String? _pivotMessageId;
+
+  //需要修正的消息索引
+  int? _pivotMessageIndex;
 
   void _logI(String content) {
     Alog.i(tag: 'ChatKit', moduleName: 'message list', content: content);
@@ -96,11 +116,64 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
     return false;
   }
 
-  _scrollToMessageByUUID(String messageClientId) {
+  _scrollToMessageByRefer(NIMMessageRefer messageRefer) async {
     var index = context.read<ChatViewModel>().messageList.indexWhere(
-        (element) => element.nimMessage.messageClientId == messageClientId);
+        (element) =>
+            element.nimMessage.messageClientId == messageRefer.messageClientId);
     if (index >= 0) {
-      widget.scrollController.scrollToIndex(index);
+      _scrollToIndex(index);
+    } else {
+      var anchor = (await ChatMessageRepo.getMessageByRefer(messageRefer)).data;
+
+      if (anchor != null) {
+        setState(() {
+          findAnchor = anchor;
+          context.read<ChatViewModel>().showNewMessage = false;
+          _showScrollToBottom = true;
+        });
+        _findAnchorRemote(anchor);
+      }
+    }
+  }
+
+  _scrollToMessageByTime(int anchorDate) {
+    var list = context.read<ChatViewModel>().messageList;
+    var newAnchorDate = context.read<ChatViewModel>().findAnchorDate;
+    if (list.isEmpty) {
+      _logI('scrollToAnchor: messageList is empty');
+      return;
+    }
+    if (newAnchorDate != null) {
+      anchorDate = newAnchorDate;
+    }
+
+    int index = list.firstIndexOf((e) {
+      return e.nimMessage.createTime! <= anchorDate;
+    });
+    if (index >= 0) {
+      // in range
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        findAnchorDate = null;
+        if (index < list.length - 1) {
+          setState(() {
+            _pivotMessageId = list[index].nimMessage.messageClientId;
+          });
+        } else {
+          setState(() {
+            _pivotMessageId = list[0].nimMessage.messageClientId;
+          });
+        }
+        _scrollToIndex(index);
+      });
+    } else {
+      _logI(
+          'scrollToAnchor: not found in ${list.length} items, _findAnchorDateRemote -->> ');
+      if (!context.read<ChatViewModel>().isLoading) {
+        _findAnchorDateRemote(anchorDate);
+      }
     }
   }
 
@@ -110,25 +183,48 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
       _logI('scrollToAnchor: messageList is empty');
       return;
     }
-    int index = context.read<ChatViewModel>().messageList.indexWhere(
-        (element) =>
-            element.nimMessage.messageClientId == anchor.messageClientId!);
+    int index = list.indexWhere((element) =>
+        element.nimMessage.messageClientId == anchor.messageClientId!);
     if (index >= 0) {
       // in range
-      findAnchor = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        findAnchor = null;
+        if (index < list.length - 1) {
+          setState(() {
+            _pivotMessageId = list[index].nimMessage.messageClientId;
+          });
+        }
 
-      _logI('scrollToAnchor: found anchor index found:$index');
-      widget.scrollController
-          .scrollToIndex(index, duration: Duration(milliseconds: 500))
-          .then((value) {
-        widget.scrollController
-            .scrollToIndex(index, preferPosition: AutoScrollPosition.middle);
+        _scrollToIndex(index);
       });
     } else {
       _logI(
           'scrollToAnchor: not found in ${list.length} items, _findAnchorRemote -->> ');
-      _findAnchorRemote(anchor);
+      if (!context.read<ChatViewModel>().isLoading) {
+        _findAnchorRemote(anchor);
+      }
     }
+  }
+
+  //滚动到具体的index
+  _scrollToIndex(int index) {
+    _logI('scrollToIndex: found anchor index found:$index');
+    if (!mounted) {
+      return;
+    }
+    // 如果键盘弹出则滚动到begin,否则滚动到middle
+    var bottom = MediaQuery.of(context).viewInsets.bottom;
+    var position =
+        bottom > 0 ? AutoScrollPosition.begin : AutoScrollPosition.middle;
+    // 如果是最后一条消息，滚动到begin
+    if (index == context.read<ChatViewModel>().messageList.length - 1) {
+      position = AutoScrollPosition.end;
+    }
+    widget.scrollController.scrollToIndex(index,
+        preferPosition: position, duration: Duration(milliseconds: 500));
   }
 
   bool _onMessageCollect(ChatMessage message) {
@@ -137,8 +233,7 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
         customActions!.onMessageCollect!(message)) {
       return true;
     }
-    context.read<ChatViewModel>().collectMessage(message.nimMessage);
-    Fluttertoast.showToast(msg: S.of().chatMessageCollectSuccess);
+    context.read<ChatViewModel>().collectMessage(message);
     return true;
   }
 
@@ -266,11 +361,15 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
     return true;
   }
 
+  _findAnchorDateRemote(int anchorDate) {
+    context.read<ChatViewModel>().loadMessageWithAnchorDate(anchorDate);
+  }
+
   _findAnchorRemote(NIMMessage anchor) {
     context.read<ChatViewModel>().loadMessageWithAnchor(anchor);
   }
 
-  _loadMore() async {
+  bool _loadMore() {
     // load old
     if (context.read<ChatViewModel>().messageList.isNotEmpty &&
         context.read<ChatViewModel>().hasMoreForwardMessages &&
@@ -280,20 +379,9 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
           moduleName: 'ChatKitMessageList',
           content: '_loadMore -->>');
       context.read<ChatViewModel>().fetchMoreMessage(NIMQueryDirection.desc);
+      return true;
     }
-  }
-
-  _loadNewer() {
-    // load old
-    if (context.read<ChatViewModel>().messageList.isNotEmpty &&
-        context.read<ChatViewModel>().hasMoreNewerMessages &&
-        !context.read<ChatViewModel>().isLoading) {
-      Alog.d(
-          tag: 'ChatKit',
-          moduleName: 'ChatKitMessageList',
-          content: '_loadNewer -->>');
-      context.read<ChatViewModel>().fetchMoreMessage(NIMQueryDirection.asc);
-    }
+    return false;
   }
 
   PopMenuAction getDefaultPopMenuActions(PopMenuAction? customActions) {
@@ -328,6 +416,7 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
   void initState() {
     super.initState();
     findAnchor = widget.anchor;
+    findAnchorDate = widget.anchorDate;
     Future.delayed(Duration.zero, () {
       IMKitRouter.instance.routeObserver
           .subscribe(this, ModalRoute.of(context)!);
@@ -339,11 +428,21 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
   _scrollToBottom() {
     _logI('_scrollToBottom');
     if (widget.scrollController.hasClients) {
-      widget.scrollController.animateTo(
-        0,
-        duration: Duration(milliseconds: 300),
-        curve: Curves.ease,
-      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (widget.scrollController.hasClients) {
+          double target = widget.scrollController.position.minScrollExtent;
+          _logI('scrolling to bottom target: $target');
+          widget.scrollController.animateTo(
+            target,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+          );
+
+          setState(() {
+            _showScrollToBottom = false;
+          });
+        }
+      });
     }
   }
 
@@ -352,28 +451,163 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
       if (widget.scrollController.position.pixels >=
           widget.scrollController.position.maxScrollExtent) {
         _logI('scrollController -->> load more');
-        _loadMore();
-      } else if (widget.scrollController.position.pixels <= 0) {
-        _loadNewer();
+        if (_loadMore()) {
+          return;
+        }
+      } else if (widget.scrollController.position.pixels <=
+          widget.scrollController.position.minScrollExtent) {
+        if (context.read<ChatViewModel>().messageList.isNotEmpty &&
+            context.read<ChatViewModel>().hasMoreNewerMessages) {
+          context.read<ChatViewModel>().fetchMoreMessage(NIMQueryDirection.asc);
+          return;
+        }
+      }
+
+      if (_firstItemKey.currentContext != null) {
+        RenderBox? box =
+            _firstItemKey.currentContext!.findRenderObject() as RenderBox?;
+        if (box != null) {
+          _firstItemHeight = box.size.height;
+        }
+      }
+
+      double threshold = _firstItemHeight > 0 ? _firstItemHeight + 10 : 100;
+
+      if (widget.scrollController.offset >
+              widget.scrollController.position.minScrollExtent + threshold &&
+          !_showScrollToBottom) {
+        setState(() {
+          context.read<ChatViewModel>().showNewMessage = false;
+          _showScrollToBottom = true;
+        });
+      } else if (widget.scrollController.offset <=
+              widget.scrollController.position.minScrollExtent + threshold &&
+          _showScrollToBottom) {
+        setState(() {
+          if (!context.read<ChatViewModel>().hasMoreNewerMessages) {
+            context.read<ChatViewModel>().srollToNewMessage(scrollToEnd: false);
+            _showScrollToBottom = false;
+          }
+        });
       }
     });
     context.read<ChatViewModel>().scrollToEnd = _scrollToBottom;
   }
 
-  @override
-  void dispose() {
-    IMKitRouter.instance.routeObserver.unsubscribe(this);
-    super.dispose();
+  Widget _buildMessageItem(ChatViewModel chatViewModel, int index) {
+    if (index < 0 || index >= chatViewModel.messageList.length) {
+      return const SizedBox.shrink();
+    }
+    ChatMessage message = chatViewModel.messageList[index];
+    ChatMessage? lastMessage = index < chatViewModel.messageList.length - 1
+        ? chatViewModel.messageList[index + 1]
+        : null;
+    Widget item = AutoScrollTag(
+      controller: widget.scrollController,
+      index: index,
+      key: ValueKey(message.nimMessage.messageClientId),
+      highlightColor: Colors.black.withAlpha(25),
+      child: ChatKitMessageItem(
+        key: ValueKey(message.nimMessage.messageClientId),
+        chatMessage: message,
+        messageBuilder: widget.messageBuilder,
+        lastMessage: lastMessage,
+        popMenuAction: getDefaultPopMenuActions(widget.popMenuAction),
+        scrollToIndex: _scrollToMessageByRefer,
+        onTapFailedMessage: _resendMessage,
+        onTapAvatar: widget.onTapAvatar,
+        onAvatarLongPress: widget.onAvatarLongPress,
+        chatUIConfig: widget.chatUIConfig,
+        teamInfo: widget.teamInfo,
+        onMessageItemClick: widget.onMessageItemClick,
+        onMessageItemLongClick: widget.onMessageItemLongClick,
+      ),
+    );
+    if (index == 0) {
+      return KeyedSubtree(
+        key: _firstItemKey,
+        child: item,
+      );
+    }
+    return item;
   }
 
   @override
   Widget build(BuildContext context) {
-    if (findAnchor != null) {
-      _logI('build, try scroll to anchor:${findAnchor?.text}');
-      _scrollToAnchor(findAnchor!);
-    }
-
     return Consumer<ChatViewModel>(builder: (cnt, chatViewModel, child) {
+      if (findAnchor != null) {
+        _logI('build, try scroll to anchor:${findAnchor?.text}');
+        _scrollToAnchor(findAnchor!);
+      } else if (findAnchorDate != null) {
+        _logI('build, try scroll to anchorDate:${findAnchorDate}');
+        _scrollToMessageByTime(findAnchorDate!);
+      }
+      final messageList = chatViewModel.messageList;
+      if (messageList.isEmpty) {
+        _pivotMessageId = null;
+      } else if (_pivotMessageId == null) {
+        if (widget.anchor != null) {
+          _pivotMessageId = widget.anchor!.messageClientId;
+        } else if (widget.anchorDate != null) {
+          _pivotMessageId = messageList
+              .firstWhereOrNull(
+                  (m) => m.nimMessage.createTime! <= widget.anchorDate!)
+              ?.nimMessage
+              .messageClientId;
+        }
+      }
+
+      int pivotIndex = 0;
+      if (messageList.isNotEmpty) {
+        if (_pivotMessageId != null) {
+          pivotIndex = messageList.indexWhere(
+              (m) => m.nimMessage.messageClientId == _pivotMessageId);
+          if (pivotIndex == -1) {
+            pivotIndex = 0;
+            _pivotMessageId = messageList.first.nimMessage.messageClientId;
+          }
+        }
+      }
+
+      ///先初步判断是否需要shrinkWrap
+      bool enableShrinkWrap = pivotIndex == 0 && messageList.length < 15;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !widget.scrollController.hasClients) {
+          return;
+        }
+        // maxScrollExtent < 1.0 表示上方内容未填满视口
+        bool topNotFilled =
+            widget.scrollController.position.maxScrollExtent < 1.0;
+        // minScrollExtent < -1.0 表示下方有内容超出视口（即下方有隐藏内容）
+        bool bottomHasContent =
+            widget.scrollController.position.minScrollExtent < -1.0;
+        // 只有当上方有空白，且下方有足够内容来填充时，才调整锚点
+        bool shouldShrinkWrap = topNotFilled && bottomHasContent;
+
+        //具体判断
+        if (shouldShrinkWrap) {
+          int indexPivotMessage = messageList.indexWhere(
+              (m) => m.nimMessage.messageClientId == _pivotMessageId);
+          if (_pivotMessageIndex == null && indexPivotMessage != -1) {
+            _pivotMessageIndex = indexPivotMessage;
+          }
+          if (indexPivotMessage > 0) {
+            setState(() {
+              _pivotMessageId =
+                  messageList[indexPivotMessage - 1].nimMessage.messageClientId;
+            });
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              //添加大于1的逻辑，避免重复滚动
+              if (_pivotMessageIndex != null &&
+                  (_pivotMessageIndex! - indexPivotMessage) > 1) {
+                _scrollToIndex(_pivotMessageIndex!);
+              }
+            });
+          }
+        }
+      });
+
       ///message list
       return Container(
         child: Stack(
@@ -382,45 +616,100 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
             Align(
               alignment: Alignment.topCenter,
               child: SizeCacheWidget(
-                child: ListView.builder(
+                child: CustomScrollView(
                   controller: widget.scrollController,
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  addAutomaticKeepAlives: false,
-                  shrinkWrap: true,
+                  center:
+                      (!enableShrinkWrap && pivotIndex > 0) ? _centerKey : null,
                   reverse: true,
-                  itemCount: chatViewModel.messageList.length,
-                  itemBuilder: (context, index) {
-                    ChatMessage message = chatViewModel.messageList[index];
-                    ChatMessage? lastMessage =
-                        index < chatViewModel.messageList.length - 1
-                            ? chatViewModel.messageList[index + 1]
-                            : null;
-                    return AutoScrollTag(
-                      controller: widget.scrollController,
-                      index: index,
-                      key: ValueKey(message.nimMessage.messageClientId),
-                      highlightColor: Colors.black.withOpacity(0.1),
-                      child: ChatKitMessageItem(
-                        key: ValueKey(message.nimMessage.messageClientId),
-                        chatMessage: message,
-                        messageBuilder: widget.messageBuilder,
-                        lastMessage: lastMessage,
-                        popMenuAction:
-                            getDefaultPopMenuActions(widget.popMenuAction),
-                        scrollToIndex: _scrollToMessageByUUID,
-                        onTapFailedMessage: _resendMessage,
-                        onTapAvatar: widget.onTapAvatar,
-                        onAvatarLongPress: widget.onAvatarLongPress,
-                        chatUIConfig: widget.chatUIConfig,
-                        teamInfo: widget.teamInfo,
-                        onMessageItemClick: widget.onMessageItemClick,
-                        onMessageItemLongClick: widget.onMessageItemLongClick,
+                  shrinkWrap: enableShrinkWrap,
+                  slivers: [
+                    SliverPadding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            int globalIndex = pivotIndex - 1 - index;
+                            if (globalIndex < 0) return null;
+                            return _buildMessageItem(
+                                chatViewModel, globalIndex);
+                          },
+                          childCount: pivotIndex > 0 ? pivotIndex : 0,
+                        ),
                       ),
-                    );
-                  },
+                    ),
+                    SliverPadding(
+                      key: _centerKey,
+                      padding: const EdgeInsets.only(top: 10),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            int globalIndex = pivotIndex + index;
+                            if (globalIndex >=
+                                chatViewModel.messageList.length) {
+                              return null;
+                            }
+                            return _buildMessageItem(
+                                chatViewModel, globalIndex);
+                          },
+                          childCount: messageList.length - pivotIndex > 0
+                              ? messageList.length - pivotIndex
+                              : 0,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            )
+            ),
+            if (_showScrollToBottom &&
+                context.read<ChatViewModel>().isMultiSelected != true)
+              Positioned(
+                bottom: 20,
+                right: chatViewModel.newMessages.isEmpty ? 20 : 0,
+                child: GestureDetector(
+                  onTap: chatViewModel.srollToNewMessage,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: chatViewModel.newMessages.isEmpty
+                          ? BoxShape.circle
+                          : BoxShape.rectangle,
+                      borderRadius: chatViewModel.newMessages.isEmpty
+                          ? null
+                          : BorderRadius.only(
+                              topLeft: Radius.circular(20),
+                              bottomLeft: Radius.circular(20),
+                            ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withValues(alpha: 0.5),
+                          spreadRadius: 2,
+                          blurRadius: 5,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        SvgPicture.asset(
+                          'images/ic_new_message_icon.svg',
+                          width: 16,
+                          height: 16,
+                          package: kPackage,
+                        ),
+                        if (chatViewModel.newMessages.isNotEmpty)
+                          Text(
+                            S.of(context).chatNewMessage(
+                                '${chatViewModel.newMessages.length}'),
+                            style: TextStyle(
+                                fontSize: 14, color: '#1861DF'.toColor()),
+                          )
+                      ],
+                    ),
+                  ),
+                ),
+              )
           ],
         ),
       );

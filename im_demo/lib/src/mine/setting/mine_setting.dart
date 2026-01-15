@@ -2,16 +2,16 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:im_demo/src/mine/setting/language_setting.dart';
+import 'package:im_demo/src/mine/setting/notify_setting_page.dart';
 import 'package:netease_common_ui/ui/background.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/widgets/common_list_tile.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/repo/config_repo.dart';
-import 'package:flutter/material.dart';
-import 'package:im_demo/src/mine/setting/notify_setting_page.dart';
 
 import '../../../l10n/S.dart';
 
@@ -29,6 +29,7 @@ class _MineSettingPageState extends State<MineSettingPage> {
   bool enableCloudConversation = false;
   bool enableAIStream = true;
   bool enableSafetyTips = true;
+  bool enableCloudMessageSearch = false;
 
   Widget _divider() {
     return const SizedBox(
@@ -43,6 +44,7 @@ class _MineSettingPageState extends State<MineSettingPage> {
     enableCloudConversation = await IMKitClient.enableCloudConversation;
     enableAIStream = await IMKitClient.enableAIStream;
     enableSafetyTips = await IMKitClient.enableSafetyTips;
+    enableCloudMessageSearch = await IMKitClient.enableCloudMessageSearch;
 
     setState(() {});
   }
@@ -111,6 +113,17 @@ class _MineSettingPageState extends State<MineSettingPage> {
           IMKitClient.setEnableSafetyTips(value);
           setState(() {
             enableSafetyTips = value;
+          });
+        },
+      ),
+      CommonListTile(
+        title: S.of(context).enableCloudMessageSearch,
+        trailingType: TrailingType.onOff,
+        switchValue: enableCloudMessageSearch,
+        onSwitchChanged: (value) {
+          IMKitClient.setEnableCloudMessageSearch(value);
+          setState(() {
+            enableCloudMessageSearch = value;
           });
         },
       ),
