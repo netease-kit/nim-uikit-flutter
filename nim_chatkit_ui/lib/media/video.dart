@@ -11,7 +11,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:video_player/video_player.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 import '../chat_kit_client.dart';
 

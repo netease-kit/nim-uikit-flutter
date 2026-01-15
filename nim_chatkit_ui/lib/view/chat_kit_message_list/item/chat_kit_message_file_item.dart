@@ -144,8 +144,16 @@ class ChatKitMessageFileItem extends StatefulWidget {
   ///独立的文件，比如合并转发后的文件
   final bool independentFile;
 
+  final Widget? trailing;
+
+  final Color? backgroundColor;
+
   const ChatKitMessageFileItem(
-      {Key? key, required this.message, this.independentFile = false})
+      {Key? key,
+      required this.message,
+      this.independentFile = false,
+      this.backgroundColor,
+      this.trailing})
       : super(key: key);
 
   @override
@@ -320,11 +328,10 @@ class ChatKitMessageFileState extends State<ChatKitMessageFileItem> {
           padding:
               const EdgeInsets.only(left: 12, top: 10, right: 8, bottom: 10),
           decoration: BoxDecoration(
-              color: Colors.white,
+              color: widget.backgroundColor ?? Colors.white,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: CommonColors.color_dbe0e8, width: 0.5)),
           child: Row(
-            mainAxisSize: MainAxisSize.min,
             children: [
               SizedBox(
                 width: 32,
@@ -333,22 +340,18 @@ class ChatKitMessageFileState extends State<ChatKitMessageFileItem> {
                   children: _getProcessArray(),
                 ),
               ),
-              Padding(
-                padding: EdgeInsets.only(left: 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      child: getSingleMiddleEllipsisText(
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(left: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      getSingleMiddleEllipsisText(
                         attachment.name,
                         style: TextStyle(
                             fontSize: 14, color: CommonColors.color_333333),
                       ),
-                      width: 185,
-                    ),
-                    Container(
-                      width: 185,
-                      child: Padding(
+                      Padding(
                         padding: EdgeInsets.only(top: 4),
                         child: Text(
                           _getSizeFormat(),
@@ -358,10 +361,11 @@ class ChatKitMessageFileState extends State<ChatKitMessageFileItem> {
                               fontSize: 10, color: CommonColors.color_999999),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              )
+              ),
+              if (widget.trailing != null) widget.trailing!,
             ],
           )),
     );

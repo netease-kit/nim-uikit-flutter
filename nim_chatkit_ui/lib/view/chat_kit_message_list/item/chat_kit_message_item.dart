@@ -14,8 +14,15 @@ import 'package:netease_common_ui/ui/progress_ring.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/string_utils.dart';
 import 'package:netease_common_ui/widgets/radio_button.dart';
+import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
+import 'package:nim_chatkit/extension.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit/manager/ai_user_manager.dart';
+import 'package:nim_chatkit/message/message_helper.dart';
+import 'package:nim_chatkit/message/message_reply_info.dart';
+import 'package:nim_chatkit/message/message_revoke_info.dart';
+import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit/repo/config_repo.dart';
 import 'package:nim_chatkit/service_locator.dart';
 import 'package:nim_chatkit/services/contact/contact_provider.dart';
@@ -23,13 +30,6 @@ import 'package:nim_chatkit/services/login/im_login_service.dart';
 import 'package:nim_chatkit/services/message/chat_message.dart';
 import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
 import 'package:nim_chatkit/services/team/team_provider.dart';
-import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
-import 'package:nim_chatkit/extension.dart';
-import 'package:nim_chatkit/manager/ai_user_manager.dart';
-import 'package:nim_chatkit/message/message_helper.dart';
-import 'package:nim_chatkit/message/message_reply_info.dart';
-import 'package:nim_chatkit/message/message_revoke_info.dart';
-import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_helper.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_user_helper.dart';
@@ -89,7 +89,7 @@ class ChatKitMessageItem extends StatefulWidget {
 
   final void Function(ChatMessage message)? onTapFailedMessage;
 
-  final Function(String messageId) scrollToIndex;
+  final Function(NIMMessageRefer messageRefer) scrollToIndex;
 
   final PopMenuAction? popMenuAction;
 
@@ -344,8 +344,7 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
         padding: const EdgeInsets.only(left: 16, top: 12, right: 16),
         child: GestureDetector(
           child: FutureBuilder<String>(
-            future: ChatMessageHelper.getReplayMessageText(
-                context, messageRefer!, message.nimMessage.conversationId!),
+            future: _replyFuture,
             builder: (context, snapshot) {
               return Text(
                 '| ${snapshot.data}',
@@ -357,7 +356,7 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
             },
           ),
           onTap: () {
-            widget.scrollToIndex(messageRefer.messageClientId!);
+            widget.scrollToIndex(messageRefer!);
           },
         ));
   }
@@ -488,6 +487,9 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   }
 
   void _onVisibleChange(VisibilityInfo info) {
+    if (!mounted) {
+      return;
+    }
     //可见并且未发送回执的时候发送回执
     if (info.visibleFraction > 0 &&
         widget.chatMessage.nimMessage.isSelf != true) {
@@ -707,6 +709,42 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
     }
   }
 
+  Future<String>? _replyFuture;
+
+  NIMMessageRefer? _messageRefer;
+
+  Future<UserAvatarInfo>? _userInfoFuture;
+
+  void _loadReply() {
+    _messageRefer = _getReplyMessageRefer(widget.chatMessage);
+    if (_messageRefer?.messageClientId?.isNotEmpty == true) {
+      _replyFuture = ChatMessageHelper.getReplayMessageText(context,
+          _messageRefer!, widget.chatMessage.nimMessage.conversationId!);
+    } else {
+      _replyFuture = null;
+    }
+  }
+
+  void _loadUserInfo() {
+    _userInfoFuture = _getUserInfo(widget.chatMessage.nimMessage);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadReply();
+    _loadUserInfo();
+  }
+
+  @override
+  void didUpdateWidget(covariant ChatKitMessageItem oldWidget) {
+    if (widget.chatMessage != oldWidget.chatMessage) {
+      _loadReply();
+      _loadUserInfo();
+    }
+    super.didUpdateWidget(oldWidget);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -797,8 +835,7 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
 
   Widget _getSelectWidget(bool isSelectModel, ChatViewModel chatViewModel) {
     if (isSelectModel) {
-      if (!widget.chatMessage.isRevoke &&
-          !_showStreamStop(widget.chatMessage.nimMessage)) {
+      if (_isMultiSelectAble()) {
         return Container(
           width: 18,
           margin: const EdgeInsets.only(right: 8, top: 10),
@@ -820,6 +857,14 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
       }
     }
     return Container();
+  }
+
+  //是否可以多选
+  bool _isMultiSelectAble() {
+    return !widget.chatMessage.isRevoke &&
+        !_showStreamStop(widget.chatMessage.nimMessage) &&
+        widget.chatMessage.nimMessage.messageStatus?.errorCode !=
+            ChatMessage.SERVER_ANTISPAM;
   }
 
   @override
@@ -878,7 +923,7 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
                       _getSelectWidget(
                           chatViewModel.isMultiSelected, chatViewModel),
                       FutureBuilder<UserAvatarInfo>(
-                        future: _getUserInfo(widget.chatMessage.nimMessage),
+                        future: _userInfoFuture,
                         builder: (context, snapshot) {
                           return Expanded(
                               child: Row(

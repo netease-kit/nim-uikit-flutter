@@ -4,6 +4,7 @@
 
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'team_kit_client_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -49,7 +50,7 @@ class TeamKitClientLocalizationsZh extends TeamKitClientLocalizations {
   String get teamMark => '标记';
 
   @override
-  String get teamHistory => '历史记录';
+  String get teamHistory => '查找聊天内容';
 
   @override
   String get teamMessageTip => '开启消息提醒';
@@ -229,4 +230,9 @@ class TeamKitClientLocalizationsZh extends TeamKitClientLocalizations {
 
   @override
   String get teamJoinApplicationSendError => '申请发送失败';
+
+  @override
+  String teamMemberSelectLimit(String number) {
+    return '做多可选择$number名成员';
+  }
 }

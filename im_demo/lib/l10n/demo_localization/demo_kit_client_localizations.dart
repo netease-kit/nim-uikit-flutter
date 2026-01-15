@@ -488,6 +488,12 @@ abstract class DemoKitClientLocalizations {
   /// In en, this message translates to:
   /// **'Text Safety Notice'**
   String get textSafetyNotice;
+
+  /// No description provided for @enableCloudMessageSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Message From Cloud'**
+  String get enableCloudMessageSearch;
 }
 
 class _DemoKitClientLocalizationsDelegate extends LocalizationsDelegate<DemoKitClientLocalizations> {

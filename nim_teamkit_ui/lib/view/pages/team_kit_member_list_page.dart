@@ -17,7 +17,6 @@ import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_chatkit/service_locator.dart';
 import 'package:nim_chatkit/services/login/im_login_service.dart';
 import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
-import 'package:nim_chatkit/services/team/team_provider.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:nim_teamkit_ui/team_kit_client.dart';
 import 'package:provider/provider.dart';
@@ -37,16 +36,29 @@ class TeamKitMemberListPage extends StatefulWidget {
   ///是否是讨论组
   final bool isGroupTeam;
 
-  final bool isSelectModel;
+  final bool isMultiSelectModel;
 
   final bool showAIMember;
+
+  final bool showRemoveButton;
+
+  final bool singleSelect;
+
+  final int? maxSelectMemberCount;
+
+  /// 显示角色
+  final bool showRole;
 
   const TeamKitMemberListPage(
       {Key? key,
       required this.tId,
       this.showOwnerAndManager = true,
       this.isGroupTeam = false,
-      this.isSelectModel = false,
+      this.isMultiSelectModel = false,
+      this.showRemoveButton = true,
+      this.maxSelectMemberCount,
+      this.singleSelect = false,
+      this.showRole = true,
       this.showAIMember = true})
       : super(key: key);
 
@@ -56,6 +68,8 @@ class TeamKitMemberListPage extends StatefulWidget {
 
 class TeamKitMemberListPageState extends BaseState<TeamKitMemberListPage> {
   String? filterStr;
+
+  final TextEditingController _queryTextController = TextEditingController();
 
   ScrollController _scrollController = ScrollController();
 
@@ -85,6 +99,7 @@ class TeamKitMemberListPageState extends BaseState<TeamKitMemberListPage> {
 
   @override
   void dispose() {
+    _queryTextController.dispose();
     super.dispose();
   }
 
@@ -114,7 +129,7 @@ class TeamKitMemberListPageState extends BaseState<TeamKitMemberListPage> {
         }
         return TransparentScaffold(
           leading: IconButton(
-            icon: widget.isSelectModel
+            icon: widget.isMultiSelectModel
                 ? Text(
                     S.of(context).teamCancel,
                     style: TextStyle(color: '#666666'.toColor(), fontSize: 16),
@@ -124,7 +139,7 @@ class TeamKitMemberListPageState extends BaseState<TeamKitMemberListPage> {
               Navigator.pop(context);
             },
           ),
-          title: widget.isSelectModel
+          title: widget.isMultiSelectModel
               ? S.of(context).teamMemberSelect
               : S.of(context).teamMemberTitle,
           backgroundColor: Colors.white,
@@ -133,32 +148,43 @@ class TeamKitMemberListPageState extends BaseState<TeamKitMemberListPage> {
           elevation: 0,
           centerTitle: true,
           actions: [
-            if (widget.isSelectModel)
+            if (widget.isMultiSelectModel)
               TextButton(
                   onPressed: () {
-                    if (!checkNetwork()) {
-                      return;
-                    }
                     if (context
                         .read<TeamSettingViewModel>()
                         .selectedList
                         .isNotEmpty) {
-                      int managerLimit =
-                          TeamKitClient.instance.teamManagerLimit ??
-                              teamManagersLimitDefault;
-                      int teamManagersCount =
-                          NIMChatCache.instance.getTeamManagers()?.length ?? 0;
-                      if (teamManagersCount +
-                              context
-                                  .read<TeamSettingViewModel>()
-                                  .selectedList
-                                  .length >
-                          managerLimit) {
-                        Fluttertoast.showToast(
-                            msg: S
-                                .of(context)
-                                .teamManagerLimit(managerLimit.toString()));
-                        return;
+                      if (widget.maxSelectMemberCount != null) {
+                        if (context
+                                .read<TeamSettingViewModel>()
+                                .selectedList
+                                .length >
+                            widget.maxSelectMemberCount!) {
+                          Fluttertoast.showToast(
+                              msg: S.of(context).teamMemberSelectLimit(
+                                  widget.maxSelectMemberCount.toString()));
+                          return;
+                        }
+                      } else {
+                        int managerLimit =
+                            TeamKitClient.instance.teamManagerLimit ??
+                                teamManagersLimitDefault;
+                        int teamManagersCount =
+                            NIMChatCache.instance.getTeamManagers()?.length ??
+                                0;
+                        if (teamManagersCount +
+                                context
+                                    .read<TeamSettingViewModel>()
+                                    .selectedList
+                                    .length >
+                            managerLimit) {
+                          Fluttertoast.showToast(
+                              msg: S
+                                  .of(context)
+                                  .teamManagerLimit(managerLimit.toString()));
+                          return;
+                        }
                       }
                       Navigator.pop(
                           context,
@@ -183,7 +209,7 @@ class TeamKitMemberListPageState extends BaseState<TeamKitMemberListPage> {
             child: Column(
               children: [
                 TextField(
-                  // controller: queryTextController,
+                  controller: _queryTextController,
                   onChanged: (text) {
                     _onFilterChange(text, context);
                   },
@@ -196,6 +222,23 @@ class TeamKitMemberListPageState extends BaseState<TeamKitMemberListPage> {
                       border: _border(),
                       enabledBorder: _border(),
                       focusedBorder: _border(),
+                      suffixIcon: ValueListenableBuilder(
+                          valueListenable: _queryTextController,
+                          builder: (cnt, TextEditingValue value, child) {
+                            if (value.text.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+                            return IconButton(
+                              onPressed: () {
+                                _queryTextController.clear();
+                                _onFilterChange("", context);
+                              },
+                              icon: Icon(
+                                Icons.clear,
+                                color: '#A6ADB6'.toColor(),
+                              ),
+                            );
+                          }),
                       hintText: S.of(context).teamSearchMember,
                       hintStyle:
                           TextStyle(fontSize: 14, color: '#A6ADB6'.toColor()),
@@ -211,7 +254,12 @@ class TeamKitMemberListPageState extends BaseState<TeamKitMemberListPage> {
                           return TeamMemberListItem(
                               teamMember: user!,
                               isGroupTeam: widget.isGroupTeam,
-                              isSelectModel: widget.isSelectModel);
+                              isMultiSelectModel: widget.isMultiSelectModel,
+                              singleSelect: widget.singleSelect,
+                              showRemoveButton: widget.showRemoveButton,
+                              showRole: widget.showRole,
+                              maxSelectMemberCount:
+                                  widget.maxSelectMemberCount);
                         },
                       ))
                     : Column(
@@ -246,15 +294,27 @@ class TeamKitMemberListPageState extends BaseState<TeamKitMemberListPage> {
 class TeamMemberListItem extends StatefulWidget {
   final UserInfoWithTeam teamMember;
 
-  final bool isSelectModel;
+  final bool isMultiSelectModel;
 
   final isGroupTeam;
+
+  final bool showRemoveButton;
+
+  final bool singleSelect;
+
+  final int? maxSelectMemberCount;
+
+  final bool showRole;
 
   const TeamMemberListItem(
       {Key? key,
       required this.teamMember,
       this.isGroupTeam = false,
-      this.isSelectModel = false})
+      this.showRemoveButton = true,
+      this.singleSelect = false,
+      this.maxSelectMemberCount,
+      this.showRole = true,
+      this.isMultiSelectModel = false})
       : super(key: key);
 
   @override
@@ -263,6 +323,9 @@ class TeamMemberListItem extends StatefulWidget {
 
 class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
   bool _showRemoveButton(UserInfoWithTeam teamMember) {
+    if (widget.showRemoveButton == false) {
+      return false;
+    }
     if (widget.isGroupTeam) {
       return false;
     }
@@ -308,16 +371,32 @@ class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
 
   @override
   Widget build(BuildContext context) {
+    final viewModel = context.watch<TeamSettingViewModel>();
+    final isSelected = viewModel.isSelected(widget.teamMember);
+    bool disabled = false;
+    if (widget.isMultiSelectModel && widget.maxSelectMemberCount != null) {
+      if (widget.maxSelectMemberCount != 1 &&
+          !isSelected &&
+          viewModel.selectedList.length >= widget.maxSelectMemberCount!) {
+        disabled = true;
+      }
+    }
     return InkWell(
       onTap: () {
-        if (widget.isSelectModel) {
-          if (context
-              .read<TeamSettingViewModel>()
-              .isSelected(widget.teamMember)) {
+        if (disabled) return;
+        if (widget.singleSelect) {
+          Navigator.pop(context, widget.teamMember.teamInfo.accountId);
+          return;
+        }
+        if (widget.isMultiSelectModel) {
+          if (isSelected) {
             context
                 .read<TeamSettingViewModel>()
                 .removeSelected(widget.teamMember);
           } else {
+            if (widget.maxSelectMemberCount == 1) {
+              context.read<TeamSettingViewModel>().clearAllSelected();
+            }
             context.read<TeamSettingViewModel>().addSelected(widget.teamMember);
           }
           return;
@@ -333,16 +412,24 @@ class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
         padding: const EdgeInsets.symmetric(vertical: 10),
         child: Row(
           children: [
-            if (widget.isSelectModel)
+            if (widget.isMultiSelectModel)
               Container(
                 margin: const EdgeInsets.only(right: 10),
                 // 选择框
-                child: CheckBoxButton(
-                  isChecked: context
-                      .watch<TeamSettingViewModel>()
-                      .isSelected(widget.teamMember),
-                  clickable: false,
-                ),
+                child: disabled
+                    ? Container(
+                        height: 18,
+                        width: 18,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: CommonColors.color_cccccc),
+                          color: const Color(0xfff2f4f5),
+                          shape: BoxShape.circle,
+                        ),
+                      )
+                    : CheckBoxButton(
+                        isChecked: isSelected,
+                        clickable: false,
+                      ),
               ),
             Avatar(
               width: 42,
@@ -363,6 +450,7 @@ class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
               ),
             ),
             if (!widget.isGroupTeam &&
+                widget.showRole &&
                 widget.teamMember.teamInfo.memberRole ==
                     NIMTeamMemberRole.memberRoleOwner)
               Container(
@@ -378,6 +466,7 @@ class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
                 ),
               ),
             if (!widget.isGroupTeam &&
+                widget.showRole &&
                 widget.teamMember.teamInfo.memberRole ==
                     NIMTeamMemberRole.memberRoleManager)
               Container(
@@ -392,7 +481,9 @@ class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
                   style: TextStyle(fontSize: 12, color: '#656A72'.toColor()),
                 ),
               ),
-            if (!widget.isSelectModel && _showRemoveButton(widget.teamMember))
+            if (!widget.isMultiSelectModel &&
+                !widget.singleSelect &&
+                _showRemoveButton(widget.teamMember))
               TextButton(
                 onPressed: () {
                   _showRemoveConfirmDialog(
@@ -414,7 +505,9 @@ class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
                   ),
                 ),
               ),
-            if (!widget.isSelectModel && !_showRemoveButton(widget.teamMember))
+            if (!widget.isMultiSelectModel &&
+                !widget.singleSelect &&
+                !_showRemoveButton(widget.teamMember))
               Container(
                 width: 70,
               )

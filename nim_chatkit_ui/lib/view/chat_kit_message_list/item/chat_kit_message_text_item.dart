@@ -4,14 +4,12 @@
 
 import 'dart:convert';
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:lottie/lottie.dart';
-import 'package:nim_chatkit/model/ait/ait_msg.dart';
+import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
+import 'package:nim_chatkit_ui/view/page/chat_kit_message_detail_text_page.dart';
 import 'package:nim_core_v2/nim_core.dart';
 
 import '../../../helper/chat_message_helper.dart';
@@ -25,11 +23,17 @@ class ChatKitMessageTextItem extends StatefulWidget {
 
   final int? maxLines;
 
+  final String? keyword;
+
+  final bool checkDetailEnable;
+
   const ChatKitMessageTextItem(
       {Key? key,
       required this.message,
       this.chatUIConfig,
       this.needPadding = true,
+      this.checkDetailEnable = false,
+      this.keyword,
       this.maxLines})
       : super(key: key);
 
@@ -112,7 +116,7 @@ class ChatKitMessageTextState extends State<ChatKitMessageTextItem> {
       spans.addAll(_buildTextSpans(context, text, 0,
           chatUIConfig: widget.chatUIConfig, remoteExtension: remoteExtension));
     }
-    return Container(
+    Widget content = Container(
       //放到里面
       padding: widget.needPadding
           ? const EdgeInsets.only(left: 16, top: 12, right: 16, bottom: 12)
@@ -125,6 +129,21 @@ class ChatKitMessageTextState extends State<ChatKitMessageTextItem> {
               overflow: TextOverflow.ellipsis,
             ),
     );
+    if (widget.checkDetailEnable) {
+      return GestureDetector(
+        onTap: () {
+          Navigator.push(context, MaterialPageRoute(builder: (context) {
+            return ChatKitMessageDetailTextPage(
+              content: widget.message.text ?? '',
+              chatUIConfig: widget.chatUIConfig,
+            );
+          }));
+        },
+        child: content,
+      );
+    } else {
+      return content;
+    }
   }
 
   List<InlineSpan> _buildTextSpans(
@@ -148,7 +167,7 @@ class ChatKitMessageTextState extends State<ChatKitMessageTextItem> {
       );
     }
 
-    return ChatMessageHelper.buildTextSpansWithPhoneAndUrlDetection(
+    var spans = ChatMessageHelper.buildTextSpansWithPhoneAndUrlDetection(
       context,
       widget.message.isSelf ?? false,
       text,
@@ -157,13 +176,80 @@ class ChatKitMessageTextState extends State<ChatKitMessageTextItem> {
       chatUIConfig: chatUIConfig,
       remoteExtension: remoteExtension,
     );
+
+    if (widget.keyword != null && widget.keyword!.isNotEmpty) {
+      List<InlineSpan> newSpans = [];
+      for (var span in spans) {
+        if (span is TextSpan && span.text != null) {
+          newSpans.addAll(_highlightSpan(span, widget.keyword!));
+        } else {
+          newSpans.add(span);
+        }
+      }
+      return newSpans;
+    }
+    return spans;
   }
-}
 
-class AitItemModel {
-  String account;
-  String text;
-  AitSegment segment;
+  List<InlineSpan> _highlightSpan(TextSpan span, String keyword) {
+    String text = span.text!;
+    List<InlineSpan> result = [];
+    int currentStartIndex = 0;
+    int matchIndex = text.indexOf(keyword);
 
-  AitItemModel(this.account, this.text, this.segment);
+    if (matchIndex == -1) {
+      return [span];
+    }
+
+    while (matchIndex != -1) {
+      if (matchIndex > currentStartIndex) {
+        result.add(TextSpan(
+          text: text.substring(currentStartIndex, matchIndex),
+          style: span.style,
+          recognizer: span.recognizer,
+          mouseCursor: span.mouseCursor,
+          onEnter: span.onEnter,
+          onExit: span.onExit,
+          semanticsLabel: span.semanticsLabel,
+          locale: span.locale,
+          spellOut: span.spellOut,
+        ));
+      }
+
+      // Highlighted part
+      TextStyle highlightStyle = (span.style ?? const TextStyle())
+          .copyWith(color: CommonColors.color_007aff);
+
+      result.add(TextSpan(
+        text: keyword,
+        style: highlightStyle,
+        recognizer: span.recognizer,
+        mouseCursor: span.mouseCursor,
+        onEnter: span.onEnter,
+        onExit: span.onExit,
+        semanticsLabel: span.semanticsLabel,
+        locale: span.locale,
+        spellOut: span.spellOut,
+      ));
+
+      currentStartIndex = matchIndex + keyword.length;
+      matchIndex = text.indexOf(keyword, currentStartIndex);
+    }
+
+    if (currentStartIndex < text.length) {
+      result.add(TextSpan(
+        text: text.substring(currentStartIndex),
+        style: span.style,
+        recognizer: span.recognizer,
+        mouseCursor: span.mouseCursor,
+        onEnter: span.onEnter,
+        onExit: span.onExit,
+        semanticsLabel: span.semanticsLabel,
+        locale: span.locale,
+        spellOut: span.spellOut,
+      ));
+    }
+
+    return result;
+  }
 }

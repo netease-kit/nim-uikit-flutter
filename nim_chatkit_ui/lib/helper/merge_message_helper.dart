@@ -4,12 +4,13 @@
 
 import 'dart:convert';
 
+import 'package:nim_chatkit/message/merge_message.dart';
 import 'package:nim_chatkit/model/custom_type_constant.dart';
+import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit/service_locator.dart';
 import 'package:nim_chatkit/services/contact/contact_provider.dart';
 import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
-import 'package:nim_chatkit/message/merge_message.dart';
-import 'package:nim_chatkit/repo/chat_message_repo.dart';
+import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_user_helper.dart';
 import 'package:nim_core_v2/nim_core.dart';
 
@@ -38,9 +39,13 @@ class MergeMessageHelper {
       return NIMResult.failure(message: 'message list is empty');
     }
     final mergedMessage = await mergeMessage(messages);
+    var title = messages.first.text;
+    if (ChatKitClient.instance.mergedMessageTitle != null) {
+      title = await ChatKitClient.instance.mergedMessageTitle!.call(messages);
+    }
     if (mergedMessage.isSuccess && mergedMessage.data != null) {
       final customMsgBuilder = await MessageCreator.createCustomMessage(
-          '', jsonEncode(mergedMessage.data!));
+          title ?? '', jsonEncode(mergedMessage.data!));
       if (customMsgBuilder.isSuccess && customMsgBuilder.data != null) {
         customMsgBuilder.data!.pushConfig = NIMMessagePushConfig(
             pushContent:

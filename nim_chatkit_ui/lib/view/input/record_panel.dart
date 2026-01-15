@@ -14,6 +14,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:nim_chatkit_ui/media/audio_player.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -96,9 +97,9 @@ class _RecordPanelState extends State<RecordPanel> {
       await recorderModule.startRecorder(
         toFile: path,
         codec: Codec.aacADTS,
-        bitRate: 8000,
+        bitRate: 64000,
         numChannels: 1,
-        sampleRate: 8000,
+        sampleRate: 48000,
       );
       _state = RecordPlayState.recording;
 

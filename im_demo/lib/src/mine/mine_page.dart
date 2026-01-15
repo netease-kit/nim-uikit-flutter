@@ -4,18 +4,18 @@
 
 import 'dart:async';
 
-import 'package:netease_common_ui/ui/avatar.dart';
-import 'package:netease_common_ui/utils/color_utils.dart';
-import 'package:nim_chatkit/service_locator.dart';
-import 'package:nim_chatkit/services/login/im_login_service.dart';
 import 'package:flutter/material.dart';
-import 'package:im_demo/l10n/S.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:im_demo/l10n/S.dart';
 import 'package:im_demo/src/mine/about.dart';
 import 'package:im_demo/src/mine/setting/mine_setting.dart';
 import 'package:im_demo/src/mine/user_info_page.dart';
+import 'package:netease_common_ui/ui/avatar.dart';
+import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:nim_chatkit/router/imkit_router_factory.dart';
+import 'package:nim_chatkit/service_locator.dart';
+import 'package:nim_chatkit/services/login/im_login_service.dart';
 import 'package:nim_core_v2/nim_core.dart';
-import 'package:nim_chatkit/repo/config_repo.dart';
 
 class MinePage extends StatefulWidget {
   const MinePage({Key? key}) : super(key: key);
@@ -110,7 +110,9 @@ class _MinePageState extends State<MinePage> {
                   Avatar(
                     height: 60,
                     width: 60,
-                    name: _loginService.userInfo?.name ?? _userInfo?.name,
+                    name: _loginService.userInfo?.name ??
+                        _userInfo?.name ??
+                        _userInfo?.accountId,
                     fontSize: 22,
                     avatar: _loginService.userInfo?.avatar ?? _userInfo?.avatar,
                   ),
@@ -157,17 +159,14 @@ class _MinePageState extends State<MinePage> {
             color: Color(0xffeff1f4),
           ),
           ...ListTile.divideTiles(context: context, tiles: [
-            Visibility(
-              visible: false,
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-                leading: SvgPicture.asset('assets/ic_collect.svg'),
-                title: Text(S.of(context).mineCollect),
-                trailing: arrow,
-                onTap: () {
-                  // todo collect
-                },
-              ),
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+              leading: SvgPicture.asset('assets/ic_collect.svg'),
+              title: Text(S.of(context).mineCollect),
+              trailing: arrow,
+              onTap: () {
+                goToCollectionListPage(context);
+              },
             ),
             ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 20),

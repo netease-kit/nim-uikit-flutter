@@ -2,17 +2,15 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'dart:async';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
 import 'package:nim_chatkit/extension.dart';
 import 'package:nim_chatkit_ui/media/media_bottom_actions.dart';
-import 'package:flutter/material.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
-import 'package:yunxin_alog/yunxin_alog.dart';
 
 class PictureViewer extends StatefulWidget {
   const PictureViewer(

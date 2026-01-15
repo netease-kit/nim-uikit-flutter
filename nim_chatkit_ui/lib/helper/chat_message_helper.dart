@@ -10,11 +10,16 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:intl/intl.dart';
 import 'package:netease_common/netease_common.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_common_ui/widgets/common_browse_page.dart';
+import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit/message/message_helper.dart';
 import 'package:nim_chatkit/model/ait/ait_contacts_model.dart';
 import 'package:nim_chatkit/model/ait/ait_msg.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
@@ -23,24 +28,34 @@ import 'package:nim_chatkit/model/recent_forward.dart';
 import 'package:nim_chatkit/model/team_models.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit/repo/config_repo.dart';
+import 'package:nim_chatkit/repo/contact_repo.dart';
+import 'package:nim_chatkit/repo/team_repo.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_chatkit/service_locator.dart';
 import 'package:nim_chatkit/services/contact/contact_provider.dart';
 import 'package:nim_chatkit/services/message/chat_message.dart';
 import 'package:nim_chatkit/services/team/team_provider.dart';
-import 'package:nim_chatkit/message/message_helper.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_chatkit_ui/l10n/S.dart';
 import 'package:nim_chatkit_ui/view/input/emoji/emoji_text.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../model/forward/forward_selected_beam.dart';
+import '../view/chat_kit_message_list/item/chat_kit_message_audio_item.dart';
+import '../view/chat_kit_message_list/item/chat_kit_message_file_item.dart';
+import '../view/chat_kit_message_list/item/chat_kit_message_image_item.dart';
+import '../view/chat_kit_message_list/item/chat_kit_message_merged_item.dart';
 import '../view/chat_kit_message_list/item/chat_kit_message_multi_line_text_item.dart';
+import '../view/chat_kit_message_list/item/chat_kit_message_nonsupport_item.dart';
+import '../view/chat_kit_message_list/item/chat_kit_message_notify_item.dart';
+import '../view/chat_kit_message_list/item/chat_kit_message_text_item.dart';
+import '../view/chat_kit_message_list/item/chat_kit_message_tips_item.dart';
+import '../view/chat_kit_message_list/item/chat_kit_message_video_item.dart';
 import '../view/chat_kit_message_list/widgets/chat_forward_dialog.dart';
 import '../view/page/chat_forward_page.dart';
 import 'chat_message_user_helper.dart';
 import 'merge_message_helper.dart';
-import 'package:nim_core_v2/nim_core.dart';
 
 ///定义转发方法
 ///[isLastUser] 是否是最后一个用户,用于转发给多个用户的case，主要用于合并转发和逐条转发
@@ -389,7 +404,7 @@ class ChatMessageHelper {
         return S.of(context).chatMessageHaveBeenRevokedOrDelete;
       }
     } else {
-      return '';
+      return S.of(context).chatMessageHaveBeenRevokedOrDelete;
     }
   }
 
@@ -1174,4 +1189,255 @@ class TextMatch {
 enum MatchType {
   phone,
   url,
+}
+
+class AitItemModel {
+  String account;
+  String text;
+  AitSegment segment;
+
+  AitItemModel(this.account, this.text, this.segment);
+}
+
+/// 构建消息内容
+/// 无边框，无方向
+/// 内容不可点击
+Widget buildHistoryMessage(BuildContext context, NIMMessage message,
+    {NIMTeam? teamInfo, String? keyword}) {
+  final chatUIConfig = ChatKitClient.instance.chatUIConfig;
+  var messageItemBuilder = chatUIConfig.messageBuilder;
+  Widget? content;
+  switch (message.messageType) {
+    case NIMMessageType.text:
+      if (messageItemBuilder?.textMessageBuilder != null) {
+        content = messageItemBuilder!.textMessageBuilder!(message);
+      } else {
+        content = Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.only(
+              bottomRight: Radius.circular(12),
+              bottomLeft: Radius.circular(12),
+              topRight: Radius.circular(12),
+            ),
+            color: '#E8EAED'.toColor(),
+          ),
+          child: ChatKitMessageTextItem(
+            message: message,
+            chatUIConfig: chatUIConfig,
+            keyword: keyword,
+          ),
+        );
+      }
+      break;
+    case NIMMessageType.audio:
+      if (messageItemBuilder?.audioMessageBuilder != null) {
+        content = messageItemBuilder!.audioMessageBuilder!(message);
+      } else {
+        content = Container(
+          decoration: BoxDecoration(
+              border: Border.all(color: '#F0F0F0'.toColor()),
+              borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
+                  bottomLeft: Radius.circular(12),
+                  bottomRight: Radius.circular(12))),
+          child: ChatKitMessageAudioItem(
+            message: message,
+            showDirection: false,
+          ),
+        );
+      }
+      break;
+    case NIMMessageType.image:
+      if (messageItemBuilder?.imageMessageBuilder != null) {
+        content = messageItemBuilder!.imageMessageBuilder!(message);
+      } else {
+        content = ChatKitMessageImageItem(
+          message: message,
+          showDirection: false,
+        );
+      }
+      break;
+    case NIMMessageType.video:
+      if (messageItemBuilder?.videoMessageBuilder != null) {
+        content = messageItemBuilder!.videoMessageBuilder!(message);
+      } else {
+        content = ChatKitMessageVideoItem(message: message);
+      }
+      break;
+    case NIMMessageType.notification:
+      //如果被过滤，则返回空Widget
+      if (!_filterNotification(message, teamInfo: teamInfo)) {
+        return Container();
+      }
+      if (messageItemBuilder?.notifyMessageBuilder != null) {
+        content = messageItemBuilder!.notifyMessageBuilder!(message);
+      } else {
+        content = ChatKitMessageNotificationItem(
+            message: message, teamInfo: teamInfo);
+      }
+      break;
+    case NIMMessageType.tip:
+      if (messageItemBuilder?.tipsMessageBuilder != null) {
+        content = messageItemBuilder!.tipsMessageBuilder!(message);
+      } else {
+        content = ChatKitMessageTipsItem(message: message);
+      }
+      break;
+    case NIMMessageType.file:
+      if (messageItemBuilder?.fileMessageBuilder != null) {
+        content = messageItemBuilder!.fileMessageBuilder!(message);
+      } else {
+        content = ChatKitMessageFileItem(message: message);
+      }
+      break;
+
+    case NIMMessageType.location:
+    default:
+      if (message.messageType == NIMMessageType.location &&
+          messageItemBuilder?.locationMessageBuilder != null) {
+        content = messageItemBuilder!.locationMessageBuilder!.call(message);
+        break;
+      }
+      if (message.messageType == NIMMessageType.call &&
+          messageItemBuilder?.avChatMessageBuilder != null) {
+        content = messageItemBuilder!.avChatMessageBuilder!.call(message);
+        break;
+      }
+      if (message.messageType == NIMMessageType.custom) {
+        var mergedMessage = MergeMessageHelper.parseMergeMessage(message);
+        var multiLineMap = MessageHelper.parseMultiLineMessage(message);
+        var multiLineTitle = multiLineMap?[ChatMessage.keyMultiLineTitle];
+        var multiLineBody = multiLineMap?[ChatMessage.keyMultiLineBody];
+        if (mergedMessage != null) {
+          if (messageItemBuilder?.mergedMessageBuilder != null) {
+            content = messageItemBuilder!.mergedMessageBuilder!.call(message);
+          } else {
+            content = Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.only(
+                  bottomRight: Radius.circular(12),
+                  bottomLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
+                ),
+                color: '#E8EAED'.toColor(),
+              ),
+              child: ChatKitMessageMergedItem(
+                  message: message,
+                  mergedMessage: mergedMessage,
+                  showMargin: false,
+                  diffDirection: false,
+                  chatUIConfig: ChatKitClient.instance.chatUIConfig),
+            );
+          }
+          break;
+        } else if (multiLineTitle != null) {
+          content = Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.only(
+                bottomRight: Radius.circular(12),
+                bottomLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+              color: '#E8EAED'.toColor(),
+            ),
+            child: ChatKitMessageMultiLineItem(
+              message: message,
+              chatUIConfig: ChatKitClient.instance.chatUIConfig,
+              title: multiLineTitle,
+              body: multiLineBody,
+              titleMaxLines: 1,
+              bodyMaxLines: 2,
+            ),
+          );
+          break;
+        }
+      }
+
+      ///插件消息
+      Widget? pluginBuilder = NimPluginCoreKit()
+          .messageBuilderPool
+          .buildMessageContent(context, message);
+      if (pluginBuilder != null) {
+        return pluginBuilder;
+      }
+      if (messageItemBuilder?.extendBuilder != null) {
+        if (messageItemBuilder?.extendBuilder![message.messageType] != null) {
+          content =
+              messageItemBuilder!.extendBuilder![message.messageType]!(message);
+          break;
+        }
+      }
+      content = ChatKitMessageNonsupportItem();
+      break;
+  }
+  return IgnorePointer(child: content);
+}
+
+///过滤消息
+///返回结果为是否展示
+bool _filterNotification(NIMMessage message, {NIMTeam? teamInfo}) {
+  if (message.attachment is NIMMessageNotificationAttachment) {
+    NIMMessageNotificationAttachment attachment =
+        message.attachment as NIMMessageNotificationAttachment;
+    if (attachment.type == NIMMessageNotificationType.teamOwnerTransfer &&
+        getIt<TeamProvider>().isGroupTeam(teamInfo)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/// 转发消息
+void showForwardMessageDialog(BuildContext context, NIMMessage message) async {
+  final sessionName =
+      await _getSessionName(message.conversationId!, message.conversationType!);
+  ChatMessageHelper.showForwardSelector(context, (conversationId,
+      {String? postScript, bool? isLastUser}) {
+    haveConnectivity().then((value) async {
+      if (value) {
+        final params =
+            await ChatMessageHelper.getSenderParams(message, conversationId);
+        ChatMessageRepo.forwardMessage(message, conversationId, params: params)
+            .then((value) {
+          if (value.code == ChatMessageRepo.errorInBlackList) {
+            ChatMessageRepo.saveTipsMessage(
+                conversationId, S.of().chatMessageSendFailedByBlackList);
+          }
+        });
+      }
+    });
+    if (postScript?.isNotEmpty == true) {
+      ChatMessageRepo.sendTextMessageWithMessageAck(
+          conversationId: conversationId, text: postScript!);
+    }
+  }, sessionName: sessionName);
+}
+
+Future<String> _getSessionName(
+    String conversationId, NIMConversationType conversationType) async {
+  if (conversationType == NIMConversationType.p2p) {
+    final accId = ChatKitUtils.getConversationTargetId(conversationId);
+    final contactInfo = await ContactRepo.getFriend(accId);
+    return contactInfo?.getName(needAlias: false) ?? accId;
+  } else {
+    final teamId = ChatKitUtils.getConversationTargetId(conversationId);
+    var teamInfo = await TeamRepo.getTeamInfo(teamId, NIMTeamType.typeNormal);
+    return teamInfo?.name ?? teamId;
+  }
+}
+
+String getFormatTime(int timestamp, BuildContext context) {
+  final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
+  final now = DateTime.now();
+  if (date.year == now.year && date.month == now.month && date.day == now.day) {
+    return DateFormat(S.of(context).chatHistoryDateFormatHourMine).format(date);
+  } else if (date.year == now.year) {
+    return DateFormat(S.of(context).chatHistoryDateFormatMonthDayHourMine, 'zh')
+        .format(date);
+  } else {
+    return DateFormat(
+            S.of(context).chatHistoryDateFormatYearMonthDayHourMine, 'zh')
+        .format(date);
+  }
 }

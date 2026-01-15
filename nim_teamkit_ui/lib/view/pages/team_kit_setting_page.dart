@@ -15,6 +15,7 @@ import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:netease_common_ui/widgets/update_text_info_page.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
 import 'package:nim_chatkit/model/team_models.dart';
 import 'package:nim_chatkit/router/imkit_router_constants.dart';
@@ -297,7 +298,12 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
           ),
           trailing: const Icon(Icons.keyboard_arrow_right_outlined),
           onTap: () {
-            goToTeamChatHistoryPage(context, widget.teamId);
+            var conversationId = ChatKitUtils.conversationId(
+                widget.teamId, NIMConversationType.team);
+            if (conversationId?.isNotEmpty == true) {
+              goToChatHistoryPage(
+                  context, conversationId!, NIMConversationType.team);
+            }
           },
         ),
         if (getIt<TeamProvider>().isGroupTeam(teamMember.team)) ...[

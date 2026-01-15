@@ -86,7 +86,7 @@ class TeamKitManagerListPageState extends State<TeamKitManagerListPage> {
                             builder: (context) => TeamKitMemberListPage(
                                   tId: widget.tId,
                                   showOwnerAndManager: false,
-                                  isSelectModel: true,
+                                  isMultiSelectModel: true,
                                   showAIMember: false,
                                 ))).then((value) {
                       if (value is List<String>) {

@@ -11,21 +11,21 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:netease_common_ui/base/base_state.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_common_ui/widgets/common_browse_page.dart';
 import 'package:netease_common_ui/widgets/no_network_tip.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/im_kit_config_center.dart';
 import 'package:nim_chatkit/manager/ai_user_manager.dart';
+import 'package:nim_chatkit/message/merge_message.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
+import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit/router/imkit_router.dart';
-import 'package:netease_common_ui/widgets/common_browse_page.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_chatkit/service_locator.dart';
 import 'package:nim_chatkit/services/login/im_login_service.dart';
 import 'package:nim_chatkit/services/message/chat_message.dart';
 import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
-import 'package:nim_chatkit/message/merge_message.dart';
-import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit_ui/helper/merge_message_helper.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/chat_kit_message_list.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_item.dart';
@@ -49,6 +49,8 @@ class ChatPage extends StatefulWidget {
 
   final NIMMessage? anchor;
 
+  final int? anchorDate;
+
   final PopMenuAction? customPopActions;
 
   final bool Function(ChatMessage message)? onMessageItemClick;
@@ -71,6 +73,7 @@ class ChatPage extends StatefulWidget {
       this.chatUIConfig,
       this.messageBuilder,
       this.onMessageItemClick,
+      this.anchorDate,
       this.onMessageItemLongClick})
       : super(key: key);
 
@@ -111,6 +114,7 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
   }
 
   void _defaultAvatarTap(String? userId, {bool isSelf = false}) {
+    ChatAudioPlayer.instance.stopAll();
     if (isSelf) {
       gotoMineInfoPage(context);
     } else {
@@ -422,6 +426,7 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
                     recognizer: TapGestureRecognizer()
                       ..onTap = () {
                         //点击逻辑
+                        ChatAudioPlayer.instance.stopAll();
                         String url = 'https://yunxin.163.com/survey/report';
                         Navigator.push(
                             context,
@@ -463,8 +468,12 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
     }
 
     return ChangeNotifierProvider(
-        create: (context) =>
-            ChatViewModel(widget.conversationId, widget.conversationType),
+        create: (context) => ChatViewModel(
+              widget.conversationId,
+              widget.conversationType,
+              anchorMessage: widget.anchor,
+              findAnchorDate: widget.anchorDate,
+            ),
         builder: (context, wg) {
           String title;
           String? subTitle;
@@ -531,6 +540,7 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
                                     fontSize: 16, color: '#333333'.toColor())))
                         : IconButton(
                             onPressed: () async {
+                              ChatAudioPlayer.instance.stopAll();
                               if (widget.conversationType ==
                                   NIMConversationType.p2p) {
                                 ContactInfo? info =
@@ -586,6 +596,7 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
                                     chatUIConfig?.messageClickListener
                                         ?.customPopActions,
                                 anchor: widget.anchor,
+                                anchorDate: widget.anchorDate,
                                 messageBuilder: widget.messageBuilder ??
                                     chatUIConfig?.messageBuilder,
                                 onTapAvatar: (String? userId,

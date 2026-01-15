@@ -12,10 +12,10 @@ import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
-import 'package:nim_chatkit/services/message/chat_message.dart';
 import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
 import 'package:nim_chatkit/message/message_helper.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
+import 'package:nim_chatkit/services/message/chat_message.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_helper.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_user_helper.dart';
@@ -98,7 +98,7 @@ class _ChatKitPinMessageItemState extends State<ChatKitPinMessageItem> {
                   bottomRight: Radius.circular(12))),
           child: ChatKitMessageAudioItem(
             message: message.nimMessage,
-            isPin: true,
+            showDirection: true,
           ),
         );
       case NIMMessageType.image:
@@ -290,7 +290,8 @@ class _ChatKitPinMessageItemState extends State<ChatKitPinMessageItem> {
           if (value) {
             final params =
                 await ChatMessageHelper.getSenderParams(msg, conversationId);
-            ChatMessageRepo.forwardMessage(msg, conversationId).then((value) {
+            ChatMessageRepo.forwardMessage(msg, conversationId, params: params)
+                .then((value) {
               if (value.code == ChatMessageRepo.errorInBlackList) {
                 ChatMessageRepo.saveTipsMessage(
                     conversationId, S.of().chatMessageSendFailedByBlackList);

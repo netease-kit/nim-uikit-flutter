@@ -15,6 +15,8 @@ class ChatThumbView extends StatefulWidget {
       {Key? key,
       required this.message,
       required this.radius,
+      this.height,
+      this.width,
       this.onTap,
       this.thumbFromRemote = true})
       : super(key: key);
@@ -24,6 +26,10 @@ class ChatThumbView extends StatefulWidget {
   final Function()? onTap;
 
   final bool thumbFromRemote;
+
+  final int? height;
+
+  final int? width;
 
   @override
   State<StatefulWidget> createState() => _ChatThumbViewState();
@@ -75,6 +81,8 @@ class _ChatThumbViewState extends State<ChatThumbView> {
 
   Widget getImage(Widget image) {
     return Container(
+      width: widget.width?.toDouble(),
+      height: widget.height?.toDouble(),
       decoration: BoxDecoration(
           border: Border.all(color: const Color(0xffe2e5e8), width: 1),
           borderRadius: widget.radius),

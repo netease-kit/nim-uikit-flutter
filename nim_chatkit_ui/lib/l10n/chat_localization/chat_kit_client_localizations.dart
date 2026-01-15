@@ -676,7 +676,7 @@ abstract class ChatKitClientLocalizations {
   /// No description provided for @messageSearchTitle.
   ///
   /// In en, this message translates to:
-  /// **'Search History'**
+  /// **'Search Message'**
   String get messageSearchTitle;
 
   /// No description provided for @messageSearchHint.
@@ -1416,6 +1416,198 @@ abstract class ChatKitClientLocalizations {
   /// In en, this message translates to:
   /// **'Tap to report'**
   String get chatMessageTapToReport;
+
+  /// No description provided for @chatMessageQuickSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Search Message'**
+  String get chatMessageQuickSearch;
+
+  /// No description provided for @chatMessageSearchHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Search History Message'**
+  String get chatMessageSearchHistory;
+
+  /// No description provided for @chatQuickSearchTeamMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Team Member'**
+  String get chatQuickSearchTeamMember;
+
+  /// No description provided for @chatQuickSearchPicture.
+  ///
+  /// In en, this message translates to:
+  /// **'Picture'**
+  String get chatQuickSearchPicture;
+
+  /// No description provided for @chatQuickSearchVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Video'**
+  String get chatQuickSearchVideo;
+
+  /// No description provided for @chatQuickSearchDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get chatQuickSearchDate;
+
+  /// No description provided for @chatQuickSearchFile.
+  ///
+  /// In en, this message translates to:
+  /// **'File'**
+  String get chatQuickSearchFile;
+
+  /// No description provided for @chatQuickSearchByDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by date'**
+  String get chatQuickSearchByDate;
+
+  /// No description provided for @chatDateYearMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'{month}/{year}'**
+  String chatDateYearMonth(String year, String month);
+
+  /// No description provided for @chatDateMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'{month}'**
+  String chatDateMonth(String month);
+
+  /// No description provided for @chatDateToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get chatDateToday;
+
+  /// No description provided for @chatDateRecent7Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
+  String get chatDateRecent7Days;
+
+  /// No description provided for @chatDateRecent30Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
+  String get chatDateRecent30Days;
+
+  /// No description provided for @chatHistoryLoadMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Load more messages'**
+  String get chatHistoryLoadMore;
+
+  /// No description provided for @chatHistoryDateFormatMonthDay.
+  ///
+  /// In en, this message translates to:
+  /// **'MM/dd'**
+  String get chatHistoryDateFormatMonthDay;
+
+  /// No description provided for @chatHistoryDateFormaYearMonthDay.
+  ///
+  /// In en, this message translates to:
+  /// **'yy/MM/dd'**
+  String get chatHistoryDateFormaYearMonthDay;
+
+  /// No description provided for @chatHistoryFinish.
+  ///
+  /// In en, this message translates to:
+  /// **'Sure'**
+  String get chatHistoryFinish;
+
+  /// No description provided for @chatHistorySelectChatDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Chat Date'**
+  String get chatHistorySelectChatDate;
+
+  /// No description provided for @chatHistorySearchByMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Search By Member'**
+  String get chatHistorySearchByMember;
+
+  /// No description provided for @chatHistoryDateFormatYearMonthDayHourMine.
+  ///
+  /// In en, this message translates to:
+  /// **'yy/MM/dd/ HH:mm'**
+  String get chatHistoryDateFormatYearMonthDayHourMine;
+
+  /// No description provided for @chatHistoryDateFormatMonthDayHourMine.
+  ///
+  /// In en, this message translates to:
+  /// **'MM/dd/ HH:mm'**
+  String get chatHistoryDateFormatMonthDayHourMine;
+
+  /// No description provided for @chatHistoryDateFormatHourMine.
+  ///
+  /// In en, this message translates to:
+  /// **'HH:mm'**
+  String get chatHistoryDateFormatHourMine;
+
+  /// No description provided for @chatHistoryMessageNotAnyMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Any More'**
+  String get chatHistoryMessageNotAnyMore;
+
+  /// No description provided for @chatHistoryOrientation.
+  ///
+  /// In en, this message translates to:
+  /// **'Find in chat'**
+  String get chatHistoryOrientation;
+
+  /// No description provided for @chatCollectionFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From{name}'**
+  String chatCollectionFrom(String name);
+
+  /// No description provided for @chatNewMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{number}new message'**
+  String chatNewMessage(String number);
+
+  /// No description provided for @chatMessageCollectedLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Message Collected Limited'**
+  String get chatMessageCollectedLimit;
+
+  /// No description provided for @chatHaveNoCollectionMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'NO Collection'**
+  String get chatHaveNoCollectionMessage;
+
+  /// No description provided for @chatCollectionDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this collection？'**
+  String get chatCollectionDeleteConfirm;
+
+  /// No description provided for @chatSearchImageMessageEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'NO Picture Message'**
+  String get chatSearchImageMessageEmpty;
+
+  /// No description provided for @chatSearchVideoMessageEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'NO Video Message'**
+  String get chatSearchVideoMessageEmpty;
+
+  /// No description provided for @chatSearchFileMessageEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'NO File Message'**
+  String get chatSearchFileMessageEmpty;
 }
 
 class _ChatKitClientLocalizationsDelegate

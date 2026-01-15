@@ -6,12 +6,13 @@ import 'dart:core';
 
 import 'package:flutter/material.dart';
 import 'package:netease_corekit/report/xkit_report.dart';
-import 'package:nim_chatkit/im_kit_config_center.dart';
+import 'package:nim_chatkit/chatkit_client_repo.dart';
 import 'package:nim_chatkit/router/imkit_router.dart';
 import 'package:nim_chatkit/router/imkit_router_constants.dart';
 import 'package:nim_chatkit/services/message/chat_message.dart';
-import 'package:nim_chatkit/chatkit_client_repo.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
+import 'package:nim_chatkit_ui/view/history/chat_history_message_page.dart';
+import 'package:nim_chatkit_ui/view/page/chat_collection_message_list_page.dart';
 import 'package:nim_chatkit_ui/view/page/chat_pin_page.dart';
 import 'package:nim_core_v2/nim_core.dart';
 
@@ -29,6 +30,11 @@ typedef NIMMessageAction = Future Function(
     NIMMessage message, String conversationId, NIMSendMessageParams? params);
 
 const String kPackage = 'nim_chatkit_ui';
+
+///发送的合并转发的消息的 title
+///title 可用于关键字搜索
+///[messages] 被合并的消息
+typedef MergedMessageTitle = Future<String> Function(List<NIMMessage> messages);
 
 ///聊天页面客户自定义配置
 class ChatUIConfig {
@@ -236,6 +242,9 @@ class ChatKitClient {
   ///消息发送之前的回调，可使用其添加扩展
   NIMMessageAction? messageAction;
 
+  ///获取合并转发消息的title
+  MergedMessageTitle? mergedMessageTitle;
+
   ///是否展示警告消息
   bool showWarningTyps = false;
 
@@ -270,11 +279,28 @@ class ChatKitClient {
                       context, 'conversationType')!,
               anchor:
                   IMKitRouter.getArgumentFormMap<NIMMessage>(context, 'anchor'),
+              anchorDate:
+                  IMKitRouter.getArgumentFormMap<int>(context, 'anchorDate'),
             ));
+
+    IMKitRouter.instance.registerRouter(
+        RouterConstants.PATH_CHAT_COLLECTION_LIST_PAGE,
+        (context) => ChatCollectionMessageListPage());
+
     IMKitRouter.instance.registerRouter(
         RouterConstants.PATH_CHAT_SEARCH_PAGE,
         (context) => ChatSearchPage(
             IMKitRouter.getArgumentFormMap<String>(context, 'teamId')!));
+
+    IMKitRouter.instance.registerRouter(
+        RouterConstants.PATH_CHAT_HISTORY_PAGE,
+        (context) => ChatHistoryMessagePage(
+              conversationId: IMKitRouter.getArgumentFormMap<String>(
+                  context, 'conversationId')!,
+              conversationType:
+                  IMKitRouter.getArgumentFormMap<NIMConversationType>(
+                      context, 'conversationType')!,
+            ));
 
     IMKitRouter.instance.registerRouter(
         RouterConstants.PATH_CHAT_PIN_PAGE,
@@ -289,24 +315,5 @@ class ChatKitClient {
             ));
 
     XKitReporter().register(moduleName: 'ChatUIKit', moduleVersion: '10.0.0');
-
-    // if (enableCallKit) {
-    //   CallState.instance.registerEngineObserver();
-    //   NECallKitUI.instance.enableFloatWindow(true);
-    // }
   }
-
-  // ///初始化呼叫组件,
-  // /// 在IM登录后初始化调用
-  // /// [appKey]      appKey
-  // /// [accountId]     accountId
-  // /// [extraConfig]  额外配置参数，包含 lckConfig 等
-  // void setupCallKit(
-  //     {required String appKey,
-  //     required String accountId,
-  //     NEExtraConfig? extraConfig}) {
-  //   NECallKitUI.instance
-  //       .setupEngine(appKey, accountId, extraConfig: extraConfig);
-  //   IMKitConfigCenter.enableCallKit = true;
-  // }
 }

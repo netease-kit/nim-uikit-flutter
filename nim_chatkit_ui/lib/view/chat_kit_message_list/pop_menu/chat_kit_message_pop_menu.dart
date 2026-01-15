@@ -5,8 +5,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
-import 'package:nim_chatkit/services/message/chat_message.dart';
 import 'package:nim_chatkit/message/message_helper.dart';
+import 'package:nim_chatkit/services/message/chat_message.dart';
 import 'package:nim_chatkit_ui/l10n/S.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
 import 'package:nim_core_v2/nim_core.dart';
@@ -51,7 +51,8 @@ class ChatKitMessagePopMenu {
     bool isTargetHeadVisible = true;
     if (box != null) {
       Offset position = box.localToGlobal(Offset.zero);
-      if (position.dy < 240) {
+      final topPadding = MediaQuery.of(context).padding.top + kToolbarHeight;
+      if (position.dy - topPadding < 240) {
         popupDirection = TooltipDirection.down;
       }
       // 获取 Widget 的全局坐标
@@ -78,16 +79,20 @@ class ChatKitMessagePopMenu {
         final widgetScrollBottom = widgetScrollTop + size.height;
 
         // 判断可见性
-        if (popupDirection == TooltipDirection.down &&
-            (widgetScrollBottom + 30) > viewportBottom) {
-          resetDistance = false;
-          arrowTipDistance = (context.size!.height / 2).roundToDouble() -
-              ((widgetScrollBottom + 200) - viewportBottom);
-          if (arrowTipDistance < 0) {
-            popupDirection = TooltipDirection.up;
-            arrowTipDistance = 0 - arrowTipDistance;
+        // 增加判断：只有当 viewportHeight 接近屏幕高度时（说明不是 shrinkWrap 导致的短列表），才执行这个逻辑
+        // 或者当 viewportHeight 足够大时
+        if (viewportHeight > MediaQuery.of(context).size.height * 0.8) {
+          if (popupDirection == TooltipDirection.down &&
+              (widgetScrollBottom + 30) > viewportBottom) {
+            resetDistance = false;
+            arrowTipDistance = (context.size!.height / 2).roundToDouble() -
+                ((widgetScrollBottom + 200) - viewportBottom);
+            if (arrowTipDistance < 0) {
+              popupDirection = TooltipDirection.up;
+              arrowTipDistance = 0 - arrowTipDistance;
+            }
+            isTargetHeadVisible = false;
           }
-          isTargetHeadVisible = false;
         }
       }
     }
@@ -195,6 +200,15 @@ class ChatKitMessagePopMenu {
     return config?.popMenuConfig?.enablePin != false && _enableStatus(message);
   }
 
+  /// 是否展示收藏
+  bool _showCollection(ChatUIConfig? config, ChatMessage message) {
+    if (message.nimMessage.messageType == NIMMessageType.call) {
+      return false;
+    }
+    return config?.popMenuConfig?.enableCollect != false &&
+        _enableStatus(message);
+  }
+
   ///是否展示撤回
   bool _showRevoke(ChatUIConfig? config, ChatMessage message) {
     if (message.nimMessage.messageType == NIMMessageType.call) {
@@ -251,20 +265,21 @@ class ChatKitMessagePopMenu {
           "id": _messageHavePined(message) ? cancelPinMessageId : pinMessageId,
           "icon": "images/ic_chat_pin.svg"
         },
-      // if (config?.popMenuConfig?.enableCollect != false &&
-      //     _enableStatus(message))
-      //   {
-      //     "label": S.of(context).chatMessageActionCollect,
-      //     "id": collectMessageId,
-      //     "icon": "images/ic_chat_collect.svg"
-      //   },
+      if (_showCollection(config, message))
+        {
+          "label": S.of(context).chatMessageActionCollect,
+          "id": collectMessageId,
+          "icon": "images/ic_chat_collect.svg"
+        },
       if (config?.popMenuConfig?.enableDelete != false)
         {
           "label": S.of(context).chatMessageActionDelete,
           "id": deleteMessageId,
           "icon": "images/ic_chat_delete.svg"
         },
-      if (config?.popMenuConfig?.enableMultiSelect != false)
+      if (config?.popMenuConfig?.enableMultiSelect != false &&
+          message.nimMessage.messageStatus?.errorCode !=
+              ChatMessage.SERVER_ANTISPAM)
         {
           "label": S.of(context).chatMessageActionMultiSelect,
           "id": multiSelectId,

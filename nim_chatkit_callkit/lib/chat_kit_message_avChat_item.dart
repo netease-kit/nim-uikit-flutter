@@ -24,7 +24,8 @@ class ChatKitMessageAvChatItem extends StatefulWidget {
   final bool enableCallback;
 
   const ChatKitMessageAvChatItem(
-      {Key? key, required this.message, this.enableCallback = true}): super(key: key);
+      {Key? key, required this.message, this.enableCallback = true})
+      : super(key: key);
 
   @override
   State<StatefulWidget> createState() => ChatKitMessageAvChatState();

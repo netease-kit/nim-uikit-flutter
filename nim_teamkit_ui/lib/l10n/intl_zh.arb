@@ -12,7 +12,7 @@
   "teamIntroduceTitle": "群介绍",
   "teamMyNicknameTitle": "我在群里的昵称",
   "teamMark": "标记",
-  "teamHistory": "历史记录",
+  "teamHistory": "查找聊天内容",
   "teamMessageTip": "开启消息提醒",
   "teamSessionPin": "聊天置顶",
   "teamMute": "群禁言",
@@ -97,5 +97,13 @@
   "teamJoinApply": "加入群组",
   "teamChat": "聊天",
   "teamJoinApplicationHaveSent": "申请已发送",
-  "teamJoinApplicationSendError": "申请发送失败"
+  "teamJoinApplicationSendError": "申请发送失败",
+  "teamMemberSelectLimit": "做多可选择{number}名成员",
+  "@teamMemberSelectLimit": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  }
 }

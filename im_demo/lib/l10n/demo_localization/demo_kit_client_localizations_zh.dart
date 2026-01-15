@@ -212,4 +212,7 @@ class DemoKitClientLocalizationsZh extends DemoKitClientLocalizations {
 
   @override
   String get textSafetyNotice => '文本安全提示';
+
+  @override
+  String get enableCloudMessageSearch => '云端消息搜索';
 }

@@ -7,11 +7,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:nim_chatkit/model/team_models.dart';
+import 'package:nim_chatkit/repo/team_repo.dart';
 import 'package:nim_chatkit/service_locator.dart';
 import 'package:nim_chatkit/services/login/im_login_service.dart';
 import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
 import 'package:nim_core_v2/nim_core.dart';
-import 'package:nim_chatkit/repo/team_repo.dart';
 
 class TeamSettingViewModel extends ChangeNotifier {
   //当前用户在群里的身份
@@ -103,6 +103,11 @@ class TeamSettingViewModel extends ChangeNotifier {
 
   void removeSelected(UserInfoWithTeam userInfoWithTeam) {
     selectedList.remove(userInfoWithTeam);
+    notifyListeners();
+  }
+
+  void clearAllSelected() {
+    selectedList.clear();
     notifyListeners();
   }
 
