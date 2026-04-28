@@ -80,8 +80,8 @@ class _SplashState extends State<SplashPage> {
 
   void startLogin(){
     //fixme 将您的云信IM账号(accid)和Token设置在这里即可
-    String account = "334665458163968";
-    String token = "8d5ca2c8-9c02-481c-9908-ca1e96038788";
+    String account = "your account";
+    String token = "your token";
     IMKitClient.loginIMWithResult(
          account,
         token,
