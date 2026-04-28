@@ -73,7 +73,9 @@ abstract class ConversationKitClientLocalizations {
 
   static ConversationKitClientLocalizations? of(BuildContext context) {
     return Localizations.of<ConversationKitClientLocalizations>(
-        context, ConversationKitClientLocalizations);
+      context,
+      ConversationKitClientLocalizations,
+    );
   }
 
   static const LocalizationsDelegate<ConversationKitClientLocalizations>
@@ -100,7 +102,7 @@ abstract class ConversationKitClientLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
-    Locale('zh')
+    Locale('zh'),
   ];
 
   /// No description provided for @conversationTitle.
@@ -168,6 +170,9 @@ abstract class ConversationKitClientLocalizations {
   /// In en, this message translates to:
   /// **'add friends'**
   String get addFriend;
+
+  /// No description provided for @conversationSearchHint.
+  String get conversationSearchHint;
 
   /// No description provided for @addFriendSearchHint.
   ///
@@ -288,6 +293,18 @@ abstract class ConversationKitClientLocalizations {
   /// In en, this message translates to:
   /// **'[Voice Call]'**
   String get chatMessageBriefAudioCall;
+
+  /// No description provided for @muteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute'**
+  String get muteTitle;
+
+  /// No description provided for @cancelMuteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmute'**
+  String get cancelMuteTitle;
 }
 
 class _ConversationKitClientLocalizationsDelegate
@@ -297,7 +314,8 @@ class _ConversationKitClientLocalizationsDelegate
   @override
   Future<ConversationKitClientLocalizations> load(Locale locale) {
     return SynchronousFuture<ConversationKitClientLocalizations>(
-        lookupConversationKitClientLocalizations(locale));
+      lookupConversationKitClientLocalizations(locale),
+    );
   }
 
   @override
@@ -309,7 +327,8 @@ class _ConversationKitClientLocalizationsDelegate
 }
 
 ConversationKitClientLocalizations lookupConversationKitClientLocalizations(
-    Locale locale) {
+  Locale locale,
+) {
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
     case 'en':
@@ -319,8 +338,9 @@ ConversationKitClientLocalizations lookupConversationKitClientLocalizations(
   }
 
   throw FlutterError(
-      'ConversationKitClientLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
+    'ConversationKitClientLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
 }

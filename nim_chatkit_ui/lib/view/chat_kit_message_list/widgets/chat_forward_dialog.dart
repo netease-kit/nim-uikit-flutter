@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/text_untils.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
 import 'package:nim_core_v2/nim_core.dart';
 
@@ -18,80 +19,88 @@ import '../../../model/forward/forward_selected_beam.dart';
 ///[contentStr] 转发的消息内容
 ///[contacts] 转发的联系人
 ///[team] 转发的群组
-Future<ForwardResult?> showChatForwardDialog(
-    {required BuildContext context,
-    required String contentStr,
-    List<ContactInfo>? contacts,
-    NIMTeam? team}) async {
+Future<ForwardResult?> showChatForwardDialog({
+  required BuildContext context,
+  required String contentStr,
+  List<ContactInfo>? contacts,
+  NIMTeam? team,
+}) async {
   TextEditingController _inputControl = TextEditingController();
 
   Widget _getTargetUser() {
     if (team != null) {
-      return Row(children: [
-        Avatar(
-          height: 32,
-          width: 32,
-          avatar: team.avatar,
-          name: team.name,
-          bgCode: AvatarColor.avatarColor(content: team.teamId),
-        ),
-        Expanded(
-            child: Container(
-          margin: EdgeInsets.only(left: 8),
-          alignment: Alignment.centerLeft,
-          child: Text(
-            team.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 14, color: '#333333'.toColor()),
+      return Row(
+        children: [
+          Avatar(
+            height: 32,
+            width: 32,
+            avatar: team.avatar,
+            name: team.name,
+            bgCode: AvatarColor.avatarColor(content: team.teamId),
           ),
-        ))
-      ]);
+          Expanded(
+            child: Container(
+              margin: EdgeInsets.only(left: 8),
+              alignment: Alignment.centerLeft,
+              child: Text(
+                team.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 14, color: '#333333'.toColor()),
+              ),
+            ),
+          ),
+        ],
+      );
     }
     if (contacts != null && contacts.length == 1) {
       var user = contacts[0];
-      return Row(children: [
-        Avatar(
-          height: 32,
-          width: 32,
-          avatar: user.user.avatar,
-          name: user.getName(),
-          bgCode: AvatarColor.avatarColor(content: user.user.accountId),
-        ),
-        Expanded(
-            child: Container(
-          margin: EdgeInsets.only(left: 8),
-          alignment: Alignment.centerLeft,
-          child: Text(
-            user.getName(),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 14, color: '#333333'.toColor()),
+      return Row(
+        children: [
+          Avatar(
+            height: 32,
+            width: 32,
+            avatar: user.user.avatar,
+            name: user.getName(),
+            bgCode: AvatarColor.avatarColor(content: user.user.accountId),
           ),
-        ))
-      ]);
+          Expanded(
+            child: Container(
+              margin: EdgeInsets.only(left: 8),
+              alignment: Alignment.centerLeft,
+              child: Text(
+                user.getName(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 14, color: '#333333'.toColor()),
+              ),
+            ),
+          ),
+        ],
+      );
     }
     if (contacts?.isNotEmpty == true) {
       return Container(
         height: 40,
         width: 300,
         child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: contacts!.length,
-            shrinkWrap: true,
-            itemBuilder: (context, index) {
-              var user = contacts[index];
-              return Container(
-                padding: EdgeInsets.only(right: 10),
-                child: Avatar(
-                  height: 32,
-                  width: 32,
-                  avatar: user.user.avatar,
-                  name: user.getName(),
-                  bgCode: AvatarColor.avatarColor(content: user.user.accountId),
-                ),
-              );
-            }),
+          scrollDirection: Axis.horizontal,
+          itemCount: contacts!.length,
+          shrinkWrap: true,
+          itemBuilder: (context, index) {
+            var user = contacts[index];
+            return Container(
+              padding: EdgeInsets.only(right: 10),
+              child: Avatar(
+                height: 32,
+                width: 32,
+                avatar: user.user.avatar,
+                name: user.getName(),
+                bgCode: AvatarColor.avatarColor(content: user.user.accountId),
+              ),
+            );
+          },
+        ),
       );
     }
 
@@ -115,88 +124,107 @@ Future<ForwardResult?> showChatForwardDialog(
           color: '#F2F4F5'.toColor(),
           height: 38,
           width: width,
-          child: getSingleMiddleEllipsisText(contentStr,
-              endLen: 5,
-              style: TextStyle(fontSize: 14, color: '#333333'.toColor())),
+          child: getSingleMiddleEllipsisText(
+            contentStr,
+            endLen: 5,
+            style: TextStyle(fontSize: 14, color: '#333333'.toColor()),
+          ),
         ),
         Container(
-            margin: EdgeInsets.only(top: 12),
-            child: CupertinoTextField(
-              controller: _inputControl,
-              placeholder: S.of(context).chatMessagePostScript,
-              placeholderStyle: TextStyle(
-                  color: '#A6ADB6'.toColor(),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400),
-              style: TextStyle(
-                  color: '#333333'.toColor(),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400),
-              decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: '#A6ADB6'.toColor())),
-            ))
+          margin: EdgeInsets.only(top: 12),
+          child: CupertinoTextField(
+            controller: _inputControl,
+            placeholder: S.of(context).chatMessagePostScript,
+            placeholderStyle: TextStyle(
+              color: '#A6ADB6'.toColor(),
+              fontSize: 16,
+              fontWeight: FontWeight.w400,
+            ),
+            style: TextStyle(
+              color: '#333333'.toColor(),
+              fontSize: 16,
+              fontWeight: FontWeight.w400,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: '#A6ADB6'.toColor()),
+            ),
+          ),
+        ),
       ],
     );
   }
 
   return showDialog(
-      context: context,
-      builder: (context) {
-        double dialogWidth = MediaQuery.of(context).size.width;
-        return SimpleDialog(
-            backgroundColor: Colors.white,
-            contentPadding: EdgeInsets.zero,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.0),
-            ),
-            children: [
-              Padding(
-                padding: EdgeInsets.all(14),
-                child: _getContent(dialogWidth - 28),
-              ),
-              Container(height: 1, color: '#E1E6E8'.toColor()),
-              SizedBox(
-                height: 50,
-                child: Row(
-                  children: [
-                    Expanded(
-                        child: TextButton(
-                            onPressed: () {
-                              Navigator.of(context).pop<ForwardResult>(
-                                  ForwardResult(result: false));
-                            },
-                            child: Text(
-                              S.of(context).messageCancel,
-                              style: const TextStyle(
-                                  fontSize: 17,
-                                  color: CommonColors.color_666666),
-                            ))),
-                    Container(
-                      width: 1,
-                      height: 50,
-                      color: '#E1E6E8'.toColor(),
+    context: context,
+    builder: (context) {
+      final isDesktop = ChatKitUtils.isDesktopOrWeb;
+      final double dialogWidth =
+          isDesktop ? 400.0 : MediaQuery.of(context).size.width;
+      final dialog = SimpleDialog(
+        backgroundColor: Colors.white,
+        contentPadding: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10.0),
+        ),
+        children: [
+          Padding(
+            padding: EdgeInsets.all(14),
+            child: _getContent(dialogWidth - 28),
+          ),
+          Container(height: 1, color: '#E1E6E8'.toColor()),
+          SizedBox(
+            height: 50,
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.of(
+                        context,
+                      ).pop<ForwardResult>(ForwardResult(result: false));
+                    },
+                    child: Text(
+                      S.of(context).messageCancel,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        color: CommonColors.color_666666,
+                      ),
                     ),
-                    Expanded(
-                        child: TextButton(
-                            onPressed: () {
-                              Navigator.of(context).pop<ForwardResult>(
-                                  ForwardResult(
-                                      result: true,
-                                      postScript: _inputControl.text));
-                            },
-                            child: Text(
-                              S.of(context).chatMessageSend,
-                              style: const TextStyle(
-                                  fontSize: 17,
-                                  color: CommonColors.color_007aff),
-                            ))),
-                  ],
+                  ),
                 ),
-              ),
-            ]);
-      });
+                Container(width: 1, height: 50, color: '#E1E6E8'.toColor()),
+                Expanded(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop<ForwardResult>(
+                        ForwardResult(
+                          result: true,
+                          postScript: _inputControl.text,
+                        ),
+                      );
+                    },
+                    child: Text(
+                      S.of(context).chatMessageSend,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        color: CommonColors.color_007aff,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+      // 桌面/Web 端：用 SizedBox 约束弹框宽度
+      return isDesktop
+          ? Center(child: SizedBox(width: dialogWidth, child: dialog))
+          : dialog;
+    },
+  );
 }
 
 ///弹出转发消息的对话框
@@ -205,57 +233,62 @@ Future<ForwardResult?> showChatForwardDialog(
 ///[contentStr] 转发的消息内容
 ///[contacts] 转发的联系人
 ///[team] 转发的群组
-Future<ForwardResult?> showChatForwardNewDialog(
-    {required BuildContext context,
-    required String contentStr,
-    List<SelectedBeam>? selectedBeams}) async {
+Future<ForwardResult?> showChatForwardNewDialog({
+  required BuildContext context,
+  required String contentStr,
+  List<SelectedBeam>? selectedBeams,
+}) async {
   TextEditingController _inputControl = TextEditingController();
 
   Widget _getTargetUser() {
     if (selectedBeams != null && selectedBeams.length == 1) {
       var selected = selectedBeams[0];
-      return Row(children: [
-        Avatar(
-          height: 32,
-          width: 32,
-          avatar: selected.avatar,
-          name: selected.name,
-          bgCode: AvatarColor.avatarColor(content: selected.sessionId),
-        ),
-        Expanded(
-            child: Container(
-          margin: EdgeInsets.only(left: 8),
-          alignment: Alignment.centerLeft,
-          child: Text(
-            selected.name ?? selected.sessionId!,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 14, color: '#333333'.toColor()),
+      return Row(
+        children: [
+          Avatar(
+            height: 32,
+            width: 32,
+            avatar: selected.avatar,
+            name: selected.name,
+            bgCode: AvatarColor.avatarColor(content: selected.sessionId),
           ),
-        ))
-      ]);
+          Expanded(
+            child: Container(
+              margin: EdgeInsets.only(left: 8),
+              alignment: Alignment.centerLeft,
+              child: Text(
+                selected.name ?? selected.sessionId!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 14, color: '#333333'.toColor()),
+              ),
+            ),
+          ),
+        ],
+      );
     }
     if (selectedBeams?.isNotEmpty == true) {
       return Container(
         height: 40,
         width: 300,
         child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: selectedBeams!.length,
-            shrinkWrap: true,
-            itemBuilder: (context, index) {
-              var selected = selectedBeams[index];
-              return Container(
-                padding: EdgeInsets.only(right: 10),
-                child: Avatar(
-                  height: 32,
-                  width: 32,
-                  avatar: selected.avatar,
-                  name: selected.name,
-                  bgCode: AvatarColor.avatarColor(content: selected.sessionId),
-                ),
-              );
-            }),
+          scrollDirection: Axis.horizontal,
+          itemCount: selectedBeams!.length,
+          shrinkWrap: true,
+          itemBuilder: (context, index) {
+            var selected = selectedBeams[index];
+            return Container(
+              padding: EdgeInsets.only(right: 10),
+              child: Avatar(
+                height: 32,
+                width: 32,
+                avatar: selected.avatar,
+                name: selected.name,
+                bgCode: AvatarColor.avatarColor(content: selected.sessionId),
+              ),
+            );
+          },
+        ),
       );
     }
 
@@ -279,88 +312,107 @@ Future<ForwardResult?> showChatForwardNewDialog(
           color: '#F2F4F5'.toColor(),
           height: 38,
           width: width,
-          child: getSingleMiddleEllipsisText(contentStr,
-              endLen: 5,
-              style: TextStyle(fontSize: 14, color: '#333333'.toColor())),
+          child: getSingleMiddleEllipsisText(
+            contentStr,
+            endLen: 5,
+            style: TextStyle(fontSize: 14, color: '#333333'.toColor()),
+          ),
         ),
         Container(
-            margin: EdgeInsets.only(top: 12),
-            child: CupertinoTextField(
-              controller: _inputControl,
-              placeholder: S.of(context).chatMessagePostScript,
-              placeholderStyle: TextStyle(
-                  color: '#A6ADB6'.toColor(),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400),
-              style: TextStyle(
-                  color: '#333333'.toColor(),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400),
-              decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: '#A6ADB6'.toColor())),
-            ))
+          margin: EdgeInsets.only(top: 12),
+          child: CupertinoTextField(
+            controller: _inputControl,
+            placeholder: S.of(context).chatMessagePostScript,
+            placeholderStyle: TextStyle(
+              color: '#A6ADB6'.toColor(),
+              fontSize: 16,
+              fontWeight: FontWeight.w400,
+            ),
+            style: TextStyle(
+              color: '#333333'.toColor(),
+              fontSize: 16,
+              fontWeight: FontWeight.w400,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: '#A6ADB6'.toColor()),
+            ),
+          ),
+        ),
       ],
     );
   }
 
   return showDialog(
-      context: context,
-      builder: (context) {
-        double dialogWidth = MediaQuery.of(context).size.width;
-        return SimpleDialog(
-            backgroundColor: Colors.white,
-            contentPadding: EdgeInsets.zero,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.0),
-            ),
-            children: [
-              Padding(
-                padding: EdgeInsets.all(14),
-                child: _getContent(dialogWidth - 28),
-              ),
-              Container(height: 1, color: '#E1E6E8'.toColor()),
-              SizedBox(
-                height: 50,
-                child: Row(
-                  children: [
-                    Expanded(
-                        child: TextButton(
-                            onPressed: () {
-                              Navigator.of(context).pop<ForwardResult>(
-                                  ForwardResult(result: false));
-                            },
-                            child: Text(
-                              S.of(context).messageCancel,
-                              style: const TextStyle(
-                                  fontSize: 17,
-                                  color: CommonColors.color_666666),
-                            ))),
-                    Container(
-                      width: 1,
-                      height: 50,
-                      color: '#E1E6E8'.toColor(),
+    context: context,
+    builder: (context) {
+      final isDesktop = ChatKitUtils.isDesktopOrWeb;
+      final double dialogWidth =
+          isDesktop ? 400.0 : MediaQuery.of(context).size.width;
+      final dialog = SimpleDialog(
+        backgroundColor: Colors.white,
+        contentPadding: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10.0),
+        ),
+        children: [
+          Padding(
+            padding: EdgeInsets.all(14),
+            child: _getContent(dialogWidth - 28),
+          ),
+          Container(height: 1, color: '#E1E6E8'.toColor()),
+          SizedBox(
+            height: 50,
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.of(
+                        context,
+                      ).pop<ForwardResult>(ForwardResult(result: false));
+                    },
+                    child: Text(
+                      S.of(context).messageCancel,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        color: CommonColors.color_666666,
+                      ),
                     ),
-                    Expanded(
-                        child: TextButton(
-                            onPressed: () {
-                              Navigator.of(context).pop<ForwardResult>(
-                                  ForwardResult(
-                                      result: true,
-                                      postScript: _inputControl.text));
-                            },
-                            child: Text(
-                              S.of(context).chatMessageSend,
-                              style: const TextStyle(
-                                  fontSize: 17,
-                                  color: CommonColors.color_007aff),
-                            ))),
-                  ],
+                  ),
                 ),
-              ),
-            ]);
-      });
+                Container(width: 1, height: 50, color: '#E1E6E8'.toColor()),
+                Expanded(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop<ForwardResult>(
+                        ForwardResult(
+                          result: true,
+                          postScript: _inputControl.text,
+                        ),
+                      );
+                    },
+                    child: Text(
+                      S.of(context).chatMessageSend,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        color: CommonColors.color_007aff,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+      // 桌面/Web 端：用 SizedBox 约束弹框宽度
+      return isDesktop
+          ? Center(child: SizedBox(width: dialogWidth, child: dialog))
+          : dialog;
+    },
+  );
 }
 
 class ForwardResult {

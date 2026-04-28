@@ -4,14 +4,11 @@
 
 import 'dart:collection';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:netease_common_ui/base/base_state.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
-import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
@@ -24,6 +21,7 @@ import 'package:nim_chatkit/repo/team_repo.dart';
 import 'package:nim_chatkit/service_locator.dart';
 import 'package:nim_chatkit/services/contact/contact_provider.dart';
 import 'package:nim_chatkit/services/message/chat_message.dart';
+import 'package:nim_chatkit/utils/toast_utils.dart';
 import 'package:nim_core_v2/nim_core.dart';
 
 import '../../chat_kit_client.dart';
@@ -36,10 +34,22 @@ class ChatHistoryFileMessagePage extends StatefulWidget {
   final String conversationId;
   final NIMConversationType conversationType;
 
+  /// 嵌入模式：为 true 时不渲染 Scaffold/AppBar，仅返回内容区域
+  final bool isEmbedded;
+
+  /// 桌面/Web 端"定位到聊天"回调（移动端不使用）
+  final void Function(NIMMessage)? onLocateMessage;
+
+  /// 桌面/Web 端关闭搜索面板的回调
+  final VoidCallback? onClose;
+
   const ChatHistoryFileMessagePage({
     Key? key,
     required this.conversationId,
     required this.conversationType,
+    this.isEmbedded = false,
+    this.onLocateMessage,
+    this.onClose,
   }) : super(key: key);
 
   @override
@@ -66,7 +76,8 @@ class ChatHistoryFileMessagePageState
     if (widget.conversationType == NIMConversationType.p2p) {
       getIt<ContactProvider>()
           .getContact(
-              ChatKitUtils.getConversationTargetId(widget.conversationId))
+        ChatKitUtils.getConversationTargetId(widget.conversationId),
+      )
           .then((value) {
         contactInfo = value;
         if (mounted) setState(() {});
@@ -97,10 +108,11 @@ class ChatHistoryFileMessagePageState
     });
 
     NIMMessageSearchExParams params = NIMMessageSearchExParams(
-        conversationId: widget.conversationId,
-        messageTypes: [NIMMessageType.file],
-        direction: NIMSearchDirection.V2NIM_SEARCH_DIRECTION_BACKWARD,
-        pageToken: _pageToken);
+      conversationId: widget.conversationId,
+      messageTypes: [NIMMessageType.file],
+      direction: NIMSearchDirection.V2NIM_SEARCH_DIRECTION_BACKWARD,
+      pageToken: _pageToken,
+    );
 
     if ((await IMKitClient.enableCloudMessageSearch) && !checkNetwork()) {
       setState(() {
@@ -132,16 +144,14 @@ class ChatHistoryFileMessagePageState
 
   @override
   Widget build(BuildContext context) {
+    final content = Column(children: [Expanded(child: _buildList())]);
+    if (widget.isEmbedded) {
+      return content;
+    }
     return TransparentScaffold(
       title: S.of(context).chatQuickSearchFile,
       backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          Expanded(
-            child: _buildList(),
-          ),
-        ],
-      ),
+      body: content,
     );
   }
 
@@ -151,22 +161,15 @@ class ChatHistoryFileMessagePageState
         children: [
           Column(
             children: [
-              const SizedBox(
-                height: 68,
-              ),
-              SvgPicture.asset(
-                'images/ic_list_empty.svg',
-                package: kPackage,
-              ),
-              const SizedBox(
-                height: 18,
-              ),
+              const SizedBox(height: 68),
+              SvgPicture.asset('images/ic_list_empty.svg', package: kPackage),
+              const SizedBox(height: 18),
               Text(
                 S.of(context).chatSearchFileMessageEmpty,
                 style: TextStyle(color: Color(0xffb3b7bc), fontSize: 14),
-              )
+              ),
             ],
-          )
+          ),
         ],
       );
     }
@@ -191,7 +194,11 @@ class ChatHistoryFileMessagePageState
           children: [
             Padding(
               padding: const EdgeInsets.only(
-                  left: 20, right: 20, top: 12, bottom: 8),
+                left: 20,
+                right: 20,
+                top: 12,
+                bottom: 8,
+              ),
               child: Text(
                 date,
                 style: const TextStyle(
@@ -223,9 +230,10 @@ class ChatHistoryFileMessagePageState
         padding: const EdgeInsets.all(16.0),
         alignment: Alignment.center,
         child: SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(strokeWidth: 2)),
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
       );
     }
     if (!_hasMore && _historyMessages.isNotEmpty) {
@@ -244,10 +252,14 @@ class ChatHistoryFileMessagePageState
   Map<String, List<NIMMessage>> _groupByDate(List<NIMMessage> list) {
     final map = LinkedHashMap<String, List<NIMMessage>>();
     final now = DateTime.now();
-    final currentYearFormatter =
-        DateFormat(S.of(context).chatHistoryDateFormatMonthDay, 'zh');
-    final otherYearFormatter =
-        DateFormat(S.of(context).chatHistoryDateFormaYearMonthDay, 'zh');
+    final currentYearFormatter = DateFormat(
+      S.of(context).chatHistoryDateFormatMonthDay,
+      'zh',
+    );
+    final otherYearFormatter = DateFormat(
+      S.of(context).chatHistoryDateFormaYearMonthDay,
+      'zh',
+    );
 
     for (final msg in list) {
       final date = DateTime.fromMillisecondsSinceEpoch(msg.createTime!.toInt());
@@ -265,146 +277,178 @@ class ChatHistoryFileMessagePageState
 
   Widget _buildFileItem(NIMMessage message) {
     return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        child: FutureBuilder<UserAvatarInfo>(
-            future: _getUserAvatarInfo(message),
-            builder: (context, snapshot) {
-              final userInfo = snapshot.data;
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: FutureBuilder<UserAvatarInfo>(
+        future: _getUserAvatarInfo(message),
+        builder: (context, snapshot) {
+          final userInfo = snapshot.data;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // User Info Row
+              Row(
                 children: [
-                  // User Info Row
-                  Row(
-                    children: [
-                      Avatar(
-                        avatar: userInfo?.avatar,
-                        name: userInfo?.avatarName,
-                        height: 32,
-                        width: 32,
-                        radius: 16,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          userInfo?.name ?? '',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: CommonColors.color_333333,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        DateFormat(S.of(context).chatHistoryDateFormatMonthDay,
-                                'zh')
-                            .format(DateTime.fromMillisecondsSinceEpoch(
-                                message.createTime!.toInt())),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: CommonColors.color_999999,
-                        ),
-                      ),
-                    ],
+                  Avatar(
+                    avatar: userInfo?.avatar,
+                    name: userInfo?.avatarName,
+                    height: 32,
+                    width: 32,
+                    radius: 16,
                   ),
-                  const SizedBox(height: 8),
-                  // File Card
-                  Padding(
-                    padding: const EdgeInsets.only(left: 44),
-                    child: ChatKitMessageFileItem(
-                      message: message,
-                      backgroundColor: '#F4F4F4'.toColor(),
-                      trailing: Padding(
-                        padding: const EdgeInsets.only(left: 8),
-                        child: InkWell(
-                          onTap: () {
-                            //弹出操作按钮
-                            _showOptionDialog(context, message, userInfo);
-                          },
-                          child: Icon(
-                            Icons.more_vert,
-                            size: 24,
-                            color: CommonColors.color_999999,
-                          ),
-                        ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      userInfo?.name ?? '',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: CommonColors.color_333333,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  Text(
+                    DateFormat(
+                      S.of(context).chatHistoryDateFormatMonthDay,
+                      'zh',
+                    ).format(
+                      DateTime.fromMillisecondsSinceEpoch(
+                        message.createTime!.toInt(),
+                      ),
+                    ),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: CommonColors.color_999999,
+                    ),
+                  ),
                 ],
-              );
-            }));
+              ),
+              const SizedBox(height: 8),
+              // File Card
+              Padding(
+                padding: const EdgeInsets.only(left: 44),
+                child: ChatKitMessageFileItem(
+                  message: message,
+                  backgroundColor: '#F4F4F4'.toColor(),
+                  trailing: Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: ChatKitUtils.isDesktopOrWeb
+                        ? _buildDesktopFileTrailing(message, userInfo)
+                        : InkWell(
+                            onTap: () {
+                              //弹出操作按钮
+                              _showOptionDialog(context, message, userInfo);
+                            },
+                            child: Icon(
+                              Icons.more_vert,
+                              size: 24,
+                              color: CommonColors.color_999999,
+                            ),
+                          ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   Future<UserAvatarInfo> _getUserAvatarInfo(NIMMessage message) async {
     if (message.aiConfig?.aiStatus == NIMMessageAIStatus.response &&
         AIUserManager.instance.isAIUser(message.aiConfig?.accountId)) {
-      final aiUser =
-          AIUserManager.instance.getAIUserById(message.aiConfig!.accountId!);
-      return UserAvatarInfo(aiUser!.name ?? aiUser.accountId!,
-          avatarName: aiUser.name, avatar: aiUser.avatar);
+      final aiUser = AIUserManager.instance.getAIUserById(
+        message.aiConfig!.accountId!,
+      );
+      return UserAvatarInfo(
+        aiUser!.name ?? aiUser.accountId!,
+        avatarName: aiUser.name,
+        avatar: aiUser.avatar,
+      );
     }
     if (message.conversationType == NIMConversationType.p2p) {
       if (message.isSelf != true && contactInfo != null) {
-        return UserAvatarInfo(contactInfo!.getName(),
-            avatarName: contactInfo!.getName(needAlias: false),
-            avatar: contactInfo?.user.avatar);
+        return UserAvatarInfo(
+          contactInfo!.getName(),
+          avatarName: contactInfo!.getName(needAlias: false),
+          avatar: contactInfo?.user.avatar,
+        );
       }
       final selfInfo = IMKitClient.getUserInfo();
       if (message.isSelf == true && selfInfo != null) {
-        return UserAvatarInfo(selfInfo.name ?? message.senderId!,
-            avatar: selfInfo.avatar,
-            avatarName: selfInfo.name ?? message.senderId!);
+        return UserAvatarInfo(
+          selfInfo.name ?? message.senderId!,
+          avatar: selfInfo.avatar,
+          avatarName: selfInfo.name ?? message.senderId!,
+        );
       }
       return UserAvatarInfo(message.senderId!, avatarName: message.senderId!);
     } else {
-      var teamId =
-          ChatKitUtils.getConversationTargetId(message.conversationId!);
+      var teamId = ChatKitUtils.getConversationTargetId(
+        message.conversationId!,
+      );
       return await getUserAvatarInfoInTeam(teamId, message.senderId!);
     }
   }
 
+  // Task 7.1-7.5: 桌面/Web 端文件消息 trailing 下拉菜单
+  Widget _buildDesktopFileTrailing(
+      NIMMessage message, UserAvatarInfo? userInfo) {
+    return PopupMenuButton<String>(
+      icon: Icon(Icons.more_vert, size: 24, color: CommonColors.color_999999),
+      onSelected: (value) async {
+        if (value == 'forward') {
+          _showForwardMessageDialog(message);
+        } else if (value == 'collect') {
+          _addCollectionMessage(message, userInfo);
+        } else if (value == 'locate') {
+          widget.onClose?.call();
+          widget.onLocateMessage?.call(message);
+        }
+      },
+      itemBuilder: (ctx) => [
+        if (ChatKitClient.instance.chatUIConfig.popMenuConfig?.enableForward !=
+            false)
+          PopupMenuItem<String>(
+            value: 'forward',
+            child: Text(S.of(context).chatMessageActionForward),
+          ),
+        PopupMenuItem<String>(
+          value: 'collect',
+          child: Text(S.of(context).chatMessageActionCollect),
+        ),
+        PopupMenuItem<String>(
+          value: 'locate',
+          child: Text(S.of(context).chatSearchLocateMessage),
+        ),
+      ],
+    );
+  }
+
   //操作弹框
   void _showOptionDialog(
-      BuildContext context, NIMMessage message, UserAvatarInfo? userInfo) {
-    var style = const TextStyle(fontSize: 16, color: CommonColors.color_333333);
-    //将弹框的context 回调出来，解决弹框显示后Item remove的问题
-    BuildContext? buildContext;
-    showBottomChoose<int>(
-        context: context,
-        actions: [
-          if (ChatKitClient
-                  .instance.chatUIConfig.popMenuConfig?.enableForward !=
-              false)
-            CupertinoActionSheetAction(
-                onPressed: () {
-                  if (mounted) {
-                    Navigator.of(context).pop(1);
-                  } else if (buildContext != null) {
-                    Navigator.pop(buildContext!);
-                  }
-                },
-                child: Text(
-                  S.of(context).chatMessageActionForward,
-                  style: style,
-                )),
-          CupertinoActionSheetAction(
-              onPressed: () {
-                if (mounted) {
-                  Navigator.of(context).pop(2);
-                } else if (buildContext != null) {
-                  Navigator.pop(buildContext!);
-                }
-              },
-              child: Text(
-                S.of(context).chatMessageActionCollect,
-                style: style,
-              )),
-        ],
-        contextCb: (context) {
-          buildContext = context;
-        }).then((value) {
+    BuildContext context,
+    NIMMessage message,
+    UserAvatarInfo? userInfo,
+  ) {
+    showAdaptiveChoose<int>(
+      context: context,
+      items: [
+        if (ChatKitClient.instance.chatUIConfig.popMenuConfig?.enableForward !=
+            false)
+          AdaptiveChooseItem(
+            label: S.of(context).chatMessageActionForward,
+            value: 1,
+          ),
+        AdaptiveChooseItem(
+          label: S.of(context).chatMessageActionCollect,
+          value: 2,
+        ),
+      ],
+    ).then((value) {
       if (value == 1) {
         _showForwardMessageDialog(message);
       } else if (value == 2) {
@@ -414,25 +458,29 @@ class ChatHistoryFileMessagePageState
   }
 
   void _addCollectionMessage(
-      NIMMessage message, UserAvatarInfo? userInfo) async {
+    NIMMessage message,
+    UserAvatarInfo? userInfo,
+  ) async {
     String chatTitle = '';
     if (widget.conversationType == NIMConversationType.p2p) {
       chatTitle = contactInfo?.getName() ?? '';
     } else {
-      final teamId =
-          ChatKitUtils.getConversationTargetId(widget.conversationId);
+      final teamId = ChatKitUtils.getConversationTargetId(
+        widget.conversationId,
+      );
       var teamInfo = await TeamRepo.getTeamInfo(teamId, NIMTeamType.typeNormal);
       chatTitle = teamInfo?.name ?? teamId;
     }
-    ChatMessageRepo.addCollectMessage(message,
-            senderName: userInfo?.name ?? '',
-            avatar: userInfo?.avatar,
-            conversationName: chatTitle)
-        .then((v) {
+    ChatMessageRepo.addCollectMessage(
+      message,
+      senderName: userInfo?.name ?? '',
+      avatar: userInfo?.avatar,
+      conversationName: chatTitle,
+    ).then((v) {
       if (v.isSuccess) {
-        Fluttertoast.showToast(msg: S.of().chatMessageCollectSuccess);
+        ChatUIToast.show(S.of().chatMessageCollectSuccess);
       } else if (v.code == ChatMessage.CollectionMessageLimit) {
-        Fluttertoast.showToast(msg: S.of().chatMessageCollectedLimit);
+        ChatUIToast.show(S.of().chatMessageCollectedLimit);
       }
     });
   }
@@ -442,8 +490,9 @@ class ChatHistoryFileMessagePageState
       return contactInfo?.getName() ??
           ChatKitUtils.getConversationTargetId(widget.conversationId);
     } else {
-      final teamId =
-          ChatKitUtils.getConversationTargetId(widget.conversationId);
+      final teamId = ChatKitUtils.getConversationTargetId(
+        widget.conversationId,
+      );
       var teamInfo = await TeamRepo.getTeamInfo(teamId, NIMTeamType.typeNormal);
       return teamInfo?.name ?? teamId;
     }
@@ -451,25 +500,36 @@ class ChatHistoryFileMessagePageState
 
   void _showForwardMessageDialog(NIMMessage message) async {
     final sessionName = await getSessionName();
-    ChatMessageHelper.showForwardSelector(context, (conversationId,
-        {String? postScript, bool? isLastUser}) {
+    ChatMessageHelper.showForwardSelector(context, (
+      conversationId, {
+      String? postScript,
+      bool? isLastUser,
+    }) {
       haveConnectivity().then((value) async {
         if (value) {
-          final params =
-              await ChatMessageHelper.getSenderParams(message, conversationId);
-          ChatMessageRepo.forwardMessage(message, conversationId,
-                  params: params)
-              .then((value) {
+          final params = await ChatMessageHelper.getSenderParams(
+            message,
+            conversationId,
+          );
+          ChatMessageRepo.forwardMessage(
+            message,
+            conversationId,
+            params: params,
+          ).then((value) {
             if (value.code == ChatMessageRepo.errorInBlackList) {
               ChatMessageRepo.saveTipsMessage(
-                  conversationId, S.of().chatMessageSendFailedByBlackList);
+                conversationId,
+                S.of().chatMessageSendFailedByBlackList,
+              );
             }
           });
         }
       });
       if (postScript?.isNotEmpty == true) {
         ChatMessageRepo.sendTextMessageWithMessageAck(
-            conversationId: conversationId, text: postScript!);
+          conversationId: conversationId,
+          text: postScript!,
+        );
       }
     }, sessionName: sessionName);
   }

@@ -2,11 +2,9 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:netease_common_ui/base/base_state.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
@@ -15,10 +13,12 @@ import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/message/message_helper.dart';
 import 'package:nim_chatkit/model/collect_message.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit/services/message/chat_message.dart';
+import 'package:nim_chatkit/utils/toast_utils.dart';
 import 'package:nim_core_v2/nim_core.dart';
 
 import '../../chat_kit_client.dart';
@@ -39,7 +39,11 @@ import '../chat_kit_message_list/item/chat_kit_message_tips_item.dart';
 import '../chat_kit_message_list/item/chat_kit_message_video_item.dart';
 
 class ChatCollectionMessageListPage extends StatefulWidget {
-  const ChatCollectionMessageListPage({Key? key}) : super(key: key);
+  /// 是否显示返回按钮（桌面/Web 内嵌展示时设为 false）
+  final bool showBack;
+
+  const ChatCollectionMessageListPage({Key? key, this.showBack = true})
+      : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
@@ -88,19 +92,23 @@ class ChatCollectionMessageListPageState
       _isLoading = true;
     });
 
-    final result =
-        await ChatMessageRepo.getCollectionList(anchorCollection: anchor);
+    final result = await ChatMessageRepo.getCollectionList(
+      anchorCollection: anchor,
+    );
 
     if (result.isSuccess && result.data != null) {
       final items = result.data!.collectionList;
       if (items != null) {
         for (var item in items) {
-          var collect =
-              CollectMessage.fromJsonString(item.collectionData ?? '');
+          var collect = CollectMessage.fromJsonString(
+            item.collectionData ?? '',
+          );
           if (collect != null) {
             collect.collection = item;
             await collect.deserializationMsg();
-            _historyMessages.add(collect);
+            if (collect.nimMessage != null) {
+              _historyMessages.add(collect);
+            }
           }
         }
       }
@@ -121,13 +129,9 @@ class ChatCollectionMessageListPageState
   Widget build(BuildContext context) {
     return TransparentScaffold(
       title: S.of(context).chatMessageActionCollect,
-      body: Column(
-        children: [
-          Expanded(
-            child: _buildList(),
-          ),
-        ],
-      ),
+      leading: widget.showBack ? null : const SizedBox.shrink(),
+      leadingWidth: widget.showBack ? null : 0,
+      body: Column(children: [Expanded(child: _buildList())]),
     );
   }
 
@@ -137,35 +141,29 @@ class ChatCollectionMessageListPageState
         alignment: Alignment.center,
         child: Column(
           children: [
-            const SizedBox(
-              height: 68,
-            ),
-            SvgPicture.asset(
-              'images/ic_list_empty.svg',
-              package: kPackage,
-            ),
-            const SizedBox(
-              height: 18,
-            ),
+            const SizedBox(height: 68),
+            SvgPicture.asset('images/ic_list_empty.svg', package: kPackage),
+            const SizedBox(height: 18),
             Text(
               S.of(context).chatHaveNoCollectionMessage,
               style: TextStyle(color: Color(0xffb3b7bc), fontSize: 14),
-            )
+            ),
           ],
         ),
       );
     }
 
     return ListView.builder(
-        controller: _scrollController,
-        padding: EdgeInsets.zero,
-        itemCount: _historyMessages.length + 1,
-        itemBuilder: (context, index) {
-          if (index == _historyMessages.length) {
-            return _buildFooter();
-          }
-          return _buildMessageItem(_historyMessages[index]);
-        });
+      controller: _scrollController,
+      padding: EdgeInsets.zero,
+      itemCount: _historyMessages.length + 1,
+      itemBuilder: (context, index) {
+        if (index == _historyMessages.length) {
+          return _buildFooter();
+        }
+        return _buildMessageItem(_historyMessages[index]);
+      },
+    );
   }
 
   Widget _buildFooter() {
@@ -174,9 +172,10 @@ class ChatCollectionMessageListPageState
         padding: const EdgeInsets.all(16.0),
         alignment: Alignment.center,
         child: SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(strokeWidth: 2)),
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
       );
     }
     if (!_hasMore && _historyMessages.isNotEmpty) {
@@ -203,24 +202,25 @@ class ChatCollectionMessageListPageState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [
-            Avatar(
-              avatar: message.avatar,
-              name: message.senderName,
-              width: 32,
-              height: 32,
-            ),
-            SizedBox(
-              width: 8,
-            ),
-            Expanded(
-              child: Column(
+          Row(
+            children: [
+              Avatar(
+                avatar: message.avatar,
+                name: message.senderName,
+                width: 32,
+                height: 32,
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       message.senderName,
                       style: TextStyle(
-                          fontSize: 14, color: CommonColors.color_333333),
+                        fontSize: 14,
+                        color: CommonColors.color_333333,
+                      ),
                     ),
                     Text(
                       S
@@ -229,37 +229,37 @@ class ChatCollectionMessageListPageState
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                          fontSize: 12, color: CommonColors.color_999999),
-                    )
-                  ]),
-            ),
-            GestureDetector(
-                onTap: () {
-                  _showOptionDialog(context, message);
-                },
-                child: SvgPicture.asset(
-                  'images/ic_more_point.svg',
-                  package: kPackage,
-                ))
-          ]),
-          SizedBox(
-            height: 12,
+                        fontSize: 12,
+                        color: CommonColors.color_999999,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              ChatKitUtils.isDesktopOrWeb
+                  ? _buildDesktopTrailing(context, message)
+                  : GestureDetector(
+                      onTap: () {
+                        _showOptionDialog(context, message);
+                      },
+                      child: SvgPicture.asset(
+                        'images/ic_more_point.svg',
+                        package: kPackage,
+                      ),
+                    ),
+            ],
           ),
+          SizedBox(height: 12),
           buildNIMMessage(context, message.nimMessage!),
-          SizedBox(
-            height: 12,
-          ),
-          Divider(
-            height: 1,
-            color: '#F5F8FC'.toColor(),
-          ),
+          SizedBox(height: 12),
+          Divider(height: 1, color: '#F5F8FC'.toColor()),
           Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
             child: Text(
-                _timestampToFormattedString(message.collection!.createTime!),
-                style:
-                    TextStyle(fontSize: 12, color: CommonColors.color_999999)),
-          )
+              _timestampToFormattedString(message.collection!.createTime!),
+              style: TextStyle(fontSize: 12, color: CommonColors.color_999999),
+            ),
+          ),
         ],
       ),
     );
@@ -270,67 +270,99 @@ class ChatCollectionMessageListPageState
     return DateFormat('yyyy.MM.dd HH:mm:ss').format(date);
   }
 
-  void _showOptionDialog(BuildContext context, CollectMessage message) {
-    var style = const TextStyle(fontSize: 16, color: CommonColors.color_333333);
-    //将弹框的context 回调出来，解决弹框显示后Item remove的问题
-    BuildContext? buildContext;
-    showBottomChoose<int>(
-        context: context,
-        actions: [
-          CupertinoActionSheetAction(
-              onPressed: () {
-                if (mounted) {
-                  Navigator.of(context).pop(1);
-                } else if (buildContext != null) {
-                  Navigator.pop(buildContext!);
+  /// 桌面/Web 端：下拉菜单操作按钮
+  Widget _buildDesktopTrailing(BuildContext context, CollectMessage message) {
+    return PopupMenuButton<int>(
+      icon: SvgPicture.asset(
+        'images/ic_more_point.svg',
+        package: kPackage,
+      ),
+      onSelected: (value) async {
+        if (value == 1) {
+          if (!await haveConnectivity()) return;
+          showCommonDialog(
+            context: context,
+            title: S.of().chatMessageActionDelete,
+            content: S.of().chatCollectionDeleteConfirm,
+          ).then((confirmed) {
+            if (confirmed ?? false) {
+              ChatMessageRepo.removeCollection([message.collection!]).then((
+                result,
+              ) {
+                if (result.isSuccess) {
+                  setState(() {
+                    _historyMessages.remove(message);
+                  });
                 }
-              },
-              child: Text(
-                S.of(context).chatMessageActionDelete,
-                style: style,
-              )),
-          if (message.nimMessage?.messageType == NIMMessageType.text)
-            CupertinoActionSheetAction(
-                onPressed: () {
-                  if (mounted) {
-                    Navigator.of(context).pop(3);
-                  } else if (buildContext != null) {
-                    Navigator.pop(buildContext!);
-                  }
-                },
-                child: Text(
-                  S.of(context).chatMessageActionCopy,
-                  style: style,
-                )),
-          if (message.nimMessage?.messageType != NIMMessageType.audio)
-            CupertinoActionSheetAction(
-                onPressed: () {
-                  if (mounted) {
-                    Navigator.of(context).pop(2);
-                  } else if (buildContext != null) {
-                    Navigator.pop(buildContext!);
-                  }
-                },
-                child: Text(
-                  S.of(context).chatMessageActionForward,
-                  style: style,
-                )),
-        ],
-        contextCb: (context) {
-          buildContext = context;
-        }).then((value) async {
+              });
+            }
+          });
+        } else if (value == 2) {
+          if (message.nimMessage != null) {
+            if (!await haveConnectivity()) return;
+            showForwardMessageDialog(context, message.nimMessage!);
+          }
+        } else if (value == 3) {
+          if (mounted) {
+            Clipboard.setData(
+              ClipboardData(text: message.nimMessage!.text!),
+            );
+            ChatUIToast.show(S.of().chatMessageCopySuccess);
+          }
+        }
+      },
+      itemBuilder: (ctx) => [
+        PopupMenuItem<int>(
+          value: 1,
+          child: Text(S.of(context).chatMessageActionDelete),
+        ),
+        if (message.nimMessage?.messageType == NIMMessageType.text)
+          PopupMenuItem<int>(
+            value: 3,
+            child: Text(S.of(context).chatMessageActionCopy),
+          ),
+        if (message.nimMessage?.messageType != NIMMessageType.audio)
+          PopupMenuItem<int>(
+            value: 2,
+            child: Text(S.of(context).chatMessageActionForward),
+          ),
+      ],
+    );
+  }
+
+  void _showOptionDialog(BuildContext context, CollectMessage message) {
+    showAdaptiveChoose<int>(
+      context: context,
+      items: [
+        AdaptiveChooseItem(
+          label: S.of(context).chatMessageActionDelete,
+          value: 1,
+        ),
+        if (message.nimMessage?.messageType == NIMMessageType.text)
+          AdaptiveChooseItem(
+            label: S.of(context).chatMessageActionCopy,
+            value: 3,
+          ),
+        if (message.nimMessage?.messageType != NIMMessageType.audio)
+          AdaptiveChooseItem(
+            label: S.of(context).chatMessageActionForward,
+            value: 2,
+          ),
+      ],
+    ).then((value) async {
       if (value == 1) {
         if (!await haveConnectivity()) {
           return;
         }
         showCommonDialog(
-                context: context,
-                title: S.of().chatMessageActionDelete,
-                content: S.of().chatCollectionDeleteConfirm)
-            .then((value) {
+          context: context,
+          title: S.of().chatMessageActionDelete,
+          content: S.of().chatCollectionDeleteConfirm,
+        ).then((value) {
           if (value ?? false)
-            ChatMessageRepo.removeCollection([message.collection!])
-                .then((result) {
+            ChatMessageRepo.removeCollection([message.collection!]).then((
+              result,
+            ) {
               if (result.isSuccess) {
                 setState(() {
                   _historyMessages.remove(message);
@@ -348,7 +380,7 @@ class ChatCollectionMessageListPageState
       } else if (value == 3) {
         if (mounted) {
           Clipboard.setData(ClipboardData(text: message.nimMessage!.text!));
-          Fluttertoast.showToast(msg: S.of().chatMessageCopySuccess);
+          ChatUIToast.show(S.of().chatMessageCopySuccess);
         }
       }
     });
@@ -377,12 +409,14 @@ class ChatCollectionMessageListPageState
         } else {
           return Container(
             decoration: BoxDecoration(
-                border: Border.all(color: '#F0F0F0'.toColor()),
-                borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    topRight: Radius.circular(12),
-                    bottomLeft: Radius.circular(12),
-                    bottomRight: Radius.circular(12))),
+              border: Border.all(color: '#F0F0F0'.toColor()),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+                bottomLeft: Radius.circular(12),
+                bottomRight: Radius.circular(12),
+              ),
+            ),
             child: ChatKitMessageAudioItem(
               message: message,
               showDirection: true,
@@ -453,11 +487,12 @@ class ChatCollectionMessageListPageState
               return messageItemBuilder!.mergedMessageBuilder!.call(message);
             } else {
               return ChatKitMessageMergedItem(
-                  message: message,
-                  mergedMessage: mergedMessage,
-                  chatUIConfig: ChatKitClient.instance.chatUIConfig,
-                  showMargin: false,
-                  diffDirection: false);
+                message: message,
+                mergedMessage: mergedMessage,
+                chatUIConfig: ChatKitClient.instance.chatUIConfig,
+                showMargin: false,
+                diffDirection: false,
+              );
             }
           } else if (multiLineTitle != null) {
             return ChatKitMessageMultiLineItem(
@@ -481,8 +516,9 @@ class ChatCollectionMessageListPageState
         }
         if (messageItemBuilder?.extendBuilder != null) {
           if (messageItemBuilder?.extendBuilder![message.messageType] != null) {
-            return messageItemBuilder!
-                .extendBuilder![message.messageType]!(message);
+            return messageItemBuilder!.extendBuilder![message.messageType]!(
+              message,
+            );
           }
         }
         return ChatKitMessageNonsupportItem();

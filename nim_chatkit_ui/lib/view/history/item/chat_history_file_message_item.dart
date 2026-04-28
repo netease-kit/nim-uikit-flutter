@@ -5,17 +5,16 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit/repo/chat_service_observer_repo.dart';
 import 'package:nim_chatkit_ui/media/audio_player.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:open_filex/open_filex.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:yunxin_alog/yunxin_alog.dart';
 
 import '../../../chat_kit_client.dart';
 import '../../../helper/text_utils.dart';
@@ -135,16 +134,74 @@ const support_type_map_android = {
   "xml": "text/plain",
   "z": "application/x-compress",
   "zip": "application/x-zip-compressed",
-  "": "*/*"
+  "": "*/*",
 };
+
+/// 跨平台通用 MIME type 映射（macOS/iOS/Windows 使用）
+const _support_type_map = {
+  "3gp": "video/3gpp",
+  "mp4": "video/mp4",
+  "m4v": "video/x-m4v",
+  "mov": "video/quicktime",
+  "avi": "video/x-msvideo",
+  "wmv": "video/x-ms-wmv",
+  "mkv": "video/x-matroska",
+  "flv": "video/x-flv",
+  "mpeg": "video/mpeg",
+  "mpg": "video/mpeg",
+  "rmvb": "audio/x-pn-realaudio",
+  "rm": "audio/x-pn-realaudio",
+  "asf": "video/x-ms-asf",
+  "f4v": "video/mp4",
+  "mp3": "audio/mpeg",
+  "aac": "audio/aac",
+  "wav": "audio/x-wav",
+  "wma": "audio/x-ms-wma",
+  "flac": "audio/flac",
+  "ogg": "audio/ogg",
+  "m4a": "audio/mp4",
+  "jpeg": "image/jpeg",
+  "jpg": "image/jpeg",
+  "png": "image/png",
+  "gif": "image/gif",
+  "bmp": "image/bmp",
+  "tiff": "image/tiff",
+  "pdf": "application/pdf",
+  "doc": "application/msword",
+  "docx":
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "xls": "application/vnd.ms-excel",
+  "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "ppt": "application/vnd.ms-powerpoint",
+  "pptx":
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "txt": "text/plain",
+  "html": "text/html",
+  "htm": "text/html",
+  "zip": "application/zip",
+  "rar": "application/x-rar-compressed",
+  "7z": "application/x-7z-compressed",
+  "tar": "application/x-tar",
+  "gz": "application/x-gzip",
+};
+
+/// 根据文件扩展名获取 MIME type（非 Android 平台使用）
+String? _getMimeType(String? ext) {
+  if (ext == null || ext.isEmpty) return null;
+  final lowerExt =
+      ext.startsWith('.') ? ext.substring(1).toLowerCase() : ext.toLowerCase();
+  return _support_type_map[lowerExt];
+}
 
 class ChatHistoryFileMessageItem extends StatefulWidget {
   final NIMMessage message;
   final Widget? trailing;
 
-  const ChatHistoryFileMessageItem(
-      {Key? key, required this.message, this.trailing})
-      : super(key: key);
+  const ChatHistoryFileMessageItem({
+    Key? key,
+    required this.message,
+    this.trailing,
+  }) : super(key: key);
 
   @override
   State<StatefulWidget> createState() => _ChatHistoryFileMessageState();
@@ -177,11 +234,14 @@ class _ChatHistoryFileMessageState extends State<ChatHistoryFileMessageItem> {
     super.initState();
 
     processStreamSub =
-        ChatServiceObserverRepo.observeAttachmentProgress().listen((event) {
+        ChatServiceObserverRepo.observeAttachmentProgress().listen((
+      event,
+    ) {
       Alog.d(
-          tag: 'Download file',
-          content:
-              'observeAttachmentProgress = ${event.downloadParam?.messageClientId} progress = ${event.progress}');
+        tag: 'Download file',
+        content:
+            'observeAttachmentProgress = ${event.downloadParam?.messageClientId} progress = ${event.progress}',
+      );
       if (event.downloadParam?.messageClientId ==
           widget.message.messageClientId) {
         processValue = ((event.progress ?? 0) / 100).toDouble();
@@ -219,10 +279,7 @@ class _ChatHistoryFileMessageState extends State<ChatHistoryFileMessageItem> {
   List<Widget> _getProcessArray() {
     return processVisible
         ? [
-            SvgPicture.asset(
-              _getIcon(),
-              package: kPackage,
-            ),
+            SvgPicture.asset(_getIcon(), package: kPackage),
             Container(color: "#66000000".toColor()),
             Positioned(
               left: 11,
@@ -247,18 +304,15 @@ class _ChatHistoryFileMessageState extends State<ChatHistoryFileMessageItem> {
               ),
             ),
           ]
-        : [
-            SvgPicture.asset(
-              _getIcon(),
-              package: kPackage,
-            )
-          ];
+        : [SvgPicture.asset(_getIcon(), package: kPackage)];
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () async {
+        // 桌面/Web 端：左键点击无反应
+        if (ChatKitUtils.isDesktopOrWeb) return;
         if (filePath?.isNotEmpty != true) {
           filePath = attachment.path ?? '';
         }
@@ -271,73 +325,91 @@ class _ChatHistoryFileMessageState extends State<ChatHistoryFileMessageItem> {
             messageClientId: widget.message.messageClientId,
           );
           Alog.d(
-              tag: 'Download file',
-              content: 'messageClientId = ${widget.message.messageClientId}');
+            tag: 'Download file',
+            content: 'messageClientId = ${widget.message.messageClientId}',
+          );
           ChatMessageRepo.downloadAttachment(params).then((result) {
             filePath = result.data;
             processValue = 1;
             processVisible = false;
             setState(() {});
             Alog.d(
-                tag: 'ChatHistoryFileMessageItem',
-                content: 'downloadAttachment result is $result');
+              tag: 'ChatHistoryFileMessageItem',
+              content: 'downloadAttachment result is $result',
+            );
           });
         } else {
           if (_needAudioFocus()) {
             ChatAudioPlayer.instance.stopAll();
           }
-          if (Platform.isAndroid) {
-            OpenFilex.open(filePath!,
-                type: support_type_map_android[attachment.ext?.toLowerCase()]);
+          if (!kIsWeb && Platform.isAndroid) {
+            OpenFilex.open(
+              filePath!,
+              type: support_type_map_android[attachment.ext?.toLowerCase()],
+            );
           } else {
-            OpenFilex.open(filePath!);
+            final mimeType = _getMimeType(attachment.ext);
+            final result = await OpenFilex.open(filePath!, type: mimeType);
+            if (result.type != ResultType.done) {
+              if (!kIsWeb && Platform.isMacOS) {
+                // macOS 打开失败时，用 Finder 显示文件夹，避免系统用文本编辑器打开二进制文件
+                final dirPath = File(filePath!).parent.path;
+                await Process.run('open', [dirPath]);
+              } else if (!kIsWeb && Platform.isWindows) {
+                final dirPath = File(filePath!).parent.path;
+                OpenFilex.open(dirPath);
+              }
+            }
           }
         }
       },
       child: Container(
-          padding:
-              const EdgeInsets.only(left: 12, top: 10, right: 8, bottom: 10),
-          decoration: BoxDecoration(
-              color: '#F4F4F4'.toColor(),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: CommonColors.color_dbe0e8, width: 0.5)),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 32,
-                height: 32,
-                child: Stack(
-                  children: _getProcessArray(),
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(left: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      getSingleMiddleEllipsisText(
-                        attachment.name,
-                        style: TextStyle(
-                            fontSize: 14, color: CommonColors.color_333333),
+        padding: const EdgeInsets.only(left: 12, top: 10, right: 8, bottom: 10),
+        decoration: BoxDecoration(
+          color: '#F4F4F4'.toColor(),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: CommonColors.color_dbe0e8, width: 0.5),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 32,
+              height: 32,
+              child: Stack(children: _getProcessArray()),
+            ),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(left: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    getSingleMiddleEllipsisText(
+                      attachment.name,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: CommonColors.color_333333,
                       ),
-                      Padding(
-                        padding: EdgeInsets.only(top: 4),
-                        child: Text(
-                          _getSizeFormat(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                              fontSize: 10, color: CommonColors.color_999999),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(top: 4),
+                      child: Text(
+                        _getSizeFormat(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: CommonColors.color_999999,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-              if (widget.trailing != null) widget.trailing!,
-            ],
-          )),
+            ),
+            if (widget.trailing != null) widget.trailing!,
+          ],
+        ),
+      ),
     );
   }
 }

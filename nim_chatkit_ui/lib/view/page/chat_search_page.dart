@@ -34,32 +34,25 @@ class ChatSearchResult extends StatelessWidget {
 
   final String teamId;
 
-  ChatSearchResult(
-      {this.searchResult,
-      required this.keyword,
-      Key? key,
-      required this.teamId})
-      : super(key: key);
+  ChatSearchResult({
+    this.searchResult,
+    required this.keyword,
+    Key? key,
+    required this.teamId,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return searchResult == null || searchResult?.isEmpty == true
         ? Column(
             children: [
-              const SizedBox(
-                height: 68,
-              ),
-              SvgPicture.asset(
-                'images/ic_list_empty.svg',
-                package: kPackage,
-              ),
-              const SizedBox(
-                height: 18,
-              ),
+              const SizedBox(height: 68),
+              SvgPicture.asset('images/ic_list_empty.svg', package: kPackage),
+              const SizedBox(height: 18),
               Text(
                 S.of(context).messageSearchEmpty,
                 style: TextStyle(color: Color(0xffb3b7bc), fontSize: 14),
-              )
+              ),
             ],
           )
         : ListView.builder(
@@ -73,12 +66,16 @@ class ChatSearchResult extends StatelessWidget {
                           .teamConversationId(teamId))
                       .data!;
                   goToChatAndKeepHome(
-                      context, conversationId, NIMConversationType.team,
-                      message: item.nimMessage);
+                    context,
+                    conversationId,
+                    NIMConversationType.team,
+                    message: item.nimMessage,
+                  );
                 },
                 child: SearchItem(item, keyword),
               );
-            });
+            },
+          );
   }
 }
 
@@ -96,20 +93,22 @@ class _ChatSearchPageState extends State<ChatSearchPage> {
           return Container();
         } else {
           return FutureBuilder<List<ChatMessage>?>(
-              future: ChatMessageRepo.searchMessage(
-                  keyword, widget.teamId, NIMConversationType.team),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.done) {
-                  return ChatSearchResult(
-                    keyword: keyword,
-                    teamId: widget.teamId,
-                    searchResult: snapshot.data,
-                  );
-                }
-                return Center(
-                  child: CircularProgressIndicator(),
+            future: ChatMessageRepo.searchMessage(
+              keyword,
+              widget.teamId,
+              NIMConversationType.team,
+            ),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.done) {
+                return ChatSearchResult(
+                  keyword: keyword,
+                  teamId: widget.teamId,
+                  searchResult: snapshot.data,
                 );
-              });
+              }
+              return Center(child: CircularProgressIndicator());
+            },
+          );
         }
       },
     );
@@ -127,9 +126,11 @@ class SearchItem extends StatelessWidget {
     if (message.nimMessage.conversationType == NIMConversationType.p2p) {
       return message.getNickName();
     } else {
-      var teamId = (await NimCore.instance.conversationIdUtil
-              .conversationTargetId(message.nimMessage.conversationId!))
-          .data!;
+      var teamId =
+          (await NimCore.instance.conversationIdUtil.conversationTargetId(
+        message.nimMessage.conversationId!,
+      ))
+              .data!;
       return getUserNickInTeam(teamId, message.nimMessage.senderId!);
     }
   }
@@ -168,32 +169,36 @@ class SearchItem extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(right: 90),
                   child: FutureBuilder<String>(
-                      future: _getUserName(),
-                      builder: (context, snap) {
-                        return Text(
-                          snap.data ?? '',
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                          style: const TextStyle(
-                              fontSize: 16, color: CommonColors.color_333333),
-                        );
-                      }),
+                    future: _getUserName(),
+                    builder: (context, snap) {
+                      return Text(
+                        snap.data ?? '',
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: CommonColors.color_333333,
+                        ),
+                      );
+                    },
+                  ),
                 ),
-                const SizedBox(
-                  height: 6,
-                ),
+                const SizedBox(height: 6),
                 _hitWidget(message.nimMessage.text ?? ''),
               ],
             ),
           ),
           Positioned(
-              right: 0,
-              top: 17,
-              child: Text(
-                message.nimMessage.createTime!.formatDateTime(),
-                style: const TextStyle(
-                    fontSize: 12, color: CommonColors.color_cccccc),
-              )),
+            right: 0,
+            top: 17,
+            child: Text(
+              message.nimMessage.createTime!.formatDateTime(),
+              style: const TextStyle(
+                fontSize: 12,
+                color: CommonColors.color_cccccc,
+              ),
+            ),
+          ),
         ],
       ),
     );

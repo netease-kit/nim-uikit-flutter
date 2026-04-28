@@ -4,6 +4,7 @@
 
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,28 +14,34 @@ import 'package:im_demo/l10n/S.dart';
 import 'package:im_demo/src/home/home_page.dart';
 import 'package:im_demo/src/home/splash_page.dart';
 import 'package:im_demo/src/mine/user_info_page.dart';
+import 'package:netease_callkit_ui/ne_callkit_ui.dart';
+import 'package:netease_common_ui/base/default_language.dart';
 import 'package:netease_common_ui/common_ui.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit/manager/ai_user_manager.dart';
+import 'package:nim_chatkit/repo/config_repo.dart';
 import 'package:nim_chatkit/router/imkit_router.dart';
 import 'package:nim_chatkit/router/imkit_router_constants.dart';
+import 'package:nim_chatkit/router/imkit_router_factory.dart';
+import 'package:nim_chatkit/utils/toast_utils.dart';
 import 'package:nim_chatkit_callkit/nim_chatkit_callkit.dart';
 // import 'package:nim_chatkit_location/chat_kit_location.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_contactkit_ui/contact_kit_client.dart';
 import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:nim_searchkit_ui/search_kit_client.dart';
 import 'package:nim_teamkit_ui/team_kit_client.dart';
 import 'package:provider/provider.dart';
-import 'package:nim_chatkit/manager/ai_user_manager.dart';
-import 'package:nim_core_v2/nim_core.dart';
-import 'package:netease_common_ui/base/default_language.dart';
-import 'package:nim_chatkit/repo/config_repo.dart';
-import 'package:netease_callkit_ui/ne_callkit_ui.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(statusBarColor: Colors.transparent));
+    const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
+  );
+
   // WidgetsFlutterBinding.ensureInitialized().addPostFrameCallback((timeStamp) {
   //   //初始化位置消息插件
   //   ChatKitLocation.instance.init(
@@ -68,7 +75,12 @@ class _MainAppState extends State<MainApp> {
     SearchKitClient.init();
 
     IMKitRouter.instance.registerRouter(
-        RouterConstants.PATH_MINE_INFO_PAGE, (context) => UserInfoPage());
+      RouterConstants.PATH_MINE_INFO_PAGE,
+      (context) => UserInfoPage(),
+    );
+
+    // 注册桌面/Web 端用户信息页面 Builder，供 gotoMineInfoPage 以 Dialog 形式弹出
+    setDesktopUserInfoBuilder(() => const UserInfoPage());
   }
 
   ///初始化AI数字人相关配置
@@ -98,19 +110,6 @@ class _MainAppState extends State<MainApp> {
 
   Uint8List? _deviceToken;
 
-  void _updateTokenIOS() {
-    if (Platform.isIOS) {
-      MethodChannel(channelName).setMethodCallHandler((call) async {
-        if (call.method == 'updateAPNsToken') {
-          setState(() {
-            _deviceToken = call.arguments as Uint8List;
-          });
-        }
-        return null;
-      });
-    }
-  }
-
   ///设置默认的语言，不设置则根据系统语言
   void _setDefaultLanguage() async {
     CommonUIDefaultLanguage.commonDefaultLanguage =
@@ -121,59 +120,75 @@ class _MainAppState extends State<MainApp> {
   void initState() {
     super.initState();
     _setDefaultLanguage();
-    _updateTokenIOS();
     _initPlugins();
     _initAIUser();
     GestureBinding.instance.resamplingEnabled = true;
   }
 
+  Widget _buildMaterialApp(Widget home) {
+    return MaterialApp(
+      navigatorKey: ChatUIToast.navigatorKey,
+      onGenerateTitle: (BuildContext context) => S.of(context).appName,
+      localizationsDelegates: [
+        S.delegate,
+        CommonUILocalizations.delegate,
+        ConversationKitClient.delegate,
+        ChatKitClient.delegate,
+        ContactKitClient.delegate,
+        TeamKitClient.delegate,
+        SearchKitClient.delegate,
+        ChatKitCall.delegate,
+        NECallKitUI.delegate,
+        ...GlobalMaterialLocalizations.delegates,
+      ],
+      navigatorObservers: [
+        IMKitRouter.instance.routeObserver,
+        NECallKitUI.navigatorObserver,
+      ],
+      supportedLocales: IMKitClient.supportedLocales,
+      theme: ThemeData(
+        primaryColor: CommonColors.color_337eff,
+        pageTransitionsTheme: PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          },
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          elevation: 1,
+          iconTheme: IconThemeData(color: CommonColors.color_333333),
+          titleTextStyle: TextStyle(
+            fontSize: 16,
+            color: CommonColors.color_333333,
+          ),
+          systemOverlayStyle: SystemUiOverlayStyle.dark,
+        ),
+        useMaterial3: false,
+      ),
+      routes: IMKitRouter.instance.routes,
+      home: home,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final home = SplashPage(deviceToken: _deviceToken);
+
+    // 桌面端/Web 不使用 ScreenUtil 缩放，避免基于移动端设计尺寸的缩放导致 UI 异常
+    if (ChatKitUtils.isDesktopOrWeb) {
+      return _buildMaterialApp(home);
+    }
+
+    // 移动端保持 ScreenUtil 缩放行为
     return ScreenUtilInit(
       designSize: const Size(375, 812),
       minTextAdapt: true,
       useInheritedMediaQuery: true,
       builder: (context, child) {
-        return MaterialApp(
-          onGenerateTitle: (BuildContext context) => S.of(context).appName,
-          localizationsDelegates: [
-            S.delegate,
-            CommonUILocalizations.delegate,
-            ConversationKitClient.delegate,
-            ChatKitClient.delegate,
-            ContactKitClient.delegate,
-            TeamKitClient.delegate,
-            SearchKitClient.delegate,
-            ChatKitCall.delegate,
-            NECallKitUI.delegate,
-            ...GlobalMaterialLocalizations.delegates,
-          ],
-          navigatorObservers: [
-            IMKitRouter.instance.routeObserver,
-            NECallKitUI.navigatorObserver
-          ],
-          supportedLocales: IMKitClient.supportedLocales,
-          theme: ThemeData(
-              primaryColor: CommonColors.color_337eff,
-              pageTransitionsTheme: PageTransitionsTheme(builders: {
-                TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-                TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-              }),
-              appBarTheme: const AppBarTheme(
-                  backgroundColor: Colors.white,
-                  elevation: 1,
-                  iconTheme: IconThemeData(color: CommonColors.color_333333),
-                  titleTextStyle:
-                      TextStyle(fontSize: 16, color: CommonColors.color_333333),
-                  systemOverlayStyle: SystemUiOverlayStyle.dark),
-              useMaterial3: false),
-          routes: IMKitRouter.instance.routes,
-          home: child,
-        );
+        return _buildMaterialApp(child!);
       },
-      child: SplashPage(
-        deviceToken: _deviceToken,
-      ),
+      child: home,
     );
   }
 }

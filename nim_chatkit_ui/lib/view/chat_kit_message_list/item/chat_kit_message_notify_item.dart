@@ -13,9 +13,11 @@ class ChatKitMessageNotificationItem extends StatefulWidget {
 
   final NIMTeam? teamInfo;
 
-  const ChatKitMessageNotificationItem(
-      {Key? key, required this.message, this.teamInfo})
-      : super(key: key);
+  const ChatKitMessageNotificationItem({
+    Key? key,
+    required this.message,
+    this.teamInfo,
+  }) : super(key: key);
 
   @override
   State<StatefulWidget> createState() => ChatKitMessageNotificationState();
@@ -28,8 +30,10 @@ class ChatKitMessageNotificationState
     return Container(
       padding: const EdgeInsets.only(left: 16, top: 12, right: 16, bottom: 8),
       child: FutureBuilder<String>(
-        future: NotifyHelper.getNotificationText(widget.message,
-            teamInfo: widget.teamInfo),
+        future: NotifyHelper.getNotificationText(
+          widget.message,
+          teamInfo: widget.teamInfo,
+        ),
         builder: (context, snap) {
           return Text(
             snap.data ?? '',

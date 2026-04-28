@@ -4,7 +4,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:netease_common_ui/base/base_state.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
@@ -15,6 +14,7 @@ import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_chatkit/service_locator.dart';
 import 'package:nim_chatkit/services/login/im_login_service.dart';
 import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
+import 'package:nim_chatkit/utils/toast_utils.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:nim_teamkit_ui/view/pages/team_kit_member_list_page.dart';
 import 'package:provider/provider.dart';
@@ -56,16 +56,20 @@ class TeamKitManagerListPageState extends State<TeamKitManagerListPage> {
         var memberList = context
             .watch<TeamSettingViewModel>()
             .userInfoData
-            ?.where((e) =>
-                e.teamInfo.memberRole == NIMTeamMemberRole.memberRoleManager)
+            ?.where(
+              (e) =>
+                  e.teamInfo.memberRole == NIMTeamMemberRole.memberRoleManager,
+            )
             .toList();
         memberList?.sort(
-            (a, b) => a.teamInfo.joinTime.compareTo(b.teamInfo.joinTime));
+          (a, b) => a.teamInfo.joinTime.compareTo(b.teamInfo.joinTime),
+        );
         return TransparentScaffold(
           title: S.of(context).teamManagers,
           appBarBackgroundColor: Colors.white,
-          iconTheme:
-              Theme.of(context).primaryIconTheme.copyWith(color: Colors.grey),
+          iconTheme: Theme.of(
+            context,
+          ).primaryIconTheme.copyWith(color: Colors.grey),
           elevation: 0,
           centerTitle: true,
           body: Container(
@@ -81,18 +85,21 @@ class TeamKitManagerListPageState extends State<TeamKitManagerListPage> {
                   trailing: const Icon(Icons.keyboard_arrow_right_outlined),
                   onTap: () {
                     Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => TeamKitMemberListPage(
-                                  tId: widget.tId,
-                                  showOwnerAndManager: false,
-                                  isMultiSelectModel: true,
-                                  showAIMember: false,
-                                ))).then((value) {
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TeamKitMemberListPage(
+                          tId: widget.tId,
+                          showOwnerAndManager: false,
+                          isMultiSelectModel: true,
+                          showAIMember: false,
+                        ),
+                      ),
+                    ).then((value) {
                       if (value is List<String>) {
-                        context
-                            .read<TeamSettingViewModel>()
-                            .addTeamManager(widget.tId, value);
+                        context.read<TeamSettingViewModel>().addTeamManager(
+                              widget.tId,
+                              value,
+                            );
                       }
                     });
                   },
@@ -100,17 +107,16 @@ class TeamKitManagerListPageState extends State<TeamKitManagerListPage> {
                 (memberList?.length ?? 0) > 0
                     ? Expanded(
                         child: ListView.builder(
-                            itemCount: memberList?.length ?? 0,
-                            itemBuilder: (context, index) {
-                              var user = memberList?[index];
-                              return TeamMemberListItem(teamMember: user!);
-                            }),
+                          itemCount: memberList?.length ?? 0,
+                          itemBuilder: (context, index) {
+                            var user = memberList?[index];
+                            return TeamMemberListItem(teamMember: user!);
+                          },
+                        ),
                       )
                     : Column(
                         children: [
-                          SizedBox(
-                            height: 170,
-                          ),
+                          SizedBox(height: 170),
                           SvgPicture.asset(
                             'images/ic_member_empty.svg',
                             package: kPackage,
@@ -120,12 +126,13 @@ class TeamKitManagerListPageState extends State<TeamKitManagerListPage> {
                             child: Text(
                               S.of(context).teamManagerEmpty,
                               style: TextStyle(
-                                  color: CommonColors.color_b3b7bc,
-                                  fontSize: 14),
+                                color: CommonColors.color_b3b7bc,
+                                fontSize: 14,
+                              ),
                             ),
                           ),
                         ],
-                      )
+                      ),
               ],
             ),
           ),
@@ -147,7 +154,10 @@ class TeamMemberListItem extends StatefulWidget {
 
 class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
   void _showRemoveConfirmDialog(
-      BuildContext context, String tid, String account) {
+    BuildContext context,
+    String tid,
+    String account,
+  ) {
     showCommonDialog(
       context: context,
       title: S.of(context).teamRemoveConfirm,
@@ -162,8 +172,9 @@ class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
               .removeTeamManager(tid, account)
               .then((value) {
             if (!value.isSuccess) {
-              Fluttertoast.showToast(
-                  msg: S.of(context).teamManagerRemoveFailed);
+              ChatUIToast.show(
+                S.of(context).teamManagerRemoveFailed,
+              );
             }
           });
         }
@@ -190,10 +201,13 @@ class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
               width: 42,
               height: 42,
               avatar: widget.teamMember.getAvatar(),
-              name: widget.teamMember
-                  .getName(needAlias: false, needTeamNick: false),
+              name: widget.teamMember.getName(
+                needAlias: false,
+                needTeamNick: false,
+              ),
               bgCode: AvatarColor.avatarColor(
-                  content: widget.teamMember.teamInfo.accountId),
+                content: widget.teamMember.teamInfo.accountId,
+              ),
             ),
             const Padding(padding: EdgeInsets.symmetric(horizontal: 7)),
             Expanded(
@@ -209,16 +223,20 @@ class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
               TextButton(
                 onPressed: () {
                   _showRemoveConfirmDialog(
-                      context,
-                      widget.teamMember.teamInfo.teamId,
-                      widget.teamMember.userInfo!.accountId!);
+                    context,
+                    widget.teamMember.teamInfo.teamId,
+                    widget.teamMember.userInfo!.accountId!,
+                  );
                 },
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
-                      border: Border.all(color: '#E6605C'.toColor(), width: 1),
-                      borderRadius: BorderRadius.circular(10)),
+                    border: Border.all(color: '#E6605C'.toColor(), width: 1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   alignment: Alignment.center,
                   child: Text(
                     S.of(context).teamMemberRemove,

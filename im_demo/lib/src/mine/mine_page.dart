@@ -9,7 +9,6 @@ import 'package:flutter_svg/svg.dart';
 import 'package:im_demo/l10n/S.dart';
 import 'package:im_demo/src/mine/about.dart';
 import 'package:im_demo/src/mine/setting/mine_setting.dart';
-import 'package:im_demo/src/mine/user_info_page.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
@@ -92,11 +91,7 @@ class _MinePageState extends State<MinePage> {
           ),
           InkWell(
             onTap: () {
-              Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const UserInfoPage()))
-                  .then((value) {
+              gotoMineInfoPage(context).then((value) {
                 setState(() {});
               });
             },

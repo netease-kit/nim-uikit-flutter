@@ -8,12 +8,10 @@ import 'package:netease_common_ui/utils/text_search.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
 import 'package:nim_chatkit/model/recent_forward.dart';
+import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit/repo/contact_repo.dart';
 import 'package:nim_chatkit/repo/conversation_repo.dart';
 import 'package:nim_chatkit/repo/team_repo.dart';
-import 'package:nim_chatkit/service_locator.dart';
-import 'package:nim_chatkit/services/contact/contact_provider.dart';
-import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_core_v2/nim_core.dart';
 
 import '../model/forward/forward_selected_beam.dart';
@@ -71,8 +69,9 @@ class ChatForwardViewModel extends ChangeNotifier {
       return;
     }
     if (selected.type == NIMConversationType.team) {
-      final team = teamList
-          .firstWhereOrNull((element) => element.teamId == selected.sessionId);
+      final team = teamList.firstWhereOrNull(
+        (element) => element.teamId == selected.sessionId,
+      );
       selected.count = team?.memberCount;
     }
     selectedList.add(selected);
@@ -98,17 +97,25 @@ class ChatForwardViewModel extends ChangeNotifier {
         .toList();
 
     final conversationResult = await ConversationRepo.getConversationList(
-        conversationOffset, conversationLimit);
+      conversationOffset,
+      conversationLimit,
+    );
 
     conversationList = conversationResult?.conversationList ?? [];
 
     conversationShowList = conversationList
-        .where((conversation) =>
-            filterSessions?.contains(ChatKitUtils.getConversationTargetId(
-                conversation.conversationId)) !=
-            true)
+        .where(
+          (conversation) =>
+              filterSessions?.contains(
+                ChatKitUtils.getConversationTargetId(
+                  conversation.conversationId,
+                ),
+              ) !=
+              true,
+        )
         .map(
-            (conversation) => SearchResult<NIMConversation>(data: conversation))
+          (conversation) => SearchResult<NIMConversation>(data: conversation),
+        )
         .toList();
 
     conversationOffset = conversationResult?.offset ?? 0;
@@ -124,8 +131,9 @@ class ChatForwardViewModel extends ChangeNotifier {
 
   int? getConversationCount(String conversationId) {
     final targetId = ChatKitUtils.getConversationTargetId(conversationId);
-    final team =
-        teamList.firstWhereOrNull((element) => element.teamId == targetId);
+    final team = teamList.firstWhereOrNull(
+      (element) => element.teamId == targetId,
+    );
     if (team != null) {
       return team.memberCount;
     }
@@ -136,8 +144,10 @@ class ChatForwardViewModel extends ChangeNotifier {
   void searchContactByKeyword(String? keyword) {
     if (keyword?.isNotEmpty != true) {
       contactShowList = contactList
-          .where((contact) =>
-              filterSessions?.contains(contact.user.accountId) != true)
+          .where(
+            (contact) =>
+                filterSessions?.contains(contact.user.accountId) != true,
+          )
           .map((contact) => SearchResult<ContactInfo>(data: contact))
           .toList();
       notifyListeners();
@@ -178,12 +188,18 @@ class ChatForwardViewModel extends ChangeNotifier {
   void searchConversationByKeyword(String? keyword) {
     if (keyword?.isNotEmpty != true) {
       conversationShowList = conversationList
-          .where((conversation) =>
-              filterSessions?.contains(ChatKitUtils.getConversationTargetId(
-                  conversation.conversationId)) !=
-              true)
-          .map((conversation) =>
-              SearchResult<NIMConversation>(data: conversation))
+          .where(
+            (conversation) =>
+                filterSessions?.contains(
+                  ChatKitUtils.getConversationTargetId(
+                    conversation.conversationId,
+                  ),
+                ) !=
+                true,
+          )
+          .map(
+            (conversation) => SearchResult<NIMConversation>(data: conversation),
+          )
           .toList();
       notifyListeners();
       return;
@@ -191,12 +207,14 @@ class ChatForwardViewModel extends ChangeNotifier {
     conversationShowList.clear();
     for (NIMConversation conversation in conversationList) {
       final res = TextSearcher.search(
-          conversation.name ??
-              ChatKitUtils.getConversationTargetId(conversation.conversationId),
-          keyword!);
+        conversation.name ??
+            ChatKitUtils.getConversationTargetId(conversation.conversationId),
+        keyword!,
+      );
       if (res != null) {
-        conversationShowList
-            .add(SearchResult(data: conversation, searchInfo: res));
+        conversationShowList.add(
+          SearchResult(data: conversation, searchInfo: res),
+        );
       }
     }
     notifyListeners();
@@ -206,6 +224,7 @@ class ChatForwardViewModel extends ChangeNotifier {
   void getContactList(String? keyword) async {
     if (contactList.isEmpty) {
       contactList = await ContactRepo.getContactList(userCache: true);
+      contactList.removeWhere((e) => e.isInBlack == true);
       searchContactByKeyword(keyword);
       return;
     }

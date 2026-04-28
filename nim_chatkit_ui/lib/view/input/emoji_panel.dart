@@ -11,12 +11,12 @@ import '../../chat_kit_client.dart';
 import 'emoji/emoji.dart';
 
 class EmojiPanel extends StatefulWidget {
-  const EmojiPanel(
-      {Key? key,
-      required this.onEmojiSelected,
-      required this.onEmojiSendClick,
-      required this.onEmojiDelete})
-      : super(key: key);
+  const EmojiPanel({
+    Key? key,
+    required this.onEmojiSelected,
+    required this.onEmojiSendClick,
+    required this.onEmojiDelete,
+  }) : super(key: key);
 
   final ValueChanged<String> onEmojiSelected;
   final Function() onEmojiDelete;
@@ -38,25 +38,21 @@ class _EmojiPanelState extends State<EmojiPanel> {
       int end = start + _pageSize > emojiData.length
           ? emojiData.length
           : start + _pageSize;
-      pages.add(EmojiPage(
-        start: start,
-        end: end,
-        emojiTap: widget.onEmojiSelected,
-        deleteTap: widget.onEmojiDelete,
-      ));
+      pages.add(
+        EmojiPage(
+          start: start,
+          end: end,
+          emojiTap: widget.onEmojiSelected,
+          deleteTap: widget.onEmojiDelete,
+        ),
+      );
     }
 
     return Column(
       children: [
-        const Divider(
-          height: 1,
-          color: Color(0xffE9EAEB),
-        ),
+        const Divider(height: 1, color: Color(0xffE9EAEB)),
         Expanded(
-          child: PageView(
-            children: pages,
-            allowImplicitScrolling: true,
-          ),
+          child: PageView(children: pages, allowImplicitScrolling: true),
         ),
         Container(
           alignment: Alignment.topRight,
@@ -82,13 +78,13 @@ class _EmojiPanelState extends State<EmojiPanel> {
 }
 
 class EmojiPage extends StatelessWidget {
-  const EmojiPage(
-      {Key? key,
-      required this.start,
-      required this.end,
-      required this.emojiTap,
-      required this.deleteTap})
-      : super(key: key);
+  const EmojiPage({
+    Key? key,
+    required this.start,
+    required this.end,
+    required this.emojiTap,
+    required this.deleteTap,
+  }) : super(key: key);
 
   final int start;
   final int end;
@@ -117,9 +113,7 @@ class EmojiPage extends StatelessWidget {
                   },
                   child: Container(
                     decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.transparent,
-                      ),
+                      border: Border.all(color: Colors.transparent),
                     ),
                     alignment: Alignment.center,
                     height: 30,
@@ -147,8 +141,8 @@ class EmojiPage extends StatelessWidget {
                       width: 20,
                     ),
                   ),
-                )
-              ]
+                ),
+              ],
             ],
           );
         },

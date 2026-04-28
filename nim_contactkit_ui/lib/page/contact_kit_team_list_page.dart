@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_contactkit_ui/page/viewmodel/team_list_viewmodel.dart';
 import 'package:nim_core_v2/nim_core.dart';
@@ -52,18 +53,20 @@ class _TeamListPageState extends State<ContactKitTeamListPage> {
             ),
             Expanded(
               child: Container(
-                  alignment: Alignment.centerLeft,
-                  padding: EdgeInsets.only(left: 12),
-                  child: Text(
-                    team.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        fontSize: widget.listConfig?.nameTextSize ?? 16,
-                        color: widget.listConfig?.nameTextColor ??
-                            CommonColors.color_333333),
-                  )),
-            )
+                alignment: Alignment.centerLeft,
+                padding: EdgeInsets.only(left: 12),
+                child: Text(
+                  team.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: widget.listConfig?.nameTextSize ?? 16,
+                    color: widget.listConfig?.nameTextColor ??
+                        CommonColors.color_333333,
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -81,22 +84,47 @@ class _TeamListPageState extends State<ContactKitTeamListPage> {
       builder: (context, child) {
         List<NIMTeam> teams =
             context.watch<TeamListViewModel>().teamList.toList();
+
+        final listBody = ListView.separated(
+          itemBuilder: (context, index) {
+            final team = teams[index];
+            return _buildItem(context, team);
+          },
+          itemCount: teams.length,
+          separatorBuilder: (BuildContext context, int index) =>
+              Divider(height: 1, color: '#F5F8FC'.toColor()),
+        );
+
+        // 桌面端：使用普通 Scaffold，无返回按钮
+        if (ChatKitUtils.isDesktopOrWeb) {
+          return Scaffold(
+            backgroundColor: Colors.white,
+            appBar: AppBar(
+              automaticallyImplyLeading: false,
+              title: Text(
+                S.of(context).contactTeam,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF333333),
+                ),
+              ),
+              centerTitle: false,
+              elevation: 0.5,
+              shadowColor: const Color(0xFFF5F8FC),
+              backgroundColor: Colors.white,
+            ),
+            body: listBody,
+          );
+        }
+
+        // 移动端：使用 TransparentScaffold，自带返回按钮
         return TransparentScaffold(
           backgroundColor: Colors.white,
           title: S.of(context).contactTeam,
           centerTitle: true,
           elevation: 0,
-          body: ListView.separated(
-            itemBuilder: (context, index) {
-              final team = teams[index];
-              return _buildItem(context, team);
-            },
-            itemCount: teams.length,
-            separatorBuilder: (BuildContext context, int index) => Divider(
-              height: 1,
-              color: '#F5F8FC'.toColor(),
-            ),
-          ),
+          body: listBody,
         );
       },
     );

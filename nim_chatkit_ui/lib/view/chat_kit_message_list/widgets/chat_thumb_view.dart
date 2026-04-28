@@ -11,15 +11,15 @@ import 'package:nim_chatkit_ui/helper/thumb_helper.dart';
 import 'package:nim_core_v2/nim_core.dart';
 
 class ChatThumbView extends StatefulWidget {
-  const ChatThumbView(
-      {Key? key,
-      required this.message,
-      required this.radius,
-      this.height,
-      this.width,
-      this.onTap,
-      this.thumbFromRemote = true})
-      : super(key: key);
+  const ChatThumbView({
+    Key? key,
+    required this.message,
+    required this.radius,
+    this.height,
+    this.width,
+    this.onTap,
+    this.thumbFromRemote = true,
+  }) : super(key: key);
 
   final NIMMessage message;
   final BorderRadius radius;
@@ -84,8 +84,9 @@ class _ChatThumbViewState extends State<ChatThumbView> {
       width: widget.width?.toDouble(),
       height: widget.height?.toDouble(),
       decoration: BoxDecoration(
-          border: Border.all(color: const Color(0xffe2e5e8), width: 1),
-          borderRadius: widget.radius),
+        border: Border.all(color: const Color(0xffe2e5e8), width: 1),
+        borderRadius: widget.radius,
+      ),
       child: ClipRRect(
         borderRadius: widget.radius,
         child: GestureDetector(
@@ -101,13 +102,15 @@ class _ChatThumbViewState extends State<ChatThumbView> {
   }
 
   Widget _networkImage(String url) {
-    return getImage(CachedNetworkImage(
-      imageUrl: url,
-      cacheKey: url,
-      placeholder: (context, url) => _placeHolder(_getImageRatio()),
-      fit: BoxFit.fitWidth,
-      fadeInDuration: const Duration(milliseconds: 0),
-    ));
+    return getImage(
+      CachedNetworkImage(
+        imageUrl: url,
+        cacheKey: url,
+        placeholder: (context, url) => _placeHolder(_getImageRatio()),
+        fit: BoxFit.fitWidth,
+        fadeInDuration: const Duration(milliseconds: 0),
+      ),
+    );
   }
 
   Widget _localImage(String path) {
@@ -115,12 +118,7 @@ class _ChatThumbViewState extends State<ChatThumbView> {
       alignment: _isSelf()
           ? AlignmentDirectional.topEnd
           : AlignmentDirectional.topStart,
-      children: [
-        getImage(Image.file(
-          File(path),
-          fit: BoxFit.fitWidth,
-        ))
-      ],
+      children: [getImage(Image.file(File(path), fit: BoxFit.fitWidth))],
     );
   }
 
@@ -169,8 +167,12 @@ class _ChatThumbViewState extends State<ChatThumbView> {
     if (widget.message.attachment is NIMMessageImageAttachment) {
       NIMMessageImageAttachment attachment =
           widget.message.attachment as NIMMessageImageAttachment;
-      var thumbUrl = ThumbHelper.makeImageThumbUrl(context,
-          attachment.url ?? '', attachment.width ?? 0, attachment.height ?? 0);
+      var thumbUrl = ThumbHelper.makeImageThumbUrl(
+        context,
+        attachment.url ?? '',
+        attachment.width ?? 0,
+        attachment.height ?? 0,
+      );
       return thumbUrl ?? "";
     }
     return "";

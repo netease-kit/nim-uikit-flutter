@@ -73,7 +73,9 @@ abstract class ChatKitCallClientLocalizations {
 
   static ChatKitCallClientLocalizations? of(BuildContext context) {
     return Localizations.of<ChatKitCallClientLocalizations>(
-        context, ChatKitCallClientLocalizations);
+      context,
+      ChatKitCallClientLocalizations,
+    );
   }
 
   static const LocalizationsDelegate<ChatKitCallClientLocalizations> delegate =
@@ -100,7 +102,7 @@ abstract class ChatKitCallClientLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
-    Locale('zh')
+    Locale('zh'),
   ];
 
   /// No description provided for @messageCancel.
@@ -201,7 +203,8 @@ class _ChatKitCallClientLocalizationsDelegate
   @override
   Future<ChatKitCallClientLocalizations> load(Locale locale) {
     return SynchronousFuture<ChatKitCallClientLocalizations>(
-        lookupChatKitCallClientLocalizations(locale));
+      lookupChatKitCallClientLocalizations(locale),
+    );
   }
 
   @override
@@ -213,7 +216,8 @@ class _ChatKitCallClientLocalizationsDelegate
 }
 
 ChatKitCallClientLocalizations lookupChatKitCallClientLocalizations(
-    Locale locale) {
+  Locale locale,
+) {
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
     case 'en':
@@ -223,8 +227,9 @@ ChatKitCallClientLocalizations lookupChatKitCallClientLocalizations(
   }
 
   throw FlutterError(
-      'ChatKitCallClientLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
+    'ChatKitCallClientLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
 }

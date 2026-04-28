@@ -4,6 +4,7 @@
 
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'conversation_kit_client_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -47,6 +48,9 @@ class ConversationKitClientLocalizationsZh
 
   @override
   String get addFriend => '添加好友';
+
+  @override
+  String get conversationSearchHint => '搜索好友或群组';
 
   @override
   String get addFriendSearchHint => '请输入账号';
@@ -107,4 +111,10 @@ class ConversationKitClientLocalizationsZh
 
   @override
   String get chatMessageBriefAudioCall => '[语音通话]';
+
+  @override
+  String get muteTitle => '开启免打扰';
+
+  @override
+  String get cancelMuteTitle => '取消免打扰';
 }

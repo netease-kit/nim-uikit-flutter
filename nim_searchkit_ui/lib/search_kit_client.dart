@@ -18,8 +18,10 @@ class SearchKitClient {
 
   static init() {
     // SearchKitClientRepo.init();
-    IMKitRouter.instance.registerRouter(RouterConstants.PATH_GLOBAL_SEARCH_PAGE,
-        (context) => const SearchKitGlobalSearchPage());
+    IMKitRouter.instance.registerRouter(
+      RouterConstants.PATH_GLOBAL_SEARCH_PAGE,
+      (context) => const SearchKitGlobalSearchPage(),
+    );
 
     XKitReporter().register(moduleName: 'SearchUIKit', moduleVersion: '10.0.0');
   }

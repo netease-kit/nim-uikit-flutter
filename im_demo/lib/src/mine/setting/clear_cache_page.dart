@@ -2,11 +2,11 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'package:flutter/material.dart';
 import 'package:netease_common_ui/ui/background.dart';
 import 'package:netease_common_ui/widgets/common_list_tile.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
-import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
+import 'package:nim_chatkit/utils/toast_utils.dart';
 
 import '../../../l10n/S.dart';
 
@@ -38,14 +38,16 @@ class _ClearCachePageState extends State<ClearCachePage> {
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: CardBackground(
           child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: ListTile.divideTiles(context: context, tiles: [
+            mainAxisSize: MainAxisSize.min,
+            children: ListTile.divideTiles(
+              context: context,
+              tiles: [
                 CommonListTile(
                   title: S.of(context).clearMessage,
                   trailingType: TrailingType.custom,
                   onTap: () {
                     // MiscRepo.clearMessageCache();
-                    Fluttertoast.showToast(msg: S.of(context).clearMessageTips);
+                    ChatUIToast.show(S.of(context).clearMessageTips);
                   },
                 ),
                 CommonListTile(
@@ -58,8 +60,10 @@ class _ClearCachePageState extends State<ClearCachePage> {
                       cacheSize = '0.00';
                     });
                   },
-                )
-              ]).toList()),
+                ),
+              ],
+            ).toList(),
+          ),
         ),
       ),
     );

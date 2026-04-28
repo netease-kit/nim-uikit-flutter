@@ -6,7 +6,7 @@ import Flutter
 import UIKit
 import UserNotifications
 
-@main
+@UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate {
     var isForeground = false
     

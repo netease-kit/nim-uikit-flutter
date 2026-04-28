@@ -19,13 +19,14 @@ class SelectedBeam {
 
   int? count;
 
-  SelectedBeam(
-      {required this.type,
-      this.conversationId,
-      this.sessionId,
-      this.name,
-      this.count,
-      this.avatar}) {
+  SelectedBeam({
+    required this.type,
+    this.conversationId,
+    this.sessionId,
+    this.name,
+    this.count,
+    this.avatar,
+  }) {
     if (conversationId == null && sessionId != null) {
       conversationId = ChatKitUtils.conversationId(sessionId!, type);
     } else if (sessionId == null && conversationId != null) {

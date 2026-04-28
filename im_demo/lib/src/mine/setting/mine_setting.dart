@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:im_demo/src/mine/setting/language_setting.dart';
 import 'package:im_demo/src/mine/setting/notify_setting_page.dart';
 import 'package:netease_common_ui/ui/background.dart';
@@ -12,6 +11,7 @@ import 'package:netease_common_ui/widgets/common_list_tile.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/repo/config_repo.dart';
+import 'package:nim_chatkit/utils/toast_utils.dart';
 
 import '../../../l10n/S.dart';
 
@@ -32,9 +32,7 @@ class _MineSettingPageState extends State<MineSettingPage> {
   bool enableCloudMessageSearch = false;
 
   Widget _divider() {
-    return const SizedBox(
-      height: 10,
-    );
+    return const SizedBox(height: 10);
   }
 
   initSwitchValue() async {
@@ -88,7 +86,7 @@ class _MineSettingPageState extends State<MineSettingPage> {
         switchValue: !enableCloudConversation,
         onSwitchChanged: (value) {
           ConfigRepo.updateEnableCloudConversations(!value);
-          Fluttertoast.showToast(msg: S.of(context).settingAndResetTips);
+          ChatUIToast.show(S.of(context).settingAndResetTips);
           setState(() {
             enableCloudConversation = !value;
           });
@@ -136,70 +134,80 @@ class _MineSettingPageState extends State<MineSettingPage> {
           children: [
             CardBackground(
               child: Column(
-                children: ListTile.divideTiles(context: context, tiles: [
-                  CommonListTile(
-                    title: S.of(context).settingNotify,
-                    trailingType: TrailingType.arrow,
-                    onTap: () {
-                      Navigator.push(
+                children: ListTile.divideTiles(
+                  context: context,
+                  tiles: [
+                    CommonListTile(
+                      title: S.of(context).settingNotify,
+                      trailingType: TrailingType.arrow,
+                      onTap: () {
+                        Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => const NotifySettingPage()));
-                    },
-                  ),
-                  // Visibility(
-                  //   visible: false,
-                  //   child: CommonListTile(
-                  //     title: S.of(context).settingClearCache,
-                  //     trailingType: TrailingType.arrow,
-                  //     onTap: () {
-                  //       Navigator.push(
-                  //           context,
-                  //           MaterialPageRoute(
-                  //               builder: (context) => const ClearCachePage()));
-                  //     },
-                  //   ),
-                  // ),
-                ]).toList(),
+                            builder: (context) => const NotifySettingPage(),
+                          ),
+                        );
+                      },
+                    ),
+                    // Visibility(
+                    //   visible: false,
+                    //   child: CommonListTile(
+                    //     title: S.of(context).settingClearCache,
+                    //     trailingType: TrailingType.arrow,
+                    //     onTap: () {
+                    //       Navigator.push(
+                    //           context,
+                    //           MaterialPageRoute(
+                    //               builder: (context) => const ClearCachePage()));
+                    //     },
+                    //   ),
+                    // ),
+                  ],
+                ).toList(),
               ),
             ),
             _divider(),
             CardBackground(
               child: Column(
-                children:
-                    ListTile.divideTiles(context: context, tiles: switchTiles)
-                        .toList(),
+                children: ListTile.divideTiles(
+                  context: context,
+                  tiles: switchTiles,
+                ).toList(),
               ),
             ),
             _divider(),
             CardBackground(
               child: Column(
-                children: ListTile.divideTiles(context: context, tiles: [
-                  CommonListTile(
-                    title: S.of(context).language,
-                    trailingType: TrailingType.arrow,
-                    onTap: () {
-                      Navigator.push(
+                children: ListTile.divideTiles(
+                  context: context,
+                  tiles: [
+                    CommonListTile(
+                      title: S.of(context).language,
+                      trailingType: TrailingType.arrow,
+                      onTap: () {
+                        Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) =>
-                                  const LanguageSettingPage()));
-                    },
-                  ),
-                  // Visibility(
-                  //   visible: false,
-                  //   child: CommonListTile(
-                  //     title: S.of(context).settingClearCache,
-                  //     trailingType: TrailingType.arrow,
-                  //     onTap: () {
-                  //       Navigator.push(
-                  //           context,
-                  //           MaterialPageRoute(
-                  //               builder: (context) => const ClearCachePage()));
-                  //     },
-                  //   ),
-                  // ),
-                ]).toList(),
+                            builder: (context) => const LanguageSettingPage(),
+                          ),
+                        );
+                      },
+                    ),
+                    // Visibility(
+                    //   visible: false,
+                    //   child: CommonListTile(
+                    //     title: S.of(context).settingClearCache,
+                    //     trailingType: TrailingType.arrow,
+                    //     onTap: () {
+                    //       Navigator.push(
+                    //           context,
+                    //           MaterialPageRoute(
+                    //               builder: (context) => const ClearCachePage()));
+                    //     },
+                    //   ),
+                    // ),
+                  ],
+                ).toList(),
               ),
             ),
             _divider(),
@@ -207,12 +215,12 @@ class _MineSettingPageState extends State<MineSettingPage> {
               child: InkWell(
                 onTap: () {
                   showCommonDialog(
-                          context: context,
-                          title: S.of(context).mineLogout,
-                          content: S.of(context).logoutDialogContent,
-                          navigateContent: S.of(context).logoutDialogDisagree,
-                          positiveContent: S.of(context).logoutDialogAgree)
-                      .then((value) {
+                    context: context,
+                    title: S.of(context).mineLogout,
+                    content: S.of(context).logoutDialogContent,
+                    navigateContent: S.of(context).logoutDialogDisagree,
+                    positiveContent: S.of(context).logoutDialogAgree,
+                  ).then((value) {
                     if (value ?? false) {
                       IMKitClient.logoutIM().then((value) {
                         if (value) {
@@ -227,8 +235,10 @@ class _MineSettingPageState extends State<MineSettingPage> {
                   alignment: Alignment.center,
                   child: Text(
                     S.of(context).mineLogout,
-                    style:
-                        const TextStyle(fontSize: 16, color: Color(0xffe6605c)),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Color(0xffe6605c),
+                    ),
                   ),
                 ),
               ),

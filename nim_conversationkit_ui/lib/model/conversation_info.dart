@@ -17,8 +17,9 @@ class ConversationInfo {
   bool isOnline = false;
 
   ConversationInfo(this.conversation) {
-    _targetId =
-        ChatKitUtils.getConversationTargetId(this.conversation.conversationId);
+    _targetId = ChatKitUtils.getConversationTargetId(
+      this.conversation.conversationId,
+    );
   }
 
   String get targetId {

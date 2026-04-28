@@ -2,6 +2,12 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:im_demo/l10n/S.dart';
+import 'package:intl/intl.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/background.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
@@ -9,15 +15,13 @@ import 'package:netease_common_ui/ui/photo.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/service_locator.dart';
 import 'package:nim_chatkit/services/login/im_login_service.dart';
 import 'package:nim_chatkit/services/user_info/user_info_provider.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:im_demo/l10n/S.dart';
+import 'package:nim_chatkit/utils/media_utils.dart';
+import 'package:nim_chatkit/utils/toast_utils.dart';
 import 'package:nim_core_v2/nim_core.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:flutter_svg/svg.dart';
 
 enum EditType { none, avatar, nick, gender, birthday, phone, email, sign }
 
@@ -55,9 +59,69 @@ class _UserInfoPageState extends State<UserInfoPage> {
           _backToPage();
         });
       } else {
-        Fluttertoast.showToast(msg: S.of(context).requestFail);
+        ChatUIToast.show(S.of(context).requestFail);
       }
     });
+  }
+
+  /// 桌面/Web 端生日选择器 —— 以固定宽度 Dialog 展示 CupertinoDatePicker，
+  /// 宽度与 UserInfoPage 弹框一致（480px），避免铺满整个应用。
+  void _showDesktopDatePicker(
+      BuildContext context, String? initTime, ValueChanged<String> onSelect) {
+    final DateFormat outputFormat = DateFormat('yyyy-MM-dd');
+    String pickTime = initTime?.isNotEmpty == true
+        ? initTime!
+        : outputFormat.format(DateTime.now());
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: SizedBox(
+            width: 480,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 标题栏：取消 / 确认
+                Row(
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: Text(S.of(context).cancel),
+                    ),
+                    const Expanded(child: SizedBox()),
+                    TextButton(
+                      onPressed: () {
+                        onSelect(pickTime);
+                        Navigator.pop(dialogContext);
+                      },
+                      child: Text(S.of(context).save),
+                    ),
+                  ],
+                ),
+                const Divider(height: 1, color: CommonColors.color_666666),
+                // 日期滚轮
+                SizedBox(
+                  height: 229,
+                  child: CupertinoDatePicker(
+                    mode: CupertinoDatePickerMode.date,
+                    minimumDate: DateTime(1900, 1, 1),
+                    maximumDate: DateTime.now(),
+                    initialDateTime:
+                        DateTime.tryParse(pickTime) ?? DateTime.now(),
+                    onDateTimeChanged: (dateTime) {
+                      pickTime = outputFormat.format(dateTime);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   _onEditClick(EditType type) async {
@@ -65,14 +129,18 @@ class _UserInfoPageState extends State<UserInfoPage> {
       return;
     }
     if (type == EditType.avatar) {
-      showPhotoSelector(context).then((path) async {
+      pickImageForPlatform(
+        context,
+        mobilePhotoSelector: (ctx) => showPhotoSelector(ctx),
+      ).then((path) async {
         if (path != null) {
           final fileParams = NIMUploadFileParams(filePath: path);
           final task = await NimCore.instance.storageService
               .createUploadFileTask(fileParams);
           if (task.isSuccess && task.data != null) {
-            final uploadUrl =
-                await NimCore.instance.storageService.uploadFile(task.data!);
+            final uploadUrl = await NimCore.instance.storageService.uploadFile(
+              task.data!,
+            );
             if (uploadUrl.isSuccess && uploadUrl.data?.isNotEmpty == true) {
               final updateParams = NIMUserUpdateParam(avatar: uploadUrl.data);
               _updateInfo(updateParams);
@@ -83,10 +151,17 @@ class _UserInfoPageState extends State<UserInfoPage> {
       return;
     }
     if (type == EditType.birthday) {
-      showDateTimePicker(context, userInfo.birthday, (time) {
-        final updateParams = NIMUserUpdateParam(birthday: time);
-        _updateInfo(updateParams);
-      });
+      if (ChatKitUtils.isDesktopOrWeb) {
+        _showDesktopDatePicker(context, userInfo.birthday, (time) {
+          final updateParams = NIMUserUpdateParam(birthday: time);
+          _updateInfo(updateParams);
+        });
+      } else {
+        showDateTimePicker(context, userInfo.birthday, (time) {
+          final updateParams = NIMUserUpdateParam(birthday: time);
+          _updateInfo(updateParams);
+        });
+      }
       return;
     }
     switch (type) {
@@ -196,8 +271,10 @@ class _UserInfoPageState extends State<UserInfoPage> {
   }
 
   Widget _editGender() {
-    TextStyle textStyle =
-        const TextStyle(fontSize: 16, color: CommonColors.color_333333);
+    TextStyle textStyle = const TextStyle(
+      fontSize: 16,
+      color: CommonColors.color_333333,
+    );
     _onGenderSelect(int genderEnum) {
       if (userInfo.gender == genderEnum) {
         return;
@@ -209,34 +286,31 @@ class _UserInfoPageState extends State<UserInfoPage> {
     return CardBackground(
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: ListTile.divideTiles(context: context, tiles: [
-          ListTile(
-            title: Text(
-              S.of(context).sexualMale,
-              style: textStyle,
+        children: ListTile.divideTiles(
+          context: context,
+          tiles: [
+            ListTile(
+              title: Text(S.of(context).sexualMale, style: textStyle),
+              trailing: userInfo.gender == male
+                  ? const Icon(
+                      Icons.check_rounded,
+                      color: CommonColors.color_337eff,
+                    )
+                  : null,
+              onTap: () => _onGenderSelect(male),
             ),
-            trailing: userInfo.gender == male
-                ? const Icon(
-                    Icons.check_rounded,
-                    color: CommonColors.color_337eff,
-                  )
-                : null,
-            onTap: () => _onGenderSelect(male),
-          ),
-          ListTile(
-            title: Text(
-              S.of(context).sexualFemale,
-              style: textStyle,
+            ListTile(
+              title: Text(S.of(context).sexualFemale, style: textStyle),
+              trailing: userInfo.gender == female
+                  ? const Icon(
+                      Icons.check_rounded,
+                      color: CommonColors.color_337eff,
+                    )
+                  : null,
+              onTap: () => _onGenderSelect(female),
             ),
-            trailing: userInfo.gender == female
-                ? const Icon(
-                    Icons.check_rounded,
-                    color: CommonColors.color_337eff,
-                  )
-                : null,
-            onTap: () => _onGenderSelect(female),
-          ),
-        ]).toList(),
+          ],
+        ).toList(),
       ),
     );
   }
@@ -264,18 +338,12 @@ class _UserInfoPageState extends State<UserInfoPage> {
     } else if (editType == EditType.gender) {
       body = _editGender();
     } else {
-      body = _PersonalInfoPage(
-        userInfo,
-        _onEditClick,
-      );
+      body = _PersonalInfoPage(userInfo, _onEditClick);
     }
     return TransparentScaffold(
       title: title.isEmpty ? S.of(context).userInfoTitle : title,
       leading: IconButton(
-        icon: const Icon(
-          Icons.arrow_back_ios_rounded,
-          size: 26,
-        ),
+        icon: const Icon(Icons.arrow_back_ios_rounded, size: 26),
         onPressed: () {
           if (editType != EditType.none) {
             _backToPage();
@@ -289,13 +357,16 @@ class _UserInfoPageState extends State<UserInfoPage> {
               Padding(
                 padding: const EdgeInsets.only(right: 20),
                 child: TextButton(
-                    onPressed: _onEditSave,
-                    child: Text(
-                      S.of(context).userInfoComplete,
-                      style: const TextStyle(
-                          fontSize: 16, color: CommonColors.color_666666),
-                    )),
-              )
+                  onPressed: _onEditSave,
+                  child: Text(
+                    S.of(context).userInfoComplete,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: CommonColors.color_666666,
+                    ),
+                  ),
+                ),
+              ),
             ]
           : null,
       body: Padding(
@@ -329,10 +400,7 @@ class _PersonalInfoPage extends StatelessWidget {
     }
     List<Widget> userInfoTiles = [
       ListTile(
-        title: Text(
-          S.of(context).userInfoAvatar,
-          style: styleLeft,
-        ),
+        title: Text(S.of(context).userInfoAvatar, style: styleLeft),
         trailing: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           mainAxisSize: MainAxisSize.min,
@@ -344,10 +412,8 @@ class _PersonalInfoPage extends StatelessWidget {
               height: 36,
               width: 36,
             ),
-            const SizedBox(
-              width: 12,
-            ),
-            arrow
+            const SizedBox(width: 12),
+            arrow,
           ],
         ),
         onTap: () => onEditClick(EditType.avatar),
@@ -367,10 +433,8 @@ class _PersonalInfoPage extends StatelessWidget {
                 style: style,
               ),
             ),
-            const SizedBox(
-              width: 12,
-            ),
-            arrow
+            const SizedBox(width: 12),
+            arrow,
           ],
         ),
         onTap: () => onEditClick(EditType.nick),
@@ -381,25 +445,17 @@ class _PersonalInfoPage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.end,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              userInfo.accountId ?? '',
-              style: style,
-            ),
-            const SizedBox(
-              width: 12,
-            ),
+            Text(userInfo.accountId ?? '', style: style),
+            const SizedBox(width: 12),
             InkWell(
               onTap: () {
                 Clipboard.setData(
-                    ClipboardData(text: userInfo.accountId ?? ''));
-                Fluttertoast.showToast(msg: S.of(context).actionCopySuccess);
+                  ClipboardData(text: userInfo.accountId ?? ''),
+                );
+                ChatUIToast.show(S.of(context).actionCopySuccess);
               },
-              child: Image.asset(
-                'assets/ic_copy.png',
-                height: 16,
-                width: 16,
-              ),
-            )
+              child: Image.asset('assets/ic_copy.png', height: 16, width: 16),
+            ),
           ],
         ),
       ),
@@ -409,14 +465,9 @@ class _PersonalInfoPage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.end,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              sex,
-              style: style,
-            ),
-            const SizedBox(
-              width: 12,
-            ),
-            arrow
+            Text(sex, style: style),
+            const SizedBox(width: 12),
+            arrow,
           ],
         ),
         onTap: () => onEditClick(EditType.gender),
@@ -427,14 +478,9 @@ class _PersonalInfoPage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.end,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              userInfo.birthday ?? '',
-              style: style,
-            ),
-            const SizedBox(
-              width: 12,
-            ),
-            arrow
+            Text(userInfo.birthday ?? '', style: style),
+            const SizedBox(width: 12),
+            arrow,
           ],
         ),
         onTap: () => onEditClick(EditType.birthday),
@@ -445,14 +491,9 @@ class _PersonalInfoPage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.end,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              userInfo.mobile ?? '',
-              style: style,
-            ),
-            const SizedBox(
-              width: 12,
-            ),
-            arrow
+            Text(userInfo.mobile ?? '', style: style),
+            const SizedBox(width: 12),
+            arrow,
           ],
         ),
         onTap: () => onEditClick(EditType.phone),
@@ -472,10 +513,8 @@ class _PersonalInfoPage extends StatelessWidget {
                 style: style,
               ),
             ),
-            const SizedBox(
-              width: 12,
-            ),
-            arrow
+            const SizedBox(width: 12),
+            arrow,
           ],
         ),
         onTap: () => onEditClick(EditType.email),
@@ -486,14 +525,13 @@ class _PersonalInfoPage extends StatelessWidget {
         children: [
           CardBackground(
             child: Column(
-              children:
-                  ListTile.divideTiles(context: context, tiles: userInfoTiles)
-                      .toList(),
+              children: ListTile.divideTiles(
+                context: context,
+                tiles: userInfoTiles,
+              ).toList(),
             ),
           ),
-          const SizedBox(
-            height: 8,
-          ),
+          const SizedBox(height: 8),
           CardBackground(
             child: ListTile(
               title: Text(S.of(context).userInfoSign),
@@ -513,10 +551,8 @@ class _PersonalInfoPage extends StatelessWidget {
                           style: style,
                         ),
                       ),
-                      const SizedBox(
-                        width: 12,
-                      ),
-                      arrow
+                      const SizedBox(width: 12),
+                      arrow,
                     ],
                   );
                 },

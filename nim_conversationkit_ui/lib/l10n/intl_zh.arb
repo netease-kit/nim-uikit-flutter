@@ -18,6 +18,7 @@
   },
   "conversationNetworkErrorTip": "当前网络不可用，请检查你当网络设置。",
   "addFriend": "添加好友",
+  "conversationSearchHint": "搜索好友或群组",
   "addFriendSearchHint": "请输入账号",
   "addFriendSearchEmptyTips": "该用户不存在",
   "createGroupTeam": "创建讨论组",
@@ -37,5 +38,7 @@
   "joinTeamSearchHint": "请输入群号",
   "joinTeamSearchEmptyTips": "该群组不存在",
   "chatMessageBriefVideoCall": "[视频通话]",
-  "chatMessageBriefAudioCall": "[语音通话]"
+  "chatMessageBriefAudioCall": "[语音通话]",
+  "muteTitle": "开启免打扰",
+  "cancelMuteTitle": "取消免打扰"
 }

@@ -5,15 +5,15 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/im_kit_config_center.dart';
 import 'package:nim_chatkit/manager/subscription_manager.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
+import 'package:nim_chatkit/repo/contact_repo.dart';
 import 'package:nim_chatkit/repo/team_repo.dart';
 import 'package:nim_chatkit/service_locator.dart';
 import 'package:nim_chatkit/services/contact/contact_provider.dart';
-import 'package:nim_chatkit/repo/contact_repo.dart';
 import 'package:nim_core_v2/nim_core.dart';
-import 'package:yunxin_alog/yunxin_alog.dart';
 
 //默认注册数量，联系人小于或等于此数量，则在拉取后直接注册
 final int defaultSubscriptionCount = 10;
@@ -42,16 +42,32 @@ class ContactViewModel extends ChangeNotifier {
     //优先从缓存中拉取数据
     ContactRepo.getContactList(userCache: true).then((value) {
       Alog.i(
-          tag: 'ContactKit',
-          moduleName: 'ContactViewModel',
-          content: 'fetchContacts size:${value.length}');
+        tag: 'ContactKit',
+        moduleName: 'ContactViewModel',
+        content: 'fetchContacts size:${value.length}',
+      );
       contacts.clear();
       value.removeWhere((e) => e.isInBlack == true);
       contacts.addAll(value);
       //小于10条，直接全员注册
       if (contacts.length <= defaultSubscriptionCount) {
         final users = contacts.map((e) => e.user.accountId!).toList();
-        SubscriptionManager.instance.subscribeUserStatus(users);
+        SubscriptionManager.instance.subscribeUserStatus(
+          users,
+          onCachedStatusAvailable: (cachedStatuses) {
+            final Map<String, NIMUserStatus> userMap = {};
+            for (final user in cachedStatuses) {
+              userMap[user.accountId] = user;
+            }
+            for (var contact in contacts) {
+              if (userMap.containsKey(contact.user.accountId)) {
+                contact.isOnline =
+                    userMap[contact.user.accountId]?.statusType == 1;
+              }
+            }
+            notifyListeners();
+          },
+        );
       }
       notifyListeners();
     });
@@ -59,104 +75,145 @@ class ContactViewModel extends ChangeNotifier {
 
   void initListener() {
     //注册监听，在登录后获取全量联系人数据
-    subscriptions
-        .add(getIt<ContactProvider>().onContactListComplete?.listen((value) {
-      Alog.d(
+    subscriptions.add(
+      getIt<ContactProvider>().onContactListComplete?.listen((value) {
+        Alog.d(
           tag: 'ContactKit',
           moduleName: 'ContactViewModel',
-          content: 'onContactListComplete size:${value.length}');
-      List<String> onlineUsers = contacts
-          .where((contact) => contact.isOnline)
-          .map((e) => e.user.accountId!)
-          .toList();
-      contacts.clear();
-      value.removeWhere((e) => e.isInBlack == true);
-      contacts.addAll(value);
-      if (onlineUsers.isNotEmpty) {
-        for (var contact in contacts) {
-          if (onlineUsers.contains(contact.user.accountId)) {
-            contact.isOnline = true;
+          content: 'onContactListComplete size:${value.length}',
+        );
+        List<String> onlineUsers = contacts
+            .where((contact) => contact.isOnline)
+            .map((e) => e.user.accountId!)
+            .toList();
+        contacts.clear();
+        value.removeWhere((e) => e.isInBlack == true);
+        contacts.addAll(value);
+        if (onlineUsers.isNotEmpty) {
+          for (var contact in contacts) {
+            if (onlineUsers.contains(contact.user.accountId)) {
+              contact.isOnline = true;
+            }
           }
         }
-      }
-      notifyListeners();
-    }));
+        notifyListeners();
+      }),
+    );
 
     //好友变化监听，处理好友添加，黑名单等信息
-    subscriptions
-        .add(getIt<ContactProvider>().onContactInfoUpdated?.listen((event) {
-      //仅需好友
-      if (event.friend != null) {
-        var index = contacts.indexWhere(
-            (element) => element.user.accountId == event.user.accountId);
-        if (event.isInBlack != true) {
-          if (index >= 0) {
-            contacts[index] = event;
+    subscriptions.add(
+      getIt<ContactProvider>().onContactInfoUpdated?.listen((event) {
+        //仅需好友
+        if (event.friend != null) {
+          var index = contacts.indexWhere(
+            (element) => element.user.accountId == event.user.accountId,
+          );
+          if (event.isInBlack != true) {
+            if (index >= 0) {
+              contacts[index] = event;
+            } else {
+              contacts.add(event);
+            }
           } else {
-            contacts.add(event);
+            Alog.d(
+              tag: logTag,
+              content: 'block list add ${event.user.accountId}',
+            );
+            contacts.removeWhere(
+              (e) => e.user.accountId == event.user.accountId,
+            );
           }
-        } else {
-          Alog.d(
-              tag: logTag, content: 'block list add ${event.user.accountId}');
-          contacts.removeWhere((e) => e.user.accountId == event.user.accountId);
+          notifyListeners();
         }
-        notifyListeners();
-      }
-    }));
+      }),
+    );
 
     //处理好友申请未读数
-    subscriptions
-        .add(ContactRepo.registerFriendAddApplicationObserver().listen((event) {
-      ContactRepo.getAddApplicationUnreadCount().then((value) {
-        if (value.isSuccess && value.data != null) {
-          _friendAddApplicationCount = value.data!;
-          unReadCount = _friendAddApplicationCount + _teamActionUnReadCount;
-        }
-        notifyListeners();
-      });
-    }));
-    subscriptions
-        .add(ContactRepo.registerFriendAddRejectedObserver().listen((event) {
-      ContactRepo.getAddApplicationUnreadCount().then((value) {
-        if (value.isSuccess && value.data != null) {
-          _friendAddApplicationCount = value.data!;
-          unReadCount = _friendAddApplicationCount + _teamActionUnReadCount;
-        }
-        notifyListeners();
-      });
-    }));
-    //监听好友删除回调
-    subscriptions
-        .add(ContactRepo.registerFriendDeleteObserver().listen((removedFriend) {
-      Alog.d(tag: logTag, content: 'contact delete ${removedFriend.accountId}');
-      contacts.removeWhere((e) => e.user.accountId == removedFriend.accountId);
-      notifyListeners();
-    }));
+    subscriptions.add(
+      ContactRepo.registerFriendAddApplicationObserver().listen((event) {
+        // 验证消息页面已打开，直接标记已读，不累加外部未读角标
 
-    if (IMKitConfigCenter.enableTeam) {
-      subscriptions.add(NimCore.instance.teamService.onReceiveTeamJoinActionInfo
-          .listen((action) {
-        _teamActionUnReadCount = _teamActionUnReadCount + 1;
+        ContactRepo.getAddApplicationUnreadCount().then((value) {
+          if (value.isSuccess && value.data != null) {
+            _friendAddApplicationCount = value.data!;
+            unReadCount = _friendAddApplicationCount + _teamActionUnReadCount;
+          }
+          notifyListeners();
+        });
+      }),
+    );
+    subscriptions.add(
+      ContactRepo.registerFriendAddRejectedObserver().listen((event) {
+        ContactRepo.getAddApplicationUnreadCount().then((value) {
+          if (value.isSuccess && value.data != null) {
+            _friendAddApplicationCount = value.data!;
+            unReadCount = _friendAddApplicationCount + _teamActionUnReadCount;
+          }
+          notifyListeners();
+        });
+      }),
+    );
+    if (ChatKitUtils.isDesktopOrWeb) {
+      subscriptions
+          .add(ContactRepo.addApplicationUnreadCountNotifier.listen((count) {
+        _friendAddApplicationCount = count;
         unReadCount = _friendAddApplicationCount + _teamActionUnReadCount;
-        //通过重新获取未读数，更新tab 小红点
-        TeamRepo.getTeamActionsUnreadCount();
         notifyListeners();
       }));
     }
 
-    subscriptions.add(NimCore.instance.subscriptionService.onUserStatusChanged
-        .listen((List<NIMUserStatus> userList) {
-      final Map<String, NIMUserStatus> userMap = {};
-      for (final user in userList) {
-        userMap[user.accountId] = user; // 直接以 id 为键，user 对象为值
+    //监听好友删除回调
+    subscriptions.add(
+      ContactRepo.registerFriendDeleteObserver().listen((removedFriend) {
+        Alog.d(
+          tag: logTag,
+          content: 'contact delete ${removedFriend.accountId}',
+        );
+        contacts.removeWhere(
+          (e) => e.user.accountId == removedFriend.accountId,
+        );
+        notifyListeners();
+      }),
+    );
+
+    if (IMKitConfigCenter.enableTeam) {
+      subscriptions.add(
+        NimCore.instance.teamService.onReceiveTeamJoinActionInfo.listen((
+          action,
+        ) {
+          _teamActionUnReadCount = _teamActionUnReadCount + 1;
+          unReadCount = _friendAddApplicationCount + _teamActionUnReadCount;
+          //通过重新获取未读数，更新tab 小红点
+          TeamRepo.getTeamActionsUnreadCount();
+          notifyListeners();
+        }),
+      );
+      if (ChatKitUtils.isDesktopOrWeb) {
+        subscriptions.add(
+            TeamRepo.teamActionsUnreadCountNotifier.listen((teamUnreadCount) {
+          _teamActionUnReadCount = teamUnreadCount;
+          unReadCount = _friendAddApplicationCount + _teamActionUnReadCount;
+          notifyListeners();
+        }));
       }
-      contacts.forEach((e) {
-        if (userMap.containsKey(e.user.accountId)) {
-          e.isOnline = userMap[e.user.accountId]?.statusType == 1;
+    }
+
+    subscriptions.add(
+      NimCore.instance.subscriptionService.onUserStatusChanged.listen((
+        List<NIMUserStatus> userList,
+      ) {
+        final Map<String, NIMUserStatus> userMap = {};
+        for (final user in userList) {
+          userMap[user.accountId] = user; // 直接以 id 为键，user 对象为值
         }
-      });
-      notifyListeners();
-    }));
+        contacts.forEach((e) {
+          if (userMap.containsKey(e.user.accountId)) {
+            e.isOnline = userMap[e.user.accountId]?.statusType == 1;
+          }
+        });
+        notifyListeners();
+      }),
+    );
   }
 
   void init() {
@@ -194,6 +251,8 @@ class ContactViewModel extends ChangeNotifier {
     for (var sub in subscriptions) {
       sub?.cancel();
     }
-    getIt<ContactProvider>().removeListeners();
+    if (!ChatKitUtils.isDesktopOrWeb) {
+      getIt<ContactProvider>().removeListeners();
+    }
   }
 }

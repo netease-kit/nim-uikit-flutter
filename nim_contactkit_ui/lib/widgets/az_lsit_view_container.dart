@@ -9,6 +9,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:nim_chatkit/manager/subscription_manager.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import 'contact_kit_az_list.dart';
@@ -22,16 +23,16 @@ class AZListViewContainer extends StatefulWidget {
   final Color? textColor;
   final Color? divideLineColor;
 
-  const AZListViewContainer(
-      {Key? key,
-      required this.memberList,
-      required this.itemBuilder,
-      this.susItemBuilder,
-      this.textSize,
-      this.textColor,
-      this.divideLineColor,
-      this.isShowIndexBar = true})
-      : super(key: key);
+  const AZListViewContainer({
+    Key? key,
+    required this.memberList,
+    required this.itemBuilder,
+    this.susItemBuilder,
+    this.textSize,
+    this.textColor,
+    this.divideLineColor,
+    this.isShowIndexBar = true,
+  }) : super(key: key);
 
   @override
   State<StatefulWidget> createState() => _AZListViewContainerState();
@@ -70,16 +71,15 @@ class _AZListViewContainerState extends State<AZListViewContainer> {
             tag,
             softWrap: true,
             style: TextStyle(
-                fontSize: widget.textSize ?? 14,
-                color: widget.textColor ?? CommonColors.color_333333),
+              fontSize: widget.textSize ?? 14,
+              color: widget.textColor ?? CommonColors.color_333333,
+            ),
           ),
-          SizedBox(
-            height: 8,
-          ),
+          SizedBox(height: 8),
           Container(
             height: 1,
             color: widget.divideLineColor ?? CommonColors.color_dbe0e8,
-          )
+          ),
         ],
       ),
     );
@@ -98,8 +98,10 @@ class _AZListViewContainerState extends State<AZListViewContainer> {
       if (!haveFirstSub) {
         if (length > defaultSubscriptionCount) {
           haveFirstSub = true;
-          _scrollEndTimer =
-              Timer(const Duration(milliseconds: 100), _subscribeUserStatus);
+          _scrollEndTimer = Timer(
+            const Duration(milliseconds: 100),
+            _subscribeUserStatus,
+          );
         }
       }
     });
@@ -113,7 +115,30 @@ class _AZListViewContainerState extends State<AZListViewContainer> {
         users.add((itemData).user.accountId!);
       }
     });
-    SubscriptionManager.instance.subscribeUserStatus(users);
+    SubscriptionManager.instance.subscribeUserStatus(
+      users,
+      onCachedStatusAvailable: (cachedStatuses) {
+        final Map<String, NIMUserStatus> userMap = {};
+        for (final user in cachedStatuses) {
+          userMap[user.accountId] = user;
+        }
+        bool hasUpdate = false;
+        widget.memberList?.forEach((item) {
+          final itemData = item.contactInfo;
+          if (itemData is ContactInfo &&
+              userMap.containsKey(itemData.user.accountId)) {
+            final newOnline = userMap[itemData.user.accountId]?.statusType == 1;
+            if (itemData.isOnline != newOnline) {
+              itemData.isOnline = newOnline;
+              hasUpdate = true;
+            }
+          }
+        });
+        if (hasUpdate && mounted) {
+          setState(() {});
+        }
+      },
+    );
   }
 
   @override
@@ -135,27 +160,32 @@ class _AZListViewContainerState extends State<AZListViewContainer> {
           _scrollEndTimer?.cancel();
         } else if (notification is ScrollEndNotification) {
           // 滚动结束，设置定时器，延迟1秒后执行操作
-          _scrollEndTimer =
-              Timer(const Duration(milliseconds: 100), _subscribeUserStatus);
+          _scrollEndTimer = Timer(
+            const Duration(milliseconds: 100),
+            _subscribeUserStatus,
+          );
         }
         return false; // 不阻止通知继续传递
       },
       child: ContactAzListView(
         physics: const BouncingScrollPhysics(
-            parent: AlwaysScrollableScrollPhysics()),
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
         data: _suspensionList,
         susChanged: () {
           _scrollEndTimer?.cancel();
-          _scrollEndTimer =
-              Timer(const Duration(milliseconds: 100), _subscribeUserStatus);
+          _scrollEndTimer = Timer(
+            const Duration(milliseconds: 100),
+            _subscribeUserStatus,
+          );
         },
         itemCount: _suspensionList.length,
         itemBuilder: widget.itemBuilder,
         itemPositionsListener: _listener,
         indexBarData: widget.isShowIndexBar
-            ? SuspensionUtil.getTagIndexList(_suspensionList)
-                .where((e) => e != '@')
-                .toList()
+            ? SuspensionUtil.getTagIndexList(
+                _suspensionList,
+              ).where((e) => e != '@').toList()
             : [],
         susItemBuilder: (context, index) {
           if (widget.susItemBuilder != null) {

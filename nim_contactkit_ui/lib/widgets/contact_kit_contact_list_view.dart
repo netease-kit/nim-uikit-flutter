@@ -5,13 +5,14 @@
 import 'package:azlistview_plus/azlistview_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:lpinyin/lpinyin.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/radio_button.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/im_kit_config_center.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
+import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_contactkit_ui/widgets/az_lsit_view_container.dart';
 
 import '../contact_kit_client.dart';
@@ -39,17 +40,17 @@ class ContactListView extends StatefulWidget {
 
   final IsSelectable? isSelectable;
 
-  const ContactListView(
-      {Key? key,
-      required this.contactList,
-      this.config,
-      this.isCanSelectMemberItem = false,
-      this.onSelectedMemberItemChange,
-      this.topList,
-      this.topListItemBuilder,
-      this.selectedUser,
-      this.isSelectable})
-      : super(key: key);
+  const ContactListView({
+    Key? key,
+    required this.contactList,
+    this.config,
+    this.isCanSelectMemberItem = false,
+    this.onSelectedMemberItemChange,
+    this.topList,
+    this.topListItemBuilder,
+    this.selectedUser,
+    this.isSelectable,
+  }) : super(key: key);
 
   @override
   State<StatefulWidget> createState() => ContactListViewState();
@@ -57,6 +58,9 @@ class ContactListView extends StatefulWidget {
 
 class ContactListViewState extends State<ContactListView> {
   ContactListConfig? get listConfig => widget.config?.contactListConfig;
+
+  /// 桌面端当前 hover 的联系人 accountId
+  String? _hoveredAccountId;
 
   Widget _buildItem(BuildContext context, ContactInfo contact, bool select) {
     List<Widget> item = [];
@@ -77,34 +81,37 @@ class ContactListViewState extends State<ContactListView> {
             if (IMKitConfigCenter.enableOnlineStatus &&
                 !widget.isCanSelectMemberItem)
               Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: contact.isOnline
-                          ? '#84ED85'.toColor()
-                          : "#D4D9DA".toColor(),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                  ))
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: contact.isOnline
+                        ? '#84ED85'.toColor()
+                        : "#D4D9DA".toColor(),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                ),
+              ),
           ],
         ),
-        Container(
-          alignment: Alignment.centerLeft,
-          padding: const EdgeInsets.only(left: 12),
-          width: MediaQuery.of(context).size.width - 100,
-          child: Text(
-            contact.getName(),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
+        Expanded(
+          child: Container(
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.only(left: 12),
+            child: Text(
+              contact.getName(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
                 fontSize: listConfig?.nameTextSize ?? 16,
-                color: listConfig?.nameTextColor ?? CommonColors.color_333333),
+                color: listConfig?.nameTextColor ?? CommonColors.color_333333,
+              ),
+            ),
           ),
-        )
+        ),
       ]);
     }
     return Container(
@@ -120,7 +127,7 @@ class ContactListViewState extends State<ContactListView> {
                 clickable: false,
               ),
             ),
-          ...item
+          ...item,
         ],
       ),
     );
@@ -149,9 +156,9 @@ class ContactListViewState extends State<ContactListView> {
               child: Text(
                 top.name,
                 style: TextStyle(
-                    fontSize: listConfig?.nameTextSize ?? 14,
-                    color:
-                        listConfig?.nameTextColor ?? CommonColors.color_333333),
+                  fontSize: listConfig?.nameTextSize ?? 14,
+                  color: listConfig?.nameTextColor ?? CommonColors.color_333333,
+                ),
               ),
             ),
             Expanded(child: Container()),
@@ -174,7 +181,7 @@ class ContactListViewState extends State<ContactListView> {
               package: kPackage,
               height: 16,
               width: 16,
-            )
+            ),
           ],
         ),
       ),
@@ -221,89 +228,158 @@ class ContactListViewState extends State<ContactListView> {
         widget.onSelectedMemberItemChange ?? widget.config?.contactItemSelect;
 
     return AZListViewContainer(
-        memberList: items,
-        isShowIndexBar: listConfig?.showIndexBar ?? true,
-        divideLineColor: listConfig?.divideLineColor,
-        textSize: listConfig?.indexTextSize,
-        textColor: listConfig?.indexTextColor ?? '#B3B7BC'.toColor(),
-        itemBuilder: (context, index) {
-          final showItem = items[index].contactInfo;
-          if (showItem is TopListItem) {
-            if (topListItemBuilder != null) {
-              final customTop = topListItemBuilder(showItem);
-              if (customTop != null) {
-                return customTop;
-              }
+      memberList: items,
+      isShowIndexBar: listConfig?.showIndexBar ?? true,
+      divideLineColor: listConfig?.divideLineColor,
+      textSize: listConfig?.indexTextSize,
+      textColor: listConfig?.indexTextColor ?? '#B3B7BC'.toColor(),
+      itemBuilder: (context, index) {
+        final showItem = items[index].contactInfo;
+        if (showItem is TopListItem) {
+          if (topListItemBuilder != null) {
+            final customTop = topListItemBuilder(showItem);
+            if (customTop != null) {
+              return customTop;
             }
+          }
+          return Column(
+            children: [
+              _buildTop(context, showItem, index),
+              if (index < topList!.length - 1)
+                Container(height: 1, color: '#F5F8FC'.toColor()),
+              if (index == topList.length - 1)
+                Container(
+                  margin: const EdgeInsets.only(top: 16),
+                  height: 6,
+                  color: '#EFF1F4'.toColor(),
+                ),
+            ],
+          );
+        } else {
+          if (hasNoFriend && showItem == null) {
             return Column(
               children: [
-                _buildTop(context, showItem, index),
-                if (index < topList!.length - 1)
-                  Container(
-                    height: 1,
-                    color: '#F5F8FC'.toColor(),
-                  ),
-                if (index == topList.length - 1)
-                  Container(
-                    margin: const EdgeInsets.only(top: 16),
-                    height: 6,
-                    color: '#EFF1F4'.toColor(),
-                  )
+                SizedBox(height: 170),
+                SvgPicture.asset(
+                  'images/ic_search_empty.svg',
+                  package: kPackage,
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  S.of(context).contactFriendEmpty,
+                  style: TextStyle(color: Color(0xffb3b7bc), fontSize: 14),
+                ),
               ],
             );
-          } else {
-            if (hasNoFriend && showItem == null) {
-              return Column(
-                children: [
-                  SizedBox(
-                    height: 170,
-                  ),
-                  SvgPicture.asset(
-                    'images/ic_search_empty.svg',
-                    package: kPackage,
-                  ),
-                  const SizedBox(
-                    height: 18,
-                  ),
-                  Text(
-                    S.of(context).contactFriendEmpty,
-                    style: TextStyle(color: Color(0xffb3b7bc), fontSize: 14),
-                  ),
-                ],
-              );
-            }
-            return InkWell(
-              onTap: () {
-                if (selectable) {
-                  final selectedId = (showItem as ContactInfo).user.accountId;
-                  final isChecked =
-                      widget.selectedUser?.contains(showItem) != true;
-                  if (isChecked &&
-                      widget.selectedUser != null &&
-                      widget.isSelectable?.call(selectedId!) == false) {
-                    return;
-                  }
-                  if (onSelectedMemberItemChange != null) {
-                    onSelectedMemberItemChange(isChecked, showItem);
-                  }
-                  setState(() {});
-                  return;
-                }
-                bool handle = false;
-                if (widget.config?.contactItemClick != null) {
-                  handle = widget.config!.contactItemClick!(index, showItem);
-                }
-                if (!handle) {
-                  // default to detail
-                  Navigator.push(context, MaterialPageRoute(builder: (context) {
-                    return ContactKitDetailPage(accId: showItem.user.accountId);
-                  }));
-                }
-              },
-              child: _buildItem(context, showItem, selectable),
-            );
           }
-        });
+          final bool isDesktop = ChatKitUtils.isDesktopOrWeb;
+          final contactInfo = showItem as ContactInfo;
+          final itemWidget = isDesktop
+              ? _buildDesktopContactItem(
+                  context,
+                  contactInfo,
+                  selectable,
+                  onSelectedMemberItemChange,
+                  index,
+                )
+              : InkWell(
+                  onTap: () {
+                    _handleContactTap(
+                      context,
+                      contactInfo,
+                      selectable,
+                      onSelectedMemberItemChange,
+                      index,
+                    );
+                  },
+                  child: _buildItem(context, contactInfo, selectable),
+                );
+          return itemWidget;
+        }
+      },
+    );
+  }
+
+  /// 处理联系人点击（桌面/移动端共享逻辑）
+  void _handleContactTap(
+    BuildContext context,
+    ContactInfo contactInfo,
+    bool selectable,
+    ContactItemSelect? onSelectedMemberItemChange,
+    int index,
+  ) {
+    if (selectable) {
+      final selectedId = contactInfo.user.accountId;
+      final isChecked = widget.selectedUser?.contains(contactInfo) != true;
+      if (isChecked &&
+          widget.selectedUser != null &&
+          widget.isSelectable?.call(selectedId!) == false) {
+        return;
+      }
+      if (onSelectedMemberItemChange != null) {
+        onSelectedMemberItemChange(isChecked, contactInfo);
+      }
+      setState(() {});
+      return;
+    }
+    bool handle = false;
+    if (widget.config?.contactItemClick != null) {
+      handle = widget.config!.contactItemClick!(index, contactInfo);
+    }
+    if (!handle) {
+      if (ChatKitUtils.isDesktopOrWeb) {
+        _showDesktopContactDetail(context, contactInfo.user.accountId!);
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) {
+              return ContactKitDetailPage(
+                accId: contactInfo.user.accountId!,
+              );
+            },
+          ),
+        );
+      }
+    }
+  }
+
+  /// 桌面端联系人列表项（带 hover 效果）
+  Widget _buildDesktopContactItem(
+    BuildContext context,
+    ContactInfo contactInfo,
+    bool selectable,
+    ContactItemSelect? onSelectedMemberItemChange,
+    int index,
+  ) {
+    final accountId = contactInfo.user.accountId;
+    final isHovered = _hoveredAccountId == accountId;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoveredAccountId = accountId),
+      onExit: (_) => setState(() {
+        if (_hoveredAccountId == accountId) _hoveredAccountId = null;
+      }),
+      child: GestureDetector(
+        onTap: () => _handleContactTap(
+          context,
+          contactInfo,
+          selectable,
+          onSelectedMemberItemChange,
+          index,
+        ),
+        child: Container(
+          color: isHovered ? const Color(0xFFF2F3F5) : Colors.transparent,
+          child: _buildItem(context, contactInfo, selectable),
+        ),
+      ),
+    );
+  }
+
+  /// 桌面端以 Dialog 方式展示联系人详情
+  /// 委托给 [goToContactDetail]，逻辑已收敛到 imkit_router_factory.dart
+  void _showDesktopContactDetail(BuildContext context, String accId) {
+    goToContactDetail(context, accId);
   }
 }
 

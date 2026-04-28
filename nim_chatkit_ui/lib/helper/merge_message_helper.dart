@@ -26,7 +26,8 @@ class MergeMessageHelper {
               CustomMessageType.customMergeMessageType &&
           data?[CustomMessageKey.data] is Map) {
         return MergedMessage.fromMap(
-            (data![CustomMessageKey.data] as Map).cast<String, dynamic>());
+          (data![CustomMessageKey.data] as Map).cast<String, dynamic>(),
+        );
       }
     }
     return null;
@@ -34,7 +35,8 @@ class MergeMessageHelper {
 
   ///创建合并消息
   static Future<NIMResult<NIMMessage>> createMergedMessage(
-      List<NIMMessage> messages) async {
+    List<NIMMessage> messages,
+  ) async {
     if (messages.isEmpty) {
       return NIMResult.failure(message: 'message list is empty');
     }
@@ -45,11 +47,15 @@ class MergeMessageHelper {
     }
     if (mergedMessage.isSuccess && mergedMessage.data != null) {
       final customMsgBuilder = await MessageCreator.createCustomMessage(
-          title ?? '', jsonEncode(mergedMessage.data!));
+        title ?? '',
+        jsonEncode(mergedMessage.data!),
+      );
       if (customMsgBuilder.isSuccess && customMsgBuilder.data != null) {
         customMsgBuilder.data!.pushConfig = NIMMessagePushConfig(
-            pushContent:
-                ChatMessageHelper.getMessageBrief(customMsgBuilder.data!));
+          pushContent: ChatMessageHelper.getMessageBrief(
+            customMsgBuilder.data!,
+          ),
+        );
         return NIMResult.success(data: customMsgBuilder.data!);
       } else {
         return NIMResult.failure(message: customMsgBuilder.errorDetails);
@@ -69,7 +75,8 @@ class MergeMessageHelper {
 
   ///合并消息，返回Map
   static Future<NIMResult<Map<String, dynamic>>> mergeMessage(
-      List<NIMMessage> messageList) async {
+    List<NIMMessage> messageList,
+  ) async {
     if (messageList.isEmpty) {
       return NIMResult.failure(message: 'merge message list is empty');
     }
@@ -78,8 +85,9 @@ class MergeMessageHelper {
     if (messages.isEmpty) {
       return NIMResult.failure(message: 'filtrated messages is empty');
     }
-    final messageUpload =
-        await ChatMessageRepo.uploadMergedMessageFile(messages);
+    final messageUpload = await ChatMessageRepo.uploadMergedMessageFile(
+      messages,
+    );
     if (messageUpload.isSuccess && messageUpload.data != null) {
       final Map<String, dynamic> result = {};
       result[CustomMessageKey.type] = CustomMessageType.customMergeMessageType;
@@ -88,9 +96,11 @@ class MergeMessageHelper {
       var depth = 0;
       String sessionId;
       String sessionName;
-      sessionId = (await NimCore.instance.conversationIdUtil
-              .conversationTargetId(messages.first.conversationId!))
-          .data!;
+      sessionId =
+          (await NimCore.instance.conversationIdUtil.conversationTargetId(
+        messages.first.conversationId!,
+      ))
+              .data!;
       if (messages.first.conversationType == NIMConversationType.p2p) {
         sessionName = await sessionId.getUserName(needAlias: false);
       } else if (messages.first.conversationType == NIMConversationType.team) {
@@ -103,13 +113,20 @@ class MergeMessageHelper {
         var message = messages[i];
         if (i < 3) {
           String userAccId = message.senderId!;
-          String senderNick = (await getIt<ContactProvider>()
-                      .getContact(userAccId, needFriend: false))
+          String senderNick = (await getIt<ContactProvider>().getContact(
+                userAccId,
+                needFriend: false,
+              ))
                   ?.getName(needAlias: false) ??
               userAccId;
           String content = ChatMessageHelper.getMessageBrief(message);
-          abstracts.add(MergeMessageAbstract(
-              senderNick: senderNick, content: content, userAccId: userAccId));
+          abstracts.add(
+            MergeMessageAbstract(
+              senderNick: senderNick,
+              content: content,
+              userAccId: userAccId,
+            ),
+          );
         }
         var mergeMsg = parseMergeMessage(message);
         if (mergeMsg != null &&
@@ -120,13 +137,13 @@ class MergeMessageHelper {
       }
       depth++;
       result[CustomMessageKey.data] = MergedMessage(
-              sessionId: sessionId,
-              sessionName: sessionName,
-              url: url,
-              md5: md5,
-              depth: depth,
-              abstracts: abstracts)
-          .toMap();
+        sessionId: sessionId,
+        sessionName: sessionName,
+        url: url,
+        md5: md5,
+        depth: depth,
+        abstracts: abstracts,
+      ).toMap();
       return NIMResult.success(data: result);
     }
     return NIMResult.failure(message: messageUpload.errorDetails);

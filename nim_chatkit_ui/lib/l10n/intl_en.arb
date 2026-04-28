@@ -33,6 +33,7 @@
   "chatMessageImageSaveFail": "Failed to save image",
   "chatMessageVideoSave": "Video saved successfully",
   "chatMessageVideoSaveFail": "Failed to save video",
+  "chatSaveFileDialogTitle": "Save File",
   "chatMessageActionCopy": "copy",
   "chatMessageActionReply": "reply",
   "chatMessageActionForward": "forward",
@@ -568,6 +569,10 @@
   "chatMessageQuickSearch": "Quick Search Message",
   "chatMessageSearchHistory": "Search History Message",
   "chatQuickSearchTeamMember": "Team Member",
+  "chatMemberPickerSearchHint": "Search Member",
+  "chatMemberPickerEmpty": "No Member",
+  "chatMemberRoleOwner": "Owner",
+  "chatMemberRoleManager": "Admin",
   "chatQuickSearchPicture": "Picture",
   "chatQuickSearchVideo": "Video",
   "chatQuickSearchDate": "Date",
@@ -594,6 +599,18 @@
   },
   "chatDateToday": "Today",
   "chatDateRecent7Days": "Last 7 days",
+  "chatDateRecent3Days": "Last 3 days",
+  "chatDateThisWeek": "This week",
+  "chatDateThisMonth": "This month",
+  "chatDateRecent3Months": "Last 3 months",
+  "chatDateCustom": "Custom range",
+  "chatDateStartHint": "Start date",
+  "chatDateEndHint": "End date",
+  "chatDateStart": "Start time",
+  "chatDateEnd": "End time",
+  "chatDateConfirm": "Confirm",
+  "chatDateCancel": "Cancel",
+  "chatDatePlaceholder": "--",
   "chatDateRecent30Days": "Last 30 days",
   "chatHistoryLoadMore": "Load more messages",
   "chatHistoryDateFormatMonthDay": "MM/dd",
@@ -606,6 +623,10 @@
   "chatHistoryDateFormatHourMine": "HH:mm",
   "chatHistoryMessageNotAnyMore": "Not Any More",
   "chatHistoryOrientation":"Find in chat",
+  "chatFileDownloadStart": "Starting download",
+  "chatFileContextMenuDownload": "Download",
+  "chatFileContextMenuForward": "Forward",
+  "chatFileContextMenuLocate": "Find in chat",
   "chatCollectionFrom": "From{name}",
   "@chatCollectionFrom": {
     "placeholders": {
@@ -627,5 +648,31 @@
   "chatCollectionDeleteConfirm": "Delete this collection？",
   "chatSearchImageMessageEmpty": "NO Picture Message",
   "chatSearchVideoMessageEmpty": "NO Video Message",
-  "chatSearchFileMessageEmpty": "NO File Message"
+  "chatSearchFileMessageEmpty": "NO File Message",
+  "chatMessageDesktopInputHint": "Press Enter to send, Shift+Enter for new line",
+  "chatCreateGroupTitle": "Create Group",
+  "chatCreateGroupNameLabel": "Group Name",
+  "chatCreateGroupNameHint": "Enter group name",
+  "chatCreateGroupAvatarLabel": "Group Avatar",
+  "chatCreateGroupSelectAvatar": "Select Group Avatar",
+  "chatCreateGroupCancel": "Cancel",
+  "chatCreateGroupConfirm": "Create",
+  "chatCreateGroupSelectContact": "Please select contacts",
+  "chatCreateGroupSelected": "Selected: {count}",
+  "@chatCreateGroupSelected": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "chatSearchToday": "Today",
+  "chatSearchLastThreeDays": "Last 3 days",
+  "chatSearchThisWeek": "This week",
+  "chatSearchThisMonth": "This month",
+  "chatSearchLastThreeMonths": "Last 3 months",
+  "chatSearchCustomDateRange": "Custom",
+  "chatSearchDownload": "Download",
+  "chatSearchForward": "Forward",
+  "chatSearchLocateMessage": "Locate in chat"
 }

@@ -385,6 +385,12 @@ abstract class ContactKitClientLocalizations {
   /// **'No Member'**
   String get contactSelectEmptyTip;
 
+  /// No description provided for @contactSelectedMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected'**
+  String get contactSelectedMembers;
+
   /// No description provided for @contactFriendEmpty.
   ///
   /// In en, this message translates to:

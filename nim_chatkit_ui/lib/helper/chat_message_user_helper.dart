@@ -19,9 +19,9 @@ extension MessageUserHelper on String {
   }
 
   Future<String?> getAvatar() async {
-    return getIt<ContactProvider>()
-        .getContact(this, needFriend: false)
-        .then((value) {
+    return getIt<ContactProvider>().getContact(this, needFriend: false).then((
+      value,
+    ) {
       if (value != null) {
         return value.user.avatar;
       } else {
@@ -39,22 +39,30 @@ extension MessageUserHelper on String {
   UserAvatarInfo getCacheAvatar(String nick) {
     var contact = getIt<ContactProvider>().getContactInCache(this);
     if (contact != null) {
-      return UserAvatarInfo(contact.getName(),
-          avatar: contact.user.avatar,
-          avatarName: contact.getName(needAlias: false));
+      return UserAvatarInfo(
+        contact.getName(),
+        avatar: contact.user.avatar,
+        avatarName: contact.getName(needAlias: false),
+      );
     }
     return UserAvatarInfo(nick, avatarName: nick);
   }
 }
 
-Future<String> getUserNickInTeam(String tId, String accId,
-    {bool showAlias = true}) async {
+Future<String> getUserNickInTeam(
+  String tId,
+  String accId, {
+  bool showAlias = true,
+}) async {
   var teamUserInfo = NIMChatCache.instance.getTeamMember(accId, tId);
   if (teamUserInfo != null) {
     return teamUserInfo.getName(needAlias: showAlias);
   } else {
-    var teamMember = await NimCore.instance.teamService
-        .getTeamMemberListByIds(tId, NIMTeamType.typeNormal, [accId]);
+    var teamMember = await NimCore.instance.teamService.getTeamMemberListByIds(
+      tId,
+      NIMTeamType.typeNormal,
+      [accId],
+    );
     var userInfo = await getIt<ContactProvider>().getContact(accId);
     if (showAlias && userInfo?.friend?.alias?.isNotEmpty == true) {
       return userInfo!.friend!.alias!;
@@ -69,10 +77,7 @@ Future<String> getUserNickInTeam(String tId, String accId,
   }
 }
 
-Future<UserAvatarInfo> getUserAvatarInfoInTeam(
-  String tId,
-  String accId,
-) async {
+Future<UserAvatarInfo> getUserAvatarInfoInTeam(String tId, String accId) async {
   var teamUserInfo = await NIMChatCache.instance.getTeamMemberById(accId, tId);
   if (teamUserInfo != null) {
     return UserAvatarInfo(

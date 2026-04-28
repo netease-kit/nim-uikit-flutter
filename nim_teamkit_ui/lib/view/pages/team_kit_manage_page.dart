@@ -7,16 +7,16 @@ import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:netease_common_ui/ui/background.dart';
-import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/model/team_models.dart';
-import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
-import 'package:nim_core_v2/nim_core.dart';
 import 'package:nim_chatkit/repo/team_repo.dart';
+import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
+import 'package:nim_chatkit/utils/toast_utils.dart';
+import 'package:nim_core_v2/nim_core.dart';
 import 'package:nim_teamkit_ui/view/pages/team_kit_manager_list_page.dart';
 
 import '../../l10n/S.dart';
@@ -47,8 +47,10 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
 
   int _managerCount = 0;
 
-  TextStyle style =
-      const TextStyle(color: CommonColors.color_333333, fontSize: 16);
+  TextStyle style = const TextStyle(
+    color: CommonColors.color_333333,
+    fontSize: 16,
+  );
 
   @override
   void initState() {
@@ -57,7 +59,8 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
     joinMode = (NIMChatCache.instance.teamInfo as NIMTeam).joinMode;
     agreeMode = (NIMChatCache.instance.teamInfo as NIMTeam).agreeMode;
     _parseExtension(
-        (NIMChatCache.instance.teamInfo as NIMTeam).serverExtension);
+      (NIMChatCache.instance.teamInfo as NIMTeam).serverExtension,
+    );
     _updateManagerCount(NIMChatCache.instance.teamMembers);
     _initListener();
     super.initState();
@@ -103,193 +106,214 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
 
   void _updateManagerCount(List<UserInfoWithTeam>? memberList) {
     _managerCount = memberList
-            ?.where((element) =>
-                element.teamInfo.memberRole ==
-                NIMTeamMemberRole.memberRoleManager)
+            ?.where(
+              (element) =>
+                  element.teamInfo.memberRole ==
+                  NIMTeamMemberRole.memberRoleManager,
+            )
             .length ??
         0;
   }
 
   Widget _friendApplicationSetting(BuildContext context, NIMTeam team) {
     return Column(
-      children: ListTile.divideTiles(context: context, tiles: [
-        ListTile(
-          title: Text(
-            S.of(context).teamUpdateInfoPermission,
-            style: style,
-          ),
-          subtitle: Text(
-            updateInfoMode == NIMTeamUpdateInfoMode.updateInfoModeAll
-                ? S.of(context).teamAllMember
-                : S.of(context).teamOwnerManager,
-            style:
-                const TextStyle(fontSize: 14, color: CommonColors.color_999999),
-          ),
-          trailing: const Icon(Icons.keyboard_arrow_right_outlined),
-          onTap: () async {
-            if (!(await haveConnectivity())) {
-              return;
-            }
-
-            if (NIMChatCache.instance.myTeamRole() ==
-                NIMTeamMemberRole.memberRoleNormal) {
-              Fluttertoast.showToast(
-                  msg: S.of(context).teamNoOperatePermission);
-              return;
-            }
-            _showTeamIdentifyDialog((value) {
-              if (value != null) {
-                var updateMode = value == 1
-                    ? NIMTeamUpdateInfoMode.updateInfoModeAll
-                    : NIMTeamUpdateInfoMode.updateInfoModeManager;
-                TeamRepo.updateTeamInfoPrivilege(
-                        team.teamId, team.teamType, updateMode)
-                    .then((value) {
-                  if (value) {
-                    updateInfoMode = updateMode;
-                    setState(() {});
-                  }
-                });
+      children: ListTile.divideTiles(
+        context: context,
+        tiles: [
+          ListTile(
+            title: Text(S.of(context).teamUpdateInfoPermission, style: style),
+            subtitle: Text(
+              updateInfoMode == NIMTeamUpdateInfoMode.updateInfoModeAll
+                  ? S.of(context).teamAllMember
+                  : S.of(context).teamOwnerManager,
+              style: const TextStyle(
+                fontSize: 14,
+                color: CommonColors.color_999999,
+              ),
+            ),
+            trailing: const Icon(Icons.keyboard_arrow_right_outlined),
+            onTap: () async {
+              if (!(await haveConnectivity())) {
+                return;
               }
-            });
-          },
-        ),
-        ListTile(
-          title: Text(
-            S.of(context).teamInviteOtherPermission,
-            style: style,
-          ),
-          subtitle: Text(
-            inviteMode == NIMTeamInviteMode.inviteModeAll
-                ? S.of(context).teamAllMember
-                : S.of(context).teamOwnerManager,
-            style:
-                const TextStyle(fontSize: 14, color: CommonColors.color_999999),
-          ),
-          trailing: const Icon(Icons.keyboard_arrow_right_outlined),
-          onTap: () async {
-            if (!(await haveConnectivity())) {
-              return;
-            }
 
-            if (NIMChatCache.instance.myTeamRole() ==
-                NIMTeamMemberRole.memberRoleNormal) {
-              Fluttertoast.showToast(
-                  msg: S.of(context).teamNoOperatePermission);
-              return;
-            }
-            _showTeamIdentifyDialog((value) {
-              if (value != null) {
-                var modeEnum = value == 1
-                    ? NIMTeamInviteMode.inviteModeAll
-                    : NIMTeamInviteMode.inviteModeManager;
-                TeamRepo.updateInviteMode(team.teamId, team.teamType, modeEnum)
-                    .then((value) {
-                  if (value) {}
-                });
+              if (NIMChatCache.instance.myTeamRole() ==
+                  NIMTeamMemberRole.memberRoleNormal) {
+                ChatUIToast.show(
+                  S.of(context).teamNoOperatePermission,
+                );
+                return;
               }
-            });
-          },
-        ),
-        ListTile(
-          title: Text(
-            S.of(context).teamAitPermission,
-            style: style,
+              _showTeamIdentifyDialog((value) {
+                if (value != null) {
+                  var updateMode = value == 1
+                      ? NIMTeamUpdateInfoMode.updateInfoModeAll
+                      : NIMTeamUpdateInfoMode.updateInfoModeManager;
+                  TeamRepo.updateTeamInfoPrivilege(
+                    team.teamId,
+                    team.teamType,
+                    updateMode,
+                  ).then((value) {
+                    if (value) {
+                      updateInfoMode = updateMode;
+                      setState(() {});
+                    }
+                  });
+                }
+              });
+            },
           ),
-          subtitle: Text(
-            aitPrivilege == aitPrivilegeAll
-                ? S.of(context).teamAllMember
-                : S.of(context).teamOwnerManager,
-            style:
-                const TextStyle(fontSize: 14, color: CommonColors.color_999999),
-          ),
-          trailing: const Icon(Icons.keyboard_arrow_right_outlined),
-          onTap: () async {
-            if (!(await haveConnectivity())) {
-              return;
-            }
+          ListTile(
+            title: Text(S.of(context).teamInviteOtherPermission, style: style),
+            subtitle: Text(
+              inviteMode == NIMTeamInviteMode.inviteModeAll
+                  ? S.of(context).teamAllMember
+                  : S.of(context).teamOwnerManager,
+              style: const TextStyle(
+                fontSize: 14,
+                color: CommonColors.color_999999,
+              ),
+            ),
+            trailing: const Icon(Icons.keyboard_arrow_right_outlined),
+            onTap: () async {
+              if (!(await haveConnectivity())) {
+                return;
+              }
 
-            if (NIMChatCache.instance.myTeamRole() ==
-                NIMTeamMemberRole.memberRoleNormal) {
-              Fluttertoast.showToast(
-                  msg: S.of(context).teamNoOperatePermission);
-              return;
-            }
-            _showTeamIdentifyDialog((value) {
-              if (value != null) {
-                var aitModel =
-                    value == 1 ? aitPrivilegeAll : aitPrivilegeManager;
-                TeamRepo.updateTeamExtension(team.teamId, team.teamType,
-                        _updateTeamExtensionByAitPrivilegeAll(aitModel))
-                    .then((value) async {
-                  if (value == false) {
-                    Fluttertoast.showToast(
-                        msg: S.of(context).teamSettingFailed);
-                  }
-                });
+              if (NIMChatCache.instance.myTeamRole() ==
+                  NIMTeamMemberRole.memberRoleNormal) {
+                ChatUIToast.show(
+                  S.of(context).teamNoOperatePermission,
+                );
+                return;
               }
-            });
-          },
-        ),
-      ]).toList(),
+              _showTeamIdentifyDialog((value) {
+                if (value != null) {
+                  var modeEnum = value == 1
+                      ? NIMTeamInviteMode.inviteModeAll
+                      : NIMTeamInviteMode.inviteModeManager;
+                  TeamRepo.updateInviteMode(
+                    team.teamId,
+                    team.teamType,
+                    modeEnum,
+                  ).then((value) {
+                    if (value) {}
+                  });
+                }
+              });
+            },
+          ),
+          ListTile(
+            title: Text(S.of(context).teamAitPermission, style: style),
+            subtitle: Text(
+              aitPrivilege == aitPrivilegeAll
+                  ? S.of(context).teamAllMember
+                  : S.of(context).teamOwnerManager,
+              style: const TextStyle(
+                fontSize: 14,
+                color: CommonColors.color_999999,
+              ),
+            ),
+            trailing: const Icon(Icons.keyboard_arrow_right_outlined),
+            onTap: () async {
+              if (!(await haveConnectivity())) {
+                return;
+              }
+
+              if (NIMChatCache.instance.myTeamRole() ==
+                  NIMTeamMemberRole.memberRoleNormal) {
+                ChatUIToast.show(
+                  S.of(context).teamNoOperatePermission,
+                );
+                return;
+              }
+              _showTeamIdentifyDialog((value) {
+                if (value != null) {
+                  var aitModel =
+                      value == 1 ? aitPrivilegeAll : aitPrivilegeManager;
+                  TeamRepo.updateTeamExtension(
+                    team.teamId,
+                    team.teamType,
+                    _updateTeamExtensionByAitPrivilegeAll(aitModel),
+                  ).then((value) async {
+                    if (value == false) {
+                      ChatUIToast.show(
+                        S.of(context).teamSettingFailed,
+                      );
+                    }
+                  });
+                }
+              });
+            },
+          ),
+        ],
+      ).toList(),
     );
   }
 
   Widget _teamJoinSetting(BuildContext context, NIMTeam team) {
     return Column(
-      children: ListTile.divideTiles(context: context, tiles: [
-        ListTile(
-          title: Text(
-            S.of(context).teamManageJoinNeedAccept,
-            style: style,
+      children: ListTile.divideTiles(
+        context: context,
+        tiles: [
+          ListTile(
+            title: Text(S.of(context).teamManageJoinNeedAccept, style: style),
+            subtitle: Text(
+              S.of(context).teamManageJoinNeedAcceptDetail,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 14,
+                color: CommonColors.color_999999,
+              ),
+            ),
+            trailing: CupertinoSwitch(
+              activeColor: CommonColors.color_337eff,
+              onChanged: (bool value) async {
+                if (!await haveConnectivity()) {
+                  return;
+                }
+                if (value != (agreeMode == NIMTeamAgreeMode.agreeModeAuth)) {
+                  TeamRepo.updateBeInviteMode(
+                    team.teamId,
+                    team.teamType,
+                    value,
+                  );
+                }
+              },
+              value: agreeMode == NIMTeamAgreeMode.agreeModeAuth,
+            ),
           ),
-          subtitle: Text(
-            S.of(context).teamManageJoinNeedAcceptDetail,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style:
-                const TextStyle(fontSize: 14, color: CommonColors.color_999999),
+          ListTile(
+            title: Text(S.of(context).teamManageApplyNeedAccept, style: style),
+            subtitle: Text(
+              S.of(context).teamManageApplyNeedAcceptDetail,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 14,
+                color: CommonColors.color_999999,
+              ),
+            ),
+            trailing: CupertinoSwitch(
+              activeColor: CommonColors.color_337eff,
+              onChanged: (bool value) async {
+                if (!await haveConnectivity()) {
+                  return;
+                }
+                if (value != (joinMode == NIMTeamJoinMode.joinModeApply)) {
+                  TeamRepo.updateApplyAgreeMode(
+                    team.teamId,
+                    team.teamType,
+                    value,
+                  );
+                }
+              },
+              value: joinMode == NIMTeamJoinMode.joinModeApply,
+            ),
           ),
-          trailing: CupertinoSwitch(
-            activeColor: CommonColors.color_337eff,
-            onChanged: (bool value) async {
-              if (!await haveConnectivity()) {
-                return;
-              }
-              if (value != (agreeMode == NIMTeamAgreeMode.agreeModeAuth)) {
-                TeamRepo.updateBeInviteMode(team.teamId, team.teamType, value);
-              }
-            },
-            value: agreeMode == NIMTeamAgreeMode.agreeModeAuth,
-          ),
-        ),
-        ListTile(
-          title: Text(
-            S.of(context).teamManageApplyNeedAccept,
-            style: style,
-          ),
-          subtitle: Text(
-            S.of(context).teamManageApplyNeedAcceptDetail,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style:
-                const TextStyle(fontSize: 14, color: CommonColors.color_999999),
-          ),
-          trailing: CupertinoSwitch(
-            activeColor: CommonColors.color_337eff,
-            onChanged: (bool value) async {
-              if (!await haveConnectivity()) {
-                return;
-              }
-              if (value != (joinMode == NIMTeamJoinMode.joinModeApply)) {
-                TeamRepo.updateApplyAgreeMode(
-                    team.teamId, team.teamType, value);
-              }
-            },
-            value: joinMode == NIMTeamJoinMode.joinModeApply,
-          ),
-        ),
-      ]).toList(),
+        ],
+      ).toList(),
     );
   }
 
@@ -303,36 +327,21 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
         return json.encode(extMap);
       }
     }
-    return json
-        .encode({aitPrivilegeKey: aitModel, lastOption: aitPrivilegeKey});
+    return json.encode({
+      aitPrivilegeKey: aitModel,
+      lastOption: aitPrivilegeKey,
+    });
   }
 
   void _showTeamIdentifyDialog(ValueChanged<int?> onChoose) {
-    var style = const TextStyle(fontSize: 16, color: CommonColors.color_333333);
-    showBottomChoose(
-            context: context,
-            actions: [
-              CupertinoActionSheetAction(
-                onPressed: () {
-                  Navigator.pop(context, 1);
-                },
-                child: Text(
-                  S.of(context).teamAllMember,
-                  style: style,
-                ),
-              ),
-              CupertinoActionSheetAction(
-                onPressed: () {
-                  Navigator.pop(context, 0);
-                },
-                child: Text(
-                  S.of(context).teamOwnerManager,
-                  style: style,
-                ),
-              ),
-            ],
-            showCancel: true)
-        .then((value) => onChoose(value));
+    showAdaptiveChoose<int>(
+      context: context,
+      items: [
+        AdaptiveChooseItem(label: S.of(context).teamAllMember, value: 1),
+        AdaptiveChooseItem(label: S.of(context).teamOwnerManager, value: 0),
+      ],
+      showCancel: true,
+    ).then((value) => onChoose(value));
   }
 
   @override
@@ -342,48 +351,53 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
       body: SingleChildScrollView(
         scrollDirection: Axis.vertical,
         child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (NIMChatCache.instance.myTeamRole() ==
-                    NIMTeamMemberRole.memberRoleOwner)
-                  CardBackground(
-                    child: ListTile(
-                      title: Text(
-                        S.of(context).teamManagerManagers,
-                        style: style,
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            _managerCount.toString(),
-                            style: TextStyle(
-                                fontSize: 16, color: CommonColors.color_999999),
-                          ),
-                          const Icon(Icons.keyboard_arrow_right_outlined)
-                        ],
-                      ),
-                      onTap: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => TeamKitManagerListPage(
-                                      tId: widget.team.teamId,
-                                    )));
-                      },
-                    ),
-                  ),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (NIMChatCache.instance.myTeamRole() ==
+                  NIMTeamMemberRole.memberRoleOwner)
                 CardBackground(
-                    child: _friendApplicationSetting(context, widget.team)),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
-                  child: Text(S.of(context).teamEnterManager),
+                  child: ListTile(
+                    title: Text(
+                      S.of(context).teamManagerManagers,
+                      style: style,
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _managerCount.toString(),
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: CommonColors.color_999999,
+                          ),
+                        ),
+                        const Icon(Icons.keyboard_arrow_right_outlined),
+                      ],
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              TeamKitManagerListPage(tId: widget.team.teamId),
+                        ),
+                      );
+                    },
+                  ),
                 ),
-                CardBackground(child: _teamJoinSetting(context, widget.team))
-              ],
-            )),
+              CardBackground(
+                child: _friendApplicationSetting(context, widget.team),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
+                child: Text(S.of(context).teamEnterManager),
+              ),
+              CardBackground(child: _teamJoinSetting(context, widget.team)),
+            ],
+          ),
+        ),
       ),
     );
   }

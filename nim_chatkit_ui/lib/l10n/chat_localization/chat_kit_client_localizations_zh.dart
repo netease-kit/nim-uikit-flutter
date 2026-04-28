@@ -82,16 +82,19 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
   String get chatMessageUnknownType => '未知类型';
 
   @override
-  String get chatMessageImageSave => '图片已保存到手机';
+  String get chatMessageImageSave => '图片已保存';
 
   @override
   String get chatMessageImageSaveFail => '图片保存失败';
 
   @override
-  String get chatMessageVideoSave => '视频已保存到手机';
+  String get chatMessageVideoSave => '视频已保存';
 
   @override
   String get chatMessageVideoSaveFail => '视频保存失败';
+
+  @override
+  String get chatSaveFileDialogTitle => '保存文件';
 
   @override
   String get chatMessageActionCopy => '复制';
@@ -774,6 +777,18 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
   String get chatQuickSearchTeamMember => '群成员';
 
   @override
+  String get chatMemberPickerSearchHint => '搜索成员';
+
+  @override
+  String get chatMemberPickerEmpty => '暂无成员';
+
+  @override
+  String get chatMemberRoleOwner => '群主';
+
+  @override
+  String get chatMemberRoleManager => '管理员';
+
+  @override
   String get chatQuickSearchPicture => '图片';
 
   @override
@@ -805,7 +820,43 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
   String get chatDateRecent7Days => '最近7天';
 
   @override
+  String get chatDateRecent3Days => '近三天';
+
+  @override
+  String get chatDateThisWeek => '本周';
+
+  @override
+  String get chatDateThisMonth => '本月';
+
+  @override
+  String get chatDateRecent3Months => '近三个月';
+
+  @override
+  String get chatDateCustom => '自定义范围';
+
+  @override
+  String get chatDateStartHint => '开始日期';
+
+  @override
+  String get chatDateEndHint => '结束日期';
+
+  @override
   String get chatDateRecent30Days => '最近30天';
+
+  @override
+  String get chatDateStart => '开始时间';
+
+  @override
+  String get chatDateEnd => '结束时间';
+
+  @override
+  String get chatDateConfirm => '确定';
+
+  @override
+  String get chatDateCancel => '取消';
+
+  @override
+  String get chatDatePlaceholder => '--';
 
   @override
   String get chatHistoryLoadMore => '加载更多消息';
@@ -841,6 +892,18 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
   String get chatHistoryOrientation => '定位到聊天';
 
   @override
+  String get chatFileDownloadStart => '开始下载';
+
+  @override
+  String get chatFileContextMenuDownload => '下载';
+
+  @override
+  String get chatFileContextMenuForward => '转发';
+
+  @override
+  String get chatFileContextMenuLocate => '定位到聊天';
+
+  @override
   String chatCollectionFrom(String name) {
     return '来自于$name';
   }
@@ -867,4 +930,63 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
 
   @override
   String get chatSearchFileMessageEmpty => '暂无文件';
+
+  @override
+  String get chatMessageDesktopInputHint => '按Enter发送, Shift+Enter换行';
+
+  @override
+  String get chatCreateGroupTitle => '创建群组';
+
+  @override
+  String get chatCreateGroupNameLabel => '群名称';
+
+  @override
+  String get chatCreateGroupNameHint => '请输入群名称';
+
+  @override
+  String get chatCreateGroupAvatarLabel => '群头像';
+
+  @override
+  String get chatCreateGroupSelectAvatar => '选择群头像';
+
+  @override
+  String get chatCreateGroupCancel => '取消';
+
+  @override
+  String get chatCreateGroupConfirm => '创建';
+
+  @override
+  String get chatCreateGroupSelectContact => '请选择联系人';
+
+  @override
+  String chatCreateGroupSelected(String count) {
+    return '已选：$count 位';
+  }
+
+  @override
+  String get chatSearchToday => '今天';
+
+  @override
+  String get chatSearchLastThreeDays => '近三天';
+
+  @override
+  String get chatSearchThisWeek => '本周';
+
+  @override
+  String get chatSearchThisMonth => '本月';
+
+  @override
+  String get chatSearchLastThreeMonths => '近三个月';
+
+  @override
+  String get chatSearchCustomDateRange => '自定义';
+
+  @override
+  String get chatSearchDownload => '下载';
+
+  @override
+  String get chatSearchForward => '转发';
+
+  @override
+  String get chatSearchLocateMessage => '定位到原始消息';
 }

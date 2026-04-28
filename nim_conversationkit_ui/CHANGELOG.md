@@ -1,5 +1,9 @@
 # NimConversationKitUI ChangeLog
 
+## 10.8.0(Apr 14, 2026)
+* 新增适配Mac Windows
+* 新增适配Web（beta）
+
 ## 10.7.0(Jan 14, 2026)
 * 新增IM消息全文检索功能
 * 新增IM消息类型检索功能（图片/视频/文件）

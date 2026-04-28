@@ -10,29 +10,29 @@ typedef SusChanged = void Function();
 
 /// ContactAzListView
 class ContactAzListView extends StatefulWidget {
-  const ContactAzListView(
-      {
-      // super.key,
-      required this.data,
-      required this.itemCount,
-      required this.itemBuilder,
-      this.itemScrollController,
-      this.itemPositionsListener,
-      this.physics,
-      this.padding,
-      this.susItemBuilder,
-      this.susItemHeight = kSusItemHeight,
-      this.susPosition,
-      this.indexHintBuilder,
-      this.indexBarData = kIndexBarData,
-      this.indexBarWidth = kIndexBarWidth,
-      this.indexBarHeight,
-      this.indexBarItemHeight = kIndexBarItemHeight,
-      this.hapticFeedback = false,
-      this.indexBarAlignment = Alignment.centerRight,
-      this.indexBarMargin,
-      this.indexBarOptions = const IndexBarOptions(),
-      this.susChanged});
+  const ContactAzListView({
+    // super.key,
+    required this.data,
+    required this.itemCount,
+    required this.itemBuilder,
+    this.itemScrollController,
+    this.itemPositionsListener,
+    this.physics,
+    this.padding,
+    this.susItemBuilder,
+    this.susItemHeight = kSusItemHeight,
+    this.susPosition,
+    this.indexHintBuilder,
+    this.indexBarData = kIndexBarData,
+    this.indexBarWidth = kIndexBarWidth,
+    this.indexBarHeight,
+    this.indexBarItemHeight = kIndexBarItemHeight,
+    this.hapticFeedback = false,
+    this.indexBarAlignment = Alignment.centerRight,
+    this.indexBarMargin,
+    this.indexBarOptions = const IndexBarOptions(),
+    this.susChanged,
+  });
 
   final SusChanged? susChanged;
 
@@ -172,10 +172,12 @@ class _ContactAzListViewState extends State<ContactAzListView> {
     if (positions.isNotEmpty) {
       ItemPosition itemPosition = positions
           .where((ItemPosition position) => position.itemTrailingEdge > 0)
-          .reduce((ItemPosition min, ItemPosition position) =>
-              position.itemTrailingEdge < min.itemTrailingEdge
-                  ? position
-                  : min);
+          .reduce(
+            (ItemPosition min, ItemPosition position) =>
+                position.itemTrailingEdge < min.itemTrailingEdge
+                    ? position
+                    : min,
+          );
       int index = itemPosition.index;
       String tag = widget.data[index].getSuspensionTag();
       if (selectTag != tag) {

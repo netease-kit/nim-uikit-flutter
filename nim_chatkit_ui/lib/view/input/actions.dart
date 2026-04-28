@@ -14,9 +14,12 @@ class ActionItem {
   String type;
   Widget icon;
   String? title;
-  Function(BuildContext context, String conversationId,
-      NIMConversationType conversationType,
-      {NIMMessageSender? messageSender})? onTap;
+  Function(
+    BuildContext context,
+    String conversationId,
+    NIMConversationType conversationType, {
+    NIMMessageSender? messageSender,
+  })? onTap;
   List<Permission>? permissions;
   //权限标题
   String? permissionTitle;
@@ -31,17 +34,18 @@ class ActionItem {
   /// from 0
   int? index;
 
-  ActionItem(
-      {required this.type,
-      required this.icon,
-      this.title,
-      this.onTap,
-      this.permissions,
-      this.enable = true,
-      this.permissionTitle,
-      this.permissionDesc,
-      this.index,
-      this.deniedTip});
+  ActionItem({
+    required this.type,
+    required this.icon,
+    this.title,
+    this.onTap,
+    this.permissions,
+    this.enable = true,
+    this.permissionTitle,
+    this.permissionDesc,
+    this.index,
+    this.deniedTip,
+  });
 }
 
 class ActionConstants {
@@ -62,12 +66,12 @@ class ActionConstants {
 }
 
 class InputTextAction extends StatelessWidget {
-  const InputTextAction(
-      {Key? key,
-      required this.action,
-      required this.onTap,
-      required this.enable})
-      : super(key: key);
+  const InputTextAction({
+    Key? key,
+    required this.action,
+    required this.onTap,
+    required this.enable,
+  }) : super(key: key);
 
   final ActionItem action;
   final VoidCallback onTap;
@@ -81,13 +85,15 @@ class InputTextAction extends StatelessWidget {
           ? () {
               if (action.permissionDesc?.isNotEmpty == true) {
                 showTopWarningDialog(
-                    context: context,
-                    title: action.permissionTitle,
-                    content: action.permissionDesc ?? '');
+                  context: context,
+                  title: action.permissionTitle,
+                  content: action.permissionDesc ?? '',
+                );
               }
-              PermissionsHelper.requestPermission(action.permissions!,
-                      deniedTip: action.deniedTip)
-                  .then((value) {
+              PermissionsHelper.requestPermission(
+                action.permissions!,
+                deniedTip: action.deniedTip,
+              ).then((value) {
                 if (action.permissionDesc?.isNotEmpty == true) {
                   Navigator.of(context).pop();
                 }

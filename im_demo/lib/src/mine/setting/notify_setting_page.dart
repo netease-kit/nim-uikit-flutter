@@ -4,13 +4,14 @@
 
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:netease_common_ui/ui/background.dart';
-import 'package:netease_common_ui/widgets/common_list_tile.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_common_ui/widgets/common_list_tile.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:nim_chatkit/repo/config_repo.dart';
-import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
+import 'package:nim_chatkit/utils/toast_utils.dart';
 
 import '../../../l10n/S.dart';
 
@@ -29,7 +30,7 @@ class _NotifySettingPageState extends State<NotifySettingPage> {
 
   initSwitchValue() async {
     notify = await ConfigRepo.getMixNotification();
-    if (Platform.isAndroid) {
+    if (!kIsWeb && Platform.isAndroid) {
       ring = await ConfigRepo.getRingToggle();
       shake = await ConfigRepo.getVibrateToggle();
     }
@@ -69,16 +70,18 @@ class _NotifySettingPageState extends State<NotifySettingPage> {
                 trailingType: TrailingType.onOff,
                 switchValue: notify,
                 onSwitchChanged: (value) {
-                  if (Platform.isAndroid) {
+                  if (!kIsWeb && Platform.isAndroid) {
                     ConfigRepo.updateMessageNotification(value);
                   }
-                  ConfigRepo.updateMixNotification(value,
-                          showDetail: !showNoDetail)
-                      .then((success) {
-                    Fluttertoast.showToast(
-                        msg: success
-                            ? S.of(context).settingSuccess
-                            : S.of(context).settingFail);
+                  ConfigRepo.updateMixNotification(
+                    value,
+                    showDetail: !showNoDetail,
+                  ).then((success) {
+                    ChatUIToast.show(
+                      success
+                          ? S.of(context).settingSuccess
+                          : S.of(context).settingFail,
+                    );
                     if (success) {
                       setState(() {
                         notify = value;
@@ -88,61 +91,69 @@ class _NotifySettingPageState extends State<NotifySettingPage> {
                 },
               ),
             ),
-            if (Platform.isAndroid) ...[
+            if (!kIsWeb && Platform.isAndroid) ...[
               _dividerTitle(S.of(context).settingNotifyMode),
               CardBackground(
                 child: Column(
-                  children: ListTile.divideTiles(context: context, tiles: [
-                    CommonListTile(
-                      title: S.of(context).settingNotifyModeRing,
-                      trailingType: TrailingType.onOff,
-                      switchValue: ring,
-                      onSwitchChanged: (value) {
-                        ConfigRepo.updateRingToggle(value);
-                        setState(() {
-                          ring = value;
-                        });
-                      },
-                    ),
-                    CommonListTile(
-                      title: S.of(context).settingNotifyModeShake,
-                      trailingType: TrailingType.onOff,
-                      switchValue: shake,
-                      onSwitchChanged: (value) {
-                        ConfigRepo.updateVibrateToggle(value);
-                        setState(() {
-                          shake = value;
-                        });
-                      },
-                    ),
-                  ]).toList(),
+                  children: ListTile.divideTiles(
+                    context: context,
+                    tiles: [
+                      CommonListTile(
+                        title: S.of(context).settingNotifyModeRing,
+                        trailingType: TrailingType.onOff,
+                        switchValue: ring,
+                        onSwitchChanged: (value) {
+                          ConfigRepo.updateRingToggle(value);
+                          setState(() {
+                            ring = value;
+                          });
+                        },
+                      ),
+                      CommonListTile(
+                        title: S.of(context).settingNotifyModeShake,
+                        trailingType: TrailingType.onOff,
+                        switchValue: shake,
+                        onSwitchChanged: (value) {
+                          ConfigRepo.updateVibrateToggle(value);
+                          setState(() {
+                            shake = value;
+                          });
+                        },
+                      ),
+                    ],
+                  ).toList(),
                 ),
               ),
             ],
             _dividerTitle(S.of(context).settingNotifyPush),
             CardBackground(
               child: Column(
-                children: ListTile.divideTiles(context: context, tiles: [
-                  CommonListTile(
-                    title: S.of(context).settingNotifyPushDetail,
-                    trailingType: TrailingType.onOff,
-                    switchValue: showNoDetail,
-                    onSwitchChanged: (value) {
-                      ConfigRepo.updatePushShowNoDetail(!showNoDetail)
-                          .then((success) {
-                        Fluttertoast.showToast(
-                            msg: success
+                children: ListTile.divideTiles(
+                  context: context,
+                  tiles: [
+                    CommonListTile(
+                      title: S.of(context).settingNotifyPushDetail,
+                      trailingType: TrailingType.onOff,
+                      switchValue: showNoDetail,
+                      onSwitchChanged: (value) {
+                        ConfigRepo.updatePushShowNoDetail(!showNoDetail).then((
+                          success,
+                        ) {
+                          ChatUIToast.show(
+                            success
                                 ? S.of(context).settingSuccess
-                                : S.of(context).settingFail);
-                        if (success) {
-                          setState(() {
-                            showNoDetail = !showNoDetail;
-                          });
-                        }
-                      });
-                    },
-                  ),
-                ]).toList(),
+                                : S.of(context).settingFail,
+                          );
+                          if (success) {
+                            setState(() {
+                              showNoDetail = !showNoDetail;
+                            });
+                          }
+                        });
+                      },
+                    ),
+                  ],
+                ).toList(),
               ),
             ),
           ],

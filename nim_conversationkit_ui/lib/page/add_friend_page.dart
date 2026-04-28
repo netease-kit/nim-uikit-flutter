@@ -41,43 +41,41 @@ class _AddFriendPageState extends State<AddFriendPage> {
           return Container();
         else {
           return FutureBuilder<List<NIMUserInfo>?>(
-              future: searchUserInfo([keyword]),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.done) {
-                  if (snapshot.data == null || snapshot.data!.isEmpty) {
-                    return Column(
-                      children: [
-                        const SizedBox(
-                          height: 68,
+            future: searchUserInfo([keyword]),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.done) {
+                if (snapshot.data == null || snapshot.data!.isEmpty) {
+                  return Column(
+                    children: [
+                      const SizedBox(height: 68),
+                      SvgPicture.asset(
+                        'images/ic_search_empty.svg',
+                        package: kPackage,
+                      ),
+                      const SizedBox(height: 18),
+                      Text(
+                        S.of(context).addFriendSearchEmptyTips,
+                        style: TextStyle(
+                          color: Color(0xffb3b7bc),
+                          fontSize: 14,
                         ),
-                        SvgPicture.asset(
-                          'images/ic_search_empty.svg',
-                          package: kPackage,
-                        ),
-                        const SizedBox(
-                          height: 18,
-                        ),
-                        Text(
-                          S.of(context).addFriendSearchEmptyTips,
-                          style:
-                              TextStyle(color: Color(0xffb3b7bc), fontSize: 14),
-                        )
-                      ],
-                    );
-                  } else {
-                    Future.delayed(Duration(milliseconds: 200), () {
-                      if (getIt<IMLoginService>().userInfo?.accountId ==
-                          snapshot.data![0].accountId) {
-                        gotoMineInfoPage(context);
-                      } else {
-                        goToContactDetail(
-                            context, snapshot.data![0].accountId!);
-                      }
-                    });
-                  }
+                      ),
+                    ],
+                  );
+                } else {
+                  Future.delayed(Duration(milliseconds: 200), () {
+                    if (getIt<IMLoginService>().userInfo?.accountId ==
+                        snapshot.data![0].accountId) {
+                      gotoMineInfoPage(context);
+                    } else {
+                      goToContactDetail(context, snapshot.data![0].accountId!);
+                    }
+                  });
                 }
-                return Container();
-              });
+              }
+              return Container();
+            },
+          );
         }
       },
     );

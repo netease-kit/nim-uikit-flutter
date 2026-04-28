@@ -4,10 +4,11 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart' as Intl;
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/progress_ring.dart';
@@ -30,6 +31,7 @@ import 'package:nim_chatkit/services/login/im_login_service.dart';
 import 'package:nim_chatkit/services/message/chat_message.dart';
 import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
 import 'package:nim_chatkit/services/team/team_provider.dart';
+import 'package:nim_chatkit/utils/toast_utils.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_helper.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_user_helper.dart';
@@ -42,6 +44,7 @@ import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_notify_item.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_tips_item.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_video_item.dart';
+import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_desktop_context_menu.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_message_pop_menu.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
 import 'package:nim_chatkit_ui/view/page/chat_message_ack_page.dart';
@@ -50,6 +53,7 @@ import 'package:nim_core_v2/nim_core.dart';
 import 'package:provider/provider.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
+import '../../../helper/desktop_dialog_helper.dart';
 import '../../../helper/merge_message_helper.dart';
 import 'chat_kit_message_multi_line_text_item.dart';
 import 'chat_kit_message_text_item.dart';
@@ -97,22 +101,22 @@ class ChatKitMessageItem extends StatefulWidget {
 
   final ChatUIConfig? chatUIConfig;
 
-  ChatKitMessageItem(
-      {Key? key,
-      required this.chatMessage,
-      required this.lastMessage,
-      this.messageBuilder,
-      this.showReadAck = true,
-      this.onTapAvatar,
-      this.popMenuAction,
-      this.onTapFailedMessage,
-      required this.scrollToIndex,
-      this.teamInfo,
-      this.chatUIConfig,
-      this.onMessageItemClick,
-      this.onAvatarLongPress,
-      this.onMessageItemLongClick})
-      : super(key: key);
+  ChatKitMessageItem({
+    Key? key,
+    required this.chatMessage,
+    required this.lastMessage,
+    this.messageBuilder,
+    this.showReadAck = true,
+    this.onTapAvatar,
+    this.popMenuAction,
+    this.onTapFailedMessage,
+    required this.scrollToIndex,
+    this.teamInfo,
+    this.chatUIConfig,
+    this.onMessageItemClick,
+    this.onAvatarLongPress,
+    this.onMessageItemLongClick,
+  }) : super(key: key);
 
   @override
   State<StatefulWidget> createState() => ChatKitMessageItemState();
@@ -140,20 +144,28 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
       return MessageItemConfig(showMsgCommonBg: false);
     } else if (message.messageType == NIMMessageType.file) {
       return MessageItemConfig(
-          showMsgCommonBg: false, showMsgLoadingState: true);
+        showMsgCommonBg: false,
+        showMsgLoadingState: true,
+      );
     }
     return MessageItemConfig();
   }
 
   bool isSelf() {
     if (ChatMessageHelper.isReceivedMessageFromAi(
-        widget.chatMessage.nimMessage)) {
+      widget.chatMessage.nimMessage,
+    )) {
       return false;
     }
     return widget.chatMessage.nimMessage.isSelf == true;
   }
 
   ChatKitMessagePopMenu? _popMenu;
+
+  ChatKitDesktopContextMenu? _desktopContextMenu;
+
+  bool get _isDesktopOrWeb =>
+      kIsWeb || (!kIsWeb && !Platform.isAndroid && !Platform.isIOS);
 
   bool isTeam() {
     return widget.chatMessage.nimMessage.conversationType ==
@@ -206,7 +218,8 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
     return width -
         (isSelect ? 135 : 110) -
         (ChatMessageHelper.isReceivedMessageFromAi(
-                widget.chatMessage.nimMessage)
+          widget.chatMessage.nimMessage,
+        )
             ? 7
             : 0);
   }
@@ -217,10 +230,43 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
         !isSelf();
   }
 
+  _onSecondaryTap(BuildContext context, TapUpDetails details) async {
+    //如果是撤回消息，不弹出菜单
+    if (widget.chatMessage.isRevoke) {
+      return;
+    }
+    //如果是正在流式消息，Stream 或者PlaceHolder 右键无反应
+    if (ChatMessageHelper.isReceivedMessageFromAi(
+          widget.chatMessage.nimMessage,
+        ) &&
+        (widget.chatMessage.nimMessage.aiConfig?.aiStreamStatus ==
+                V2NIMMessageAIStreamStatus
+                    .V2NIM_MESSAGE_AI_STREAM_STATUS_STREAMING ||
+            widget.chatMessage.nimMessage.aiConfig?.aiStreamStatus ==
+                V2NIMMessageAIStreamStatus
+                    .V2NIM_MESSAGE_AI_STREAM_STATUS_PLACEHOLDER)) {
+      return;
+    }
+    _desktopContextMenu?.clean();
+    _desktopContextMenu = null;
+    int v = await ConfigRepo.getAudioPlayModel();
+    bool voiceFromSpeaker = v == ConfigRepo.audioPlayOutside;
+    _desktopContextMenu = ChatKitDesktopContextMenu(
+      context: context,
+      message: widget.chatMessage,
+      globalPosition: details.globalPosition,
+      popMenuAction: widget.popMenuAction,
+      chatUIConfig: widget.chatUIConfig,
+      isVoiceFromSpeaker: voiceFromSpeaker,
+    );
+    _desktopContextMenu!.show();
+  }
+
   _onLongPress(BuildContext context) async {
     //如果是正在流式消息，Stream 或者PlaceHolder 长按无反应
     if (ChatMessageHelper.isReceivedMessageFromAi(
-            widget.chatMessage.nimMessage) &&
+          widget.chatMessage.nimMessage,
+        ) &&
         (widget.chatMessage.nimMessage.aiConfig?.aiStreamStatus ==
                 V2NIMMessageAIStreamStatus
                     .V2NIM_MESSAGE_AI_STREAM_STATUS_STREAMING ||
@@ -234,8 +280,12 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
     int v = await ConfigRepo.getAudioPlayModel();
     bool voiceFromSpeaker = v == ConfigRepo.audioPlayOutside;
     _popMenu = ChatKitMessagePopMenu(
-        widget.chatMessage, voiceFromSpeaker, context,
-        popMenuAction: widget.popMenuAction, chatUIConfig: widget.chatUIConfig);
+      widget.chatMessage,
+      voiceFromSpeaker,
+      context,
+      popMenuAction: widget.popMenuAction,
+      chatUIConfig: widget.chatUIConfig,
+    );
     _popMenu!.show();
   }
 
@@ -277,8 +327,9 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
                 ?.isNotEmpty ==
             true) {
       revokedMessageInfo = RevokedMessageInfo.fromMap(
-          (localExtension![ChatMessage.keyRevokeMsgContent] as Map)
-              .cast<String, dynamic>());
+        (localExtension![ChatMessage.keyRevokeMsgContent] as Map)
+            .cast<String, dynamic>(),
+      );
     }
     return Container(
       padding: const EdgeInsets.only(left: 16, top: 12, right: 16, bottom: 12),
@@ -286,22 +337,28 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(S.of().chatMessageHaveBeenRevoked,
-              style: TextStyle(
-                  fontSize: getRevokeMessageTextSize(),
-                  color: getRevokeMessageTextColor())),
+          Text(
+            S.of().chatMessageHaveBeenRevoked,
+            style: TextStyle(
+              fontSize: getRevokeMessageTextSize(),
+              color: getRevokeMessageTextColor(),
+            ),
+          ),
           if (_showReeditText(revokedMessageInfo))
             InkWell(
               onTap: () {
                 context.read<ChatViewModel>().reeditMessage =
                     revokedMessageInfo;
               },
-              child: Text(S.of().chatMessageReedit,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      fontSize: getRevokeMessageTextSize(),
-                      color: '#1861DF'.toColor())),
-            )
+              child: Text(
+                S.of().chatMessageReedit,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: getRevokeMessageTextSize(),
+                  color: '#1861DF'.toColor(),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -319,17 +376,19 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
     var replyMessageInfoMap =
         remoteExtension?[ChatMessage.keyReplyMsgKey] as Map?;
     if (replyMessageInfoMap != null) {
-      final info =
-          ReplyMessageInfo.fromMap(replyMessageInfoMap.cast<String, dynamic>());
+      final info = ReplyMessageInfo.fromMap(
+        replyMessageInfoMap.cast<String, dynamic>(),
+      );
 
       return NIMMessageRefer(
-          senderId: info.from,
-          conversationId: info.to,
-          receiverId: info.receiverId,
-          messageClientId: info.idClient,
-          messageServerId: info.idServer,
-          conversationType: ConversationTypeEx.getTypeFromValue(info.scene),
-          createTime: info.time);
+        senderId: info.from,
+        conversationId: info.to,
+        receiverId: info.receiverId,
+        messageClientId: info.idClient,
+        messageServerId: info.idServer,
+        conversationType: ConversationTypeEx.getTypeFromValue(info.scene),
+        createTime: info.time,
+      );
     }
     return null;
   }
@@ -341,24 +400,25 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   Widget _buildMessageReply(ChatMessage message) {
     NIMMessageRefer? messageRefer = _getReplyMessageRefer(message);
     return Container(
-        padding: const EdgeInsets.only(left: 16, top: 12, right: 16),
-        child: GestureDetector(
-          child: FutureBuilder<String>(
-            future: _replyFuture,
-            builder: (context, snapshot) {
-              return Text(
-                '| ${snapshot.data}',
-                textWidthBasis: TextWidthBasis.parent,
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-                style: TextStyle(fontSize: 13, color: '#929299'.toColor()),
-              );
-            },
-          ),
-          onTap: () {
-            widget.scrollToIndex(messageRefer!);
+      padding: const EdgeInsets.only(left: 16, top: 12, right: 16),
+      child: GestureDetector(
+        child: FutureBuilder<String>(
+          future: _replyFuture,
+          builder: (context, snapshot) {
+            return Text(
+              '| ${snapshot.data}',
+              textWidthBasis: TextWidthBasis.parent,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              style: TextStyle(fontSize: 13, color: '#929299'.toColor()),
+            );
           },
-        ));
+        ),
+        onTap: () {
+          widget.scrollToIndex(messageRefer!);
+        },
+      ),
+    );
   }
 
   Widget _buildMessage(ChatMessage message) {
@@ -369,7 +429,9 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
           return messageItemBuilder!.textMessageBuilder!(message.nimMessage);
         }
         return ChatKitMessageTextItem(
-            message: message.nimMessage, chatUIConfig: widget.chatUIConfig);
+          message: message.nimMessage,
+          chatUIConfig: widget.chatUIConfig,
+        );
       case NIMMessageType.audio:
         if (messageItemBuilder?.audioMessageBuilder != null) {
           return messageItemBuilder!.audioMessageBuilder!(message.nimMessage);
@@ -394,7 +456,9 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
           return messageItemBuilder!.notifyMessageBuilder!(message.nimMessage);
         }
         return ChatKitMessageNotificationItem(
-            message: message.nimMessage, teamInfo: widget.teamInfo);
+          message: message.nimMessage,
+          teamInfo: widget.teamInfo,
+        );
       case NIMMessageType.tip:
         if (messageItemBuilder?.tipsMessageBuilder != null) {
           return messageItemBuilder!.tipsMessageBuilder!(message.nimMessage);
@@ -410,30 +474,36 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
       default:
         if (message.nimMessage.messageType == NIMMessageType.location &&
             messageItemBuilder?.locationMessageBuilder != null) {
-          return messageItemBuilder!.locationMessageBuilder!
-              .call(message.nimMessage);
+          return messageItemBuilder!.locationMessageBuilder!.call(
+            message.nimMessage,
+          );
         }
         if (message.nimMessage.messageType == NIMMessageType.call &&
             messageItemBuilder?.avChatMessageBuilder != null) {
-          return messageItemBuilder!.avChatMessageBuilder!
-              .call(message.nimMessage);
+          return messageItemBuilder!.avChatMessageBuilder!.call(
+            message.nimMessage,
+          );
         }
         if (message.nimMessage.messageType == NIMMessageType.custom) {
-          var mergedMessage =
-              MergeMessageHelper.parseMergeMessage(message.nimMessage);
-          var multiLineMap =
-              MessageHelper.parseMultiLineMessage(message.nimMessage);
+          var mergedMessage = MergeMessageHelper.parseMergeMessage(
+            message.nimMessage,
+          );
+          var multiLineMap = MessageHelper.parseMultiLineMessage(
+            message.nimMessage,
+          );
           var multiLineTitle = multiLineMap?[ChatMessage.keyMultiLineTitle];
           var multiLineBody = multiLineMap?[ChatMessage.keyMultiLineBody];
           if (mergedMessage != null) {
             if (messageItemBuilder?.mergedMessageBuilder != null) {
-              return messageItemBuilder!.mergedMessageBuilder!
-                  .call(message.nimMessage);
+              return messageItemBuilder!.mergedMessageBuilder!.call(
+                message.nimMessage,
+              );
             }
             return ChatKitMessageMergedItem(
-                message: message.nimMessage,
-                mergedMessage: mergedMessage,
-                chatUIConfig: widget.chatUIConfig);
+              message: message.nimMessage,
+              mergedMessage: mergedMessage,
+              chatUIConfig: widget.chatUIConfig,
+            );
           } else if (multiLineTitle != null) {
             return ChatKitMessageMultiLineItem(
               message: message.nimMessage,
@@ -499,14 +569,14 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
               true &&
           widget.chatMessage.nimMessage.messageStatus?.readReceiptSent !=
               true) {
-        context
-            .read<ChatViewModel>()
-            .sendTeamMessageReceipt(widget.chatMessage);
+        context.read<ChatViewModel>().sendTeamMessageReceipt(
+              widget.chatMessage,
+            );
       } else if (widget.chatMessage.nimMessage.conversationType ==
           NIMConversationType.p2p) {
-        context
-            .read<ChatViewModel>()
-            .sendMessageP2PReceipt(widget.chatMessage.nimMessage);
+        context.read<ChatViewModel>().sendMessageP2PReceipt(
+              widget.chatMessage.nimMessage,
+            );
       }
     }
   }
@@ -531,14 +601,22 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
             widget.onTapFailedMessage!(message);
           }
         },
-        child: SvgPicture.asset('images/ic_failed.svg',
-            package: kPackage, width: 16, height: 16),
+        child: SvgPicture.asset(
+          'images/ic_failed.svg',
+          package: kPackage,
+          width: 16,
+          height: 16,
+        ),
       );
     } else if (message.nimMessage.messageStatus?.errorCode ==
         ChatMessage.SERVER_ANTISPAM) {
       //反垃圾显示
-      return SvgPicture.asset('images/ic_antispam.svg',
-          package: kPackage, width: 16, height: 16);
+      return SvgPicture.asset(
+        'images/ic_antispam.svg',
+        package: kPackage,
+        width: 16,
+        height: 16,
+      );
     } else if (_showMsgAck(message)) {
       return InkWell(
         onTap: () async {
@@ -551,29 +629,50 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
               message.unAckCount! > 0) {
             final receiptDetail =
                 await ChatMessageRepo.fetchTeamMessageReceiptDetail(
-                    widget.chatMessage.nimMessage);
+              widget.chatMessage.nimMessage,
+            );
             if (receiptDetail != null) {
               widget.chatMessage.ackCount =
                   receiptDetail.readReceipt?.readCount;
               widget.chatMessage.unAckCount =
                   receiptDetail.readReceipt?.unreadCount;
             }
-            Navigator.push(context, MaterialPageRoute(builder: (context) {
-              return ChatMessageAckPage(
-                message: message.nimMessage,
-                ackInfo: receiptDetail,
+            if (ChatKitUtils.isDesktopOrWeb) {
+              showDesktopDialog(
+                context,
+                ChatMessageAckPage(
+                  message: message.nimMessage,
+                  ackInfo: receiptDetail,
+                  isDialog: true,
+                ),
               );
-            }));
+            } else {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) {
+                    return ChatMessageAckPage(
+                      message: message.nimMessage,
+                      ackInfo: receiptDetail,
+                    );
+                  },
+                ),
+              );
+            }
           }
         },
         child: ProgressRing(
           size: 16,
           progress: _getProcess(widget.chatMessage),
           max: _getAllAck(widget.chatMessage),
-          startImage:
-              SvgPicture.asset('images/ic_unread.svg', package: kPackage),
-          finishImage:
-              SvgPicture.asset('images/ic_read.svg', package: kPackage),
+          startImage: SvgPicture.asset(
+            'images/ic_unread.svg',
+            package: kPackage,
+          ),
+          finishImage: SvgPicture.asset(
+            'images/ic_read.svg',
+            package: kPackage,
+          ),
         ),
       );
     } else {
@@ -607,7 +706,8 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
     var teamId = widget.teamInfo?.teamId;
     if (teamId == null) {
       teamId = ChatKitUtils.getConversationTargetId(
-          widget.chatMessage.nimMessage.conversationId!);
+        widget.chatMessage.nimMessage.conversationId!,
+      );
     }
     return teamId;
   }
@@ -615,11 +715,15 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   //获取对方的用户信息
   Future<UserAvatarInfo> _getUserInfo(NIMMessage message) async {
     if (ChatMessageHelper.isReceivedMessageFromAi(message)) {
-      final aiUser =
-          AIUserManager.instance.getAIUserById(message.aiConfig!.accountId!);
+      final aiUser = AIUserManager.instance.getAIUserById(
+        message.aiConfig!.accountId!,
+      );
       final name = aiUser?.name ?? aiUser?.accountId ?? '';
-      _userAvatarInfo =
-          UserAvatarInfo(name, avatar: aiUser?.avatar, avatarName: name);
+      _userAvatarInfo = UserAvatarInfo(
+        name,
+        avatar: aiUser?.avatar,
+        avatarName: name,
+      );
     } else {
       final accId = message.senderId!;
       String name = (accId == getIt<IMLoginService>().userInfo!.accountId)
@@ -630,8 +734,11 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
       String? avatar = await accId.getAvatar();
 
       String? avatarName = await accId.getUserName(needAlias: false);
-      _userAvatarInfo =
-          UserAvatarInfo(name, avatar: avatar, avatarName: avatarName);
+      _userAvatarInfo = UserAvatarInfo(
+        name,
+        avatar: avatar,
+        avatarName: avatarName,
+      );
     }
 
     return _userAvatarInfo;
@@ -662,8 +769,9 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   }
 
   bool _hideAvatarMessage(ChatMessage message) {
-    var configShowAvatar =
-        widget.chatUIConfig?.isShowAvatar?.call(message.nimMessage);
+    var configShowAvatar = widget.chatUIConfig?.isShowAvatar?.call(
+      message.nimMessage,
+    );
     if (configShowAvatar != null) {
       return configShowAvatar;
     }
@@ -692,19 +800,22 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
     } else {
       Color color = isSelf() ? '#D6E5F6'.toColor() : '#E8EAED'.toColor();
       return BoxDecoration(
-        color: !_getMessageItemConfig(widget.chatMessage.nimMessage)
-                .showMsgCommonBg
+        color: !_getMessageItemConfig(
+          widget.chatMessage.nimMessage,
+        ).showMsgCommonBg
             ? Colors.transparent
             : color,
         borderRadius: isSelf()
             ? const BorderRadius.only(
                 topLeft: Radius.circular(12),
                 bottomLeft: Radius.circular(12),
-                bottomRight: Radius.circular(12))
+                bottomRight: Radius.circular(12),
+              )
             : const BorderRadius.only(
                 topRight: Radius.circular(12),
                 bottomLeft: Radius.circular(12),
-                bottomRight: Radius.circular(12)),
+                bottomRight: Radius.circular(12),
+              ),
       );
     }
   }
@@ -718,8 +829,11 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   void _loadReply() {
     _messageRefer = _getReplyMessageRefer(widget.chatMessage);
     if (_messageRefer?.messageClientId?.isNotEmpty == true) {
-      _replyFuture = ChatMessageHelper.getReplayMessageText(context,
-          _messageRefer!, widget.chatMessage.nimMessage.conversationId!);
+      _replyFuture = ChatMessageHelper.getReplayMessageText(
+        context,
+        _messageRefer!,
+        widget.chatMessage.nimMessage.conversationId!,
+      );
     } else {
       _replyFuture = null;
     }
@@ -752,8 +866,8 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
             NIMConversationType.team &&
         widget.chatMessage.nimMessage.senderId == IMKitClient.account()) {
       ChatMessageRepo.fetchTeamMessageReceiptDetail(
-              widget.chatMessage.nimMessage)
-          .then((result) {
+        widget.chatMessage.nimMessage,
+      ).then((result) {
         if (result != null) {
           widget.chatMessage.unAckCount = result.readReceipt?.unreadCount;
           widget.chatMessage.ackCount = result.readReceipt?.readCount;
@@ -763,38 +877,48 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
         }
       });
     }
-    subscriptions
-        .add(NIMChatCache.instance.teamMembersNotifier.listen((members) {
-      for (var member in members) {
-        if (member.teamInfo.accountId ==
-            widget.chatMessage.nimMessage.senderId) {
-          if (mounted) {
-            setState(() {});
+    subscriptions.add(
+      NIMChatCache.instance.teamMembersNotifier.listen((members) {
+        for (var member in members) {
+          if (member.teamInfo.accountId ==
+              widget.chatMessage.nimMessage.senderId) {
+            if (mounted) {
+              setState(() {
+                _loadUserInfo();
+              });
+            }
           }
         }
-      }
-    }));
+      }),
+    );
     var userInfoUpdated = getIt<ContactProvider>().onContactInfoUpdated;
     if (userInfoUpdated != null) {
-      subscriptions.add(userInfoUpdated.listen((event) {
-        if (event.user.accountId == widget.chatMessage.nimMessage.senderId) {
-          if (mounted) {
-            setState(() {});
+      subscriptions.add(
+        userInfoUpdated.listen((event) {
+          if (event.user.accountId == widget.chatMessage.nimMessage.senderId) {
+            if (mounted) {
+              setState(() {
+                _loadUserInfo();
+              });
+            }
           }
-        }
-      }));
+        }),
+      );
     }
   }
 
-  Widget _getSingleMiddleEllipsisText(String? data,
-      {TextStyle? style, String? userName}) {
+  Widget _getSingleMiddleEllipsisText(
+    String? data, {
+    TextStyle? style,
+    String? userName,
+  }) {
     String info = data ?? "";
     bool isMultiSelect = context.watch<ChatViewModel>().isMultiSelected;
     final TextPainter textPainter = TextPainter(
-        text: TextSpan(text: info, style: style),
-        maxLines: 1,
-        textDirection: TextDirection.ltr)
-      ..layout(minWidth: 0, maxWidth: double.infinity);
+      text: TextSpan(text: info, style: style),
+      maxLines: 1,
+      textDirection: TextDirection.ltr,
+    )..layout(minWidth: 0, maxWidth: double.infinity);
     //超出的宽度,多计算上头像占位
     final exceedWidth =
         (textPainter.size.width - (getMaxWidth(isMultiSelect) - 50)).toInt();
@@ -819,18 +943,17 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   }
 
   Widget _getPinText(String content, {TextStyle? style, String? userName}) {
-    return _getSingleMiddleEllipsisText(content,
-        style: style, userName: userName);
+    return _getSingleMiddleEllipsisText(
+      content,
+      style: style,
+      userName: userName,
+    );
   }
 
   String _getPintContent(String? userName) {
     return isTeam()
-        ? S.of(context).chatMessagePinMessageForTeam(
-              userName ?? '',
-            )
-        : S.of(context).chatMessagePinMessage(
-              userName ?? '',
-            );
+        ? S.of(context).chatMessagePinMessageForTeam(userName ?? '')
+        : S.of(context).chatMessagePinMessage(userName ?? '');
   }
 
   Widget _getSelectWidget(bool isSelectModel, ChatViewModel chatViewModel) {
@@ -840,14 +963,16 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
           width: 18,
           margin: const EdgeInsets.only(right: 8, top: 10),
           child: CheckBoxButton(
-            isChecked:
-                chatViewModel.isSelectedMessage(widget.chatMessage.nimMessage),
+            isChecked: chatViewModel.isSelectedMessage(
+              widget.chatMessage.nimMessage,
+            ),
             onChanged: (value) {
               if (value) {
                 chatViewModel.addSelectedMessage(widget.chatMessage.nimMessage);
               } else {
-                chatViewModel
-                    .removeSelectedMessage(widget.chatMessage.nimMessage);
+                chatViewModel.removeSelectedMessage(
+                  widget.chatMessage.nimMessage,
+                );
               }
             },
           ),
@@ -871,6 +996,8 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   void dispose() {
     _popMenu?.clean();
     _popMenu = null;
+    _desktopContextMenu?.clean();
+    _desktopContextMenu = null;
     for (var sub in subscriptions) {
       sub.cancel();
     }
@@ -905,15 +1032,18 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
             Text(
               _timeFormat(widget.chatMessage.nimMessage.createTime!),
               style: TextStyle(
-                  fontSize: widget.chatUIConfig?.timeTextSize ?? 12,
-                  color: widget.chatUIConfig?.timeTextColor ??
-                      '#B3B7BC'.toColor()),
+                fontSize: widget.chatUIConfig?.timeTextSize ?? 12,
+                color:
+                    widget.chatUIConfig?.timeTextColor ?? '#B3B7BC'.toColor(),
+              ),
             ),
           _hideAvatarMessage(widget.chatMessage)
               ? _buildMessage(widget.chatMessage)
               : Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 5,
+                  ),
                   margin: const EdgeInsets.only(bottom: 10),
                   color: _getBgColor(),
                   child: Row(
@@ -921,254 +1051,313 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       _getSelectWidget(
-                          chatViewModel.isMultiSelected, chatViewModel),
+                        chatViewModel.isMultiSelected,
+                        chatViewModel,
+                      ),
                       FutureBuilder<UserAvatarInfo>(
                         future: _userInfoFuture,
                         builder: (context, snapshot) {
                           return Expanded(
-                              child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: isSelf()
-                                ? MainAxisAlignment.end
-                                : MainAxisAlignment.start,
-                            children: [
-                              //对方头像
-                              if (!isSelf())
-                                InkWell(
-                                  onTap: () {
-                                    if (widget.onTapAvatar != null) {
-                                      if (ChatMessageHelper
-                                          .isReceivedMessageFromAi(
-                                              widget.chatMessage.nimMessage)) {
-                                        widget.onTapAvatar!(widget.chatMessage
-                                            .nimMessage.aiConfig?.accountId);
-                                      } else {
-                                        widget.onTapAvatar!(widget
-                                            .chatMessage.nimMessage.senderId);
-                                      }
-                                    }
-                                  },
-                                  onLongPress: () {
-                                    if (widget.onAvatarLongPress != null) {
-                                      if (ChatMessageHelper
-                                          .isReceivedMessageFromAi(
-                                              widget.chatMessage.nimMessage)) {
-                                        widget.onAvatarLongPress!.call(widget
-                                            .chatMessage
-                                            .nimMessage
-                                            .aiConfig
-                                            ?.accountId);
-                                      } else {
-                                        widget.onAvatarLongPress!.call(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: isSelf()
+                                  ? MainAxisAlignment.end
+                                  : MainAxisAlignment.start,
+                              children: [
+                                //对方头像
+                                if (!isSelf())
+                                  InkWell(
+                                    onTap: () {
+                                      if (widget.onTapAvatar != null) {
+                                        if (ChatMessageHelper
+                                            .isReceivedMessageFromAi(
+                                          widget.chatMessage.nimMessage,
+                                        )) {
+                                          widget.onTapAvatar!(
+                                            widget.chatMessage.nimMessage
+                                                .aiConfig?.accountId,
+                                          );
+                                        } else {
+                                          widget.onTapAvatar!(
                                             widget.chatMessage.nimMessage
                                                 .senderId,
-                                            isSelf: isSelf());
+                                          );
+                                        }
                                       }
-                                    }
-                                  },
-                                  child: Avatar(
-                                    width: 32,
-                                    height: 32,
-                                    avatar: snapshot.data == null
-                                        ? _userAvatarInfo.avatar
-                                        : snapshot.data!.avatar,
-                                    name: snapshot.data == null
-                                        ? _userAvatarInfo.avatarName
-                                        : snapshot.data!.avatarName,
-                                    nameColor:
-                                        widget.chatUIConfig?.userNickColor,
-                                    fontSize:
-                                        widget.chatUIConfig?.userNickTextSize,
-                                    radius:
-                                        widget.chatUIConfig?.avatarCornerRadius,
-                                    bgCode: AvatarColor.avatarColor(
+                                    },
+                                    onLongPress: () {
+                                      if (widget.onAvatarLongPress != null) {
+                                        if (ChatMessageHelper
+                                            .isReceivedMessageFromAi(
+                                          widget.chatMessage.nimMessage,
+                                        )) {
+                                          widget.onAvatarLongPress!.call(
+                                            widget.chatMessage.nimMessage
+                                                .aiConfig?.accountId,
+                                          );
+                                        } else {
+                                          widget.onAvatarLongPress!.call(
+                                            widget.chatMessage.nimMessage
+                                                .senderId,
+                                            isSelf: isSelf(),
+                                          );
+                                        }
+                                      }
+                                    },
+                                    child: Avatar(
+                                      width: 32,
+                                      height: 32,
+                                      avatar: snapshot.data == null
+                                          ? _userAvatarInfo.avatar
+                                          : snapshot.data!.avatar,
+                                      name: snapshot.data == null
+                                          ? _userAvatarInfo.avatarName
+                                          : snapshot.data!.avatarName,
+                                      nameColor:
+                                          widget.chatUIConfig?.userNickColor,
+                                      fontSize:
+                                          widget.chatUIConfig?.userNickTextSize,
+                                      radius: widget
+                                          .chatUIConfig?.avatarCornerRadius,
+                                      bgCode: AvatarColor.avatarColor(
                                         content: widget
-                                            .chatMessage.nimMessage.senderId),
-                                  ),
-                                ),
-                              //消息
-                              Container(
-                                margin: isSelf()
-                                    ? const EdgeInsets.only(right: 8)
-                                    : const EdgeInsets.only(left: 8),
-                                child: Column(
-                                  crossAxisAlignment: isSelf()
-                                      ? CrossAxisAlignment.end
-                                      : CrossAxisAlignment.start,
-                                  children: [
-                                    if (showNickname())
-                                      Container(
-                                        width: screenWidth - 200,
-                                        child: Text(
-                                            snapshot.data?.name ??
-                                                _userAvatarInfo.name,
-                                            overflow: TextOverflow.ellipsis,
-                                            maxLines: 1,
-                                            style: const TextStyle(
-                                                fontSize: 12,
-                                                color:
-                                                    CommonColors.color_999999)),
+                                            .chatMessage.nimMessage.senderId,
                                       ),
-                                    Row(
+                                    ),
+                                  ),
+                                //消息
+                                Flexible(
+                                  child: Container(
+                                    margin: isSelf()
+                                        ? const EdgeInsets.only(right: 8)
+                                        : const EdgeInsets.only(left: 8),
+                                    child: Column(
                                       crossAxisAlignment: isSelf()
                                           ? CrossAxisAlignment.end
                                           : CrossAxisAlignment.start,
                                       children: [
-                                        if (isSelf() &&
-                                            !widget.chatMessage.isRevoke &&
-                                            _showMessageStatus(
-                                                widget.chatMessage))
-                                          _getMessageStatus(widget.chatMessage),
-                                        Container(
-                                          margin: EdgeInsets.only(
-                                              left: isSelf() ? 8 : 0),
-                                          decoration: _getMessageDecoration(),
-                                          constraints: BoxConstraints(
-                                              maxWidth: getMaxWidth(
-                                                  chatViewModel
-                                                      .isMultiSelected)),
-                                          child: Builder(
-                                            builder: (context) {
-                                              return GestureDetector(
-                                                child: IgnorePointer(
-                                                  ignoring: chatViewModel
-                                                      .isMultiSelected,
-                                                  child: widget
-                                                          .chatMessage.isRevoke
-                                                      ? _buildRevokedMessage(
-                                                          widget.chatMessage)
-                                                      : Column(
-                                                          crossAxisAlignment:
-                                                              CrossAxisAlignment
-                                                                  .start,
-                                                          children: [
-                                                            if (_showReplyMessage(
-                                                                widget
-                                                                    .chatMessage))
-                                                              _buildMessageReply(
-                                                                  widget
-                                                                      .chatMessage),
-                                                            _buildMessage(widget
-                                                                .chatMessage)
-                                                          ],
-                                                        ),
-                                                ),
-                                                onTap:
-                                                    widget.onMessageItemClick !=
-                                                            null
-                                                        ? () {
-                                                            widget
-                                                                .onMessageItemClick
-                                                                ?.call(widget
-                                                                    .chatMessage);
-                                                          }
-                                                        : null,
-                                                onLongPress: () {
-                                                  //long press
-                                                  if (widget.chatUIConfig
-                                                              ?.enableMessageLongPress ==
-                                                          true &&
-                                                      (widget.onMessageItemLongClick ==
-                                                              null ||
-                                                          widget.onMessageItemLongClick!(
-                                                                  widget
-                                                                      .chatMessage) !=
-                                                              true)) {
-                                                    if (!widget
-                                                        .chatMessage.isRevoke) {
-                                                      _onLongPress(context);
-                                                    }
-                                                  }
-                                                },
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                        if (!chatViewModel.isMultiSelected &&
-                                            _showStopOrRegenMessage(
-                                                widget.chatMessage.nimMessage))
-                                          Padding(
-                                            padding: EdgeInsets.only(left: 7),
-                                            child: InkWell(
-                                              onTap: () {
-                                                if (chatViewModel
-                                                    .isMultiSelected) {
-                                                  return;
-                                                }
-                                                if (_showStreamStop(widget
-                                                    .chatMessage.nimMessage)) {
-                                                  //正在输出流式布局.可以停止输出
-                                                  NIMMessageAIStreamStopParams
-                                                      params =
-                                                      NIMMessageAIStreamStopParams(
-                                                          operationType:
-                                                              V2NIMMessageAIStreamStopOpType
-                                                                  .V2NIM_MESSAGE_AI_STREAM_STOP_OP_DEFAULT);
-                                                  ChatMessageRepo
-                                                      .stopAIStreamMessage(
-                                                          widget.chatMessage
-                                                              .nimMessage,
-                                                          params);
-                                                } else {
-                                                  //其他，可以重新生成
-                                                  NIMMessageAIRegenParams
-                                                      params =
-                                                      NIMMessageAIRegenParams(
-                                                          operationType:
-                                                              V2NIMMessageAIRegenOpType
-                                                                  .V2NIM_MESSAGE_AI_REGEN_OP_NEW);
-                                                  ChatMessageRepo
-                                                          .regenAIMessage(
-                                                              widget.chatMessage
-                                                                  .nimMessage,
-                                                              params)
-                                                      .then((result) {
-                                                    if (!result.isSuccess) {
-                                                      if (result.code ==
-                                                          errorCodeAIRegenNone) {
-                                                        Fluttertoast.showToast(
-                                                            msg: S
-                                                                .of(context)
-                                                                .chatMessageRemovedTip);
-                                                      } else {
-                                                        Fluttertoast.showToast(
-                                                            msg: S
-                                                                .of(context)
-                                                                .chatAiSearchError);
-                                                      }
-                                                    }
-                                                  });
-                                                }
-                                              },
-                                              child: _showStreamStop(widget
-                                                      .chatMessage.nimMessage)
-                                                  ? SvgPicture.asset(
-                                                      'images/ic_ai_stream_stop.svg',
-                                                      package: kPackage,
-                                                      width: 24,
-                                                      height: 24,
-                                                    )
-                                                  : SvgPicture.asset(
-                                                      'images/ic_ai_stream_regen.svg',
-                                                      package: kPackage,
-                                                      width: 24,
-                                                      height: 24),
+                                        if (showNickname())
+                                          Container(
+                                            child: Text(
+                                              snapshot.data?.name ??
+                                                  _userAvatarInfo.name,
+                                              overflow: TextOverflow.ellipsis,
+                                              maxLines: 1,
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color:
+                                                    CommonColors.color_999999,
+                                              ),
                                             ),
                                           ),
-                                      ],
-                                    ),
-                                    if (widget.chatMessage.getPinAccId() !=
-                                        null)
-                                      FutureBuilder<String>(
-                                          future: _getUserName(widget
-                                              .chatMessage
-                                              .getPinAccId()!),
-                                          builder: (context, snapshot) {
-                                            return Container(
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment: isSelf()
+                                              ? CrossAxisAlignment.end
+                                              : CrossAxisAlignment.start,
+                                          children: [
+                                            if (isSelf() &&
+                                                !widget.chatMessage.isRevoke &&
+                                                _showMessageStatus(
+                                                  widget.chatMessage,
+                                                ))
+                                              _getMessageStatus(
+                                                widget.chatMessage,
+                                              ),
+                                            Flexible(
+                                              child: Container(
+                                                margin: EdgeInsets.only(
+                                                  left: isSelf() ? 8 : 0,
+                                                ),
+                                                decoration:
+                                                    _getMessageDecoration(),
                                                 constraints: BoxConstraints(
-                                                    maxWidth: getMaxWidth(
-                                                        chatViewModel
-                                                            .isMultiSelected)),
+                                                  maxWidth: getMaxWidth(
+                                                    chatViewModel
+                                                        .isMultiSelected,
+                                                  ),
+                                                ),
+                                                child: Builder(
+                                                  builder: (context) {
+                                                    return GestureDetector(
+                                                      child: IgnorePointer(
+                                                        ignoring: chatViewModel
+                                                            .isMultiSelected,
+                                                        child: widget
+                                                                .chatMessage
+                                                                .isRevoke
+                                                            ? _buildRevokedMessage(
+                                                                widget
+                                                                    .chatMessage,
+                                                              )
+                                                            : Column(
+                                                                crossAxisAlignment:
+                                                                    CrossAxisAlignment
+                                                                        .start,
+                                                                children: [
+                                                                  if (_showReplyMessage(
+                                                                    widget
+                                                                        .chatMessage,
+                                                                  ))
+                                                                    _buildMessageReply(
+                                                                      widget
+                                                                          .chatMessage,
+                                                                    ),
+                                                                  _buildMessage(
+                                                                    widget
+                                                                        .chatMessage,
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                      ),
+                                                      onTap:
+                                                          widget.onMessageItemClick !=
+                                                                  null
+                                                              ? () {
+                                                                  widget
+                                                                      .onMessageItemClick
+                                                                      ?.call(
+                                                                    widget
+                                                                        .chatMessage,
+                                                                  );
+                                                                }
+                                                              : null,
+                                                      onSecondaryTapUp:
+                                                          _isDesktopOrWeb
+                                                              ? (details) {
+                                                                  _onSecondaryTap(
+                                                                    context,
+                                                                    details,
+                                                                  );
+                                                                }
+                                                              : null,
+                                                      onLongPress: () {
+                                                        //long press
+                                                        if (widget.chatUIConfig
+                                                                    ?.enableMessageLongPress ==
+                                                                true &&
+                                                            (widget.onMessageItemLongClick ==
+                                                                    null ||
+                                                                widget.onMessageItemLongClick!(
+                                                                      widget
+                                                                          .chatMessage,
+                                                                    ) !=
+                                                                    true)) {
+                                                          if (!widget
+                                                              .chatMessage
+                                                              .isRevoke) {
+                                                            _onLongPress(
+                                                                context);
+                                                          }
+                                                        }
+                                                      },
+                                                    );
+                                                  },
+                                                ),
+                                              ),
+                                            ),
+                                            if (!chatViewModel
+                                                    .isMultiSelected &&
+                                                _showStopOrRegenMessage(
+                                                  widget.chatMessage.nimMessage,
+                                                ))
+                                              Padding(
+                                                padding:
+                                                    EdgeInsets.only(left: 7),
+                                                child: InkWell(
+                                                  onTap: () {
+                                                    if (chatViewModel
+                                                        .isMultiSelected) {
+                                                      return;
+                                                    }
+                                                    if (_showStreamStop(
+                                                      widget.chatMessage
+                                                          .nimMessage,
+                                                    )) {
+                                                      //正在输出流式布局.可以停止输出
+                                                      NIMMessageAIStreamStopParams
+                                                          params =
+                                                          NIMMessageAIStreamStopParams(
+                                                        operationType:
+                                                            V2NIMMessageAIStreamStopOpType
+                                                                .V2NIM_MESSAGE_AI_STREAM_STOP_OP_DEFAULT,
+                                                      );
+                                                      ChatMessageRepo
+                                                          .stopAIStreamMessage(
+                                                        widget.chatMessage
+                                                            .nimMessage,
+                                                        params,
+                                                      );
+                                                    } else {
+                                                      //其他，可以重新生成
+                                                      NIMMessageAIRegenParams
+                                                          params =
+                                                          NIMMessageAIRegenParams(
+                                                        operationType:
+                                                            V2NIMMessageAIRegenOpType
+                                                                .V2NIM_MESSAGE_AI_REGEN_OP_NEW,
+                                                      );
+                                                      ChatMessageRepo
+                                                          .regenAIMessage(
+                                                        widget.chatMessage
+                                                            .nimMessage,
+                                                        params,
+                                                      ).then((result) {
+                                                        if (!result.isSuccess) {
+                                                          if (result.code ==
+                                                              errorCodeAIRegenNone) {
+                                                            ChatUIToast.show(
+                                                              S
+                                                                  .of(context)
+                                                                  .chatMessageRemovedTip,
+                                                              context: context,
+                                                            );
+                                                          } else {
+                                                            ChatUIToast.show(
+                                                              S
+                                                                  .of(context)
+                                                                  .chatAiSearchError,
+                                                              context: context,
+                                                            );
+                                                          }
+                                                        }
+                                                      });
+                                                    }
+                                                  },
+                                                  child: _showStreamStop(
+                                                    widget
+                                                        .chatMessage.nimMessage,
+                                                  )
+                                                      ? SvgPicture.asset(
+                                                          'images/ic_ai_stream_stop.svg',
+                                                          package: kPackage,
+                                                          width: 24,
+                                                          height: 24,
+                                                        )
+                                                      : SvgPicture.asset(
+                                                          'images/ic_ai_stream_regen.svg',
+                                                          package: kPackage,
+                                                          width: 24,
+                                                          height: 24,
+                                                        ),
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                        if (widget.chatMessage.getPinAccId() !=
+                                            null)
+                                          FutureBuilder<String>(
+                                            future: _getUserName(
+                                              widget.chatMessage.getPinAccId()!,
+                                            ),
+                                            builder: (context, snapshot) {
+                                              return Container(
+                                                constraints: BoxConstraints(
+                                                  maxWidth: getMaxWidth(
+                                                    chatViewModel
+                                                        .isMultiSelected,
+                                                  ),
+                                                ),
                                                 child: Row(
                                                   crossAxisAlignment:
                                                       CrossAxisAlignment.center,
@@ -1177,53 +1366,64 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
                                                       : MainAxisAlignment.start,
                                                   children: [
                                                     SvgPicture.asset(
-                                                        'images/ic_message_pin.svg',
-                                                        package: kPackage),
-                                                    _getPinText(
+                                                      'images/ic_message_pin.svg',
+                                                      package: kPackage,
+                                                    ),
+                                                    Flexible(
+                                                      child: _getPinText(
                                                         _getPintContent(
-                                                            snapshot.data),
+                                                          snapshot.data,
+                                                        ),
                                                         style: pinTextStyle,
-                                                        userName: snapshot.data)
+                                                        userName: snapshot.data,
+                                                      ),
+                                                    ),
                                                   ],
-                                                ));
-                                          })
-                                  ],
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              if (isSelf())
-                                InkWell(
-                                  onTap: () {
-                                    if (widget.onTapAvatar != null) {
-                                      widget.onTapAvatar!(null, isSelf: true);
-                                    }
-                                  },
-                                  child: Avatar(
-                                    width: 32,
-                                    height: 32,
-                                    avatar: getIt<IMLoginService>()
-                                        .userInfo!
-                                        .avatar,
-                                    name:
-                                        getIt<IMLoginService>().userInfo!.name,
-                                    nameColor:
-                                        widget.chatUIConfig?.userNickColor,
-                                    fontSize:
-                                        widget.chatUIConfig?.userNickTextSize,
-                                    radius:
-                                        widget.chatUIConfig?.avatarCornerRadius,
-                                    bgCode: AvatarColor.avatarColor(
+                                if (isSelf())
+                                  InkWell(
+                                    onTap: () {
+                                      if (widget.onTapAvatar != null) {
+                                        widget.onTapAvatar!(null, isSelf: true);
+                                      }
+                                    },
+                                    child: Avatar(
+                                      width: 32,
+                                      height: 32,
+                                      avatar: getIt<IMLoginService>()
+                                          .userInfo!
+                                          .avatar,
+                                      name: getIt<IMLoginService>()
+                                          .userInfo!
+                                          .name,
+                                      nameColor:
+                                          widget.chatUIConfig?.userNickColor,
+                                      fontSize:
+                                          widget.chatUIConfig?.userNickTextSize,
+                                      radius: widget
+                                          .chatUIConfig?.avatarCornerRadius,
+                                      bgCode: AvatarColor.avatarColor(
                                         content: getIt<IMLoginService>()
                                             .userInfo!
-                                            .accountId),
+                                            .accountId,
+                                      ),
+                                    ),
                                   ),
-                                )
-                            ],
-                          ));
+                              ],
+                            ),
+                          );
                         },
-                      )
+                      ),
                     ],
                   ),
-                )
+                ),
         ],
       ),
       onVisibilityChanged: _onVisibleChange,
@@ -1238,6 +1438,8 @@ class MessageItemConfig {
   // 是否展示消息通用背景
   bool showMsgCommonBg = true;
 
-  MessageItemConfig(
-      {this.showMsgLoadingState = true, this.showMsgCommonBg = true});
+  MessageItemConfig({
+    this.showMsgLoadingState = true,
+    this.showMsgCommonBg = true,
+  });
 }

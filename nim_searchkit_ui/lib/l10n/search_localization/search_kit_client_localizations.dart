@@ -73,7 +73,9 @@ abstract class SearchKitClientLocalizations {
 
   static SearchKitClientLocalizations? of(BuildContext context) {
     return Localizations.of<SearchKitClientLocalizations>(
-        context, SearchKitClientLocalizations);
+      context,
+      SearchKitClientLocalizations,
+    );
   }
 
   static const LocalizationsDelegate<SearchKitClientLocalizations> delegate =
@@ -100,7 +102,7 @@ abstract class SearchKitClientLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
-    Locale('zh')
+    Locale('zh'),
   ];
 
   /// No description provided for @searchSearch.
@@ -159,7 +161,8 @@ class _SearchKitClientLocalizationsDelegate
   @override
   Future<SearchKitClientLocalizations> load(Locale locale) {
     return SynchronousFuture<SearchKitClientLocalizations>(
-        lookupSearchKitClientLocalizations(locale));
+      lookupSearchKitClientLocalizations(locale),
+    );
   }
 
   @override
@@ -180,8 +183,9 @@ SearchKitClientLocalizations lookupSearchKitClientLocalizations(Locale locale) {
   }
 
   throw FlutterError(
-      'SearchKitClientLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
+    'SearchKitClientLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
 }

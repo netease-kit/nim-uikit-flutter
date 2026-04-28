@@ -7,6 +7,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/base/base_state.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/im_kit_config_center.dart';
 import 'package:nim_chatkit/model/system_notify_info.dart';
@@ -38,7 +39,9 @@ class _SystemNotifyPageState
   late TabController _tabController;
 
   Widget _buildFriendItem(
-      BuildContext context, ValidationFriendMessageMerged messageMerged) {
+    BuildContext context,
+    ValidationFriendMessageMerged messageMerged,
+  ) {
     var message = messageMerged.lastMsg;
     var count = messageMerged.messageUnreadCount();
     bool unread = messageMerged.unread;
@@ -95,8 +98,9 @@ class _SystemNotifyPageState
     }
 
     var nameTextStyle = TextStyle(
-        fontSize: widget.listConfig?.nameTextSize ?? 14,
-        color: widget.listConfig?.nameTextColor ?? CommonColors.color_333333);
+      fontSize: widget.listConfig?.nameTextSize ?? 14,
+      color: widget.listConfig?.nameTextColor ?? CommonColors.color_333333,
+    );
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
       decoration: unread ? BoxDecoration(color: '#ededef'.toColor()) : null,
@@ -106,38 +110,40 @@ class _SystemNotifyPageState
         children: [
           Expanded(
             child: FutureBuilder<NotifyExtension>(
-                future: message.getNotifyExt(),
-                builder: (context, snapShot) {
-                  if (snapShot.data != null) {
-                    messageMerged.user = snapShot.data?.fromUser;
-                  }
-                  var user = messageMerged.user;
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Stack(
-                        alignment: Alignment.topRight,
-                        children: [
-                          _getAvatar(user),
-                          if (count > 1 && unread)
-                            Container(
-                              padding: EdgeInsets.all(4),
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
+              future: message.getNotifyExt(),
+              builder: (context, snapShot) {
+                if (snapShot.data != null) {
+                  messageMerged.user = snapShot.data?.fromUser;
+                }
+                var user = messageMerged.user;
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Stack(
+                      alignment: Alignment.topRight,
+                      children: [
+                        _getAvatar(user),
+                        if (count > 1 && unread)
+                          Container(
+                            padding: EdgeInsets.all(4),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              count > 99 ? '99+' : count.toString(),
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.white,
                               ),
-                              child: Text(
-                                count > 99 ? '99+' : count.toString(),
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                    fontSize: 10, color: Colors.white),
-                              ),
-                            )
-                        ],
-                      ),
-                      Expanded(
-                          child: Container(
+                            ),
+                          ),
+                      ],
+                    ),
+                    Expanded(
+                      child: Container(
                         alignment: Alignment.centerLeft,
                         padding: const EdgeInsets.only(left: 12),
                         child: Column(
@@ -156,13 +162,15 @@ class _SystemNotifyPageState
                               style: nameTextStyle,
                               overflow: TextOverflow.ellipsis,
                               maxLines: 2,
-                            )
+                            ),
                           ],
                         ),
-                      )),
-                    ],
-                  );
-                }),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
           if (message.status ==
               NIMFriendAddApplicationStatus.nimFriendAddApplicationStatusInit)
@@ -176,22 +184,21 @@ class _SystemNotifyPageState
                         .rejectAddApplication(messageMerged, context);
                   },
                   child: Container(
-                      padding:
-                          EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                      decoration: BoxDecoration(
-                          border:
-                              Border.all(color: '#D9D9D9'.toColor(), width: 1),
-                          borderRadius:
-                              const BorderRadius.all(Radius.circular(4))),
-                      child: Text(S.of(context).contactReject,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: '#333333'.toColor(),
-                          ))),
+                    padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: '#D9D9D9'.toColor(), width: 1),
+                      borderRadius: const BorderRadius.all(Radius.circular(4)),
+                    ),
+                    child: Text(
+                      S.of(context).contactReject,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: '#333333'.toColor(),
+                      ),
+                    ),
+                  ),
                 ),
-                Container(
-                  width: 16,
-                ),
+                Container(width: 16),
                 InkWell(
                   onTap: () {
                     context
@@ -199,18 +206,19 @@ class _SystemNotifyPageState
                         .agreeUserApplication(messageMerged, context);
                   },
                   child: Container(
-                      padding:
-                          EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                      decoration: BoxDecoration(
-                          border:
-                              Border.all(color: '#337EFF'.toColor(), width: 1),
-                          borderRadius:
-                              const BorderRadius.all(Radius.circular(4))),
-                      child: Text(S.of(context).contactAccept,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: '#337EFF'.toColor(),
-                          ))),
+                    padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: '#337EFF'.toColor(), width: 1),
+                      borderRadius: const BorderRadius.all(Radius.circular(4)),
+                    ),
+                    child: Text(
+                      S.of(context).contactAccept,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: '#337EFF'.toColor(),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -247,16 +255,18 @@ class _SystemNotifyPageState
                     getStatueText(),
                     style: TextStyle(fontSize: 14, color: '#B3B7BC'.toColor()),
                   ),
-                )
+                ),
               ],
-            )
+            ),
         ],
       ),
     );
   }
 
   Widget _buildTeamItem(
-      BuildContext context, ValidationTeamMessageMerged messageMerged) {
+    BuildContext context,
+    ValidationTeamMessageMerged messageMerged,
+  ) {
     var message = messageMerged.lastMsg;
     var count = messageMerged.messageUnreadCount();
     bool unread = messageMerged.unread;
@@ -318,8 +328,9 @@ class _SystemNotifyPageState
     }
 
     var nameTextStyle = TextStyle(
-        fontSize: widget.listConfig?.nameTextSize ?? 14,
-        color: widget.listConfig?.nameTextColor ?? CommonColors.color_333333);
+      fontSize: widget.listConfig?.nameTextSize ?? 14,
+      color: widget.listConfig?.nameTextColor ?? CommonColors.color_333333,
+    );
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
       decoration: unread ? BoxDecoration(color: '#ededef'.toColor()) : null,
@@ -329,39 +340,41 @@ class _SystemNotifyPageState
         children: [
           Expanded(
             child: FutureBuilder<NotifyExtension>(
-                future: message.getNotifyExt(),
-                builder: (context, snapShot) {
-                  if (snapShot.data != null) {
-                    messageMerged.user = snapShot.data?.fromUser;
-                    messageMerged.team = snapShot.data?.team;
-                  }
-                  var user = messageMerged.user;
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Stack(
-                        alignment: Alignment.topRight,
-                        children: [
-                          _getAvatar(user),
-                          if (count > 1 && unread)
-                            Container(
-                              padding: EdgeInsets.all(4),
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
+              future: message.getNotifyExt(),
+              builder: (context, snapShot) {
+                if (snapShot.data != null) {
+                  messageMerged.user = snapShot.data?.fromUser;
+                  messageMerged.team = snapShot.data?.team;
+                }
+                var user = messageMerged.user;
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Stack(
+                      alignment: Alignment.topRight,
+                      children: [
+                        _getAvatar(user),
+                        if (count > 1 && unread)
+                          Container(
+                            padding: EdgeInsets.all(4),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              count > 99 ? '99+' : count.toString(),
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.white,
                               ),
-                              child: Text(
-                                count > 99 ? '99+' : count.toString(),
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                    fontSize: 10, color: Colors.white),
-                              ),
-                            )
-                        ],
-                      ),
-                      Expanded(
-                          child: Container(
+                            ),
+                          ),
+                      ],
+                    ),
+                    Expanded(
+                      child: Container(
                         alignment: Alignment.centerLeft,
                         padding: const EdgeInsets.only(left: 12),
                         child: Column(
@@ -380,13 +393,15 @@ class _SystemNotifyPageState
                               style: nameTextStyle,
                               overflow: TextOverflow.ellipsis,
                               maxLines: 2,
-                            )
+                            ),
                           ],
                         ),
-                      )),
-                    ],
-                  );
-                }),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
           if (showOptButton(message) &&
               message.actionStatus ==
@@ -397,47 +412,49 @@ class _SystemNotifyPageState
                 InkWell(
                   onTap: () {
                     // 拒绝
-                    context
-                        .read<ValidationMessageViewModel>()
-                        .rejectTeamAction(messageMerged, context);
+                    context.read<ValidationMessageViewModel>().rejectTeamAction(
+                          messageMerged,
+                          context,
+                        );
                   },
                   child: Container(
-                      padding:
-                          EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                      decoration: BoxDecoration(
-                          border:
-                              Border.all(color: '#D9D9D9'.toColor(), width: 1),
-                          borderRadius:
-                              const BorderRadius.all(Radius.circular(4))),
-                      child: Text(S.of(context).contactReject,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: '#333333'.toColor(),
-                          ))),
+                    padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: '#D9D9D9'.toColor(), width: 1),
+                      borderRadius: const BorderRadius.all(Radius.circular(4)),
+                    ),
+                    child: Text(
+                      S.of(context).contactReject,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: '#333333'.toColor(),
+                      ),
+                    ),
+                  ),
                 ),
-                Container(
-                  width: 16,
-                ),
+                Container(width: 16),
                 InkWell(
                   onTap: () {
                     //接受
-                    context
-                        .read<ValidationMessageViewModel>()
-                        .agreeTeamActions(messageMerged, context);
+                    context.read<ValidationMessageViewModel>().agreeTeamActions(
+                          messageMerged,
+                          context,
+                        );
                   },
                   child: Container(
-                      padding:
-                          EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                      decoration: BoxDecoration(
-                          border:
-                              Border.all(color: '#337EFF'.toColor(), width: 1),
-                          borderRadius:
-                              const BorderRadius.all(Radius.circular(4))),
-                      child: Text(S.of(context).contactAccept,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: '#337EFF'.toColor(),
-                          ))),
+                    padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: '#337EFF'.toColor(), width: 1),
+                      borderRadius: const BorderRadius.all(Radius.circular(4)),
+                    ),
+                    child: Text(
+                      S.of(context).contactAccept,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: '#337EFF'.toColor(),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -470,9 +487,9 @@ class _SystemNotifyPageState
                     getTeamActionStatueText(),
                     style: TextStyle(fontSize: 14, color: '#B3B7BC'.toColor()),
                   ),
-                )
+                ),
               ],
-            )
+            ),
         ],
       ),
     );
@@ -488,21 +505,19 @@ class _SystemNotifyPageState
     super.onAppLifecycleState(state);
   }
 
-  RefreshController _refreshFriendController =
-      RefreshController(initialRefresh: false);
+  RefreshController _refreshFriendController = RefreshController(
+    initialRefresh: false,
+  );
 
-  void _onFriendLoading(BuildContext context) {
-    if (context.read<ValidationMessageViewModel>().haveMore) {
+  void _onFriendLoading(ValidationMessageViewModel viewModel) {
+    if (viewModel.haveMore) {
       offset = offset + 100;
 
-      context
-          .read<ValidationMessageViewModel>()
-          .queryNIMFriendAddApplication(offset: offset)
-          .then((value) {
+      viewModel.queryNIMFriendAddApplication(offset: offset).then((value) {
         if (value) {
           _refreshFriendController.loadComplete();
         } else {
-          _onFriendLoading(context);
+          _onFriendLoading(viewModel);
         }
       });
     } else {
@@ -512,29 +527,35 @@ class _SystemNotifyPageState
   }
 
   Widget getUserVerifyMessage(
-      List<ValidationFriendMessageMerged> friendMessages) {
+    BuildContext context,
+    ValidationMessageViewModel viewModel,
+    List<ValidationFriendMessageMerged> friendMessages,
+  ) {
+    final enablePullUp = viewModel.haveMore;
     return SmartRefresher(
       controller: _refreshFriendController,
       enablePullDown: false,
-      enablePullUp: true,
+      enablePullUp: enablePullUp,
+      footer: enablePullUp
+          ? const ClassicFooter()
+          : CustomFooter(
+              builder: (context, mode) => const SizedBox.shrink(),
+            ),
       onLoading: () {
-        _onFriendLoading(context);
+        _onFriendLoading(viewModel);
       },
       child: friendMessages.isNotEmpty
           ? ListView.separated(
               itemBuilder: (context, index) {
                 return _buildFriendItem(context, friendMessages[index]);
               },
-              separatorBuilder: (BuildContext context, int index) => Divider(
-                    height: 1,
-                    color: '#F5F8FC'.toColor(),
-                  ),
-              itemCount: friendMessages.length)
+              separatorBuilder: (BuildContext context, int index) =>
+                  Divider(height: 1, color: '#F5F8FC'.toColor()),
+              itemCount: friendMessages.length,
+            )
           : Column(
               children: [
-                SizedBox(
-                  height: 170,
-                ),
+                SizedBox(height: 170),
                 SvgPicture.asset(
                   'images/ic_search_empty.svg',
                   package: kPackage,
@@ -546,10 +567,7 @@ class _SystemNotifyPageState
                     style: TextStyle(fontSize: 14, color: '#B3B7BC'.toColor()),
                   ),
                 ),
-                Expanded(
-                  child: Container(),
-                  flex: 1,
-                ),
+                Expanded(child: Container(), flex: 1),
               ],
             ),
     );
@@ -558,11 +576,20 @@ class _SystemNotifyPageState
   @override
   void initState() {
     _tabController = TabController(length: 2, vsync: this);
+    // 桌面/Web 端：标记验证消息页面已打开，新消息不累加外部未读角标
+    // 移动端通过 Navigator.push 返回时的 .then() 清理未读，无需此标志
+    if (ChatKitUtils.isDesktopOrWeb) {
+      ContactRepo.isVerifyPageOpen = true;
+    }
     super.initState();
   }
 
   @override
   void dispose() {
+    // 桌面/Web 端：标记验证消息页面已关闭，恢复正常未读计数
+    if (ChatKitUtils.isDesktopOrWeb) {
+      ContactRepo.isVerifyPageOpen = false;
+    }
     //清理未读数
     TeamRepo.setTeamActionInfosRead();
     ContactRepo.setAddApplicationRead();
@@ -572,95 +599,103 @@ class _SystemNotifyPageState
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(create: (context) {
-      var viewModel = ValidationMessageViewModel();
-      viewModel.init();
-      return viewModel;
-    }, builder: (context, child) {
-      List<ValidationFriendMessageMerged> friendMessages =
-          context.watch<ValidationMessageViewModel>().friendAddApplications;
+    return ChangeNotifierProvider(
+      create: (context) {
+        var viewModel = ValidationMessageViewModel();
+        viewModel.init();
+        return viewModel;
+      },
+      builder: (context, child) {
+        final viewModel = context.watch<ValidationMessageViewModel>();
+        List<ValidationFriendMessageMerged> friendMessages =
+            viewModel.friendAddApplications;
 
-      List<ValidationTeamMessageMerged> teamMessages =
-          context.watch<ValidationMessageViewModel>().teamApplications;
-      return DefaultTabController(
+        List<ValidationTeamMessageMerged> teamMessages =
+            viewModel.teamApplications;
+        return DefaultTabController(
           length: 2,
           initialIndex: 0,
           child: Scaffold(
-              backgroundColor: Colors.white,
-              appBar: AppBar(
-                leading: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_rounded),
-                  onPressed: () {
-                    Navigator.pop(context);
+            backgroundColor: Colors.white,
+            appBar: AppBar(
+              automaticallyImplyLeading: !ChatKitUtils.isDesktopOrWeb,
+              leading: ChatKitUtils.isDesktopOrWeb
+                  ? const SizedBox.shrink()
+                  : IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_rounded),
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                    ),
+              leadingWidth: ChatKitUtils.isDesktopOrWeb ? 0 : null,
+              title: Text(
+                S.of(context).contactVerifyMessage,
+                style: TextStyle(fontSize: 16, color: '#333333'.toColor()),
+              ),
+              centerTitle: true,
+              elevation: 0.5,
+              shadowColor: '#F5F8FC'.toColor(),
+              actions: [
+                InkWell(
+                  onTap: () {
+                    if (_tabController.index == 0) {
+                      context
+                          .read<ValidationMessageViewModel>()
+                          .cleanUserApplicationMessage();
+                    } else {
+                      context
+                          .read<ValidationMessageViewModel>()
+                          .cleanTeamActionsMessage();
+                    }
                   },
-                ),
-                title: Text(
-                  S.of(context).contactVerifyMessage,
-                  style: TextStyle(fontSize: 16, color: '#333333'.toColor()),
-                ),
-                centerTitle: true,
-                elevation: 0.5,
-                shadowColor: '#F5F8FC'.toColor(),
-                actions: [
-                  InkWell(
-                    onTap: () {
-                      if (_tabController.index == 0) {
-                        context
-                            .read<ValidationMessageViewModel>()
-                            .cleanUserApplicationMessage();
-                      } else {
-                        context
-                            .read<ValidationMessageViewModel>()
-                            .cleanTeamActionsMessage();
-                      }
-                    },
-                    child: Container(
-                      padding: EdgeInsets.only(right: 20),
-                      alignment: Alignment.center,
-                      child: Text(
-                        S.of(context).contactClean,
-                        style:
-                            TextStyle(fontSize: 14, color: '#666666'.toColor()),
+                  child: Container(
+                    padding: EdgeInsets.only(right: 20),
+                    alignment: Alignment.center,
+                    child: Text(
+                      S.of(context).contactClean,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: '#666666'.toColor(),
                       ),
                     ),
-                  )
-                ],
-                bottom: IMKitConfigCenter.enableTeam
-                    ? TabBar(
-                        controller: _tabController,
-                        unselectedLabelColor: '#333333'.toColor(),
-                        labelColor: '#337EFF'.toColor(),
-                        tabs: [
-                          Text(
-                            S.of(context).friend,
-                          ),
-                          Text(
-                            S.of(context).team,
-                          )
-                        ],
-                      )
-                    : null,
-              ),
-              body: IMKitConfigCenter.enableTeam
-                  ? TabBarView(controller: _tabController, children: [
-                      getUserVerifyMessage(friendMessages),
+                  ),
+                ),
+              ],
+              bottom: IMKitConfigCenter.enableTeam
+                  ? TabBar(
+                      controller: _tabController,
+                      unselectedLabelColor: '#333333'.toColor(),
+                      labelColor: '#337EFF'.toColor(),
+                      tabs: [
+                        Text(S.of(context).friend),
+                        Text(S.of(context).team),
+                      ],
+                    )
+                  : null,
+            ),
+            body: IMKitConfigCenter.enableTeam
+                ? TabBarView(
+                    controller: _tabController,
+                    children: [
+                      getUserVerifyMessage(context, viewModel, friendMessages),
                       teamMessages.isNotEmpty
                           ? ListView.separated(
                               itemBuilder: (context, index) {
                                 return _buildTeamItem(
-                                    context, teamMessages[index]);
+                                  context,
+                                  teamMessages[index],
+                                );
                               },
                               separatorBuilder:
                                   (BuildContext context, int index) => Divider(
-                                        height: 1,
-                                        color: '#F5F8FC'.toColor(),
-                                      ),
-                              itemCount: teamMessages.length)
+                                height: 1,
+                                color: '#F5F8FC'.toColor(),
+                              ),
+                              itemCount: teamMessages.length,
+                            )
                           : Column(
                               children: [
-                                SizedBox(
-                                  height: 170,
-                                ),
+                                SizedBox(height: 170),
                                 SvgPicture.asset(
                                   'images/ic_search_empty.svg',
                                   package: kPackage,
@@ -670,18 +705,20 @@ class _SystemNotifyPageState
                                   child: Text(
                                     S.of(context).systemVerifyMessageEmpty,
                                     style: TextStyle(
-                                        fontSize: 14,
-                                        color: '#B3B7BC'.toColor()),
+                                      fontSize: 14,
+                                      color: '#B3B7BC'.toColor(),
+                                    ),
                                   ),
                                 ),
-                                Expanded(
-                                  child: Container(),
-                                  flex: 1,
-                                ),
+                                Expanded(child: Container(), flex: 1),
                               ],
-                            )
-                    ])
-                  : getUserVerifyMessage(friendMessages)));
-    });
+                            ),
+                    ],
+                  )
+                : getUserVerifyMessage(context, viewModel, friendMessages),
+          ),
+        );
+      },
+    );
   }
 }

@@ -5,14 +5,11 @@
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:netease_common/netease_common.dart';
-import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_common_ui/widgets/common_browse_page.dart';
@@ -35,6 +32,7 @@ import 'package:nim_chatkit/service_locator.dart';
 import 'package:nim_chatkit/services/contact/contact_provider.dart';
 import 'package:nim_chatkit/services/message/chat_message.dart';
 import 'package:nim_chatkit/services/team/team_provider.dart';
+import 'package:nim_chatkit/utils/toast_utils.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_chatkit_ui/l10n/S.dart';
 import 'package:nim_chatkit_ui/view/input/emoji/emoji_text.dart';
@@ -76,44 +74,65 @@ final RegExp urlRegex = RegExp(
 );
 
 class NotifyHelper {
-  static Future<String> getNotificationText(NIMMessage message,
-      {NIMTeam? teamInfo}) async {
+  static Future<String> getNotificationText(
+    NIMMessage message, {
+    NIMTeam? teamInfo,
+  }) async {
     if (message.attachment is NIMMessageNotificationAttachment) {
       NIMMessageNotificationAttachment attachment =
           message.attachment as NIMMessageNotificationAttachment;
 
       var teamId = (teamInfo?.teamId) ??
-          (await NimCore.instance.conversationIdUtil
-                  .conversationTargetId(message.conversationId!))
+          (await NimCore.instance.conversationIdUtil.conversationTargetId(
+            message.conversationId!,
+          ))
               .data!;
       switch (attachment.type) {
         case NIMMessageNotificationType.teamInvite:
           return buildInviteMemberNotification(
-              teamId, message.senderId!, attachment,
-              team: teamInfo);
+            teamId,
+            message.senderId!,
+            attachment,
+            team: teamInfo,
+          );
         case NIMMessageNotificationType.teamKick:
-          return buildKickMemberNotification(teamId, attachment,
-              team: teamInfo);
+          return buildKickMemberNotification(
+            teamId,
+            attachment,
+            team: teamInfo,
+          );
         case NIMMessageNotificationType.teamLeave:
-          return buildMemberLeaveNotification(teamId, message.senderId!,
-              team: teamInfo);
+          return buildMemberLeaveNotification(
+            teamId,
+            message.senderId!,
+            team: teamInfo,
+          );
         case NIMMessageNotificationType.teamDismiss:
           return buildTeamDismissNotification(teamId, message.senderId!);
         case NIMMessageNotificationType.teamUpdateTInfo:
           return buildUpdateTeamNotification(
-              teamId, message.senderId!, attachment);
+            teamId,
+            message.senderId!,
+            attachment,
+          );
         case NIMMessageNotificationType.teamApplyPass:
           return buildManagerPassTeamApplyNotification(teamId, attachment);
         case NIMMessageNotificationType.teamOwnerTransfer:
           return buildTeamTransOwnerNotification(
-              teamId, message.senderId!, attachment);
+            teamId,
+            message.senderId!,
+            attachment,
+          );
         case NIMMessageNotificationType.teamAddManager:
           return buildTeamAddManagerNotification(teamId, attachment);
         case NIMMessageNotificationType.teamRemoveManager:
           return buildTeamRemoveManagerNotification(teamId, attachment);
         case NIMMessageNotificationType.teamInviteAccept:
           return buildAcceptInviteNotification(
-              teamId, message.senderId!, attachment);
+            teamId,
+            message.senderId!,
+            attachment,
+          );
         case NIMMessageNotificationType.teamBannedTeamMember:
           return buildMuteTeamNotification(teamId, attachment);
         default:
@@ -124,19 +143,24 @@ class NotifyHelper {
     }
   }
 
-  static Future<String> buildUpdateTeamNotification(String tid,
-      String fromAccId, NIMMessageNotificationAttachment attachment) async {
+  static Future<String> buildUpdateTeamNotification(
+    String tid,
+    String fromAccId,
+    NIMMessageNotificationAttachment attachment,
+  ) async {
     if (attachment.updatedTeamInfo?.name != null) {
       var fromName = await getTeamMemberDisplayName(tid, fromAccId);
       return S.of().chatTeamNotifyUpdateName(
-          fromName, attachment.updatedTeamInfo!.name!);
+            fromName,
+            attachment.updatedTeamInfo!.name!,
+          );
     } else if (attachment.updatedTeamInfo?.intro != null) {
       var fromName = await getTeamMemberDisplayName(tid, fromAccId);
       return S.of().chatTeamNotifyUpdateIntroduction(fromName);
     } else if (attachment.updatedTeamInfo?.announcement != null) {
-      return S
-          .of()
-          .chatTeamNoticeUpdate(attachment.updatedTeamInfo!.announcement!);
+      return S.of().chatTeamNoticeUpdate(
+            attachment.updatedTeamInfo!.announcement!,
+          );
     } else if (attachment.updatedTeamInfo?.joinMode != null &&
         attachment.updatedTeamInfo?.joinMode != NIMTeamJoinMode.unknown) {
       if (attachment.updatedTeamInfo?.joinMode ==
@@ -152,8 +176,9 @@ class NotifyHelper {
       }
     } else if (attachment.updatedTeamInfo?.serverExtension.isNotEmpty == true) {
       try {
-        Map<String, dynamic> extension =
-            json.decode(attachment.updatedTeamInfo!.serverExtension!);
+        Map<String, dynamic> extension = json.decode(
+          attachment.updatedTeamInfo!.serverExtension!,
+        );
         if (extension[lastOption] == aitPrivilegeKey) {
           if (extension[aitPrivilegeKey] == aitPrivilegeAll) {
             return S.of().teamMsgAitAllPrivilegeIsAll;
@@ -165,23 +190,29 @@ class NotifyHelper {
         Alog.e(tag: 'MessageHelper', content: 'e : ${e.toString()}');
       }
       return S.of().chatTeamNotifyUpdateExtension(
-          attachment.updatedTeamInfo!.serverExtension!);
+            attachment.updatedTeamInfo!.serverExtension!,
+          );
     } else if (attachment.updatedTeamInfo?.avatar.isNotEmpty == true) {
       var fromName = await getTeamMemberDisplayName(tid, fromAccId);
       return S.of().chatTeamNotifyUpdateTeamAvatar(fromName);
     } else if (attachment.updatedTeamInfo?.inviteMode != null &&
         attachment.updatedTeamInfo?.inviteMode != NIMTeamInviteMode.unknown) {
       var fromName = await getTeamMemberDisplayName(tid, fromAccId);
-      return S.of().chatTeamInvitationPermissionUpdate(fromName,
-          getTeamInvitePermissionName(attachment.updatedTeamInfo!.inviteMode!));
+      return S.of().chatTeamInvitationPermissionUpdate(
+            fromName,
+            getTeamInvitePermissionName(
+                attachment.updatedTeamInfo!.inviteMode!),
+          );
     } else if (attachment.updatedTeamInfo?.updateInfoMode != null &&
         attachment.updatedTeamInfo?.updateInfoMode !=
             NIMTeamUpdateInfoMode.unknown) {
       var fromName = await getTeamMemberDisplayName(tid, fromAccId);
       return S.of().chatTeamModifyResourcePermissionUpdate(
-          fromName,
-          getTeamUpdatePermissionName(
-              attachment.updatedTeamInfo!.updateInfoMode!));
+            fromName,
+            getTeamUpdatePermissionName(
+              attachment.updatedTeamInfo!.updateInfoMode!,
+            ),
+          );
     } else if (attachment.updatedTeamInfo?.agreeMode != null &&
         attachment.updatedTeamInfo?.agreeMode != NIMTeamAgreeMode.unknown) {
       if (attachment.updatedTeamInfo?.agreeMode ==
@@ -197,7 +228,8 @@ class NotifyHelper {
         attachment.updatedTeamInfo?.updateExtensionMode !=
             NIMTeamUpdateExtensionMode.unknown) {
       return S.of().chatTeamModifyExtensionPermissionUpdate(
-          attachment.updatedTeamInfo!.updateExtensionMode!.name);
+            attachment.updatedTeamInfo!.updateExtensionMode!.name,
+          );
     } else if (attachment.updatedTeamInfo?.chatBannedMode != null &&
         attachment.updatedTeamInfo?.chatBannedMode != -1) {
       if (attachment.updatedTeamInfo?.chatBannedMode == 0) {
@@ -210,14 +242,23 @@ class NotifyHelper {
   }
 
   static Future<String> buildInviteMemberNotification(
-      String tid, String fromAccId, NIMMessageNotificationAttachment attachment,
-      {NIMTeam? team}) async {
+    String tid,
+    String fromAccId,
+    NIMMessageNotificationAttachment attachment, {
+    NIMTeam? team,
+  }) async {
     var fromName = await getTeamMemberDisplayName(tid, fromAccId);
-    var memberNames = await buildMemberListString(tid, attachment.targetIds!,
-        fromAccount: fromAccId, needTeamNick: false);
+    var memberNames = await buildMemberListString(
+      tid,
+      attachment.targetIds!,
+      fromAccount: fromAccId,
+      needTeamNick: false,
+    );
     if (team == null) {
-      team = (await NimCore.instance.teamService
-              .getTeamInfo(tid, NIMTeamType.typeNormal))
+      team = (await NimCore.instance.teamService.getTeamInfo(
+        tid,
+        NIMTeamType.typeNormal,
+      ))
           .data;
     }
     if (team != null && !getIt<TeamProvider>().isGroupTeam(team)) {
@@ -228,11 +269,15 @@ class NotifyHelper {
   }
 
   static Future<String> buildKickMemberNotification(
-      String tid, NIMMessageNotificationAttachment attachment,
-      {NIMTeam? team}) async {
+    String tid,
+    NIMMessageNotificationAttachment attachment, {
+    NIMTeam? team,
+  }) async {
     if (team == null) {
-      team = (await NimCore.instance.teamService
-              .getTeamInfo(tid, NIMTeamType.typeNormal))
+      team = (await NimCore.instance.teamService.getTeamInfo(
+        tid,
+        NIMTeamType.typeNormal,
+      ))
           .data;
     }
     var members = await buildMemberListString(tid, attachment.targetIds!);
@@ -244,11 +289,15 @@ class NotifyHelper {
   }
 
   static Future<String> buildMemberLeaveNotification(
-      String tid, String fromAccId,
-      {NIMTeam? team}) async {
+    String tid,
+    String fromAccId, {
+    NIMTeam? team,
+  }) async {
     if (team == null) {
-      team = (await NimCore.instance.teamService
-              .getTeamInfo(tid, NIMTeamType.typeNormal))
+      team = (await NimCore.instance.teamService.getTeamInfo(
+        tid,
+        NIMTeamType.typeNormal,
+      ))
           .data;
     }
     var members = await getTeamMemberDisplayName(tid, fromAccId);
@@ -260,58 +309,88 @@ class NotifyHelper {
   }
 
   static Future<String> buildTeamDismissNotification(
-      String tid, String fromAccId) async {
-    return S
-        .of()
-        .chatTeamNotifyDismiss(await getTeamMemberDisplayName(tid, fromAccId));
+    String tid,
+    String fromAccId,
+  ) async {
+    return S.of().chatTeamNotifyDismiss(
+          await getTeamMemberDisplayName(tid, fromAccId),
+        );
   }
 
   static Future<String> buildManagerPassTeamApplyNotification(
-      String tid, NIMMessageNotificationAttachment attachment) async {
+    String tid,
+    NIMMessageNotificationAttachment attachment,
+  ) async {
     return S.of().chatTeamNotifyManagerPass(
-        await buildMemberListString(tid, attachment.targetIds!));
+          await buildMemberListString(tid, attachment.targetIds!),
+        );
   }
 
-  static Future<String> buildTeamTransOwnerNotification(String tid, String from,
-      NIMMessageNotificationAttachment attachment) async {
+  static Future<String> buildTeamTransOwnerNotification(
+    String tid,
+    String from,
+    NIMMessageNotificationAttachment attachment,
+  ) async {
     return S.of().chatTeamNotifyTransOwner(
-        await buildMemberListString(tid, attachment.targetIds!),
-        (await getTeamMemberDisplayName(tid, from)));
+          await buildMemberListString(tid, attachment.targetIds!),
+          (await getTeamMemberDisplayName(tid, from)),
+        );
   }
 
   static Future<String> buildTeamAddManagerNotification(
-      String tid, NIMMessageNotificationAttachment attachment) async {
+    String tid,
+    NIMMessageNotificationAttachment attachment,
+  ) async {
     return S.of().chatTeamNotifyAddManager(
-        await buildMemberListString(tid, attachment.targetIds!));
+          await buildMemberListString(tid, attachment.targetIds!),
+        );
   }
 
   static Future<String> buildTeamRemoveManagerNotification(
-      String tid, NIMMessageNotificationAttachment attachment) async {
+    String tid,
+    NIMMessageNotificationAttachment attachment,
+  ) async {
     return S.of().chatTeamNotifyRemoveManager(
-        await buildMemberListString(tid, attachment.targetIds!));
+          await buildMemberListString(tid, attachment.targetIds!),
+        );
   }
 
-  static Future<String> buildAcceptInviteNotification(String tid, String from,
-      NIMMessageNotificationAttachment attachment) async {
+  static Future<String> buildAcceptInviteNotification(
+    String tid,
+    String from,
+    NIMMessageNotificationAttachment attachment,
+  ) async {
     return S.of().chatTeamNotifyAcceptInvite(
-        await buildMemberListString(tid, attachment.targetIds!,
-            needTeamNick: false),
-        (await getTeamMemberDisplayName(tid, from)));
+          await buildMemberListString(
+            tid,
+            attachment.targetIds!,
+            needTeamNick: false,
+          ),
+          (await getTeamMemberDisplayName(tid, from)),
+        );
   }
 
   static Future<String> buildMuteTeamNotification(
-      String tid, NIMMessageNotificationAttachment attachment) async {
+    String tid,
+    NIMMessageNotificationAttachment attachment,
+  ) async {
     if (attachment.chatBanned == true) {
       return S.of().chatTeamNotifyMute(
-          await buildMemberListString(tid, attachment.targetIds!));
+            await buildMemberListString(tid, attachment.targetIds!),
+          );
     } else {
       return S.of().chatTeamNotifyUnMute(
-          await buildMemberListString(tid, attachment.targetIds!));
+            await buildMemberListString(tid, attachment.targetIds!),
+          );
     }
   }
 
-  static Future<String> buildMemberListString(String tid, List<String> members,
-      {String? fromAccount, bool needTeamNick = true}) async {
+  static Future<String> buildMemberListString(
+    String tid,
+    List<String> members, {
+    String? fromAccount,
+    bool needTeamNick = true,
+  }) async {
     String memberList = '';
     if (needTeamNick == false) {
       var contactList = await getIt<ContactProvider>().fetchUserList(members);
@@ -338,7 +417,9 @@ class NotifyHelper {
   }
 
   static Future<String> getTeamMemberDisplayName(
-      String tid, String accId) async {
+    String tid,
+    String accId,
+  ) async {
     if (accId == IMKitClient.account()) {
       return S.of().chatMessageYou;
     }
@@ -369,35 +450,49 @@ class NotifyHelper {
 
 class ChatMessageHelper {
   static Future<String> getReplayMessageTextById(
-      BuildContext context, String messageId, String conversationId) async {
+    BuildContext context,
+    String messageId,
+    String conversationId,
+  ) async {
     var messageResult = await NimCore.instance.messageService
         .getMessageListByIds(messageClientIds: [messageId]);
     return _getMessageContent(context, conversationId, messageResult);
   }
 
-  static Future<String> getReplayMessageText(BuildContext context,
-      NIMMessageRefer messageRefer, String conversationId) async {
+  static Future<String> getReplayMessageText(
+    BuildContext context,
+    NIMMessageRefer messageRefer,
+    String conversationId,
+  ) async {
     var messageResult = await NimCore.instance.messageService
         .getMessageListByRefers(messageRefers: [messageRefer]);
 
     return _getMessageContent(context, conversationId, messageResult);
   }
 
-  static Future<String> _getMessageContent(BuildContext context,
-      String conversationId, NIMResult<List<NIMMessage>> messageResult) async {
+  static Future<String> _getMessageContent(
+    BuildContext context,
+    String conversationId,
+    NIMResult<List<NIMMessage>> messageResult,
+  ) async {
     if (messageResult.isSuccess) {
       if (messageResult.data?.isNotEmpty == true) {
         NIMMessage nimMessage = messageResult.data!.first;
         var teamId = null;
         if (nimMessage.conversationType == NIMConversationType.team) {
-          teamId = (await NimCore.instance.conversationIdUtil
-                  .conversationTargetId(nimMessage.conversationId!))
-              .data;
+          teamId =
+              (await NimCore.instance.conversationIdUtil.conversationTargetId(
+            nimMessage.conversationId!,
+          ))
+                  .data;
         }
         String nick = nimMessage.conversationType == NIMConversationType.p2p
             ? await nimMessage.senderId!.getUserName()
-            : await getUserNickInTeam(teamId ?? '', nimMessage.senderId!,
-                showAlias: false);
+            : await getUserNickInTeam(
+                teamId ?? '',
+                nimMessage.senderId!,
+                showAlias: false,
+              );
         String content = getMessageBrief(nimMessage);
         return '$nick : $content';
       } else {
@@ -410,8 +505,9 @@ class ChatMessageHelper {
 
   static String getMessageBrief(NIMMessage message) {
     String brief = 'unknown';
-    var customBrief =
-        ChatKitClient.instance.chatUIConfig.getMessageBrief?.call(message);
+    var customBrief = ChatKitClient.instance.chatUIConfig.getMessageBrief?.call(
+      message,
+    );
     if (customBrief?.isNotEmpty == true) {
       brief = customBrief!;
       return brief;
@@ -469,92 +565,133 @@ class ChatMessageHelper {
 
   ///显示转发选择框
   static void showForwardMessageDialog(
-      BuildContext context, ForwardMessageFunction forwardMessage,
-      {List<String>? filterUser,
-      required String sessionName,
-      ForwardType type = ForwardType.normal}) {
+    BuildContext context,
+    ForwardMessageFunction forwardMessage, {
+    List<String>? filterUser,
+    required String sessionName,
+    ForwardType type = ForwardType.normal,
+  }) {
     // 转发
-    var style = const TextStyle(fontSize: 16, color: CommonColors.color_333333);
-    showBottomChoose<int>(context: context, actions: [
-      CupertinoActionSheetAction(
-        onPressed: () {
-          Navigator.pop(context, 2);
-        },
-        child: Text(
-          S.of(context).messageForwardToTeam,
-          style: style,
+    showAdaptiveChoose<int>(
+      context: context,
+      items: [
+        AdaptiveChooseItem(
+          label: S.of(context).messageForwardToTeam,
+          value: 2,
         ),
-      ),
-      CupertinoActionSheetAction(
-        onPressed: () {
-          Navigator.pop(context, 1);
-        },
-        child: Text(
-          S.of(context).messageForwardToP2p,
-          style: style,
+        AdaptiveChooseItem(
+          label: S.of(context).messageForwardToP2p,
+          value: 1,
         ),
-      )
-    ]).then((value) {
+      ],
+    ).then((value) {
       if (value == 1) {
-        _goContactSelector(context, forwardMessage,
-            filterUser: filterUser, sessionName: sessionName, type: type);
+        _goContactSelector(
+          context,
+          forwardMessage,
+          filterUser: filterUser,
+          sessionName: sessionName,
+          type: type,
+        );
       } else if (value == 2) {
-        _goTeamSelector(context, forwardMessage,
-            sessionName: sessionName, type: type);
+        _goTeamSelector(
+          context,
+          forwardMessage,
+          sessionName: sessionName,
+          type: type,
+        );
       }
     });
   }
 
   /// 跳转转发选择器
   static void showForwardSelector(
-      BuildContext context, ForwardMessageFunction forwardMessage,
-      {List<String>? filterUser,
-      required String sessionName,
-      ForwardType type = ForwardType.normal}) {
-    Navigator.push(context, MaterialPageRoute(builder: (context) {
-      return ChatForwardPage(
-        filterSession: filterUser,
-      );
-    })).then((selectedList) {
-      if (selectedList is List<SelectedBeam>) {
-        String forwardStr;
-        if (type == ForwardType.normal) {
-          forwardStr = S.of(context).messageForwardMessageTips(sessionName);
-        } else if (type == ForwardType.merge) {
-          forwardStr =
-              S.of(context).messageForwardMessageMergedTips(sessionName);
-        } else {
-          forwardStr =
-              S.of(context).messageForwardMessageOneByOneTips(sessionName);
-        }
-        showChatForwardNewDialog(
-                context: context,
-                contentStr: forwardStr,
-                selectedBeams: selectedList)
-            .then((result) async {
-          if (result != null && result.result == true) {
-            var recentList = selectedList
-                .map((selected) =>
-                    RecentForward(selected.sessionId!, selected.type))
-                .toList(growable: false);
-            ChatMessageRepo.saveRecentForward(recentList);
-            for (int i = 0; i < selectedList.length; i++) {
-              var selected = selectedList[i];
-              var conversationId = selected.conversationId;
-              forwardMessage(conversationId ?? '',
-                  postScript: result.postScript,
-                  isLastUser: i == selectedList.length - 1);
-            }
-          }
-        });
+    BuildContext context,
+    ForwardMessageFunction forwardMessage, {
+    List<String>? filterUser,
+    required String sessionName,
+    ForwardType type = ForwardType.normal,
+  }) {
+    // Task 8.1-8.3: 桌面/Web 端使用 Dialog 弹出，移动端保持全屏导航
+    void _handleSelectedList(List<SelectedBeam> selectedList) {
+      String forwardStr;
+      if (type == ForwardType.normal) {
+        forwardStr = S.of(context).messageForwardMessageTips(sessionName);
+      } else if (type == ForwardType.merge) {
+        forwardStr = S.of(context).messageForwardMessageMergedTips(sessionName);
+      } else {
+        forwardStr =
+            S.of(context).messageForwardMessageOneByOneTips(sessionName);
       }
-    });
+      showChatForwardNewDialog(
+        context: context,
+        contentStr: forwardStr,
+        selectedBeams: selectedList,
+      ).then((result) async {
+        if (result != null && result.result == true) {
+          var recentList = selectedList
+              .map(
+                (selected) => RecentForward(selected.sessionId!, selected.type),
+              )
+              .toList(growable: false);
+          ChatMessageRepo.saveRecentForward(recentList);
+          for (int i = 0; i < selectedList.length; i++) {
+            var selected = selectedList[i];
+            var conversationId = selected.conversationId;
+            forwardMessage(
+              conversationId ?? '',
+              postScript: result.postScript,
+              isLastUser: i == selectedList.length - 1,
+            );
+          }
+        }
+      });
+    }
+
+    if (ChatKitUtils.isDesktopOrWeb) {
+      // Task 8.2: 桌面/Web 端以 Dialog 方式弹出转发选择器
+      showDialog<List<SelectedBeam>>(
+        context: context,
+        barrierDismissible: true,
+        builder: (ctx) => Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480, maxHeight: 640),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: ChatForwardPage(filterSession: filterUser),
+            ),
+          ),
+        ),
+      ).then((selectedList) {
+        if (selectedList is List<SelectedBeam>) {
+          _handleSelectedList(selectedList);
+        }
+      });
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) {
+            return ChatForwardPage(filterSession: filterUser);
+          },
+        ),
+      ).then((selectedList) {
+        if (selectedList is List<SelectedBeam>) {
+          _handleSelectedList(selectedList);
+        }
+      });
+    }
   }
 
   //转发到群
   static void _goTeamSelector(
-      BuildContext context, ForwardMessageFunction forwardMessage,
-      {required String sessionName, ForwardType type = ForwardType.normal}) {
+    BuildContext context,
+    ForwardMessageFunction forwardMessage, {
+    required String sessionName,
+    ForwardType type = ForwardType.normal,
+  }) {
     String forwardStr;
     if (type == ForwardType.normal) {
       forwardStr = S.of(context).messageForwardMessageTips(sessionName);
@@ -566,14 +703,21 @@ class ChatMessageHelper {
     goTeamListPage(context, selectorModel: true).then((result) async {
       if (result is NIMTeam) {
         showChatForwardDialog(
-                context: context, contentStr: forwardStr, team: result)
-            .then((forward) async {
+          context: context,
+          contentStr: forwardStr,
+          team: result,
+        ).then((forward) async {
           if (forward != null && forward.result == true) {
-            var conversationId = (await NimCore.instance.conversationIdUtil
-                    .teamConversationId(result.teamId))
-                .data;
-            forwardMessage(conversationId ?? '',
-                postScript: forward.postScript, isLastUser: true);
+            var conversationId =
+                (await NimCore.instance.conversationIdUtil.teamConversationId(
+              result.teamId,
+            ))
+                    .data;
+            forwardMessage(
+              conversationId ?? '',
+              postScript: forward.postScript,
+              isLastUser: true,
+            );
           }
           hideKeyboard();
         });
@@ -583,10 +727,12 @@ class ChatMessageHelper {
 
   //转发到个人
   static void _goContactSelector(
-      BuildContext context, ForwardMessageFunction forwardMessage,
-      {required String sessionName,
-      List<String>? filterUser,
-      ForwardType type = ForwardType.normal}) {
+    BuildContext context,
+    ForwardMessageFunction forwardMessage, {
+    required String sessionName,
+    List<String>? filterUser,
+    ForwardType type = ForwardType.normal,
+  }) {
     String forwardStr;
     if (type == ForwardType.normal) {
       forwardStr = S.of(context).messageForwardMessageTips(sessionName);
@@ -595,24 +741,31 @@ class ChatMessageHelper {
     } else {
       forwardStr = S.of(context).messageForwardMessageOneByOneTips(sessionName);
     }
-    goToContactSelector(context,
-            filter: filterUser, returnContact: true, mostCount: 6)
-        .then((selectedUsers) {
+    goToContactSelector(
+      context,
+      filter: filterUser,
+      returnContact: true,
+      mostCount: 6,
+    ).then((selectedUsers) {
       if (selectedUsers is List<ContactInfo>) {
         showChatForwardDialog(
-                context: context,
-                contentStr: forwardStr,
-                contacts: selectedUsers)
-            .then((result) async {
+          context: context,
+          contentStr: forwardStr,
+          contacts: selectedUsers,
+        ).then((result) async {
           if (result != null && result.result == true) {
             for (int i = 0; i < selectedUsers.length; i++) {
               var user = selectedUsers[i];
-              var conversationId = (await NimCore.instance.conversationIdUtil
-                      .p2pConversationId(user.user.accountId!))
-                  .data;
-              forwardMessage(conversationId ?? '',
-                  postScript: result.postScript,
-                  isLastUser: i == selectedUsers.length - 1);
+              var conversationId =
+                  (await NimCore.instance.conversationIdUtil.p2pConversationId(
+                user.user.accountId!,
+              ))
+                      .data;
+              forwardMessage(
+                conversationId ?? '',
+                postScript: result.postScript,
+                isLastUser: i == selectedUsers.length - 1,
+              );
             }
           }
         });
@@ -620,15 +773,17 @@ class ChatMessageHelper {
     });
   }
 
-  static Map<String, dynamic>? getMultiLineMessageMap(
-      {String? title, String? content}) {
+  static Map<String, dynamic>? getMultiLineMessageMap({
+    String? title,
+    String? content,
+  }) {
     if (title?.isNotEmpty == true) {
       return {
         CustomMessageKey.type: CustomMessageType.customMultiLineMessageType,
         CustomMessageKey.data: {
           ChatMessage.keyMultiLineTitle: title,
-          ChatMessage.keyMultiLineBody: content
-        }
+          ChatMessage.keyMultiLineBody: content,
+        },
       };
     }
     return null;
@@ -651,22 +806,26 @@ class ChatMessageHelper {
 
     // 首先添加URL匹配
     urlRegex.allMatches(text).forEach((match) {
-      matches.add(TextMatch(
-        start: match.start,
-        end: match.end,
-        text: match.group(0)!,
-        type: MatchType.url,
-      ));
+      matches.add(
+        TextMatch(
+          start: match.start,
+          end: match.end,
+          text: match.group(0)!,
+          type: MatchType.url,
+        ),
+      );
     });
 
     // 然后添加电话号码匹配
     phoneRegex.allMatches(text).forEach((match) {
-      matches.add(TextMatch(
-        start: match.start,
-        end: match.end,
-        text: match.group(0)!,
-        type: MatchType.phone,
-      ));
+      matches.add(
+        TextMatch(
+          start: match.start,
+          end: match.end,
+          text: match.group(0)!,
+          type: MatchType.phone,
+        ),
+      );
     });
 
     // 如果没有匹配项，使用原有逻辑
@@ -697,47 +856,64 @@ class ChatMessageHelper {
     for (final match in filteredMatches) {
       // 添加匹配项前的文本
       if (match.start > lastEnd) {
-        spans.addAll(ChatMessageHelper.textSpan(
-          context,
-          isSelf,
-          text.substring(lastEnd, match.start),
-          startIndex + lastEnd,
-          chatUIConfig: chatUIConfig,
-          remoteExtension: remoteExtension,
-        ));
+        spans.addAll(
+          ChatMessageHelper.textSpan(
+            context,
+            isSelf,
+            text.substring(lastEnd, match.start),
+            startIndex + lastEnd,
+            chatUIConfig: chatUIConfig,
+            remoteExtension: remoteExtension,
+          ),
+        );
       }
 
       // 添加高亮文本（电话号码或URL）
-      spans.add(TextSpan(
-        text: match.text,
-        style: TextStyle(
-          color: textAitColor,
-          fontSize: textSize,
-          decoration: TextDecoration.underline,
+      spans.add(
+        TextSpan(
+          text: match.text,
+          style: TextStyle(
+            color: textAitColor,
+            fontSize: textSize,
+            decoration: TextDecoration.underline,
+          ),
+          recognizer: TapGestureRecognizer()
+            ..onTap = () {
+              if (match.type == MatchType.phone) {
+                if (ChatKitUtils.isDesktopOrWeb) {
+                  // 桌面/Web 端：直接复制号码并弹出 Toast，不弹底部弹框
+                  copyPhoneNumber(match.text);
+                } else {
+                  showPhoneDialog(context, match.text);
+                }
+              } else if (match.type == MatchType.url) {
+                if (ChatKitUtils.isDesktopOrWeb) {
+                  // 桌面/Web 端：调用系统浏览器打开，不在应用内打开
+                  final uri = Uri.parse(_formatUrl(match.text));
+                  launchUrl(uri, mode: LaunchMode.externalApplication);
+                } else {
+                  handleUrlClick(context, match.text);
+                }
+              }
+            },
         ),
-        recognizer: TapGestureRecognizer()
-          ..onTap = () {
-            if (match.type == MatchType.phone) {
-              showPhoneDialog(context, match.text);
-            } else if (match.type == MatchType.url) {
-              handleUrlClick(context, match.text);
-            }
-          },
-      ));
+      );
 
       lastEnd = match.end;
     }
 
     // 添加剩余文本
     if (lastEnd < text.length) {
-      spans.addAll(ChatMessageHelper.textSpan(
-        context,
-        isSelf,
-        text.substring(lastEnd),
-        startIndex + lastEnd,
-        chatUIConfig: chatUIConfig,
-        remoteExtension: remoteExtension,
-      ));
+      spans.addAll(
+        ChatMessageHelper.textSpan(
+          context,
+          isSelf,
+          text.substring(lastEnd),
+          startIndex + lastEnd,
+          chatUIConfig: chatUIConfig,
+          remoteExtension: remoteExtension,
+        ),
+      );
     }
 
     return spans;
@@ -787,27 +963,30 @@ class ChatMessageHelper {
     return result;
   }
 
-// 检查两个匹配项是否重叠
+  // 检查两个匹配项是否重叠
   static bool isOverlapping(TextMatch a, TextMatch b) {
     return !(a.end <= b.start || b.end <= a.start);
   }
 
-// 处理URL点击事件
+  // 处理URL点击事件
   static void handleUrlClick(BuildContext context, String url) {
     // 格式化URL，确保有正确的协议前缀
     String formattedUrl = _formatUrl(url);
     // 可以在这里添加打开浏览器、显示预览等功能
     Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) => CommonBrowser(
-                url: formattedUrl,
-                onHttpError: (error) {
-                  // Fluttertoast.showToast(msg: S.of(context).webConnectError);
-                },
-                onWebResourceError: (error) {
-                  // Fluttertoast.showToast(msg: S.of(context).webConnectError);
-                })));
+      context,
+      MaterialPageRoute(
+        builder: (context) => CommonBrowser(
+          url: formattedUrl,
+          onHttpError: (error) {
+            // Fluttertoast.showToast(msg: S.of(context).webConnectError);
+          },
+          onWebResourceError: (error) {
+            // Fluttertoast.showToast(msg: S.of(context).webConnectError);
+          },
+        ),
+      ),
+    );
   }
 
   // 格式化URL，确保有正确的协议前缀
@@ -834,7 +1013,7 @@ class ChatMessageHelper {
     return 'https://$url';
   }
 
-// 检查是否是域名格式
+  // 检查是否是域名格式
   static bool _isDomainFormat(String url) {
     // 简单的域名格式检查：包含点号且不包含空格和特殊字符
     return url.contains('.') &&
@@ -866,7 +1045,9 @@ class ChatMessageHelper {
                     // 标题文本
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 20),
+                        horizontal: 16,
+                        vertical: 20,
+                      ),
                       child: Text(
                         S.of().messagePhoneCallTips(phoneNumber),
                         style: const TextStyle(
@@ -877,10 +1058,7 @@ class ChatMessageHelper {
                       ),
                     ),
                     // 分割线
-                    Container(
-                      height: 1,
-                      color: '#DEDEDE'.toColor(),
-                    ),
+                    Container(height: 1, color: '#DEDEDE'.toColor()),
                     // 呼叫按钮
                     GestureDetector(
                       onTap: () {
@@ -902,10 +1080,7 @@ class ChatMessageHelper {
                       ),
                     ),
                     // 分割线
-                    Container(
-                      height: 1,
-                      color: '#DEDEDE'.toColor(),
-                    ),
+                    Container(height: 1, color: '#DEDEDE'.toColor()),
                     // 复制号码按钮
                     GestureDetector(
                       onTap: () {
@@ -967,21 +1142,25 @@ class ChatMessageHelper {
     if (await canLaunchUrl(phoneUri)) {
       await launchUrl(phoneUri);
     } else {
-      Fluttertoast.showToast(msg: S.of().chatMessageCallError);
+      ChatUIToast.show(S.of().chatMessageCallError);
     }
   }
 
   static void copyPhoneNumber(String phoneNumber) {
     Clipboard.setData(ClipboardData(text: phoneNumber));
-    Fluttertoast.showToast(msg: S.of().chatMessageCopySuccess);
+    ChatUIToast.show(S.of().chatMessageCopySuccess);
   }
 
   ///解析Text消息，将@消息和普通文本分开
   static List<TextSpan> textSpan(
-      BuildContext context, bool isSelf, String text, int start,
-      {int? end,
-      ChatUIConfig? chatUIConfig,
-      Map<String, dynamic>? remoteExtension}) {
+    BuildContext context,
+    bool isSelf,
+    String text,
+    int start, {
+    int? end,
+    ChatUIConfig? chatUIConfig,
+    Map<String, dynamic>? remoteExtension,
+  }) {
     //定义文本字体大小和颜色
     final textSize = (isSelf
             ? chatUIConfig?.sendMessageTextSize
@@ -1003,8 +1182,9 @@ class ChatMessageHelper {
       //将所有@的文本和位置提取出来
       try {
         var aitMap = remoteExtension![ChatMessage.keyAitMsg] as Map;
-        final AitContactsModel aitContactsModel =
-            AitContactsModel.fromMap(Map<String, dynamic>.from(aitMap));
+        final AitContactsModel aitContactsModel = AitContactsModel.fromMap(
+          Map<String, dynamic>.from(aitMap),
+        );
         aitContactsModel.aitBlocks.forEach((key, value) {
           var aitMsg = value as AitMsg;
           aitMsg.segments.forEach((segment) {
@@ -1013,14 +1193,18 @@ class ChatMessageHelper {
         });
       } catch (e) {
         Alog.e(
-            tag: 'ChatKitMessageTextItem',
-            content: 'aitContactsModel.fromMap error: $e');
+          tag: 'ChatKitMessageTextItem',
+          content: 'aitContactsModel.fromMap error: $e',
+        );
       }
       //如果没有解析到@消息，则直接返回
       if (aitSegments.isEmpty) {
-        spans.add(TextSpan(
+        spans.add(
+          TextSpan(
             text: text,
-            style: TextStyle(fontSize: textSize, color: textColor)));
+            style: TextStyle(fontSize: textSize, color: textColor),
+          ),
+        );
         return spans;
       }
 
@@ -1033,22 +1217,30 @@ class ChatMessageHelper {
         }
         //@之前的部分
         if (preIndex < text.length && aitItem.segment.start > preIndex) {
-          spans.add(TextSpan(
+          spans.add(
+            TextSpan(
               text: text.substring(
-                  preIndex, min(aitItem.segment.start, text.length)),
-              style: TextStyle(fontSize: textSize, color: textColor)));
+                preIndex,
+                min(aitItem.segment.start, text.length),
+              ),
+              style: TextStyle(fontSize: textSize, color: textColor),
+            ),
+          );
         }
         //@部分
         if (end == null) {
-          spans.add(TextSpan(
+          spans.add(
+            TextSpan(
               text: aitItem.text,
               style: TextStyle(fontSize: textSize, color: textAitColor),
               recognizer: TapGestureRecognizer()
                 ..onTap = () {
                   //点击@消息，如果有自定义回调，则回调，否则跳转到用户详情页
                   if (chatUIConfig?.onTapAitLink != null) {
-                    chatUIConfig?.onTapAitLink
-                        ?.call(aitItem.account, aitItem.text);
+                    chatUIConfig?.onTapAitLink?.call(
+                      aitItem.account,
+                      aitItem.text,
+                    );
                   } else if (aitItem.account != AitContactsModel.accountAll) {
                     if (IMKitClient.account() != aitItem.account) {
                       goToContactDetail(context, aitItem.account);
@@ -1056,18 +1248,23 @@ class ChatMessageHelper {
                       gotoMineInfoPage(context);
                     }
                   }
-                }));
+                },
+            ),
+          );
           preIndex = aitItem.segment.endIndex;
         } else if (aitItem.segment.start < end) {
-          spans.add(TextSpan(
+          spans.add(
+            TextSpan(
               text: aitItem.text,
               style: TextStyle(fontSize: textSize, color: textAitColor),
               recognizer: TapGestureRecognizer()
                 ..onTap = () {
                   //点击@消息，如果有自定义回调，则回调，否则跳转到用户详情页
                   if (chatUIConfig?.onTapAitLink != null) {
-                    chatUIConfig?.onTapAitLink
-                        ?.call(aitItem.account, aitItem.text);
+                    chatUIConfig?.onTapAitLink?.call(
+                      aitItem.account,
+                      aitItem.text,
+                    );
                   } else if (aitItem.account != AitContactsModel.accountAll) {
                     if (IMKitClient.account() != aitItem.account) {
                       goToContactDetail(context, aitItem.account);
@@ -1075,21 +1272,30 @@ class ChatMessageHelper {
                       gotoMineInfoPage(context);
                     }
                   }
-                }));
+                },
+            ),
+          );
           preIndex = aitItem.segment.endIndex;
         }
       }
       //最后一个@之后的部分
       final lastStartIndex = preIndex - start;
       if (lastStartIndex < text.length - 1) {
-        spans.add(TextSpan(
+        spans.add(
+          TextSpan(
             text: text.substring(lastStartIndex, text.length),
-            style: TextStyle(fontSize: textSize, color: textColor)));
+            style: TextStyle(fontSize: textSize, color: textColor),
+          ),
+        );
       }
     } else {
       //没有@消息，直接返回
-      spans.add(TextSpan(
-          text: text, style: TextStyle(fontSize: textSize, color: textColor)));
+      spans.add(
+        TextSpan(
+          text: text,
+          style: TextStyle(fontSize: textSize, color: textColor),
+        ),
+      );
     }
     return spans;
   }
@@ -1100,19 +1306,16 @@ class ChatMessageHelper {
     if (item == null) return null;
     String source = item.source;
     return WidgetSpan(
-      child: Image.asset(
-        source,
-        package: kPackage,
-        height: 24,
-        width: 24,
-      ),
+      child: Image.asset(source, package: kPackage, height: 24, width: 24),
     );
   }
 
   //获取消息发送前的参数
   static Future<NIMSendMessageParams> getSenderParams(
-      NIMMessage message, String conversationId,
-      {NIMMessagePushConfig? pushConfig}) async {
+    NIMMessage message,
+    String conversationId, {
+    NIMMessagePushConfig? pushConfig,
+  }) async {
     //push Config
     pushConfig ??= NIMMessagePushConfig();
     if (ChatKitClient.instance.chatUIConfig.getPushPayload != null) {
@@ -1123,8 +1326,10 @@ class ChatMessageHelper {
     //message config
     final readEnable = await ConfigRepo.getShowReadStatus();
 
-    final messageConfig =
-        NIMMessageConfig(readReceiptEnabled: readEnable, unreadEnabled: true);
+    final messageConfig = NIMMessageConfig(
+      readReceiptEnabled: readEnable,
+      unreadEnabled: true,
+    );
     NIMSendMessageParams params = NIMSendMessageParams(
       messageConfig: messageConfig,
       pushConfig: pushConfig,
@@ -1165,11 +1370,7 @@ class ChatMessageHelper {
   }
 }
 
-enum ForwardType {
-  normal,
-  oneByOne,
-  merge,
-}
+enum ForwardType { normal, oneByOne, merge }
 
 // 辅助类和方法
 class TextMatch {
@@ -1186,10 +1387,7 @@ class TextMatch {
   });
 }
 
-enum MatchType {
-  phone,
-  url,
-}
+enum MatchType { phone, url }
 
 class AitItemModel {
   String account;
@@ -1202,8 +1400,12 @@ class AitItemModel {
 /// 构建消息内容
 /// 无边框，无方向
 /// 内容不可点击
-Widget buildHistoryMessage(BuildContext context, NIMMessage message,
-    {NIMTeam? teamInfo, String? keyword}) {
+Widget buildHistoryMessage(
+  BuildContext context,
+  NIMMessage message, {
+  NIMTeam? teamInfo,
+  String? keyword,
+}) {
   final chatUIConfig = ChatKitClient.instance.chatUIConfig;
   var messageItemBuilder = chatUIConfig.messageBuilder;
   Widget? content;
@@ -1235,12 +1437,14 @@ Widget buildHistoryMessage(BuildContext context, NIMMessage message,
       } else {
         content = Container(
           decoration: BoxDecoration(
-              border: Border.all(color: '#F0F0F0'.toColor()),
-              borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
-                  bottomLeft: Radius.circular(12),
-                  bottomRight: Radius.circular(12))),
+            border: Border.all(color: '#F0F0F0'.toColor()),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(12),
+              topRight: Radius.circular(12),
+              bottomLeft: Radius.circular(12),
+              bottomRight: Radius.circular(12),
+            ),
+          ),
           child: ChatKitMessageAudioItem(
             message: message,
             showDirection: false,
@@ -1274,7 +1478,9 @@ Widget buildHistoryMessage(BuildContext context, NIMMessage message,
         content = messageItemBuilder!.notifyMessageBuilder!(message);
       } else {
         content = ChatKitMessageNotificationItem(
-            message: message, teamInfo: teamInfo);
+          message: message,
+          teamInfo: teamInfo,
+        );
       }
       break;
     case NIMMessageType.tip:
@@ -1323,11 +1529,12 @@ Widget buildHistoryMessage(BuildContext context, NIMMessage message,
                 color: '#E8EAED'.toColor(),
               ),
               child: ChatKitMessageMergedItem(
-                  message: message,
-                  mergedMessage: mergedMessage,
-                  showMargin: false,
-                  diffDirection: false,
-                  chatUIConfig: ChatKitClient.instance.chatUIConfig),
+                message: message,
+                mergedMessage: mergedMessage,
+                showMargin: false,
+                diffDirection: false,
+                chatUIConfig: ChatKitClient.instance.chatUIConfig,
+              ),
             );
           }
           break;
@@ -1363,8 +1570,9 @@ Widget buildHistoryMessage(BuildContext context, NIMMessage message,
       }
       if (messageItemBuilder?.extendBuilder != null) {
         if (messageItemBuilder?.extendBuilder![message.messageType] != null) {
-          content =
-              messageItemBuilder!.extendBuilder![message.messageType]!(message);
+          content = messageItemBuilder!.extendBuilder![message.messageType]!(
+            message,
+          );
           break;
         }
       }
@@ -1390,32 +1598,48 @@ bool _filterNotification(NIMMessage message, {NIMTeam? teamInfo}) {
 
 /// 转发消息
 void showForwardMessageDialog(BuildContext context, NIMMessage message) async {
-  final sessionName =
-      await _getSessionName(message.conversationId!, message.conversationType!);
-  ChatMessageHelper.showForwardSelector(context, (conversationId,
-      {String? postScript, bool? isLastUser}) {
+  final sessionName = await _getSessionName(
+    message.conversationId!,
+    message.conversationType!,
+  );
+  ChatMessageHelper.showForwardSelector(context, (
+    conversationId, {
+    String? postScript,
+    bool? isLastUser,
+  }) {
     haveConnectivity().then((value) async {
       if (value) {
-        final params =
-            await ChatMessageHelper.getSenderParams(message, conversationId);
-        ChatMessageRepo.forwardMessage(message, conversationId, params: params)
-            .then((value) {
+        final params = await ChatMessageHelper.getSenderParams(
+          message,
+          conversationId,
+        );
+        ChatMessageRepo.forwardMessage(
+          message,
+          conversationId,
+          params: params,
+        ).then((value) {
           if (value.code == ChatMessageRepo.errorInBlackList) {
             ChatMessageRepo.saveTipsMessage(
-                conversationId, S.of().chatMessageSendFailedByBlackList);
+              conversationId,
+              S.of().chatMessageSendFailedByBlackList,
+            );
           }
         });
       }
     });
     if (postScript?.isNotEmpty == true) {
       ChatMessageRepo.sendTextMessageWithMessageAck(
-          conversationId: conversationId, text: postScript!);
+        conversationId: conversationId,
+        text: postScript!,
+      );
     }
   }, sessionName: sessionName);
 }
 
 Future<String> _getSessionName(
-    String conversationId, NIMConversationType conversationType) async {
+  String conversationId,
+  NIMConversationType conversationType,
+) async {
   if (conversationType == NIMConversationType.p2p) {
     final accId = ChatKitUtils.getConversationTargetId(conversationId);
     final contactInfo = await ContactRepo.getFriend(accId);
@@ -1433,11 +1657,14 @@ String getFormatTime(int timestamp, BuildContext context) {
   if (date.year == now.year && date.month == now.month && date.day == now.day) {
     return DateFormat(S.of(context).chatHistoryDateFormatHourMine).format(date);
   } else if (date.year == now.year) {
-    return DateFormat(S.of(context).chatHistoryDateFormatMonthDayHourMine, 'zh')
-        .format(date);
+    return DateFormat(
+      S.of(context).chatHistoryDateFormatMonthDayHourMine,
+      'zh',
+    ).format(date);
   } else {
     return DateFormat(
-            S.of(context).chatHistoryDateFormatYearMonthDayHourMine, 'zh')
-        .format(date);
+      S.of(context).chatHistoryDateFormatYearMonthDayHourMine,
+      'zh',
+    ).format(date);
   }
 }

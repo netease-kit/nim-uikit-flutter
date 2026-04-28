@@ -7,13 +7,10 @@ import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
-import 'package:nim_chatkit/model/contact_info.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
-import 'package:nim_chatkit/service_locator.dart';
-import 'package:nim_chatkit/services/contact/contact_provider.dart';
 import 'package:nim_contactkit_ui/contact_kit_client.dart';
 import 'package:nim_contactkit_ui/page/viewmodel/ai_user_list_viewmodel.dart';
-import 'package:nim_contactkit_ui/page/viewmodel/black_list_viewmodel.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:provider/provider.dart';
 
@@ -32,41 +29,43 @@ class ContactKitAIUserListPage extends StatefulWidget {
 class _AIUserListPageState extends State<ContactKitAIUserListPage> {
   Widget _buildItem(BuildContext context, NIMAIUser user) {
     return InkWell(
-        onTap: () {
-          goToContactDetail(context, user.accountId!!);
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Avatar(
-                width: 36,
-                height: 36,
-                avatar: user.avatar,
-                name: user.name ?? user.accountId,
-                bgCode: AvatarColor.avatarColor(content: user.accountId),
-                radius: widget.listConfig?.avatarCornerRadius,
-              ),
-              Expanded(
-                child: Container(
-                  alignment: Alignment.centerLeft,
-                  padding: const EdgeInsets.only(left: 12),
-                  child: Text(
-                    user.name ?? user.accountId!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        fontSize: widget.listConfig?.nameTextSize ?? 14,
-                        color: widget.listConfig?.nameTextColor ??
-                            CommonColors.color_333333),
+      onTap: () {
+        goToContactDetail(context, user.accountId!!);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Avatar(
+              width: 36,
+              height: 36,
+              avatar: user.avatar,
+              name: user.name ?? user.accountId,
+              bgCode: AvatarColor.avatarColor(content: user.accountId),
+              radius: widget.listConfig?.avatarCornerRadius,
+            ),
+            Expanded(
+              child: Container(
+                alignment: Alignment.centerLeft,
+                padding: const EdgeInsets.only(left: 12),
+                child: Text(
+                  user.name ?? user.accountId!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: widget.listConfig?.nameTextSize ?? 14,
+                    color: widget.listConfig?.nameTextColor ??
+                        CommonColors.color_333333,
                   ),
                 ),
               ),
-            ],
-          ),
-        ));
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -80,53 +79,75 @@ class _AIUserListPageState extends State<ContactKitAIUserListPage> {
       builder: (context, child) {
         List<NIMAIUser> users =
             context.watch<AIUserListViewModel>().aiUserList.toList();
-        return TransparentScaffold(
-          backgroundColor: Colors.white,
-          title: S.of(context).contactAIUserList,
-          centerTitle: true,
-          elevation: 0,
-          body: users.isNotEmpty
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                        child: ListView.separated(
+
+        final bodyWidget = users.isNotEmpty
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: ListView.separated(
                       itemBuilder: (context, index) {
                         final user = users[index];
                         return _buildItem(context, user);
                       },
                       itemCount: users.length,
                       separatorBuilder: (BuildContext context, int index) =>
-                          Divider(
-                        height: 1,
-                        color: '#F5F8FC'.toColor(),
-                      ),
-                    ))
-                  ],
-                )
-              : Column(
-                  children: [
-                    SizedBox(
-                      height: 170,
+                          Divider(height: 1, color: '#F5F8FC'.toColor()),
                     ),
-                    SvgPicture.asset(
-                      'images/ic_search_empty.svg',
-                      package: kPackage,
-                    ),
-                    Container(
-                      margin: EdgeInsets.only(top: 8),
-                      child: Text(
-                        S.of(context).aiUsersEmpty,
-                        style:
-                            TextStyle(fontSize: 14, color: '#B3B7BC'.toColor()),
+                  ),
+                ],
+              )
+            : Column(
+                children: [
+                  SizedBox(height: 170),
+                  SvgPicture.asset(
+                    'images/ic_search_empty.svg',
+                    package: kPackage,
+                  ),
+                  Container(
+                    margin: EdgeInsets.only(top: 8),
+                    child: Text(
+                      S.of(context).aiUsersEmpty,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: '#B3B7BC'.toColor(),
                       ),
                     ),
-                    Expanded(
-                      child: Container(),
-                      flex: 1,
-                    ),
-                  ],
+                  ),
+                  Expanded(child: Container(), flex: 1),
+                ],
+              );
+
+        // 桌面端：使用普通 Scaffold，无返回按钮
+        if (ChatKitUtils.isDesktopOrWeb) {
+          return Scaffold(
+            backgroundColor: Colors.white,
+            appBar: AppBar(
+              automaticallyImplyLeading: false,
+              title: Text(
+                S.of(context).contactAIUserList,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF333333),
                 ),
+              ),
+              centerTitle: false,
+              elevation: 0.5,
+              shadowColor: const Color(0xFFF5F8FC),
+              backgroundColor: Colors.white,
+            ),
+            body: bodyWidget,
+          );
+        }
+
+        // 移动端：使用 TransparentScaffold，自带返回按钮
+        return TransparentScaffold(
+          backgroundColor: Colors.white,
+          title: S.of(context).contactAIUserList,
+          centerTitle: true,
+          elevation: 0,
+          body: bodyWidget,
         );
       },
     );

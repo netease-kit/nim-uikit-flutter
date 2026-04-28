@@ -9,15 +9,16 @@ import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/unread_message.dart';
+import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/im_kit_config_center.dart';
 import 'package:nim_chatkit/manager/ai_user_manager.dart';
+import 'package:nim_chatkit/message/message_helper.dart';
 import 'package:nim_chatkit/model/custom_type_constant.dart';
 import 'package:nim_chatkit/services/message/chat_message.dart';
-import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
 import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
 import 'package:nim_conversationkit_ui/l10n/S.dart';
 import 'package:nim_core_v2/nim_core.dart';
-import 'package:nim_chatkit/message/message_helper.dart';
 
 import '../model/conversation_info.dart';
 
@@ -36,20 +37,22 @@ bool isSupportMessageType(NIMMessageType? type) {
 final double conversationItemHeight = 62;
 
 class ConversationItem extends StatelessWidget {
-  const ConversationItem(
-      {Key? key,
-      required this.conversationInfo,
-      required this.config,
-      required this.index})
-      : super(key: key);
+  const ConversationItem({
+    Key? key,
+    required this.conversationInfo,
+    required this.config,
+    required this.index,
+  }) : super(key: key);
 
   final ConversationInfo conversationInfo;
   final ConversationItemConfig config;
   final int index;
 
   String _getLastMessageContent(BuildContext context) {
-    var configMessageContent =
-        config.lastMessageContentBuilder?.call(context, conversationInfo);
+    var configMessageContent = config.lastMessageContentBuilder?.call(
+      context,
+      conversationInfo,
+    );
     if (configMessageContent?.isNotEmpty == true) {
       return configMessageContent!;
     }
@@ -81,8 +84,10 @@ class ConversationItem extends StatelessWidget {
           return S.of(context).chatMessageNonsupportType;
         }
       case NIMMessageType.custom:
-        var customLastMessageContent =
-            _getCustomLastMessageBrief(context, conversationInfo);
+        var customLastMessageContent = _getCustomLastMessageBrief(
+          context,
+          conversationInfo,
+        );
         if (customLastMessageContent?.isNotEmpty == true) {
           return customLastMessageContent!;
         }
@@ -105,23 +110,33 @@ class ConversationItem extends StatelessWidget {
   }
 
   String? _getCustomLastMessageBrief(
-      BuildContext context, ConversationInfo conversationInfo) {
+    BuildContext context,
+    ConversationInfo conversationInfo,
+  ) {
     if (conversationInfo.getLastAttachment() is NIMMessageAttachment) {
       var attachmentRaw = conversationInfo.getLastMessage()?.attachment?.raw;
-      if (attachmentRaw != null) {
-        Map<String, dynamic> data = json.decode(attachmentRaw);
-
-        if (data[CustomMessageKey.type] ==
-            CustomMessageType.customMergeMessageType) {
-          return S.of(context).chatHistoryBrief;
-        }
-        if (data[CustomMessageKey.type] ==
-            CustomMessageType.customMultiLineMessageType) {
-          var dataMap = data[CustomMessageKey.data] as Map?;
-          var title = dataMap?[ChatMessage.keyMultiLineTitle] as String?;
-          if (title != null) {
-            return title;
+      // attachmentRaw 由业务方自定义，可能为空字符串或非 JSON 字符串
+      // （例如通过 MessageCreator.createCustomMessage(xxx, '') 发送的消息），
+      // 此处必须做安全解析，否则 json.decode 会抛 FormatException。
+      if (attachmentRaw != null && attachmentRaw.isNotEmpty) {
+        try {
+          final decoded = json.decode(attachmentRaw);
+          if (decoded is Map<String, dynamic>) {
+            if (decoded[CustomMessageKey.type] ==
+                CustomMessageType.customMergeMessageType) {
+              return S.of(context).chatHistoryBrief;
+            }
+            if (decoded[CustomMessageKey.type] ==
+                CustomMessageType.customMultiLineMessageType) {
+              var dataMap = decoded[CustomMessageKey.data] as Map?;
+              var title = dataMap?[ChatMessage.keyMultiLineTitle] as String?;
+              if (title != null) {
+                return title;
+              }
+            }
           }
+        } catch (e) {
+          // 非标准 JSON 附件，忽略后走外层默认文案逻辑
         }
       }
     }
@@ -131,12 +146,16 @@ class ConversationItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     String? avatar = conversationInfo.getAvatar();
+    // 桌面端背景色由外层 AnimatedContainer 控制，Item 内部设为透明
+    final bgColor = ChatKitUtils.isDesktopOrWeb
+        ? Colors.transparent
+        : (conversationInfo.isStickTop()
+            ? const Color(0xffededef)
+            : Colors.white);
     return Container(
       height: conversationItemHeight,
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      color: conversationInfo.isStickTop()
-          ? const Color(0xffededef)
-          : Colors.white,
+      color: bgColor,
       alignment: Alignment.centerLeft,
       child: Stack(
         fit: StackFit.expand,
@@ -152,7 +171,8 @@ class ConversationItem extends StatelessWidget {
                     avatar: avatar,
                     name: conversationInfo.getName(),
                     bgCode: AvatarColor.avatarColor(
-                        content: conversationInfo.targetId),
+                      content: conversationInfo.targetId,
+                    ),
                     height: 42,
                     width: 42,
                     radius: config.avatarCornerRadius,
@@ -160,22 +180,24 @@ class ConversationItem extends StatelessWidget {
                   if (IMKitConfigCenter.enableOnlineStatus &&
                       conversationInfo.conversation.type ==
                           NIMConversationType.p2p &&
-                      !AIUserManager.instance
-                          .isAIUser(conversationInfo.targetId))
+                      !AIUserManager.instance.isAIUser(
+                        conversationInfo.targetId,
+                      ))
                     Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: conversationInfo.isOnline
-                                ? '#84ED85'.toColor()
-                                : "#D4D9DA".toColor(),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
-                        ))
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: conversationInfo.isOnline
+                              ? '#84ED85'.toColor()
+                              : "#D4D9DA".toColor(),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                      ),
+                    ),
                 ],
               ),
               onTap: () {
@@ -194,11 +216,12 @@ class ConversationItem extends StatelessWidget {
           ),
           if (!conversationInfo.isMute())
             Positioned(
-                top: 7,
-                left: 27,
-                child: UnreadMessage(
-                  count: conversationInfo.conversation.unreadCount ?? 0,
-                )),
+              top: 7,
+              left: 27,
+              child: UnreadMessage(
+                count: conversationInfo.conversation.unreadCount ?? 0,
+              ),
+            ),
           Positioned(
             left: 54,
             top: 10,
@@ -207,32 +230,38 @@ class ConversationItem extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                    padding: const EdgeInsets.only(right: 70),
-                    child: Text(
-                      conversationInfo.getName(),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                      style: TextStyle(
-                          fontSize: config.itemTitleSize,
-                          color: config.itemTitleColor),
-                    )),
+                  padding: const EdgeInsets.only(right: 70),
+                  child: Text(
+                    conversationInfo.getName(),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: TextStyle(
+                      fontSize: config.itemTitleSize,
+                      color: config.itemTitleColor,
+                    ),
+                  ),
+                ),
                 Text.rich(
-                  TextSpan(children: [
-                    if (conversationInfo.haveBeenAit &&
-                        (conversationInfo.conversation.unreadCount ?? 0) > 0)
-                      TextSpan(
-                        text: S.of(context).somebodyAitMe,
-                        style: TextStyle(
+                  TextSpan(
+                    children: [
+                      if (conversationInfo.haveBeenAit &&
+                          (conversationInfo.conversation.unreadCount ?? 0) > 0)
+                        TextSpan(
+                          text: S.of(context).somebodyAitMe,
+                          style: TextStyle(
                             fontSize: config.itemContentSize,
-                            color: config.itemAitTextColor),
-                      ),
-                    TextSpan(
-                      text: _getLastMessageContent(context),
-                      style: TextStyle(
+                            color: config.itemAitTextColor,
+                          ),
+                        ),
+                      TextSpan(
+                        text: _getLastMessageContent(context),
+                        style: TextStyle(
                           fontSize: config.itemContentSize,
-                          color: config.itemContentColor),
-                    )
-                  ]),
+                          color: config.itemContentColor,
+                        ),
+                      ),
+                    ],
+                  ),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
                 ),
@@ -240,22 +269,22 @@ class ConversationItem extends StatelessWidget {
             ),
           ),
           Positioned(
-              right: 0,
-              top: 17,
-              child: Text(
-                conversationInfo.getFormatTime(),
-                style: TextStyle(
-                    fontSize: config.itemDateSize, color: config.itemDateColor),
-              )),
+            right: 0,
+            top: 17,
+            child: Text(
+              conversationInfo.getFormatTime(),
+              style: TextStyle(
+                fontSize: config.itemDateSize,
+                color: config.itemDateColor,
+              ),
+            ),
+          ),
           if (conversationInfo.isMute())
             Positioned(
               right: 0,
               bottom: 10,
-              child: SvgPicture.asset(
-                'images/ic_mute.svg',
-                package: kPackage,
-              ),
-            )
+              child: SvgPicture.asset('images/ic_mute.svg', package: kPackage),
+            ),
         ],
       ),
     );

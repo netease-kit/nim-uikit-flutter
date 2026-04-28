@@ -151,6 +151,7 @@
     }
   },
   "contactSelectEmptyTip": "No Member",
+  "contactSelectedMembers": "Selected",
   "contactFriendEmpty": "No Friend",
   "myFriend": "MY FRIENDS",
   "aiUsers": "AI USERS",

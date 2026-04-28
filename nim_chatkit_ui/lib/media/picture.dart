@@ -13,12 +13,18 @@ import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 
 class PictureViewer extends StatefulWidget {
-  const PictureViewer(
-      {Key? key, required this.messages, required this.showIndex})
-      : super(key: key);
+  const PictureViewer({
+    Key? key,
+    required this.messages,
+    required this.showIndex,
+    this.isDialog = false,
+  }) : super(key: key);
 
   final List<NIMMessage> messages;
   final int showIndex;
+
+  /// 是否在 Dialog 中展示（桌面端/Web 端）
+  final bool isDialog;
 
   @override
   State<StatefulWidget> createState() => _PictureViewerState();
@@ -72,19 +78,18 @@ class _PictureViewerState extends State<PictureViewer> {
       imageProvider = FileImage(File(path));
     }
     return PhotoViewGalleryPageOptions(
-        imageProvider: imageProvider,
-        initialScale: PhotoViewComputedScale.contained,
-        minScale: PhotoViewComputedScale.contained,
-        maxScale: PhotoViewComputedScale.contained * 2,
-        heroAttributes: PhotoViewHeroAttributes(
-            tag: '${message.messageServerId}${message.messageClientId}'),
-        errorBuilder: (
-          BuildContext context,
-          Object error,
-          StackTrace? stackTrace,
-        ) {
-          return Container();
-        });
+      imageProvider: imageProvider,
+      initialScale: PhotoViewComputedScale.contained,
+      minScale: PhotoViewComputedScale.contained,
+      maxScale: PhotoViewComputedScale.contained * 2,
+      heroAttributes: PhotoViewHeroAttributes(
+        tag: '${message.messageServerId}${message.messageClientId}',
+      ),
+      errorBuilder:
+          (BuildContext context, Object error, StackTrace? stackTrace) {
+        return Container();
+      },
+    );
   }
 
   @override
@@ -99,27 +104,40 @@ class _PictureViewerState extends State<PictureViewer> {
     super.dispose();
   }
 
+  Widget _buildContent() {
+    return Stack(
+      children: [
+        PhotoViewGallery.builder(
+          scrollPhysics: const BouncingScrollPhysics(),
+          gaplessPlayback: true,
+          reverse: true,
+          builder: _buildItem,
+          itemCount: _galleryItems.length,
+          pageController: PageController(initialPage: _currentIndex),
+          onPageChanged: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
+        ),
+        MediaBottomActionOverlay(_galleryItems[_currentIndex]),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (widget.isDialog) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          color: Colors.black,
+          child: _buildContent(),
+        ),
+      );
+    }
     return Scaffold(
-      body: Stack(
-        children: [
-          PhotoViewGallery.builder(
-            scrollPhysics: const BouncingScrollPhysics(),
-            gaplessPlayback: true,
-            reverse: true,
-            builder: _buildItem,
-            itemCount: _galleryItems.length,
-            pageController: PageController(initialPage: _currentIndex),
-            onPageChanged: (index) {
-              setState(() {
-                _currentIndex = index;
-              });
-            },
-          ),
-          MediaBottomActionOverlay(_galleryItems[_currentIndex]),
-        ],
-      ),
+      body: _buildContent(),
     );
   }
 }

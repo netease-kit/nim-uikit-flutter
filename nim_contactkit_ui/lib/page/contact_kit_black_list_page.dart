@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_chatkit/service_locator.dart';
@@ -30,62 +31,62 @@ class ContactKitBlackListPage extends StatefulWidget {
 class _BlackListPageState extends State<ContactKitBlackListPage> {
   Widget _buildItem(BuildContext context, NIMUserInfo user) {
     return FutureBuilder<ContactInfo?>(
-        future: getIt<ContactProvider>().getContact(user.accountId!),
-        builder: (context, snapshot) {
-          var contact = snapshot.data;
-          return Container(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Avatar(
-                  width: 36,
-                  height: 36,
-                  avatar: user.avatar,
-                  name: contact?.getName(needAlias: false) ?? user.accountId,
-                  bgCode: AvatarColor.avatarColor(content: user.accountId),
-                  radius: widget.listConfig?.avatarCornerRadius,
-                ),
-                Expanded(
-                  child: Container(
-                    alignment: Alignment.centerLeft,
-                    padding: const EdgeInsets.only(left: 12),
-                    child: Text(
-                      contact?.getName() ?? user.accountId!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          fontSize: widget.listConfig?.nameTextSize ?? 14,
-                          color: widget.listConfig?.nameTextColor ??
-                              CommonColors.color_333333),
+      future: getIt<ContactProvider>().getContact(user.accountId!),
+      builder: (context, snapshot) {
+        var contact = snapshot.data;
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Avatar(
+                width: 36,
+                height: 36,
+                avatar: user.avatar,
+                name: contact?.getName(needAlias: false) ?? user.accountId,
+                bgCode: AvatarColor.avatarColor(content: user.accountId),
+                radius: widget.listConfig?.avatarCornerRadius,
+              ),
+              Expanded(
+                child: Container(
+                  alignment: Alignment.centerLeft,
+                  padding: const EdgeInsets.only(left: 12),
+                  child: Text(
+                    contact?.getName() ?? user.accountId!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: widget.listConfig?.nameTextSize ?? 14,
+                      color: widget.listConfig?.nameTextColor ??
+                          CommonColors.color_333333,
                     ),
                   ),
                 ),
-                InkWell(
-                  onTap: () {
-                    context
-                        .read<BlackListViewModel>()
-                        .removeFromBlackList(user.accountId!);
-                  },
-                  child: Container(
-                      padding:
-                          EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                      decoration: BoxDecoration(
-                          border:
-                              Border.all(color: '#337EFF'.toColor(), width: 1),
-                          borderRadius:
-                              const BorderRadius.all(Radius.circular(4))),
-                      child: Text(S.of(context).contactRelease,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: '#337EFF'.toColor(),
-                          ))),
+              ),
+              InkWell(
+                onTap: () {
+                  context.read<BlackListViewModel>().removeFromBlackList(
+                        user.accountId!,
+                      );
+                },
+                child: Container(
+                  padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: '#337EFF'.toColor(), width: 1),
+                    borderRadius: const BorderRadius.all(Radius.circular(4)),
+                  ),
+                  child: Text(
+                    S.of(context).contactRelease,
+                    style: TextStyle(fontSize: 14, color: '#337EFF'.toColor()),
+                  ),
                 ),
-              ],
-            ),
-          );
-        });
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -99,6 +100,74 @@ class _BlackListPageState extends State<ContactKitBlackListPage> {
       builder: (context, child) {
         List<NIMUserInfo> users =
             context.watch<BlackListViewModel>().blackListUsers.toList();
+
+        final bool isDesktop = ChatKitUtils.isDesktopOrWeb;
+
+        // 桌面端：使用普通 Scaffold，无返回按钮
+        // 移动端：使用 TransparentScaffold，自带返回按钮
+        if (isDesktop) {
+          return Scaffold(
+            backgroundColor: Colors.white,
+            appBar: AppBar(
+              automaticallyImplyLeading: false,
+              title: Text(
+                S.of(context).contactBlackList,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF333333),
+                ),
+              ),
+              centerTitle: false,
+              elevation: 0.5,
+              shadowColor: const Color(0xFFF5F8FC),
+              backgroundColor: Colors.white,
+              actions: [
+                IconButton(
+                  onPressed: () {
+                    goToContactSelector(
+                      context,
+                      filter: users.map((e) => e.accountId!).toList(),
+                    ).then((value) {
+                      if (value is List<String> && value.isNotEmpty) {
+                        context
+                            .read<BlackListViewModel>()
+                            .addUserListToBlackList(value);
+                      }
+                    });
+                  },
+                  icon: Icon(Icons.add, size: 26, color: '#333333'.toColor()),
+                ),
+              ],
+            ),
+            body: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.only(left: 20, top: 16),
+                  child: Text(
+                    S
+                        .of(context)
+                        .contactYouWillNeverReceiveAnyMessageFromThosePerson,
+                    style: TextStyle(fontSize: 14, color: '#B3B7BC'.toColor()),
+                  ),
+                ),
+                Expanded(
+                  child: ListView.separated(
+                    itemBuilder: (context, index) {
+                      final user = users[index];
+                      return _buildItem(context, user);
+                    },
+                    itemCount: users.length,
+                    separatorBuilder: (BuildContext context, int index) =>
+                        Divider(height: 1, color: '#F5F8FC'.toColor()),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
         return TransparentScaffold(
           backgroundColor: Colors.white,
           title: S.of(context).contactBlackList,
@@ -106,23 +175,21 @@ class _BlackListPageState extends State<ContactKitBlackListPage> {
           elevation: 0,
           actions: [
             IconButton(
-                onPressed: () {
-                  //选择器
-                  goToContactSelector(context,
-                          filter: users.map((e) => e.accountId!).toList())
-                      .then((value) {
-                    if (value is List<String> && value.isNotEmpty) {
-                      context
-                          .read<BlackListViewModel>()
-                          .addUserListToBlackList(value);
-                    }
-                  });
-                },
-                icon: Icon(
-                  Icons.add,
-                  size: 26,
-                  color: '#333333'.toColor(),
-                ))
+              onPressed: () {
+                //选择器
+                goToContactSelector(
+                  context,
+                  filter: users.map((e) => e.accountId!).toList(),
+                ).then((value) {
+                  if (value is List<String> && value.isNotEmpty) {
+                    context.read<BlackListViewModel>().addUserListToBlackList(
+                          value,
+                        );
+                  }
+                });
+              },
+              icon: Icon(Icons.add, size: 26, color: '#333333'.toColor()),
+            ),
           ],
           body: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -137,17 +204,16 @@ class _BlackListPageState extends State<ContactKitBlackListPage> {
                 ),
               ),
               Expanded(
-                  child: ListView.separated(
-                itemBuilder: (context, index) {
-                  final user = users[index];
-                  return _buildItem(context, user);
-                },
-                itemCount: users.length,
-                separatorBuilder: (BuildContext context, int index) => Divider(
-                  height: 1,
-                  color: '#F5F8FC'.toColor(),
+                child: ListView.separated(
+                  itemBuilder: (context, index) {
+                    final user = users[index];
+                    return _buildItem(context, user);
+                  },
+                  itemCount: users.length,
+                  separatorBuilder: (BuildContext context, int index) =>
+                      Divider(height: 1, color: '#F5F8FC'.toColor()),
                 ),
-              ))
+              ),
             ],
           ),
         );

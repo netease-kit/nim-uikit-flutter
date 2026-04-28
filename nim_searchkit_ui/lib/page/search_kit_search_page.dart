@@ -42,12 +42,15 @@ class _SearchKitGlobalState extends State<SearchKitGlobalSearchPage> {
   Future<List<SearchInfo>> _search(String text) async {
     return [
       ...(await SearchRepo.instance.searchFriend(text)),
-      ...(await SearchRepo.instance.searchTeam(text))
+      ...(await SearchRepo.instance.searchTeam(text)),
     ];
   }
 
   Widget _buildItem(
-      BuildContext context, SearchInfo currentItem, SearchInfo? lastItem) {
+    BuildContext context,
+    SearchInfo currentItem,
+    SearchInfo? lastItem,
+  ) {
     RecordHitInfo record = currentItem.hitInfo!;
     TextStyle normalStyle = TextStyle(fontSize: 16, color: '#333333'.toColor());
     TextStyle highStyle = TextStyle(fontSize: 16, color: '#337EFF'.toColor());
@@ -84,18 +87,24 @@ class _SearchKitGlobalState extends State<SearchKitGlobalSearchPage> {
         return RichText(
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          text: TextSpan(children: [
-            if (record.start > 0)
+          text: TextSpan(
+            children: [
+              if (record.start > 0)
+                TextSpan(
+                  text: _hitName.substring(0, record.start),
+                  style: textStyle,
+                ),
               TextSpan(
-                text: _hitName.substring(0, record.start),
-                style: textStyle,
-              ),
-            TextSpan(
                 text: _hitName.substring(record.start, record.end),
-                style: hitStyle),
-            if (record.end <= _hitName.length - 1)
-              TextSpan(text: _hitName.substring(record.end), style: textStyle)
-          ]),
+                style: hitStyle,
+              ),
+              if (record.end <= _hitName.length - 1)
+                TextSpan(
+                  text: _hitName.substring(record.end),
+                  style: textStyle,
+                ),
+            ],
+          ),
         );
       }
 
@@ -115,28 +124,26 @@ class _SearchKitGlobalState extends State<SearchKitGlobalSearchPage> {
             ),
             Expanded(
               child: Container(
-                  margin: const EdgeInsets.only(left: 12),
-                  child: currentItem.hitType == HitType.account
-                      ? Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              contact.getName(),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: normalStyle,
-                            ),
-                            SizedBox(
-                              height: 4,
-                            ),
-                            _hitWidget(
-                                TextStyle(
-                                    fontSize: 12, color: '#333333'.toColor()),
-                                TextStyle(
-                                    fontSize: 12, color: '#337EFF'.toColor())),
-                          ],
-                        )
-                      : _hitWidget(normalStyle, highStyle)),
+                margin: const EdgeInsets.only(left: 12),
+                child: currentItem.hitType == HitType.account
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            contact.getName(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: normalStyle,
+                          ),
+                          SizedBox(height: 4),
+                          _hitWidget(
+                            TextStyle(fontSize: 12, color: '#333333'.toColor()),
+                            TextStyle(fontSize: 12, color: '#337EFF'.toColor()),
+                          ),
+                        ],
+                      )
+                    : _hitWidget(normalStyle, highStyle),
+              ),
             ),
           ],
         ),
@@ -156,9 +163,10 @@ class _SearchKitGlobalState extends State<SearchKitGlobalSearchPage> {
               goToTeamChat(context, team.teamId);
             } else {
               showCommonDialog(
-                  context: context,
-                  title: S.of(context).searchTeamLeave,
-                  content: S.of(context).searchTeamDismissOrLeave);
+                context: context,
+                title: S.of(context).searchTeamLeave,
+                content: S.of(context).searchTeamDismissOrLeave,
+              );
             }
           });
         },
@@ -174,26 +182,31 @@ class _SearchKitGlobalState extends State<SearchKitGlobalSearchPage> {
             ),
             Expanded(
               child: Container(
-                  margin: const EdgeInsets.only(left: 12),
-                  child: RichText(
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    text: TextSpan(children: [
+                margin: const EdgeInsets.only(left: 12),
+                child: RichText(
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  text: TextSpan(
+                    children: [
                       if (record.start > 0)
                         TextSpan(
                           text: team.name.substring(0, record.start),
                           style: normalStyle,
                         ),
                       TextSpan(
-                          text: team.name.substring(record.start, record.end),
-                          style: highStyle),
+                        text: team.name.substring(record.start, record.end),
+                        style: highStyle,
+                      ),
                       if (record.end <= team.name.length - 1)
                         TextSpan(
-                            text: team.name.substring(record.end),
-                            style: normalStyle)
-                    ]),
-                  )),
-            )
+                          text: team.name.substring(record.end),
+                          style: normalStyle,
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       );
@@ -208,15 +221,12 @@ class _SearchKitGlobalState extends State<SearchKitGlobalSearchPage> {
         children: [
           if (lastItem == null ||
               lastItem.getType() != currentItem.getType()) ...[
-            Text(
-              _getTitle(),
-              style: titleStyle,
-            ),
+            Text(_getTitle(), style: titleStyle),
             Container(
               height: 1,
               color: '#DBE0E8'.toColor(),
               margin: const EdgeInsets.only(bottom: 8, top: 8),
-            )
+            ),
           ],
           if (currentItem.getType() == SearchType.contact) _getContactWidget(),
           if (currentItem.getType() == SearchType.normalTeam ||
@@ -238,39 +248,36 @@ class _SearchKitGlobalState extends State<SearchKitGlobalSearchPage> {
           return Container();
         } else {
           return FutureBuilder<List<SearchInfo>>(
-              future: _search(keyword),
-              builder: (context, snapShot) {
-                List<SearchInfo> searchList = snapShot.data ?? List.empty();
-                if (searchList.isEmpty) {
-                  return Column(
-                    children: [
-                      const SizedBox(
-                        height: 68,
-                      ),
-                      SvgPicture.asset(
-                        'images/ic_search_empty.svg',
-                        package: kPackage,
-                      ),
-                      const SizedBox(
-                        height: 18,
-                      ),
-                      Text(
-                        S.of(context).searchEmptyTips,
-                        style:
-                            TextStyle(color: Color(0xffb3b7bc), fontSize: 14),
-                      )
-                    ],
-                  );
-                } else {
-                  return ListView.builder(
-                      itemCount: searchList.length,
-                      itemBuilder: (context, index) {
-                        SearchInfo currentItem = searchList[index];
-                        var lastItem = index > 0 ? searchList[index - 1] : null;
-                        return _buildItem(context, currentItem, lastItem);
-                      });
-                }
-              });
+            future: _search(keyword),
+            builder: (context, snapShot) {
+              List<SearchInfo> searchList = snapShot.data ?? List.empty();
+              if (searchList.isEmpty) {
+                return Column(
+                  children: [
+                    const SizedBox(height: 68),
+                    SvgPicture.asset(
+                      'images/ic_search_empty.svg',
+                      package: kPackage,
+                    ),
+                    const SizedBox(height: 18),
+                    Text(
+                      S.of(context).searchEmptyTips,
+                      style: TextStyle(color: Color(0xffb3b7bc), fontSize: 14),
+                    ),
+                  ],
+                );
+              } else {
+                return ListView.builder(
+                  itemCount: searchList.length,
+                  itemBuilder: (context, index) {
+                    SearchInfo currentItem = searchList[index];
+                    var lastItem = index > 0 ? searchList[index - 1] : null;
+                    return _buildItem(context, currentItem, lastItem);
+                  },
+                );
+              }
+            },
+          );
         }
       },
     );

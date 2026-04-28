@@ -4,12 +4,12 @@
 
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/repo/config_repo.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:yunxin_alog/yunxin_alog.dart';
-import 'package:nim_chatkit/im_kit_client.dart';
 
 class IMDemoConfig {
   //云信IM appKey
@@ -26,44 +26,71 @@ class IMDemoConfig {
 }
 
 class NIMSDKOptionsConfig {
-  static Future<NIMSDKOptions?> getSDKOptions(String appKey,
-      {NIMLoginInfo? loginInfo}) async {
+  static Future<NIMSDKOptions?> getSDKOptions(
+    String appKey, {
+    NIMLoginInfo? loginInfo,
+  }) async {
     NIMSDKOptions? options;
     final enableCloudConversation = await IMKitClient.enableCloudConversation;
-    if (Platform.isAndroid) {
+    if (kIsWeb) {
+      options = NIMWebSDKOptions(
+          initializeOptions: NIMInitializeOptions(
+            appkey: appKey,
+            enableV2CloudConversation: enableCloudConversation,
+            apiVersion: 'v2',
+            debugLevel: 'debug',
+          ),
+          appKey: appKey);
+    } else if (Platform.isAndroid) {
       final directory = await getExternalStorageDirectory();
       NIMStatusBarNotificationConfig config =
           await loadStatusBarNotificationConfig();
       options = NIMAndroidSDKOptions(
-        appKey: appKey,
-        shouldSyncStickTopSessionInfos: true,
-        enableTeamMessageReadReceipt: true,
-        enableFcs: false,
-        sdkRootDir: directory != null ? '${directory.path}/NIMFlutter' : null,
-        notificationConfig: config,
-        preLoadServers: true,
-        shouldConsiderRevokedMessageUnreadCount: true,
-        shouldSyncUnreadCount: true,
-        enablePreloadMessageAttachment: true,
-        enableV2CloudConversation: enableCloudConversation,
-        mixPushConfig: _buildMixPushConfig(),
-      );
+          appKey: appKey,
+          shouldSyncStickTopSessionInfos: true,
+          enableTeamMessageReadReceipt: true,
+          enableFcs: false,
+          sdkRootDir: directory != null ? '${directory.path}/NIMFlutter' : null,
+          notificationConfig: config,
+          preLoadServers: true,
+          shouldConsiderRevokedMessageUnreadCount: true,
+          shouldSyncUnreadCount: true,
+          enablePreloadMessageAttachment: true,
+          enableV2CloudConversation: enableCloudConversation,
+          mixPushConfig: _buildMixPushConfig(),
+          enableServerV2FriendAddApplication: true);
       ConfigRepo.saveStatusBarNotificationConfig(config, saveToNative: false);
     } else if (Platform.isIOS) {
       final directory = await getApplicationDocumentsDirectory();
       options = NIMIOSSDKOptions(
-        appKey: appKey,
-        shouldSyncStickTopSessionInfos: true,
-        enableTeamMessageReadReceipt: true,
-        sdkRootDir: '${directory.path}/NIMFlutter',
-        apnsCername: 'dis_im_flutter',
-        pkCername: '',
-        shouldConsiderRevokedMessageUnreadCount: true,
-        shouldSyncUnreadCount: true,
-        enableTeamReceipt: true,
-        enablePreloadMessageAttachment: true,
-        enableV2CloudConversation: enableCloudConversation,
-      );
+          appKey: appKey,
+          shouldSyncStickTopSessionInfos: true,
+          enableTeamMessageReadReceipt: true,
+          sdkRootDir: '${directory.path}/NIMFlutter',
+          apnsCername: 'dis_im_flutter',
+          pkCername: '',
+          shouldConsiderRevokedMessageUnreadCount: true,
+          shouldSyncUnreadCount: true,
+          enableTeamReceipt: true,
+          enablePreloadMessageAttachment: true,
+          enableV2CloudConversation: enableCloudConversation,
+          enableServerV2FriendAddApplication: true);
+    } else if (Platform.isWindows || Platform.isMacOS) {
+      String logDir;
+      if (Platform.isMacOS) {
+        logDir =
+            '${(await getApplicationDocumentsDirectory()).path}/NIMFlutter';
+      } else {
+        logDir = '${Platform.environment['LOCALAPPDATA'] ?? ''}\\NIM\\log';
+      }
+      options = NIMPCSDKOptions(
+          sdkRootDir: logDir,
+          basicOption: NIMBasicOption(
+              enableCloudConversation: enableCloudConversation,
+              reduceUnreadOnMessageRecall: true,
+              teamNotificationBadge: true,
+              enableCloudFriendAddApplication: true),
+          appKey: appKey);
     }
     return options;
   }
@@ -74,9 +101,10 @@ class NIMSDKOptionsConfig {
     final config = await ConfigRepo.getStatusBarNotificationConfig();
     if (config == null) {
       return NIMStatusBarNotificationConfig(
-          notificationEntranceClassName:
-              'com.netease.yunxin.app.flutter.im.MainActivity',
-          notificationExtraType: NIMNotificationExtraType.jsonArrStr);
+        notificationEntranceClassName:
+            'com.netease.yunxin.app.flutter.im.MainActivity',
+        notificationExtraType: NIMNotificationExtraType.jsonArrStr,
+      );
     } else {
       config.notificationEntranceClassName =
           'com.netease.yunxin.app.flutter.im.MainActivity';

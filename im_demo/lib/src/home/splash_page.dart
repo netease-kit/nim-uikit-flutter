@@ -11,11 +11,12 @@ import 'package:im_demo/src/config.dart';
 import 'package:im_demo/src/home/home_page.dart';
 import 'package:im_demo/src/home/welcome_page.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit/utils/toast_utils.dart';
 import 'package:nim_chatkit_callkit/nim_chatkit_callkit.dart';
-import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:provider/provider.dart';
-import 'package:yunxin_alog/yunxin_alog.dart';
+
+import '../../l10n/S.dart';
 
 class SplashPage extends StatefulWidget {
   final Uint8List? deviceToken;
@@ -52,7 +53,8 @@ class _SplashState extends State<SplashPage> {
   }
 
   void updateAPNsToken() {
-    if (NimCore.instance.isInitialized &&
+    if (!kIsWeb &&
+        NimCore.instance.isInitialized &&
         Platform.isIOS &&
         widget.deviceToken != null) {
       NimCore.instance.apnsService.updateApnsToken(widget.deviceToken!);
@@ -78,8 +80,8 @@ class _SplashState extends State<SplashPage> {
 
   void startLogin(){
     //fixme 将您的云信IM账号(accid)和Token设置在这里即可
-    String account = "your account";
-    String token = "your token";
+    String account = "334665458163968";
+    String token = "8d5ca2c8-9c02-481c-9908-ca1e96038788";
     IMKitClient.loginIMWithResult(
          account,
         token,

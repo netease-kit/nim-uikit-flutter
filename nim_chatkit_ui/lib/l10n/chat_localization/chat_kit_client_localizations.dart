@@ -259,6 +259,12 @@ abstract class ChatKitClientLocalizations {
   /// **'Failed to save video'**
   String get chatMessageVideoSaveFail;
 
+  /// No description provided for @chatSaveFileDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save File'**
+  String get chatSaveFileDialogTitle;
+
   /// No description provided for @chatMessageActionCopy.
   ///
   /// In en, this message translates to:
@@ -1435,6 +1441,30 @@ abstract class ChatKitClientLocalizations {
   /// **'Team Member'**
   String get chatQuickSearchTeamMember;
 
+  /// No description provided for @chatMemberPickerSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Member'**
+  String get chatMemberPickerSearchHint;
+
+  /// No description provided for @chatMemberPickerEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No Member'**
+  String get chatMemberPickerEmpty;
+
+  /// No description provided for @chatMemberRoleOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get chatMemberRoleOwner;
+
+  /// No description provided for @chatMemberRoleManager.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin'**
+  String get chatMemberRoleManager;
+
   /// No description provided for @chatQuickSearchPicture.
   ///
   /// In en, this message translates to:
@@ -1489,11 +1519,83 @@ abstract class ChatKitClientLocalizations {
   /// **'Last 7 days'**
   String get chatDateRecent7Days;
 
+  /// No description provided for @chatDateRecent3Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 3 days'**
+  String get chatDateRecent3Days;
+
+  /// No description provided for @chatDateThisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get chatDateThisWeek;
+
+  /// No description provided for @chatDateThisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'This month'**
+  String get chatDateThisMonth;
+
+  /// No description provided for @chatDateRecent3Months.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 3 months'**
+  String get chatDateRecent3Months;
+
+  /// No description provided for @chatDateCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get chatDateCustom;
+
+  /// No description provided for @chatDateStartHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date'**
+  String get chatDateStartHint;
+
+  /// No description provided for @chatDateEndHint.
+  ///
+  /// In en, this message translates to:
+  /// **'End date'**
+  String get chatDateEndHint;
+
   /// No description provided for @chatDateRecent30Days.
   ///
   /// In en, this message translates to:
   /// **'Last 30 days'**
   String get chatDateRecent30Days;
+
+  /// No description provided for @chatDateStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start time'**
+  String get chatDateStart;
+
+  /// No description provided for @chatDateEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'End time'**
+  String get chatDateEnd;
+
+  /// No description provided for @chatDateConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get chatDateConfirm;
+
+  /// No description provided for @chatDateCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get chatDateCancel;
+
+  /// No description provided for @chatDatePlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'--'**
+  String get chatDatePlaceholder;
 
   /// No description provided for @chatHistoryLoadMore.
   ///
@@ -1561,6 +1663,30 @@ abstract class ChatKitClientLocalizations {
   /// **'Find in chat'**
   String get chatHistoryOrientation;
 
+  /// No description provided for @chatFileDownloadStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting download'**
+  String get chatFileDownloadStart;
+
+  /// No description provided for @chatFileContextMenuDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get chatFileContextMenuDownload;
+
+  /// No description provided for @chatFileContextMenuForward.
+  ///
+  /// In en, this message translates to:
+  /// **'Forward'**
+  String get chatFileContextMenuForward;
+
+  /// No description provided for @chatFileContextMenuLocate.
+  ///
+  /// In en, this message translates to:
+  /// **'Find in chat'**
+  String get chatFileContextMenuLocate;
+
   /// No description provided for @chatCollectionFrom.
   ///
   /// In en, this message translates to:
@@ -1608,6 +1734,120 @@ abstract class ChatKitClientLocalizations {
   /// In en, this message translates to:
   /// **'NO File Message'**
   String get chatSearchFileMessageEmpty;
+
+  /// No description provided for @chatMessageDesktopInputHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Enter to send, Shift+Enter for new line'**
+  String get chatMessageDesktopInputHint;
+
+  /// No description provided for @chatCreateGroupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Group'**
+  String get chatCreateGroupTitle;
+
+  /// No description provided for @chatCreateGroupNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Name'**
+  String get chatCreateGroupNameLabel;
+
+  /// No description provided for @chatCreateGroupNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter group name'**
+  String get chatCreateGroupNameHint;
+
+  /// No description provided for @chatCreateGroupAvatarLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Avatar'**
+  String get chatCreateGroupAvatarLabel;
+
+  /// No description provided for @chatCreateGroupSelectAvatar.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Group Avatar'**
+  String get chatCreateGroupSelectAvatar;
+
+  /// No description provided for @chatCreateGroupCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get chatCreateGroupCancel;
+
+  /// No description provided for @chatCreateGroupConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get chatCreateGroupConfirm;
+
+  /// No description provided for @chatCreateGroupSelectContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select contacts'**
+  String get chatCreateGroupSelectContact;
+
+  /// No description provided for @chatCreateGroupSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected: {count}'**
+  String chatCreateGroupSelected(String count);
+
+  /// No description provided for @chatSearchToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get chatSearchToday;
+
+  /// No description provided for @chatSearchLastThreeDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 3 days'**
+  String get chatSearchLastThreeDays;
+
+  /// No description provided for @chatSearchThisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get chatSearchThisWeek;
+
+  /// No description provided for @chatSearchThisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'This month'**
+  String get chatSearchThisMonth;
+
+  /// No description provided for @chatSearchLastThreeMonths.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 3 months'**
+  String get chatSearchLastThreeMonths;
+
+  /// No description provided for @chatSearchCustomDateRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get chatSearchCustomDateRange;
+
+  /// No description provided for @chatSearchDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get chatSearchDownload;
+
+  /// No description provided for @chatSearchForward.
+  ///
+  /// In en, this message translates to:
+  /// **'Forward'**
+  String get chatSearchForward;
+
+  /// No description provided for @chatSearchLocateMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Locate in chat'**
+  String get chatSearchLocateMessage;
 }
 
 class _ChatKitClientLocalizationsDelegate

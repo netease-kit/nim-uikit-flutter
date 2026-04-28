@@ -12,11 +12,11 @@ class ChatKitMessageNonsupportItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-        padding:
-            const EdgeInsets.only(left: 12, top: 10, right: 12, bottom: 10),
-        child: Text(
-          S.of(context).chatMessageNonsupport,
-          style: TextStyle(color: CommonColors.color_333333, fontSize: 16),
-        ));
+      padding: const EdgeInsets.only(left: 12, top: 10, right: 12, bottom: 10),
+      child: Text(
+        S.of(context).chatMessageNonsupport,
+        style: TextStyle(color: CommonColors.color_333333, fontSize: 16),
+      ),
+    );
   }
 }

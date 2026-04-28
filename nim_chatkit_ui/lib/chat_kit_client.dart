@@ -27,7 +27,10 @@ import 'view/page/chat_search_page.dart';
 ///[conversationId] 会话ID
 ///[params] 参数
 typedef NIMMessageAction = Future Function(
-    NIMMessage message, String conversationId, NIMSendMessageParams? params);
+  NIMMessage message,
+  String conversationId,
+  NIMSendMessageParams? params,
+);
 
 const String kPackage = 'nim_chatkit_ui';
 
@@ -107,7 +110,9 @@ class ChatUIConfig {
   MessageClickListener? messageClickListener;
 
   Future<Map<String, dynamic>> Function(
-      NIMMessage message, String conversationId)? getPushPayload;
+    NIMMessage message,
+    String conversationId,
+  )? getPushPayload;
 
   ///设置图片加载中的占位图
   ///[aspectRatio] 图片宽高比
@@ -139,39 +144,53 @@ class ChatUIConfig {
   ///如果返回false，此方法处理万之后 会退回到根目录
   bool Function()? onTeamDismissOrLeave;
 
-  ChatUIConfig(
-      {this.showTeamMessageStatus,
-      this.receiveMessageBg,
-      this.selfMessageBg,
-      this.showP2pMessageStatus,
-      this.signalBgColor,
-      this.timeTextColor,
-      this.timeTextSize,
-      this.receiveMessageTextColor,
-      this.sendMessageTextColor,
-      this.receiveMessageTextSize,
-      this.sendMessageTextSize,
-      this.userNickTextSize,
-      this.userNickColor,
-      this.avatarCornerRadius,
-      this.enableMessageLongPress = true,
-      this.popMenuConfig,
-      this.keepDefaultMoreAction = true,
-      this.moreActions,
-      this.messageBuilder,
-      this.messageClickListener,
-      this.getPushPayload,
-      this.imagePlaceHolder,
-      this.maxVideoSize,
-      this.onTapAitLink,
-      this.maxFileSize,
-      this.keepDefaultInputAction = true,
-      this.inputActions,
-      this.getMessageBrief,
-      this.showTimeInterval = 5 * 60 * 1000,
-      this.isShowAvatar,
-      this.onTeamDismissOrLeave,
-      this.messageLinkColor});
+  /// 桌面端面板模式：群设置页面构建器
+  /// [teamId] 群ID
+  /// [onClose] 关闭面板回调
+  /// [onQuitTeam] 退群/解散群成功后的回调（桌面端用于关闭聊天页并清空选中会话）
+  Widget Function(
+          String teamId, VoidCallback onClose, VoidCallback? onQuitTeam)?
+      teamSettingPanelBuilder;
+
+  /// 聊天页面顶部警告提示栏构建器，不设置则不显示
+  /// [onClose] 关闭警告提示栏的回调
+  Widget Function(VoidCallback onClose)? warningWidgetBuilder;
+
+  ChatUIConfig({
+    this.showTeamMessageStatus,
+    this.receiveMessageBg,
+    this.selfMessageBg,
+    this.showP2pMessageStatus,
+    this.signalBgColor,
+    this.timeTextColor,
+    this.timeTextSize,
+    this.receiveMessageTextColor,
+    this.sendMessageTextColor,
+    this.receiveMessageTextSize,
+    this.sendMessageTextSize,
+    this.userNickTextSize,
+    this.userNickColor,
+    this.avatarCornerRadius,
+    this.enableMessageLongPress = true,
+    this.popMenuConfig,
+    this.keepDefaultMoreAction = true,
+    this.moreActions,
+    this.messageBuilder,
+    this.messageClickListener,
+    this.getPushPayload,
+    this.imagePlaceHolder,
+    this.maxVideoSize,
+    this.onTapAitLink,
+    this.maxFileSize,
+    this.keepDefaultInputAction = true,
+    this.inputActions,
+    this.getMessageBrief,
+    this.showTimeInterval = 5 * 60 * 1000,
+    this.isShowAvatar,
+    this.onTeamDismissOrLeave,
+    this.messageLinkColor,
+    this.teamSettingPanelBuilder,
+  });
 }
 
 ///消息点击回调
@@ -186,12 +205,13 @@ class MessageClickListener {
 
   bool Function(String? userID, {bool isSelf})? onLongPressAvatar;
 
-  MessageClickListener(
-      {this.onMessageItemLongClick,
-      this.onMessageItemClick,
-      this.customPopActions,
-      this.onLongPressAvatar,
-      this.onTapAvatar});
+  MessageClickListener({
+    this.onMessageItemLongClick,
+    this.onMessageItemClick,
+    this.customPopActions,
+    this.onLongPressAvatar,
+    this.onTapAvatar,
+  });
 }
 
 ///长按弹框开关配置
@@ -223,16 +243,17 @@ class PopMenuConfig {
   ///撤回
   bool? enableRevoke;
 
-  PopMenuConfig(
-      {this.enableForward,
-      this.enableCopy,
-      this.enableReply,
-      this.enablePin,
-      this.enableMultiSelect,
-      this.enableCollect,
-      this.enableDelete,
-      this.enableRevoke,
-      this.enableVoiceSwitch});
+  PopMenuConfig({
+    this.enableForward,
+    this.enableCopy,
+    this.enableReply,
+    this.enablePin,
+    this.enableMultiSelect,
+    this.enableCollect,
+    this.enableDelete,
+    this.enableRevoke,
+    this.enableVoiceSwitch,
+  });
 }
 
 ///全局配置，全局生效，优先级低于参数配置
@@ -258,8 +279,9 @@ class ChatKitClient {
 
   //注册撤回消息监听，在其中插入本地消息
   void registerRevokedMessage({String? messageRevokedStr}) {
-    ChatKitClientRepo.instance
-        .registerRevoke(messageRevokedStr ?? S.of().chatMessageHaveBeenRevoked);
+    ChatKitClientRepo.instance.registerRevoke(
+      messageRevokedStr ?? S.of().chatMessageHaveBeenRevoked,
+    );
   }
 
   //反注册撤回消息监听
@@ -270,49 +292,64 @@ class ChatKitClient {
   static init({bool enableCallKit = true}) {
     ChatKitClientRepo.init();
     IMKitRouter.instance.registerRouter(
-        RouterConstants.PATH_CHAT_PAGE,
-        (context) => ChatPage(
-              conversationId: IMKitRouter.getArgumentFormMap<String>(
-                  context, 'conversationId')!,
-              conversationType:
-                  IMKitRouter.getArgumentFormMap<NIMConversationType>(
-                      context, 'conversationType')!,
-              anchor:
-                  IMKitRouter.getArgumentFormMap<NIMMessage>(context, 'anchor'),
-              anchorDate:
-                  IMKitRouter.getArgumentFormMap<int>(context, 'anchorDate'),
-            ));
+      RouterConstants.PATH_CHAT_PAGE,
+      (context) => ChatPage(
+        conversationId: IMKitRouter.getArgumentFormMap<String>(
+          context,
+          'conversationId',
+        )!,
+        conversationType: IMKitRouter.getArgumentFormMap<NIMConversationType>(
+          context,
+          'conversationType',
+        )!,
+        anchor: IMKitRouter.getArgumentFormMap<NIMMessage>(context, 'anchor'),
+        anchorDate: IMKitRouter.getArgumentFormMap<int>(context, 'anchorDate'),
+      ),
+    );
 
     IMKitRouter.instance.registerRouter(
-        RouterConstants.PATH_CHAT_COLLECTION_LIST_PAGE,
-        (context) => ChatCollectionMessageListPage());
+      RouterConstants.PATH_CHAT_COLLECTION_LIST_PAGE,
+      (context) => ChatCollectionMessageListPage(),
+    );
 
     IMKitRouter.instance.registerRouter(
-        RouterConstants.PATH_CHAT_SEARCH_PAGE,
-        (context) => ChatSearchPage(
-            IMKitRouter.getArgumentFormMap<String>(context, 'teamId')!));
+      RouterConstants.PATH_CHAT_SEARCH_PAGE,
+      (context) => ChatSearchPage(
+        IMKitRouter.getArgumentFormMap<String>(context, 'teamId')!,
+      ),
+    );
 
     IMKitRouter.instance.registerRouter(
-        RouterConstants.PATH_CHAT_HISTORY_PAGE,
-        (context) => ChatHistoryMessagePage(
-              conversationId: IMKitRouter.getArgumentFormMap<String>(
-                  context, 'conversationId')!,
-              conversationType:
-                  IMKitRouter.getArgumentFormMap<NIMConversationType>(
-                      context, 'conversationType')!,
-            ));
+      RouterConstants.PATH_CHAT_HISTORY_PAGE,
+      (context) => ChatHistoryMessagePage(
+        conversationId: IMKitRouter.getArgumentFormMap<String>(
+          context,
+          'conversationId',
+        )!,
+        conversationType: IMKitRouter.getArgumentFormMap<NIMConversationType>(
+          context,
+          'conversationType',
+        )!,
+      ),
+    );
 
     IMKitRouter.instance.registerRouter(
-        RouterConstants.PATH_CHAT_PIN_PAGE,
-        (context) => ChatPinPage(
-              conversationId: IMKitRouter.getArgumentFormMap<String>(
-                  context, 'conversationId')!,
-              conversationType:
-                  IMKitRouter.getArgumentFormMap<NIMConversationType>(
-                      context, 'conversationType')!,
-              chatTitle:
-                  IMKitRouter.getArgumentFormMap<String>(context, 'chatTitle')!,
-            ));
+      RouterConstants.PATH_CHAT_PIN_PAGE,
+      (context) => ChatPinPage(
+        conversationId: IMKitRouter.getArgumentFormMap<String>(
+          context,
+          'conversationId',
+        )!,
+        conversationType: IMKitRouter.getArgumentFormMap<NIMConversationType>(
+          context,
+          'conversationType',
+        )!,
+        chatTitle: IMKitRouter.getArgumentFormMap<String>(
+          context,
+          'chatTitle',
+        )!,
+      ),
+    );
 
     XKitReporter().register(moduleName: 'ChatUIKit', moduleVersion: '10.0.0');
   }
