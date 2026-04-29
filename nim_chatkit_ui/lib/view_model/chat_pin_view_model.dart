@@ -36,8 +36,10 @@ class ChatPinViewModel extends ChangeNotifier {
     _pinnedMessages.clear();
     ChatMessageRepo.fetchPinMessage(conversationId).then((value) {
       if (value.isSuccess && value.data != null) {
-        value.data!.sort((a, b) =>
-            b.nimMessage.createTime!.compareTo(a.nimMessage.createTime!));
+        value.data!.sort(
+          (a, b) =>
+              b.nimMessage.createTime!.compareTo(a.nimMessage.createTime!),
+        );
         _pinnedMessages.addAll(value.data!);
         isEmpty = _pinnedMessages.isEmpty;
         notifyListeners();
@@ -50,8 +52,9 @@ class ChatPinViewModel extends ChangeNotifier {
   }
 
   void _init() async {
-    sessionId = (await NimCore.instance.conversationIdUtil
-            .conversationTargetId(conversationId))
+    sessionId = (await NimCore.instance.conversationIdUtil.conversationTargetId(
+      conversationId,
+    ))
         .data;
     _loadData();
     _initListener();
@@ -66,14 +69,15 @@ class ChatPinViewModel extends ChangeNotifier {
           _loadData();
         }
       }),
-      NimCore.instance.messageService.onMessagePinNotification
-          .listen((event) async {
+      NimCore.instance.messageService.onMessagePinNotification.listen((
+        event,
+      ) async {
         if (event.pinState == NIMMessagePinState.pinned) {
           if (event.pin?.messageRefer?.messageClientId != null) {
-            var msgRes = await NimCore.instance.messageService
-                .getMessageListByIds(messageClientIds: [
-              event.pin!.messageRefer!.messageClientId!
-            ]);
+            var msgRes =
+                await NimCore.instance.messageService.getMessageListByIds(
+              messageClientIds: [event.pin!.messageRefer!.messageClientId!],
+            );
             if (msgRes.data?.isNotEmpty == true) {
               var index = 0;
               while (index < _pinnedMessages.length) {
@@ -84,37 +88,46 @@ class ChatPinViewModel extends ChangeNotifier {
                 index++;
               }
               _pinnedMessages.insert(
-                  index, ChatMessage(msgRes.data!.first, pinOption: event.pin));
+                index,
+                ChatMessage(msgRes.data!.first, pinOption: event.pin),
+              );
               isEmpty = false;
               notifyListeners();
             }
           }
         } else if (event.pinState == NIMMessagePinState.notPinned) {
-          _pinnedMessages.removeWhere((element) =>
-              element.nimMessage.messageClientId ==
-              event.pin?.messageRefer?.messageClientId);
+          _pinnedMessages.removeWhere(
+            (element) =>
+                element.nimMessage.messageClientId ==
+                event.pin?.messageRefer?.messageClientId,
+          );
           isEmpty = _pinnedMessages.isEmpty;
           notifyListeners();
         }
       }),
-      NimCore.instance.messageService.onMessageRevokeNotifications
-          .listen((event) {
+      NimCore.instance.messageService.onMessageRevokeNotifications.listen((
+        event,
+      ) {
         //获取撤回List
         var revokedList = event
-            .where((element) =>
-                element.messageRefer?.messageClientId?.isNotEmpty == true)
+            .where(
+              (element) =>
+                  element.messageRefer?.messageClientId?.isNotEmpty == true,
+            )
             .map((e) => e.messageRefer!.messageClientId!)
             .toList();
-        _pinnedMessages.removeWhere((element) =>
-            revokedList.contains(element.nimMessage.messageClientId));
+        _pinnedMessages.removeWhere(
+          (element) => revokedList.contains(element.nimMessage.messageClientId),
+        );
         isEmpty = _pinnedMessages.isEmpty;
         notifyListeners();
       }),
       ChatServiceObserverRepo.observeSendMessage().listen((event) {
         Alog.d(
-            tag: 'ChatPinViewModel',
-            content:
-                'onMessageStatus ${event.messageClientId} status change -->> ${event.sendingState}, ${event.attachmentUploadState}');
+          tag: 'ChatPinViewModel',
+          content:
+              'onMessageStatus ${event.messageClientId} status change -->> ${event.sendingState}, ${event.attachmentUploadState}',
+        );
         //更新消息状态，解决文件消息下载后状态没有变更的问题
         for (var msg in _pinnedMessages) {
           if (msg.nimMessage.messageClientId == event.messageClientId) {
@@ -129,9 +142,11 @@ class ChatPinViewModel extends ChangeNotifier {
           for (var msg in event) {
             if (msg.messageRefer?.conversationId == conversationId &&
                 msg.messageRefer?.conversationType == conversationType) {
-              _pinnedMessages.removeWhere((e) =>
-                  e.nimMessage.messageClientId ==
-                  msg.messageRefer?.messageClientId);
+              _pinnedMessages.removeWhere(
+                (e) =>
+                    e.nimMessage.messageClientId ==
+                    msg.messageRefer?.messageClientId,
+              );
               isEmpty = _pinnedMessages.isEmpty;
             }
           }
@@ -157,13 +172,20 @@ class ChatPinViewModel extends ChangeNotifier {
 
   void forwardMessage(NIMMessage message, String conversationId) async {
     if (await haveConnectivity()) {
-      final params =
-          await ChatMessageHelper.getSenderParams(message, conversationId);
-      ChatMessageRepo.forwardMessage(message, conversationId, params: params)
-          .then((value) {
+      final params = await ChatMessageHelper.getSenderParams(
+        message,
+        conversationId,
+      );
+      ChatMessageRepo.forwardMessage(
+        message,
+        conversationId,
+        params: params,
+      ).then((value) {
         if (value.code == ChatMessageRepo.errorInBlackList) {
           ChatMessageRepo.saveTipsMessage(
-              conversationId, S.of().chatMessageSendFailedByBlackList);
+            conversationId,
+            S.of().chatMessageSendFailedByBlackList,
+          );
         }
       });
     }

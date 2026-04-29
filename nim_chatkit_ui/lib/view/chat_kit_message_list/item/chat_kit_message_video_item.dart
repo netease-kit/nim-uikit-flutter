@@ -5,11 +5,14 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/extension.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/extension.dart';
 import 'package:nim_chatkit/repo/chat_service_observer_repo.dart';
+import 'package:nim_chatkit_ui/helper/desktop_dialog_helper.dart';
 import 'package:nim_chatkit_ui/media/audio_player.dart';
 import 'package:nim_chatkit_ui/media/video.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/widgets/chat_thumb_view.dart';
@@ -23,9 +26,11 @@ class ChatKitMessageVideoItem extends StatefulWidget {
   ///独立的文件，比如合并转发后的文件
   final bool independentFile;
 
-  const ChatKitMessageVideoItem(
-      {Key? key, required this.message, this.independentFile = false})
-      : super(key: key);
+  const ChatKitMessageVideoItem({
+    Key? key,
+    required this.message,
+    this.independentFile = false,
+  }) : super(key: key);
 
   @override
   State<StatefulWidget> createState() => _ChatKitMessageVideoState();
@@ -73,40 +78,42 @@ class _ChatKitMessageVideoState extends State<ChatKitMessageVideoItem> {
 
   Widget _buildLoading() {
     return StreamBuilder<double>(
-        stream: _progress.stream,
-        initialData: 1,
-        builder: (BuildContext context, AsyncSnapshot<double> snapshot) {
-          _log(
-              'buildLoading file downloaded:${widget.message.isFileDownload()}, progress:${snapshot.data}');
-          if (widget.message.isFileDownload() || snapshot.data == 1) {
-            return SvgPicture.asset(
-              'images/ic_video_player.svg',
-              package: kPackage,
-              width: 60,
-              height: 60,
-            );
-          }
-          return Stack(
-            alignment: Alignment.center,
-            children: [
-              SvgPicture.asset(
-                'images/ic_video_pause_thumb.svg',
-                package: kPackage,
-                width: 13,
-                height: 18,
-              ),
-              SizedBox(
-                width: 42,
-                height: 42,
-                child: CircularProgressIndicator(
-                  value: snapshot.data,
-                  color: Colors.white,
-                  backgroundColor: const Color(0x4d000000),
-                ),
-              )
-            ],
+      stream: _progress.stream,
+      initialData: 1,
+      builder: (BuildContext context, AsyncSnapshot<double> snapshot) {
+        _log(
+          'buildLoading file downloaded:${widget.message.isFileDownload()}, progress:${snapshot.data}',
+        );
+        if (widget.message.isFileDownload() || snapshot.data == 1) {
+          return SvgPicture.asset(
+            'images/ic_video_player.svg',
+            package: kPackage,
+            width: 60,
+            height: 60,
           );
-        });
+        }
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            SvgPicture.asset(
+              'images/ic_video_pause_thumb.svg',
+              package: kPackage,
+              width: 13,
+              height: 18,
+            ),
+            SizedBox(
+              width: 42,
+              height: 42,
+              child: CircularProgressIndicator(
+                value: snapshot.data,
+                color: Colors.white,
+                backgroundColor: const Color(0x4d000000),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _goVideoViewer(String? path) {
@@ -118,15 +125,29 @@ class _ChatKitMessageVideoState extends State<ChatKitMessageVideoItem> {
     //播放视频前停止播放语音消息
     ChatAudioPlayer.instance.stopAll();
 
-    Navigator.push(
+    if (ChatKitUtils.isDesktopOrWeb) {
+      showDesktopDialog(
+        context,
+        VideoViewer(
+          message: widget.message,
+          isDialog: true,
+        ),
+      );
+    } else {
+      Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) => VideoViewer(
-                  message: widget.message,
-                )));
+          builder: (context) => VideoViewer(message: widget.message),
+        ),
+      );
+    }
   }
 
   void _videoOnTap() async {
+    if (kIsWeb) {
+      _goVideoViewer(null);
+      return;
+    }
     if (attachment.path?.isNotEmpty == true) {
       _localPath = attachment.path;
     }
@@ -135,11 +156,11 @@ class _ChatKitMessageVideoState extends State<ChatKitMessageVideoItem> {
       _goVideoViewer(_localPath);
     } else {
       var params = NIMDownloadMessageAttachmentParams(
-          attachment: attachment,
-          type: NIMDownloadAttachmentType.nimDownloadAttachmentTypeSource,
-          thumbSize:
-              NIMSize(width: attachment.width, height: attachment.height),
-          messageClientId: widget.message.messageClientId);
+        attachment: attachment,
+        type: NIMDownloadAttachmentType.nimDownloadAttachmentTypeSource,
+        thumbSize: NIMSize(width: attachment.width, height: attachment.height),
+        messageClientId: widget.message.messageClientId,
+      );
       NimCore.instance.storageService.downloadAttachment(params).then((result) {
         if (!mounted) return;
         if (result.data?.isNotEmpty == true) {
@@ -163,7 +184,8 @@ class _ChatKitMessageVideoState extends State<ChatKitMessageVideoItem> {
       if (event.downloadParam?.messageClientId ==
           widget.message.messageClientId) {
         _log(
-            'onAttachmentProgress -->> ${event.downloadParam?.messageClientId} : ${event.progress}');
+          'onAttachmentProgress -->> ${event.downloadParam?.messageClientId} : ${event.progress}',
+        );
         if (event.progress != null) {
           _progress.add(event.progress! / 100);
         }
@@ -203,30 +225,32 @@ class _ChatKitMessageVideoState extends State<ChatKitMessageVideoItem> {
           Positioned.fill(
             child: Visibility(
               visible: url.isNotEmpty,
-              child: Center(
-                child: _buildLoading(),
-              ),
+              child: Center(child: _buildLoading()),
             ),
           ),
           Visibility(
             visible: url.isNotEmpty && attachment.duration != null,
             child: Positioned(
-                right: 6,
-                bottom: 6,
-                child: Container(
-                  decoration: const BoxDecoration(
-                      borderRadius: BorderRadius.all(Radius.circular(4)),
-                      color: Color(0x99000000)),
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 1, horizontal: 2),
-                    child: Text(
-                      _videoDuration(),
-                      style: const TextStyle(color: Colors.white, fontSize: 10),
-                    ),
+              right: 6,
+              bottom: 6,
+              child: Container(
+                decoration: const BoxDecoration(
+                  borderRadius: BorderRadius.all(Radius.circular(4)),
+                  color: Color(0x99000000),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 1,
+                    horizontal: 2,
                   ),
-                )),
-          )
+                  child: Text(
+                    _videoDuration(),
+                    style: const TextStyle(color: Colors.white, fontSize: 10),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );

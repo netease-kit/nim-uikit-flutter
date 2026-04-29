@@ -8,10 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as Intl;
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
-import 'package:nim_chatkit/services/message/chat_message.dart';
 import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
 import 'package:nim_chatkit/message/merge_message.dart';
 import 'package:nim_chatkit/message/message_helper.dart';
+import 'package:nim_chatkit/services/message/chat_message.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_file_item.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_image_item.dart';
@@ -38,14 +38,14 @@ class ChatKitMergedMessageItem extends StatefulWidget {
 
   final int? lastMessageTime;
 
-  ChatKitMergedMessageItem(
-      {Key? key,
-      required this.message,
-      required this.chatTitle,
-      this.lastMessageTime,
-      this.messageBuilder,
-      this.chatUIConfig})
-      : super(key: key);
+  ChatKitMergedMessageItem({
+    Key? key,
+    required this.message,
+    required this.chatTitle,
+    this.lastMessageTime,
+    this.messageBuilder,
+    this.chatUIConfig,
+  }) : super(key: key);
 
   @override
   State<StatefulWidget> createState() => _ChatKitMergedMessageItemState();
@@ -63,21 +63,31 @@ class _ChatKitMergedMessageItemState extends State<ChatKitMergedMessageItem> {
           return messageItemBuilder!.textMessageBuilder!(message);
         }
         return ChatKitMessageTextItem(
-            message: message, chatUIConfig: widget.chatUIConfig);
+          message: message,
+          chatUIConfig: widget.chatUIConfig,
+        );
       case NIMMessageType.audio:
         return Container(
           decoration: BoxDecoration(
-              border: Border.all(color: '#F0F0F0'.toColor()),
-              borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
-                  bottomLeft: Radius.circular(12),
-                  bottomRight: Radius.circular(12))),
+            border: Border.all(color: '#F0F0F0'.toColor()),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(12),
+              topRight: Radius.circular(12),
+              bottomLeft: Radius.circular(12),
+              bottomRight: Radius.circular(12),
+            ),
+          ),
           child: Container(
-            padding:
-                const EdgeInsets.only(left: 16, top: 12, right: 16, bottom: 12),
-            child: Text(S.of(context).chatMessageBriefAudio,
-                style: TextStyle(fontSize: 16, color: '#333333'.toColor())),
+            padding: const EdgeInsets.only(
+              left: 16,
+              top: 12,
+              right: 16,
+              bottom: 12,
+            ),
+            child: Text(
+              S.of(context).chatMessageBriefAudio,
+              style: TextStyle(fontSize: 16, color: '#333333'.toColor()),
+            ),
           ),
         );
       case NIMMessageType.image:
@@ -93,18 +103,12 @@ class _ChatKitMergedMessageItemState extends State<ChatKitMergedMessageItem> {
         if (messageItemBuilder?.videoMessageBuilder != null) {
           return messageItemBuilder!.videoMessageBuilder!(message);
         }
-        return ChatKitMessageVideoItem(
-          message: message,
-          independentFile: true,
-        );
+        return ChatKitMessageVideoItem(message: message, independentFile: true);
       case NIMMessageType.file:
         if (messageItemBuilder?.fileMessageBuilder != null) {
           return messageItemBuilder!.fileMessageBuilder!(message);
         }
-        return ChatKitMessageFileItem(
-          message: message,
-          independentFile: true,
-        );
+        return ChatKitMessageFileItem(message: message, independentFile: true);
 
       case NIMMessageType.location:
       default:
@@ -149,8 +153,9 @@ class _ChatKitMergedMessageItemState extends State<ChatKitMergedMessageItem> {
 
         if (messageItemBuilder?.extendBuilder != null) {
           if (messageItemBuilder?.extendBuilder![message.messageType] != null) {
-            return messageItemBuilder!
-                .extendBuilder![message.messageType]!(message);
+            return messageItemBuilder!.extendBuilder![message.messageType]!(
+              message,
+            );
           }
         }
         return ChatKitMessageNonsupportItem();
@@ -205,10 +210,11 @@ class _ChatKitMergedMessageItemState extends State<ChatKitMergedMessageItem> {
             ? Colors.transparent
             : '#E8EAED'.toColor(),
         borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(12),
-            topRight: Radius.circular(12),
-            bottomLeft: Radius.circular(12),
-            bottomRight: Radius.circular(12)),
+          topLeft: Radius.circular(12),
+          topRight: Radius.circular(12),
+          bottomLeft: Radius.circular(12),
+          bottomRight: Radius.circular(12),
+        ),
       );
     }
   }
@@ -232,51 +238,72 @@ class _ChatKitMergedMessageItemState extends State<ChatKitMergedMessageItem> {
     final sendNick =
         extension?[mergedMessageNickKey] ?? widget.message.senderId;
     final sendAvatar = extension?[mergedMessageAvatarKey];
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-      margin: const EdgeInsets.only(bottom: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          if (_showTime())
-            Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                _timeFormat(widget.message.createTime!),
-                style: TextStyle(
-                    fontSize: widget.chatUIConfig?.timeTextSize ?? 12,
-                    color: widget.chatUIConfig?.timeTextColor ??
-                        '#B3B7BC'.toColor()),
-              ),
-            ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    // 用 LayoutBuilder 获取父容器实际可用宽度，避免在 Dialog 场景下
+    // MediaQuery.size.width 返回整屏宽度导致气泡 maxWidth 超出 Dialog 范围
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // constraints.maxWidth 即父容器（ListView 列宽）的实际可用宽度
+        // 减去左右 padding(20*2)、头像(32)、头像右侧间距(8) 后作为气泡最大宽度
+        final bubbleMaxWidth = constraints.maxWidth - 20 * 2 - 32 - 8 - 10;
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+          margin: const EdgeInsets.only(bottom: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Avatar(avatar: sendAvatar, name: sendNick, width: 32, height: 32),
-              Container(
-                margin: const EdgeInsets.only(left: 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(sendNick,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            fontSize: 12, color: '#888888'.toColor())),
-                    Container(
-                      margin: const EdgeInsets.only(top: 3),
-                      decoration: _getMessageDecoration(),
-                      constraints: BoxConstraints(
-                          maxWidth: MediaQuery.of(context).size.width - 110),
-                      child: _buildMessage(widget.message),
-                    )
-                  ],
+              if (_showTime())
+                Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    _timeFormat(widget.message.createTime!),
+                    style: TextStyle(
+                      fontSize: widget.chatUIConfig?.timeTextSize ?? 12,
+                      color: widget.chatUIConfig?.timeTextColor ??
+                          '#B3B7BC'.toColor(),
+                    ),
+                  ),
                 ),
-              )
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Avatar(
+                      avatar: sendAvatar,
+                      name: sendNick,
+                      width: 32,
+                      height: 32),
+                  Flexible(
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            sendNick,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: '#888888'.toColor(),
+                            ),
+                          ),
+                          Container(
+                            margin: const EdgeInsets.only(top: 3),
+                            decoration: _getMessageDecoration(),
+                            constraints: BoxConstraints(
+                              maxWidth: bubbleMaxWidth,
+                            ),
+                            child: _buildMessage(widget.message),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

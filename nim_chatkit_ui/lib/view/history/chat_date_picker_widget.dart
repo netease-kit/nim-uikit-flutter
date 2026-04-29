@@ -15,12 +15,8 @@ class DatePickerPage extends StatefulWidget {
   final DateTime? minDate;
   final DateTime? maxDate;
 
-  const DatePickerPage({
-    Key? key,
-    this.initialDate,
-    this.minDate,
-    this.maxDate,
-  }) : super(key: key);
+  const DatePickerPage({Key? key, this.initialDate, this.minDate, this.maxDate})
+      : super(key: key);
 
   @override
   State<DatePickerPage> createState() => _DatePickerPageState();
@@ -107,8 +103,10 @@ class _DatePickerPageState extends State<DatePickerPage> {
     }
 
     if (targetIndex != -1) {
-      final date =
-          DateTime(_displayMaxDate.year, _displayMaxDate.month - targetIndex);
+      final date = DateTime(
+        _displayMaxDate.year,
+        _displayMaxDate.month - targetIndex,
+      );
       if (_stickyDate?.year != date.year || _stickyDate?.month != date.month) {
         setState(() {
           _stickyDate = date;
@@ -168,8 +166,10 @@ class _DatePickerPageState extends State<DatePickerPage> {
     for (int i = 0; i < monthCount; i++) {
       // 从 end 开始倒推
       DateTime monthDate = DateTime(end.year, end.month - i);
-      final daysInMonth =
-          _getDisplayDaysInMonth(monthDate.year, monthDate.month);
+      final daysInMonth = _getDisplayDaysInMonth(
+        monthDate.year,
+        monthDate.month,
+      );
       final firstWeekday = DateTime(monthDate.year, monthDate.month, 1).weekday;
       final firstDayIndex = firstWeekday == 7 ? 0 : firstWeekday;
 
@@ -192,10 +192,14 @@ class _DatePickerPageState extends State<DatePickerPage> {
     final double cellHeight = _screenWidth / 7;
 
     for (int i = 0; i < monthCount; i++) {
-      DateTime monthDate =
-          DateTime(_displayMaxDate.year, _displayMaxDate.month - i);
-      final daysInMonth =
-          _getDisplayDaysInMonth(monthDate.year, monthDate.month);
+      DateTime monthDate = DateTime(
+        _displayMaxDate.year,
+        _displayMaxDate.month - i,
+      );
+      final daysInMonth = _getDisplayDaysInMonth(
+        monthDate.year,
+        monthDate.month,
+      );
       final firstWeekday = DateTime(monthDate.year, monthDate.month, 1).weekday;
       final firstDayIndex = firstWeekday == 7 ? 0 : firstWeekday;
 
@@ -215,8 +219,9 @@ class _DatePickerPageState extends State<DatePickerPage> {
     setState(() {
       _quickOption = option;
       if (option == 1) {
-        //选中并定位到当前日期
-        _selectedDate = DateTime.now();
+        //选中并定位到当前日期（归一到当天 00:00:00）
+        final now = DateTime.now();
+        _selectedDate = DateTime(now.year, now.month, now.day);
         // 恢复显示范围到最新
         if (_displayMaxDate != _maxDate) {
           _displayMaxDate = _maxDate;
@@ -226,8 +231,10 @@ class _DatePickerPageState extends State<DatePickerPage> {
           _scrollController.jumpTo(0);
         }
       } else if (option == 2) {
-        // 选中并定位到七天之前的日期
-        _selectedDate = DateTime.now().subtract(const Duration(days: 7));
+        // 选中并定位到七天之前的日期（归一到当天 00:00:00）
+        final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
+        _selectedDate =
+            DateTime(sevenDaysAgo.year, sevenDaysAgo.month, sevenDaysAgo.day);
         // 确保选中的日期不早于最小日期
         if (_selectedDate.isBefore(_minDate)) {
           _selectedDate = _minDate;
@@ -242,8 +249,10 @@ class _DatePickerPageState extends State<DatePickerPage> {
           _scrollToMonth(_selectedDate);
         });
       } else if (option == 3) {
-        // 选中并定位到30天之前的日期
-        _selectedDate = DateTime.now().subtract(const Duration(days: 30));
+        // 选中并定位到30天之前的日期（归一到当天 00:00:00）
+        final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
+        _selectedDate = DateTime(
+            thirtyDaysAgo.year, thirtyDaysAgo.month, thirtyDaysAgo.day);
         // 确保选中的日期不早于最小日期
         if (_selectedDate.isBefore(_minDate)) {
           _selectedDate = _minDate;
@@ -365,47 +374,49 @@ class _DatePickerPageState extends State<DatePickerPage> {
           },
           child: Text(
             S.of(context).chatHistoryFinish,
-            style:
-                const TextStyle(color: CommonColors.color_337eff, fontSize: 16),
+            style: const TextStyle(
+              color: CommonColors.color_337eff,
+              fontSize: 16,
+            ),
           ),
-        )
+        ),
       ],
       body: Column(
         children: [
           _buildQuickFilterBar(),
           if (_stickyDate != null) ...[
             GestureDetector(
-                onTap: () {
-                  _showMonthPicker();
-                },
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: [
-                      Text(
-                        S.of(context).chatDateYearMonth(
+              onTap: () {
+                _showMonthPicker();
+              },
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Text(
+                      S.of(context).chatDateYearMonth(
                             _stickyDate!.year.toString(),
-                            _stickyDate!.month.toString()),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF999999), // Darker for sticky header
-                        ),
+                            _stickyDate!.month.toString(),
+                          ),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF999999), // Darker for sticky header
                       ),
-                      const SizedBox(width: 4),
-                      SvgPicture.asset(
-                        'images/ic_arrow_down.svg',
-                        package: kPackage,
-                        height: 12,
-                        width: 12,
-                      )
-                    ],
-                  ),
-                ))
+                    ),
+                    const SizedBox(width: 4),
+                    SvgPicture.asset(
+                      'images/ic_arrow_down.svg',
+                      package: kPackage,
+                      height: 12,
+                      width: 12,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
           _buildWeekHeader(),
-          Expanded(
-            child: _buildCalendarList(),
-          ),
+          Expanded(child: _buildCalendarList()),
         ],
       ),
     );
@@ -466,11 +477,12 @@ class _DatePickerPageState extends State<DatePickerPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: weeks
-            .map((w) => Text(
-                  w,
-                  style:
-                      const TextStyle(color: Color(0xFF999999), fontSize: 12),
-                ))
+            .map(
+              (w) => Text(
+                w,
+                style: const TextStyle(color: Color(0xFF999999), fontSize: 12),
+              ),
+            )
             .toList(),
       ),
     );
@@ -490,8 +502,10 @@ class _DatePickerPageState extends State<DatePickerPage> {
         // Calculate date backwards from maxDate
         // index 0 -> maxDate's month
         // index 1 -> maxDate's month - 1
-        DateTime currentMonthDate =
-            DateTime(_displayMaxDate.year, _displayMaxDate.month - index);
+        DateTime currentMonthDate = DateTime(
+          _displayMaxDate.year,
+          _displayMaxDate.month - index,
+        );
         return _buildMonthItem(currentMonthDate);
       },
     );
@@ -506,7 +520,9 @@ class _DatePickerPageState extends State<DatePickerPage> {
     String monthText;
     if (monthDate.month == 1) {
       monthText = S.of(context).chatDateYearMonth(
-          monthDate.year.toString(), monthDate.month.toString());
+            monthDate.year.toString(),
+            monthDate.month.toString(),
+          );
     } else {
       monthText = S.of(context).chatDateMonth(monthDate.month.toString());
     }
@@ -520,10 +536,7 @@ class _DatePickerPageState extends State<DatePickerPage> {
           padding: const EdgeInsets.only(left: 16),
           child: Text(
             monthText,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF999999),
-            ),
+            style: const TextStyle(fontSize: 14, color: Color(0xFF999999)),
           ),
         ),
         GridView.builder(
@@ -722,7 +735,7 @@ class _MonthPickerBottomSheetState extends State<_MonthPickerBottomSheet> {
       '09',
       '10',
       '11',
-      '12'
+      '12',
     ];
     return monthNames[month - 1];
   }
@@ -766,11 +779,7 @@ class _MonthPickerBottomSheetState extends State<_MonthPickerBottomSheet> {
         children: [
           GestureDetector(
             onTap: () => Navigator.pop(context),
-            child: const Icon(
-              Icons.close,
-              size: 24,
-              color: Color(0xFF999999),
-            ),
+            child: const Icon(Icons.close, size: 24, color: Color(0xFF999999)),
           ),
           Text(
             S.of(context).chatHistorySelectChatDate,
@@ -786,10 +795,7 @@ class _MonthPickerBottomSheetState extends State<_MonthPickerBottomSheet> {
             },
             child: Text(
               S.of(context).chatHistoryFinish,
-              style: TextStyle(
-                fontSize: 16,
-                color: CommonColors.color_337eff,
-              ),
+              style: TextStyle(fontSize: 16, color: CommonColors.color_337eff),
             ),
           ),
         ],

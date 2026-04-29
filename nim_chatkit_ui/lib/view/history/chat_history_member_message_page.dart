@@ -19,6 +19,7 @@ import '../../chat_kit_client.dart';
 import '../../helper/chat_message_helper.dart';
 import '../../helper/chat_message_user_helper.dart';
 import '../../l10n/S.dart';
+import 'chat_history_locate_menu.dart';
 
 class ChatHistoryMemberMessagePage extends StatefulWidget {
   final String conversationId;
@@ -29,12 +30,28 @@ class ChatHistoryMemberMessagePage extends StatefulWidget {
 
   final NIMTeam? teamInfo;
 
+  /// 是否嵌入在面板内（隐藏系统 AppBar，改用自定义标题栏）
+  final bool isEmbedded;
+
+  /// Task 4.2: 嵌入模式下点击返回按钮时的回调（非导航，通知父组件处理返回逻辑）
+  final VoidCallback? onBack;
+
+  /// 桌面/Web 端"定位到聊天"回调
+  final void Function(NIMMessage)? onLocateMessage;
+
+  /// 嵌入模式下关闭面板的回调（桌面/Web 端定位时使用）
+  final VoidCallback? onClose;
+
   const ChatHistoryMemberMessagePage({
     Key? key,
     required this.conversationId,
     required this.sendId,
     required this.conversationType,
     this.teamInfo,
+    this.isEmbedded = false,
+    this.onBack,
+    this.onLocateMessage,
+    this.onClose,
   }) : super(key: key);
 
   @override
@@ -49,9 +66,11 @@ class ChatHistoryMemberMessagePageState
   final List<NIMMessage> _historyMessages = [];
 
   // 分页参数
-  String _pageToken = '';
+  String? _pageToken;
   bool _isLoading = false;
   bool _hasMore = true;
+
+  final int _pageSize = 100;
 
   UserAvatarInfo? currentUserAvatarInfo;
 
@@ -60,6 +79,21 @@ class ChatHistoryMemberMessagePageState
     super.initState();
     _scrollController.addListener(_scrollListener);
     _loadMoreOld(initial: true);
+  }
+
+  @override
+  void didUpdateWidget(covariant ChatHistoryMemberMessagePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 桌面/Web 嵌入模式下切换群成员时，sendId 会变化，需要重置并重新加载
+    if (oldWidget.sendId != widget.sendId ||
+        oldWidget.conversationId != widget.conversationId) {
+      _historyMessages.clear();
+      _pageToken = null;
+      _isLoading = false;
+      _hasMore = true;
+      currentUserAvatarInfo = null;
+      _loadMoreOld(initial: true);
+    }
   }
 
   @override
@@ -83,10 +117,12 @@ class ChatHistoryMemberMessagePageState
     });
 
     NIMMessageSearchExParams params = NIMMessageSearchExParams(
-        conversationId: widget.conversationId,
-        senderAccountIds: [widget.sendId],
-        direction: NIMSearchDirection.V2NIM_SEARCH_DIRECTION_BACKWARD,
-        pageToken: _pageToken);
+      conversationId: widget.conversationId,
+      senderAccountIds: [widget.sendId],
+      direction: NIMSearchDirection.V2NIM_SEARCH_DIRECTION_BACKWARD,
+      limit: _pageSize,
+      pageToken: _pageToken,
+    );
 
     if ((await IMKitClient.enableCloudMessageSearch) && !checkNetwork()) {
       setState(() {
@@ -105,7 +141,7 @@ class ChatHistoryMemberMessagePageState
           _historyMessages.addAll(item.messages ?? []);
         }
       }
-      _hasMore = result.data!.hasMore;
+      _hasMore = result.data!.hasMore && (result.data!.count ?? 0) >= _pageSize;
       _pageToken = result.data!.nextPageToken ?? '';
     } else {
       _hasMore = false;
@@ -118,17 +154,34 @@ class ChatHistoryMemberMessagePageState
 
   @override
   Widget build(BuildContext context) {
+    final listBody = Column(children: [Expanded(child: _buildList())]);
+
+    if (widget.isEmbedded) {
+      return Material(
+        color: Colors.white,
+        child: Column(
+          children: [
+            Expanded(child: listBody),
+          ],
+        ),
+      );
+    }
+
     return TransparentScaffold(
       title: S.of(context).chatHistorySearchByMember,
       backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          Expanded(
-            child: _buildList(),
-          ),
-        ],
-      ),
+      body: listBody,
     );
+  }
+
+  Future<UserAvatarInfo?> _getMemberAvatarInfo() async {
+    if (currentUserAvatarInfo != null) return currentUserAvatarInfo;
+    final teamId = ChatKitUtils.getConversationTargetId(widget.conversationId);
+    currentUserAvatarInfo = await getUserAvatarInfoInTeam(
+      teamId,
+      widget.sendId,
+    );
+    return currentUserAvatarInfo;
   }
 
   Widget _buildList() {
@@ -137,36 +190,30 @@ class ChatHistoryMemberMessagePageState
         children: [
           Column(
             children: [
-              const SizedBox(
-                height: 68,
-              ),
-              SvgPicture.asset(
-                'images/ic_list_empty.svg',
-                package: kPackage,
-              ),
-              const SizedBox(
-                height: 18,
-              ),
+              const SizedBox(height: 68),
+              SvgPicture.asset('images/ic_list_empty.svg', package: kPackage),
+              const SizedBox(height: 18),
               Text(
                 S.of(context).messageSearchEmpty,
                 style: TextStyle(color: Color(0xffb3b7bc), fontSize: 14),
-              )
+              ),
             ],
-          )
+          ),
         ],
       );
     }
 
     return ListView.builder(
-        controller: _scrollController,
-        padding: EdgeInsets.zero,
-        itemCount: _historyMessages.length + 1,
-        itemBuilder: (context, index) {
-          if (index == _historyMessages.length) {
-            return _buildFooter();
-          }
-          return _buildMessageItem(_historyMessages[index]);
-        });
+      controller: _scrollController,
+      padding: EdgeInsets.zero,
+      itemCount: _historyMessages.length + 1,
+      itemBuilder: (context, index) {
+        if (index == _historyMessages.length) {
+          return _buildFooter();
+        }
+        return _buildMessageItem(_historyMessages[index]);
+      },
+    );
   }
 
   Widget _buildFooter() {
@@ -175,9 +222,10 @@ class ChatHistoryMemberMessagePageState
         padding: const EdgeInsets.all(16.0),
         alignment: Alignment.center,
         child: SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(strokeWidth: 2)),
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
       );
     }
     if (!_hasMore && _historyMessages.isNotEmpty) {
@@ -193,89 +241,140 @@ class ChatHistoryMemberMessagePageState
     return Container();
   }
 
-  Widget _buildMessageItem(NIMMessage message) {
-    return InkWell(
-      onTap: () {
-        goToChatAndKeepHome(
-            context, widget.conversationId, widget.conversationType,
-            message: message);
+  void _showLocateMenu(
+      BuildContext context, Offset globalPos, NIMMessage message) {
+    ChatHistoryLocateMenu(
+      context: context,
+      globalPosition: globalPos,
+      onLocate: () {
+        widget.onClose?.call();
+        if (widget.onLocateMessage != null) {
+          widget.onLocateMessage!(message);
+        } else {
+          goToChatAndKeepHome(
+            context,
+            widget.conversationId,
+            widget.conversationType,
+            message: message,
+          );
+        }
       },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        child: FutureBuilder<UserAvatarInfo>(
+    ).show();
+  }
+
+  Widget _buildMessageItem(NIMMessage message) {
+    // 桌面/Web 端：右键弹出"定位到原始消息"菜单，左键无响应
+    // 移动端：左键点击直接定位
+    final isDesktopOrWeb = ChatKitUtils.isDesktopOrWeb;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onSecondaryTapUp: isDesktopOrWeb
+          ? (d) => _showLocateMenu(context, d.globalPosition, message)
+          : null,
+      child: InkWell(
+        // 保留 hover 高亮效果
+        onTap: isDesktopOrWeb
+            ? null
+            : () {
+                goToChatAndKeepHome(
+                  context,
+                  widget.conversationId,
+                  widget.conversationType,
+                  message: message,
+                );
+              },
+        hoverColor: const Color(0xFFF6F8FA),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: FutureBuilder<UserAvatarInfo>(
             future: _getUserAvatarInfo(message),
             builder: (context, snapshot) {
               final userInfo = snapshot.data;
-              return Column(
+              final timeStr = message.createTime != null
+                  ? getFormatTime(message.createTime!.toInt(), context)
+                  : '';
+              return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Align(
-                    alignment: Alignment.center,
-                    child: Text(
-                      getFormatTime(message.createTime!.toInt(), context),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: '#B3B7BC'.toColor(),
-                      ),
-                    ),
+                  // 发送者头像 32×32
+                  Avatar(
+                    avatar: userInfo?.avatar,
+                    name: userInfo?.avatarName,
+                    height: 32,
+                    width: 32,
+                    radius: 16,
+                    bgCode: AvatarColor.avatarColor(content: widget.sendId),
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Avatar(
-                        avatar: userInfo?.avatar,
-                        name: userInfo?.avatarName,
-                        height: 32,
-                        width: 32,
-                        radius: 16,
-                        bgCode: AvatarColor.avatarColor(content: widget.sendId),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(width: 12),
+                  // 中间：昵称 + 消息摘要
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
                           children: [
-                            Text(
-                              userInfo?.name ?? '',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: CommonColors.color_333333,
-                                fontWeight: FontWeight.w500,
+                            Expanded(
+                              child: Text(
+                                userInfo?.name ?? '',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: CommonColors.color_333333,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            buildHistoryMessage(context, message,
-                                teamInfo: widget.teamInfo)
+                            // 发送时间（右对齐）
+                            Text(
+                              timeStr,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF999999),
+                              ),
+                            ),
                           ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        // 消息内容摘要（点击后定位到消息）
+                        buildHistoryMessage(
+                          context,
+                          message,
+                          teamInfo: widget.teamInfo,
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               );
-            }),
-      ),
-    );
+            },
+          ), // FutureBuilder
+        ), // Container
+      ), // InkWell
+    ); // GestureDetector
   }
 
   Future<UserAvatarInfo> _getUserAvatarInfo(NIMMessage message) async {
     if (message.aiConfig?.aiStatus == NIMMessageAIStatus.response &&
         AIUserManager.instance.isAIUser(message.aiConfig?.accountId)) {
-      final aiUser =
-          AIUserManager.instance.getAIUserById(message.aiConfig!.accountId!);
-      return UserAvatarInfo(aiUser!.name ?? aiUser.accountId!,
-          avatarName: aiUser.name, avatar: aiUser.avatar);
+      final aiUser = AIUserManager.instance.getAIUserById(
+        message.aiConfig!.accountId!,
+      );
+      return UserAvatarInfo(
+        aiUser!.name ?? aiUser.accountId!,
+        avatarName: aiUser.name,
+        avatar: aiUser.avatar,
+      );
     }
     if (currentUserAvatarInfo != null) {
       return currentUserAvatarInfo!;
     }
 
     var teamId = ChatKitUtils.getConversationTargetId(message.conversationId!);
-    currentUserAvatarInfo =
-        await getUserAvatarInfoInTeam(teamId, message.senderId!);
+    currentUserAvatarInfo = await getUserAvatarInfoInTeam(
+      teamId,
+      message.senderId!,
+    );
     return currentUserAvatarInfo!;
   }
 }

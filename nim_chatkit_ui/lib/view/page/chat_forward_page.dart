@@ -4,17 +4,17 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
+import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/text_search.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
 import 'package:nim_chatkit/model/recent_forward.dart';
+import 'package:nim_chatkit/utils/toast_utils.dart';
 import 'package:nim_chatkit_ui/view_model/chat_forward_view_model.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:provider/provider.dart';
-import 'package:netease_common_ui/utils/color_utils.dart';
 
 import '../../chat_kit_client.dart';
 import '../../helper/contact_sort_helper.dart';
@@ -26,9 +26,11 @@ class ChatForwardPage extends StatefulWidget {
 
   final List<String>? filterSession;
 
-  const ChatForwardPage(
-      {Key? key, this.filterSession, this.maxSelectedCount = 9})
-      : super(key: key);
+  const ChatForwardPage({
+    Key? key,
+    this.filterSession,
+    this.maxSelectedCount = 9,
+  }) : super(key: key);
 
   @override
   State<ChatForwardPage> createState() => _ChatForwardPageState();
@@ -46,8 +48,9 @@ class _ChatForwardPageState extends State<ChatForwardPage>
 
   late final TextEditingController _textController;
 
-  late final ChatForwardViewModel _model =
-      ChatForwardViewModel(widget.filterSession);
+  late final ChatForwardViewModel _model = ChatForwardViewModel(
+    widget.filterSession,
+  );
 
   // 添加状态变量
   String? searchKeyword;
@@ -88,18 +91,18 @@ class _ChatForwardPageState extends State<ChatForwardPage>
           _tabController.addListener(() {
             currentTabIndex = _tabController.index;
             if (_tabController.index == 0) {
-              context
-                  .read<ChatForwardViewModel>()
-                  .searchConversationByKeyword(_textController.text);
+              context.read<ChatForwardViewModel>().searchConversationByKeyword(
+                    _textController.text,
+                  );
             } else if (_tabController.index == 1 &&
                 !_tabController.indexIsChanging) {
-              context
-                  .read<ChatForwardViewModel>()
-                  .getContactList(_textController.text);
+              context.read<ChatForwardViewModel>().getContactList(
+                    _textController.text,
+                  );
             } else if (_tabController.index == 2) {
-              context
-                  .read<ChatForwardViewModel>()
-                  .searchTeamByKeyword(_textController.text);
+              context.read<ChatForwardViewModel>().searchTeamByKeyword(
+                    _textController.text,
+                  );
             }
           });
           _tabListenerAttached = true;
@@ -111,34 +114,38 @@ class _ChatForwardPageState extends State<ChatForwardPage>
             selectedList.isEmpty ? '' : '(${selectedList.length})';
 
         return TransparentScaffold(
-            title: S.of(context).forwardSelect,
-            appbarLeadingIcon: Text(S.of(context).messageCancel,
-                style: TextStyle(color: Colors.black, fontSize: 16)),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  if (isMultiSelect && _model.selectedList.isNotEmpty) {
-                    Navigator.pop(context, _model.selectedList);
-                  } else if (!isMultiSelect) {
-                    context.read<ChatForwardViewModel>().setMultiSelect(true);
-                  }
-                },
-                child: Text(
-                    isMultiSelect
-                        ? '${S.of(context).messageSure}$selectedCount'
-                        : S.of(context).multiSelect,
-                    style: TextStyle(
-                        color: (isMultiSelect && _model.selectedList.isEmpty)
-                            ? CommonColors.color_999999
-                            : CommonColors.color_333333,
-                        fontSize: 16)),
+          title: S.of(context).forwardSelect,
+          appbarLeadingIcon: Text(
+            S.of(context).messageCancel,
+            style: TextStyle(color: Colors.black, fontSize: 16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                if (isMultiSelect && _model.selectedList.isNotEmpty) {
+                  Navigator.pop(context, _model.selectedList);
+                } else if (!isMultiSelect) {
+                  context.read<ChatForwardViewModel>().setMultiSelect(true);
+                }
+              },
+              child: Text(
+                isMultiSelect
+                    ? '${S.of(context).messageSure}$selectedCount'
+                    : S.of(context).multiSelect,
+                style: TextStyle(
+                  color: (isMultiSelect && _model.selectedList.isEmpty)
+                      ? CommonColors.color_999999
+                      : CommonColors.color_333333,
+                  fontSize: 16,
+                ),
               ),
-            ],
-            backgroundColor: Colors.white,
-            body: PageStorage(
-              bucket: _bucket,
-              child: Consumer<ChatForwardViewModel>(
-                  builder: (context, model, child) {
+            ),
+          ],
+          backgroundColor: Colors.white,
+          body: PageStorage(
+            bucket: _bucket,
+            child: Consumer<ChatForwardViewModel>(
+              builder: (context, model, child) {
                 bool isMultiple = model.isMultiSelect;
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -146,14 +153,18 @@ class _ChatForwardPageState extends State<ChatForwardPage>
                     // 顶部搜索栏（固定）
                     Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16.0, vertical: 8.0),
+                        horizontal: 16.0,
+                        vertical: 8.0,
+                      ),
                       child: TextField(
                         controller: _textController,
                         decoration: InputDecoration(
                           hintText: S.of(context).forwardSearch,
                           hintStyle: TextStyle(color: Colors.grey.shade500),
-                          prefixIcon:
-                              Icon(Icons.search, color: Colors.grey.shade500),
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color: Colors.grey.shade500,
+                          ),
                           suffixIcon: searchKeyword?.isNotEmpty == true
                               ? IconButton(
                                   icon: SvgPicture.asset(
@@ -184,7 +195,10 @@ class _ChatForwardPageState extends State<ChatForwardPage>
                     if (searchKeyword?.isNotEmpty != true &&
                         model.recentForwards.isNotEmpty)
                       _buildRecentForwards(
-                          model, model.recentForwards, isMultiple),
+                        model,
+                        model.recentForwards,
+                        isMultiple,
+                      ),
                     // TabBar（固定）
                     Material(
                       color: Colors.white,
@@ -207,109 +221,147 @@ class _ChatForwardPageState extends State<ChatForwardPage>
                         controller: _tabController,
                         children: [
                           _buildRecentChatsList(
-                              model, model.conversationShowList, isMultiple),
+                            model,
+                            model.conversationShowList,
+                            isMultiple,
+                          ),
                           _buildFriendList(
-                              model, model.contactShowList, isMultiple),
+                            model,
+                            model.contactShowList,
+                            isMultiple,
+                          ),
                           _buildTeamList(model, model.teamShowList, isMultiple),
                         ],
                       ),
                     ),
                   ],
                 );
-              }),
-            ));
+              },
+            ),
+          ),
+        );
       },
     );
   }
 
   /// 构建已经选中的列表
   Widget _buildSelectedList(
-      ChatForwardViewModel outerModel, List<SelectedBeam> selectedList) {
+    ChatForwardViewModel outerModel,
+    List<SelectedBeam> selectedList,
+  ) {
     return InkWell(
       onTap: () {
         _showSelectedBottomSheet(outerModel);
       },
-      child: Stack(children: [
-        Container(
-          height: 66,
-          padding: EdgeInsets.only(right: 40),
-          decoration: const BoxDecoration(
-            border: Border(
-                bottom: BorderSide(color: Color(0xFFf0f0f0), width: 6.0)),
+      child: Stack(
+        children: [
+          Container(
+            height: 66,
+            padding: EdgeInsets.only(right: 40),
+            decoration: const BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: Color(0xFFf0f0f0), width: 6.0),
+              ),
+            ),
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12.0,
+                vertical: 8,
+              ),
+              itemCount: selectedList.length,
+              itemBuilder: (context, index) {
+                final item = selectedList[index];
+                final avatar = item.avatar;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: Avatar(
+                    avatar: avatar,
+                    width: 44,
+                    height: 44,
+                    name: item.name,
+                    fit: BoxFit.cover,
+                    bgCode: AvatarColor.avatarColor(content: item.sessionId),
+                  ),
+                );
+              },
+            ),
           ),
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
-            itemCount: selectedList.length,
-            itemBuilder: (context, index) {
-              final item = selectedList[index];
-              final avatar = item.avatar;
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                child: Avatar(
-                  avatar: avatar,
-                  width: 44,
-                  height: 44,
-                  name: item.name,
-                  fit: BoxFit.cover,
-                  bgCode: AvatarColor.avatarColor(content: item.sessionId),
-                ),
-              );
-            },
-          ),
-        ),
-        Positioned(
+          Positioned(
             right: 12,
             top: 0,
             bottom: 0,
-            child: Icon(Icons.keyboard_arrow_right_outlined))
-      ]),
+            child: Icon(Icons.keyboard_arrow_right_outlined),
+          ),
+        ],
+      ),
     );
   }
 
-  // 展示底部已选弹框
+  // Task 9.1-9.2: 展示已选弹框 — 桌面/Web 用 Dialog，移动端用 BottomSheet
   void _showSelectedBottomSheet(ChatForwardViewModel outerModel) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-      ),
-      builder: (ctx) {
-        // 保证在新 route 中也能取到同一个 model
-        return ChangeNotifierProvider.value(
-          value: outerModel,
-          child: SafeArea(
-            top: false,
-            child: FractionallySizedBox(
-              heightFactor: 0.9,
-              child: Consumer<ChatForwardViewModel>(
-                builder: (context, model, _) {
-                  final items = model.selectedList;
-                  return Column(
-                    children: [
-                      _buildSheetHeader(
-                        title: '已选',
-                        onBack: () => Navigator.of(context).pop(),
-                      ),
-                      const Divider(height: 1),
-                      Expanded(
-                        child: ListView.separated(
-                          itemCount: items.length,
-                          separatorBuilder: (_, __) => const Divider(height: 1),
-                          itemBuilder: (context, index) =>
-                              _buildSelectedItemRow(items[index], model),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
+    // 共享内容构建器（BottomSheet 和 Dialog 共用同一内容树）
+    Widget buildContent(BuildContext ctx) {
+      return ChangeNotifierProvider.value(
+        value: outerModel,
+        child: Consumer<ChatForwardViewModel>(
+          builder: (context, model, _) {
+            final items = model.selectedList;
+            return Column(
+              children: [
+                _buildSheetHeader(
+                  title: '已选',
+                  onBack: () => Navigator.of(context).pop(),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: items.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (context, index) =>
+                        _buildSelectedItemRow(items[index], model),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      );
+    }
+
+    if (ChatKitUtils.isDesktopOrWeb) {
+      // Task 9.2: 桌面/Web 端以 Dialog 弹出已选列表
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (ctx) => Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400, maxHeight: 500),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: buildContent(ctx),
             ),
           ),
-        );
-      },
-    );
+        ),
+      );
+    } else {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+        ),
+        builder: (ctx) => SafeArea(
+          top: false,
+          child: FractionallySizedBox(
+            heightFactor: 0.9,
+            child: buildContent(ctx),
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildSheetHeader({
@@ -396,27 +448,33 @@ class _ChatForwardPageState extends State<ChatForwardPage>
           onPressed: () {
             model.removeSelected(item);
           },
-        )
+        ),
       ],
     );
   }
 
   /// 构建最近转发列表
-  Widget _buildRecentForwards(ChatForwardViewModel model,
-      List<RecentForward> recentForwards, bool isMultiSelect) {
+  Widget _buildRecentForwards(
+    ChatForwardViewModel model,
+    List<RecentForward> recentForwards,
+    bool isMultiSelect,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       decoration: const BoxDecoration(
-        border:
-            Border(bottom: BorderSide(color: Color(0xFFf0f0f0), width: 8.0)),
+        border: Border(
+          bottom: BorderSide(color: Color(0xFFf0f0f0), width: 8.0),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.0),
-            child: Text(S.of(context).forwardRecentForward,
-                style: TextStyle(color: Colors.grey, fontSize: 14)),
+            child: Text(
+              S.of(context).forwardRecentForward,
+              style: TextStyle(color: Colors.grey, fontSize: 14),
+            ),
           ),
           const SizedBox(height: 12),
           SizedBox(
@@ -428,9 +486,11 @@ class _ChatForwardPageState extends State<ChatForwardPage>
               itemBuilder: (context, index) {
                 final item = recentForwards[index];
                 final avatar = item.getAvatar();
-                final isSelected = model.selectedList.indexWhere((e) =>
-                        e.sessionId == item.sessionId &&
-                        e.type == item.sessionType) >=
+                final isSelected = model.selectedList.indexWhere(
+                      (e) =>
+                          e.sessionId == item.sessionId &&
+                          e.type == item.sessionType,
+                    ) >=
                     0;
                 return GestureDetector(
                   onTap: () {
@@ -459,8 +519,9 @@ class _ChatForwardPageState extends State<ChatForwardPage>
                           width: 48,
                           height: 48,
                           name: item.getName(),
-                          bgCode:
-                              AvatarColor.avatarColor(content: item.sessionId),
+                          bgCode: AvatarColor.avatarColor(
+                            content: item.sessionId,
+                          ),
                         ),
                         const SizedBox(height: 6),
                         SizedBox(
@@ -470,13 +531,15 @@ class _ChatForwardPageState extends State<ChatForwardPage>
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                                fontSize: 12, color: Colors.black54),
+                              fontSize: 12,
+                              color: Colors.black54,
+                            ),
                           ),
                         ),
                         if (isMultiSelect) ...[
                           const SizedBox(height: 6),
                           _SelectBox(selected: isSelected),
-                        ]
+                        ],
                       ],
                     ),
                   ),
@@ -491,18 +554,23 @@ class _ChatForwardPageState extends State<ChatForwardPage>
 
   void addSelected(List<SelectedBeam> selectedList, SelectedBeam selected) {
     if (selectedList.length >= widget.maxSelectedCount) {
-      Fluttertoast.showToast(
-          msg: S
-              .of(context)
-              .maxSelectConversationLimit(widget.maxSelectedCount.toString()));
+      ChatUIToast.show(
+        S
+            .of(context)
+            .maxSelectConversationLimit(widget.maxSelectedCount.toString()),
+        context: context,
+      );
     } else {
       _model.addSelected(selected);
     }
   }
 
   /// 构建最近会话列表
-  Widget _buildRecentChatsList(ChatForwardViewModel model,
-      List<SearchResult<NIMConversation>> conversations, bool isMultiSelect) {
+  Widget _buildRecentChatsList(
+    ChatForwardViewModel model,
+    List<SearchResult<NIMConversation>> conversations,
+    bool isMultiSelect,
+  ) {
     if (conversations.isNotEmpty) {
       return ListView.builder(
         key: const PageStorageKey('recent_chats_list'),
@@ -515,22 +583,27 @@ class _ChatForwardPageState extends State<ChatForwardPage>
           final conversation = conversations[index];
           final name = conversation.data.name ??
               ChatKitUtils.getConversationTargetId(
-                  conversation.data.conversationId);
-          final selected = model.selectedList.indexWhere((e) =>
-                  e.conversationId == conversation.data.conversationId &&
-                  e.type == conversation.data.type) >=
+                conversation.data.conversationId,
+              );
+          final selected = model.selectedList.indexWhere(
+                (e) =>
+                    e.conversationId == conversation.data.conversationId &&
+                    e.type == conversation.data.type,
+              ) >=
               0;
-          int? count =
-              model.getConversationCount(conversation.data.conversationId);
+          int? count = model.getConversationCount(
+            conversation.data.conversationId,
+          );
 
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () {
               var selectedBeam = SelectedBeam(
-                  type: conversation.data.type,
-                  conversationId: conversation.data.conversationId,
-                  avatar: conversation.data.avatar,
-                  name: conversation.data.name);
+                type: conversation.data.type,
+                conversationId: conversation.data.conversationId,
+                avatar: conversation.data.avatar,
+                name: conversation.data.name,
+              );
               if (isMultiSelect) {
                 if (selected) {
                   model.removeSelected(selectedBeam);
@@ -547,9 +620,7 @@ class _ChatForwardPageState extends State<ChatForwardPage>
               child: Row(
                 children: [
                   if (isMultiSelect) ...[
-                    _SelectBox(
-                      selected: selected,
-                    ),
+                    _SelectBox(selected: selected),
                     const SizedBox(width: 8),
                   ],
                   Avatar(
@@ -559,7 +630,8 @@ class _ChatForwardPageState extends State<ChatForwardPage>
                     name: conversation.data.name,
                     bgCode: AvatarColor.avatarColor(
                       content: ChatKitUtils.getConversationTargetId(
-                          conversation.data.conversationId),
+                        conversation.data.conversationId,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -568,13 +640,14 @@ class _ChatForwardPageState extends State<ChatForwardPage>
                       children: [
                         Flexible(
                           child: _hitWidget(
-                              name,
-                              TextStyle(
-                                  fontSize: 16, color: '#333333'.toColor()),
-                              TextStyle(
-                                  fontSize: 16,
-                                  color: CommonColors.color_337eff),
-                              hitInfo: conversation.searchInfo),
+                            name,
+                            TextStyle(fontSize: 16, color: '#333333'.toColor()),
+                            TextStyle(
+                              fontSize: 16,
+                              color: CommonColors.color_337eff,
+                            ),
+                            hitInfo: conversation.searchInfo,
+                          ),
                         ),
                         if (count != null && count > 0) ...[
                           const SizedBox(width: 4),
@@ -583,7 +656,9 @@ class _ChatForwardPageState extends State<ChatForwardPage>
                             maxLines: 1,
                             softWrap: false,
                             style: TextStyle(
-                                fontSize: 16, color: '#333333'.toColor()),
+                              fontSize: 16,
+                              color: '#333333'.toColor(),
+                            ),
                           ),
                         ],
                       ],
@@ -601,27 +676,29 @@ class _ChatForwardPageState extends State<ChatForwardPage>
           return Container(
             height: constraints.maxHeight,
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            child:
-                Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              SvgPicture.asset(
-                searchKeyword?.isNotEmpty == true
-                    ? 'images/ic_search_empty.svg'
-                    : 'images/ic_list_empty.svg',
-                package: kPackage,
-              ),
-              const SizedBox(height: 18),
-              Text.rich(
-                TextSpan(
-                  style: TextStyle(color: Color(0xffb3b7bc), fontSize: 14),
-                  children: _buildTextSpans(
-                    searchKeyword?.isNotEmpty == true
-                        ? S.of(context).searchResultEmpty(searchKeyword!)
-                        : S.of(context).forwardConversationEmpty,
-                    searchKeyword,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SvgPicture.asset(
+                  searchKeyword?.isNotEmpty == true
+                      ? 'images/ic_search_empty.svg'
+                      : 'images/ic_list_empty.svg',
+                  package: kPackage,
+                ),
+                const SizedBox(height: 18),
+                Text.rich(
+                  TextSpan(
+                    style: TextStyle(color: Color(0xffb3b7bc), fontSize: 14),
+                    children: _buildTextSpans(
+                      searchKeyword?.isNotEmpty == true
+                          ? S.of(context).searchResultEmpty(searchKeyword!)
+                          : S.of(context).forwardConversationEmpty,
+                      searchKeyword,
+                    ),
                   ),
                 ),
-              )
-            ]),
+              ],
+            ),
           );
         },
       );
@@ -629,21 +706,24 @@ class _ChatForwardPageState extends State<ChatForwardPage>
   }
 
   /// 构建好友列表
-  Widget _buildFriendList(ChatForwardViewModel model,
-      List<SearchResult<ContactInfo>> friends, bool isMultiSelect) {
+  Widget _buildFriendList(
+    ChatForwardViewModel model,
+    List<SearchResult<ContactInfo>> friends,
+    bool isMultiSelect,
+  ) {
     if (friends.isEmpty) {
       return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
             SvgPicture.asset(
               searchKeyword?.isNotEmpty == true
                   ? 'images/ic_search_empty.svg'
                   : 'images/ic_list_empty.svg',
               package: kPackage,
             ),
-            const SizedBox(
-              height: 18,
-            ),
+            const SizedBox(height: 18),
             Text.rich(
               TextSpan(
                 style: TextStyle(color: Color(0xffb3b7bc), fontSize: 14),
@@ -654,8 +734,10 @@ class _ChatForwardPageState extends State<ChatForwardPage>
                   searchKeyword,
                 ),
               ),
-            )
-          ]));
+            ),
+          ],
+        ),
+      );
     } else {
       // 对好友列表按name进行排序
       final sortedFriends = sortFriends(friends);
@@ -671,19 +753,22 @@ class _ChatForwardPageState extends State<ChatForwardPage>
           final friend = sortedFriends[index]; // 使用排序后的列表
           final name = friend.data.getName();
           final accountId = friend.data.user.accountId;
-          final selected = model.selectedList.indexWhere((e) =>
-                  e.sessionId == accountId &&
-                  e.type == NIMConversationType.p2p) >=
+          final selected = model.selectedList.indexWhere(
+                (e) =>
+                    e.sessionId == accountId &&
+                    e.type == NIMConversationType.p2p,
+              ) >=
               0;
 
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () {
               var selectedBeam = SelectedBeam(
-                  type: NIMConversationType.p2p,
-                  sessionId: accountId,
-                  avatar: friend.data.user.avatar,
-                  name: friend.data.getName());
+                type: NIMConversationType.p2p,
+                sessionId: accountId,
+                avatar: friend.data.user.avatar,
+                name: friend.data.getName(),
+              );
               if (isMultiSelect) {
                 if (selected) {
                   model.removeSelected(selectedBeam);
@@ -700,9 +785,7 @@ class _ChatForwardPageState extends State<ChatForwardPage>
               child: Row(
                 children: [
                   if (isMultiSelect) ...[
-                    _SelectBox(
-                      selected: selected,
-                    ),
+                    _SelectBox(selected: selected),
                     const SizedBox(width: 8),
                   ],
                   Avatar(
@@ -710,9 +793,7 @@ class _ChatForwardPageState extends State<ChatForwardPage>
                     width: 48,
                     height: 48,
                     name: friend.data.getName(needAlias: false),
-                    bgCode: AvatarColor.avatarColor(
-                      content: accountId,
-                    ),
+                    bgCode: AvatarColor.avatarColor(content: accountId),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -720,13 +801,14 @@ class _ChatForwardPageState extends State<ChatForwardPage>
                       children: [
                         Flexible(
                           child: _hitWidget(
-                              name,
-                              TextStyle(
-                                  fontSize: 16, color: '#333333'.toColor()),
-                              TextStyle(
-                                  fontSize: 16,
-                                  color: CommonColors.color_337eff),
-                              hitInfo: friend.searchInfo),
+                            name,
+                            TextStyle(fontSize: 16, color: '#333333'.toColor()),
+                            TextStyle(
+                              fontSize: 16,
+                              color: CommonColors.color_337eff,
+                            ),
+                            hitInfo: friend.searchInfo,
+                          ),
                         ),
                       ],
                     ),
@@ -741,21 +823,24 @@ class _ChatForwardPageState extends State<ChatForwardPage>
   }
 
   /// 构建群组列表
-  Widget _buildTeamList(ChatForwardViewModel model,
-      List<SearchResult<NIMTeam>> teams, bool isMultiSelect) {
+  Widget _buildTeamList(
+    ChatForwardViewModel model,
+    List<SearchResult<NIMTeam>> teams,
+    bool isMultiSelect,
+  ) {
     if (teams.isEmpty) {
       return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
             SvgPicture.asset(
               searchKeyword?.isNotEmpty == true
                   ? 'images/ic_search_empty.svg'
                   : 'images/ic_list_empty.svg',
               package: kPackage,
             ),
-            const SizedBox(
-              height: 18,
-            ),
+            const SizedBox(height: 18),
             Text.rich(
               TextSpan(
                 style: TextStyle(color: Color(0xffb3b7bc), fontSize: 14),
@@ -766,8 +851,10 @@ class _ChatForwardPageState extends State<ChatForwardPage>
                   searchKeyword,
                 ),
               ),
-            )
-          ]));
+            ),
+          ],
+        ),
+      );
     } else {
       return ListView.builder(
         key: const PageStorageKey('team_list'),
@@ -781,19 +868,21 @@ class _ChatForwardPageState extends State<ChatForwardPage>
           final name = team.data.name;
           final teamId = team.data.teamId;
           final count = team.data.memberCount;
-          final selected = model.selectedList.indexWhere((e) =>
-                  e.sessionId == teamId &&
-                  e.type == NIMConversationType.team) >=
+          final selected = model.selectedList.indexWhere(
+                (e) =>
+                    e.sessionId == teamId && e.type == NIMConversationType.team,
+              ) >=
               0;
 
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () {
               var selectedBeam = SelectedBeam(
-                  type: NIMConversationType.team,
-                  sessionId: teamId,
-                  avatar: team.data.avatar,
-                  name: name);
+                type: NIMConversationType.team,
+                sessionId: teamId,
+                avatar: team.data.avatar,
+                name: name,
+              );
               if (isMultiSelect) {
                 if (selected) {
                   model.removeSelected(selectedBeam);
@@ -810,9 +899,7 @@ class _ChatForwardPageState extends State<ChatForwardPage>
               child: Row(
                 children: [
                   if (isMultiSelect) ...[
-                    _SelectBox(
-                      selected: selected,
-                    ),
+                    _SelectBox(selected: selected),
                     const SizedBox(width: 8),
                   ],
                   Avatar(
@@ -820,9 +907,7 @@ class _ChatForwardPageState extends State<ChatForwardPage>
                     width: 48,
                     height: 48,
                     name: team.data.name,
-                    bgCode: AvatarColor.avatarColor(
-                      content: teamId,
-                    ),
+                    bgCode: AvatarColor.avatarColor(content: teamId),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -830,13 +915,14 @@ class _ChatForwardPageState extends State<ChatForwardPage>
                       children: [
                         Flexible(
                           child: _hitWidget(
-                              name,
-                              TextStyle(
-                                  fontSize: 16, color: '#333333'.toColor()),
-                              TextStyle(
-                                  fontSize: 16,
-                                  color: CommonColors.color_337eff),
-                              hitInfo: team.searchInfo),
+                            name,
+                            TextStyle(fontSize: 16, color: '#333333'.toColor()),
+                            TextStyle(
+                              fontSize: 16,
+                              color: CommonColors.color_337eff,
+                            ),
+                            hitInfo: team.searchInfo,
+                          ),
                         ),
                         if (count > 0) ...[
                           const SizedBox(width: 4),
@@ -845,7 +931,9 @@ class _ChatForwardPageState extends State<ChatForwardPage>
                             maxLines: 1,
                             softWrap: false,
                             style: TextStyle(
-                                fontSize: 16, color: '#333333'.toColor()),
+                              fontSize: 16,
+                              color: '#333333'.toColor(),
+                            ),
                           ),
                         ],
                       ],
@@ -882,26 +970,35 @@ class _ChatForwardPageState extends State<ChatForwardPage>
     ];
   }
 
-  Widget _hitWidget(String content, TextStyle normalStyle, TextStyle highStyle,
-      {RecordHitInfo? hitInfo}) {
+  Widget _hitWidget(
+    String content,
+    TextStyle normalStyle,
+    TextStyle highStyle, {
+    RecordHitInfo? hitInfo,
+  }) {
     return RichText(
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       text: hitInfo == null
           ? TextSpan(text: content, style: normalStyle)
-          : TextSpan(children: [
-              if (hitInfo.start > 0)
+          : TextSpan(
+              children: [
+                if (hitInfo.start > 0)
+                  TextSpan(
+                    text: content.substring(0, hitInfo.start),
+                    style: normalStyle,
+                  ),
                 TextSpan(
-                  text: content.substring(0, hitInfo.start),
-                  style: normalStyle,
-                ),
-              TextSpan(
                   text: content.substring(hitInfo.start, hitInfo.end),
-                  style: highStyle),
-              if (hitInfo.end <= content.length - 1)
-                TextSpan(
-                    text: content.substring(hitInfo.end), style: normalStyle)
-            ]),
+                  style: highStyle,
+                ),
+                if (hitInfo.end <= content.length - 1)
+                  TextSpan(
+                    text: content.substring(hitInfo.end),
+                    style: normalStyle,
+                  ),
+              ],
+            ),
     );
   }
 }

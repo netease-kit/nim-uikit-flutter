@@ -8,6 +8,8 @@
   "contact": "通讯录",
   "mine": "我的",
   "conversation": "会话列表",
+  "tabChat": "会话",
+  "desktopWelcomeTitle": "欢迎使用网易云信",
   "dataIsLoading": "数据加载中...",
   "tabMineAccount": "账号:{account}",
   "@tabMineAccount": {
@@ -77,7 +79,13 @@
   "languageChinese": "中文",
   "languageEnglish": "English",
   "save": "保存",
+  "cancel": "取消",
+  "userInfoPhoneHint": "请输入手机号",
+  "userInfoEmailHint": "请输入邮箱",
+  "userInfoSignHint": "请输入签名",
   "kickedOff": "您已被踢下线",
   "textSafetyNotice": "文本安全提示",
-  "enableCloudMessageSearch": "云端消息搜索"
+  "enableCloudMessageSearch": "云端消息搜索",
+  "labelYes": "是",
+  "labelNo": "否"
 }

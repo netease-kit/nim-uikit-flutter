@@ -36,8 +36,9 @@ class AitServer {
       // 不为空代表进入会话页面，清除当前会话的@消息
       if (chatSession?.conversationId != null) {
         clearAitMessage(chatSession!.conversationId);
-        _onSessionAitUpdated
-            .add(AitSession(chatSession.conversationId, isAit: false));
+        _onSessionAitUpdated.add(
+          AitSession(chatSession.conversationId, isAit: false),
+        );
       }
     });
 
@@ -54,16 +55,24 @@ class AitServer {
           }
           var aitMap = remoteExtension?[ChatMessage.keyAitMsg] as Map?;
           if (aitMap != null) {
-            final aitContact =
-                AitContactsModel.fromMap(aitMap.cast<String, dynamic>());
+            final aitContact = AitContactsModel.fromMap(
+              aitMap.cast<String, dynamic>(),
+            );
             final myId = getIt<IMLoginService>().userInfo?.accountId ?? "";
             if (aitContact.isUserBeAit(myId)) {
               DatabaseHelper.instance
                   .insertAitMessage(
-                      message.conversationId!, message.messageClientId!, myId)
+                message.conversationId!,
+                message.messageClientId!,
+                myId,
+              )
                   .then((value) {
-                _onSessionAitUpdated.add(AitSession(message.conversationId!,
-                    messageId: message.messageClientId!));
+                _onSessionAitUpdated.add(
+                  AitSession(
+                    message.conversationId!,
+                    messageId: message.messageClientId!,
+                  ),
+                );
               });
             }
           }
@@ -72,8 +81,9 @@ class AitServer {
     });
 
     // 消息撤回
-    NimCore.instance.messageService.onMessageRevokeNotifications
-        .listen((msgRevokeNotifications) {
+    NimCore.instance.messageService.onMessageRevokeNotifications.listen((
+      msgRevokeNotifications,
+    ) {
       for (var messageNotify in msgRevokeNotifications) {
         if (messageNotify.messageRefer?.conversationType ==
             NIMConversationType.team) {
@@ -91,11 +101,18 @@ class AitServer {
             if (conversationId != null &&
                 clientId != null &&
                 aitContact.isUserBeAit(myId)) {
-              _onSessionAitUpdated.add(AitSession(conversationId,
+              _onSessionAitUpdated.add(
+                AitSession(
+                  conversationId,
                   isAit: false,
-                  messageId: messageNotify.messageRefer?.messageClientId));
-              DatabaseHelper.instance
-                  .deleteMessage(conversationId, clientId, myId!);
+                  messageId: messageNotify.messageRefer?.messageClientId,
+                ),
+              );
+              DatabaseHelper.instance.deleteMessage(
+                conversationId,
+                clientId,
+                myId!,
+              );
             }
           }
         }
@@ -112,8 +129,11 @@ class AitServer {
     if (myId == null) {
       return false;
     }
-    return (await DatabaseHelper.instance
-            .insertAitMessage(conversationId, messageId, myId)) >
+    return (await DatabaseHelper.instance.insertAitMessage(
+          conversationId,
+          messageId,
+          myId,
+        )) >
         0;
   }
 
@@ -128,8 +148,10 @@ class AitServer {
 
   /// 获取session是否是ai消息
   Future<bool> isAitConversation(String conversationId, String myId) async {
-    final msgList = await DatabaseHelper.instance
-        .queryMessageIdsBySessionId(conversationId, myId);
+    final msgList = await DatabaseHelper.instance.queryMessageIdsBySessionId(
+      conversationId,
+      myId,
+    );
     return msgList.isNotEmpty;
   }
 

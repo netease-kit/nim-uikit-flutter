@@ -4,6 +4,7 @@
 
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'contact_kit_client_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -181,6 +182,9 @@ class ContactKitClientLocalizationsZh extends ContactKitClientLocalizations {
 
   @override
   String get contactSelectEmptyTip => '请选择联系人';
+
+  @override
+  String get contactSelectedMembers => '已选成员';
 
   @override
   String get contactFriendEmpty => '暂无好友';

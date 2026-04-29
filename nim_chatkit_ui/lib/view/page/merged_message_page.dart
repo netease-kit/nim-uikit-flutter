@@ -3,8 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:netease_common/netease_common.dart';
+import 'package:nim_chatkit/utils/toast_utils.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:nim_chatkit/message/merge_message.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
@@ -24,13 +23,17 @@ class MergedMessagePage extends StatefulWidget {
 
   final ChatKitMessageBuilder? messageBuilder;
 
-  const MergedMessagePage(
-      {Key? key,
-      required this.mergedMessage,
-      required this.message,
-      this.chatUIConfig,
-      this.messageBuilder})
-      : super(key: key);
+  /// 是否在 Dialog 中展示（桌面端/Web 端）
+  final bool isDialog;
+
+  const MergedMessagePage({
+    Key? key,
+    required this.mergedMessage,
+    required this.message,
+    this.chatUIConfig,
+    this.messageBuilder,
+    this.isDialog = false,
+  }) : super(key: key);
 
   @override
   _MergedMessagePageState createState() => _MergedMessagePageState();
@@ -53,42 +56,68 @@ class _MergedMessagePageState extends State<MergedMessagePage> {
         });
       } else {
         Alog.e(
-            tag: 'MergedMessagePage',
-            content:
-                'getMessagesFromMergedMessage error: ${value.errorDetails}');
-        Fluttertoast.showToast(msg: S.of(context).chatMessageInfoError);
-        Navigator.pop(context);
+          tag: 'MergedMessagePage',
+          content: 'getMessagesFromMergedMessage error: ${value.errorDetails}',
+        );
+        ChatUIToast.show(S.of(context).chatMessageInfoError, context: context);
+        if (mounted) {
+          Navigator.pop(context);
+        }
       }
     });
     super.initState();
   }
 
+  Widget _buildMessageList() {
+    return Container(
+      color: Colors.white,
+      constraints: BoxConstraints.expand(),
+      child: ListView.builder(
+        itemCount: messages.length,
+        shrinkWrap: true,
+        itemBuilder: (context, index) {
+          var msg = messages[index];
+          var lastTime = index > 0 ? messages[index - 1].createTime : null;
+          return ChatKitMergedMessageItem(
+            message: msg,
+            chatTitle: widget.mergedMessage.sessionName,
+            lastMessageTime: lastTime,
+            chatUIConfig: chatUIConfig,
+            messageBuilder:
+                widget.messageBuilder ?? chatUIConfig?.messageBuilder,
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return TransparentScaffold(
-        centerTitle: true,
-        title: S.of(context).chatMessageChatHistory,
-        elevation: 0.5,
-        appBarBackgroundColor: Colors.white,
-        body: Container(
-          color: Colors.white,
-          constraints: BoxConstraints.expand(),
-          child: ListView.builder(
-            itemCount: messages.length,
-            shrinkWrap: true,
-            itemBuilder: (context, index) {
-              var msg = messages[index];
-              var lastTime = index > 0 ? messages[index - 1].createTime : null;
-              return ChatKitMergedMessageItem(
-                message: msg,
-                chatTitle: widget.mergedMessage.sessionName,
-                lastMessageTime: lastTime,
-                chatUIConfig: chatUIConfig,
-                messageBuilder:
-                    widget.messageBuilder ?? chatUIConfig?.messageBuilder,
-              );
-            },
+    if (widget.isDialog) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text(S.of(context).chatMessageChatHistory),
+            centerTitle: true,
+            elevation: 0.5,
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            leading: IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.pop(context),
+            ),
           ),
-        ));
+          body: _buildMessageList(),
+        ),
+      );
+    }
+    return TransparentScaffold(
+      centerTitle: true,
+      title: S.of(context).chatMessageChatHistory,
+      elevation: 0.5,
+      appBarBackgroundColor: Colors.white,
+      body: _buildMessageList(),
+    );
   }
 }

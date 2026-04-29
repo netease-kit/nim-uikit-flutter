@@ -7,7 +7,7 @@ import 'dart:io';
 
 import 'package:flutter_sound/flutter_sound.dart';
 
-import 'package:fluttertoast/fluttertoast.dart';
+import 'package:nim_chatkit/utils/toast_utils.dart';
 import 'package:netease_common/netease_common.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:flutter/gestures.dart';
@@ -23,12 +23,12 @@ import '../../l10n/S.dart';
 import '../../view_model/chat_view_model.dart';
 
 class RecordPanel extends StatefulWidget {
-  const RecordPanel(
-      {Key? key,
-      required this.onPressedDown,
-      required this.onEnd,
-      required this.onCancel})
-      : super(key: key);
+  const RecordPanel({
+    Key? key,
+    required this.onPressedDown,
+    required this.onEnd,
+    required this.onCancel,
+  }) : super(key: key);
 
   final VoidCallback onPressedDown;
   final VoidCallback onEnd;
@@ -58,11 +58,11 @@ class _RecordPanelState extends State<RecordPanel> {
 
   void buildOverlay(BuildContext context) {
     if (_overlayEntry == null) {
-      _overlayEntry = OverlayEntry(builder: (context) {
-        return Container(
-          color: Colors.transparent,
-        );
-      });
+      _overlayEntry = OverlayEntry(
+        builder: (context) {
+          return Container(color: Colors.transparent);
+        },
+      );
       Overlay.of(context).insert(_overlayEntry!);
     }
   }
@@ -82,8 +82,9 @@ class _RecordPanelState extends State<RecordPanel> {
 
   initRecoder() async {
     await recorderModule.openRecorder();
-    await recorderModule
-        .setSubscriptionDuration(const Duration(milliseconds: 10));
+    await recorderModule.setSubscriptionDuration(
+      const Duration(milliseconds: 10),
+    );
   }
 
   /// 开始录音
@@ -129,17 +130,20 @@ class _RecordPanelState extends State<RecordPanel> {
     try {
       await recorderModule.stopRecorder().then((value) {
         Alog.d(
-            tag: 'RecordPanel :',
-            content:
-                'stopRecorder usl: $value duration = $duration sendMessage : $sendMessage');
+          tag: 'RecordPanel :',
+          content:
+              'stopRecorder usl: $value duration = $duration sendMessage : $sendMessage',
+        );
         _state = RecordPlayState.stop;
         if (sendMessage && duration > _minLength) {
-          context
-              .read<ChatViewModel>()
-              .sendAudioMessage(value!, null, duration);
+          context.read<ChatViewModel>().sendAudioMessage(
+                value!,
+                null,
+                duration,
+              );
         }
         if (durationDuje && duration <= _minLength) {
-          Fluttertoast.showToast(msg: S.of(context).chatSpeakTooShort);
+          ChatUIToast.show(S.of(context).chatSpeakTooShort, context: context);
         }
         _cancelRecorderSubscriptions();
       });
@@ -181,7 +185,9 @@ class _RecordPanelState extends State<RecordPanel> {
         Positioned(
           top: 30,
           child: Visibility(
-              visible: _recordOnPressed, child: const RecordButtonWave()),
+            visible: _recordOnPressed,
+            child: const RecordButtonWave(),
+          ),
         ),
         Positioned(
           top: 30,
@@ -230,30 +236,31 @@ class _RecordPanelState extends State<RecordPanel> {
                 child: Container(
                   padding: const EdgeInsets.all(33.5),
                   decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(51.5),
-                      gradient: const LinearGradient(
-                          colors: [Color(0xff6aa1ff), Color(0xff3479ee)])),
+                    borderRadius: BorderRadius.circular(51.5),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xff6aa1ff), Color(0xff3479ee)],
+                    ),
+                  ),
                   child: SvgPicture.asset(
                     'images/ic_record.svg',
                     package: kPackage,
                     width: 36,
                     height: 36,
                     colorFilter: ColorFilter.mode(
-                        _recordOnPressed
-                            ? const Color(0x7fffffff)
-                            : Colors.white,
-                        BlendMode.srcIn),
+                      _recordOnPressed ? const Color(0x7fffffff) : Colors.white,
+                      BlendMode.srcIn,
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(
-                height: 12,
-              ),
+              const SizedBox(height: 12),
               Text(
                 _recordOnPressed ? "" : S.of(context).chatPressedToSpeak,
                 style: const TextStyle(
-                    fontSize: 12, color: CommonColors.color_999999),
-              )
+                  fontSize: 12,
+                  color: CommonColors.color_999999,
+                ),
+              ),
             ],
           ),
         ),
@@ -277,11 +284,14 @@ class _RecordButtonWaveState extends State<RecordButtonWave>
   @override
   void initState() {
     _controller = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1000))
-      ..repeat();
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat();
 
-    _widthAnimation = Tween(begin: 1.0, end: 1.5)
-        .animate(CurvedAnimation(parent: _controller, curve: Curves.ease));
+    _widthAnimation = Tween(
+      begin: 1.0,
+      end: 1.5,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.ease));
 
     super.initState();
   }
@@ -300,8 +310,9 @@ class _RecordButtonWaveState extends State<RecordButtonWave>
         height: 103,
         width: 103,
         decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(51.5),
-            color: const Color(0x4d518ef8)),
+          borderRadius: BorderRadius.circular(51.5),
+          color: const Color(0x4d518ef8),
+        ),
       ),
     );
   }

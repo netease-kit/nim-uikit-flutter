@@ -61,39 +61,63 @@ class ChatKitMessageDetailTextPage extends StatelessWidget {
     if (matches.isNotEmpty) {
       for (final match in matches) {
         if (match.start > preIndex) {
-          spans.addAll(ChatMessageHelper.buildTextSpansWithPhoneAndUrlDetection(
-              context, false, text.substring(preIndex, match.start), preIndex,
+          spans.addAll(
+            ChatMessageHelper.buildTextSpansWithPhoneAndUrlDetection(
+              context,
+              false,
+              text.substring(preIndex, match.start),
+              preIndex,
               end: match.start,
               chatUIConfig: chatUIConfig,
-              remoteExtension: remoteExtension));
+              remoteExtension: remoteExtension,
+            ),
+          );
         }
         var span = ChatMessageHelper.imageSpan(match.group(0));
         if (span != null) {
           spans.add(span);
         } else if (match.group(0)?.isNotEmpty == true) {
-          spans.addAll(ChatMessageHelper.buildTextSpansWithPhoneAndUrlDetection(
-              context, false, match.group(0)!, 0,
-              chatUIConfig: chatUIConfig, remoteExtension: remoteExtension));
+          spans.addAll(
+            ChatMessageHelper.buildTextSpansWithPhoneAndUrlDetection(
+              context,
+              false,
+              match.group(0)!,
+              0,
+              chatUIConfig: chatUIConfig,
+              remoteExtension: remoteExtension,
+            ),
+          );
         }
         preIndex = match.end;
       }
       if (preIndex < text.length) {
-        spans.addAll(ChatMessageHelper.buildTextSpansWithPhoneAndUrlDetection(
-            context, false, text.substring(preIndex, text.length), preIndex,
-            chatUIConfig: chatUIConfig, remoteExtension: remoteExtension));
+        spans.addAll(
+          ChatMessageHelper.buildTextSpansWithPhoneAndUrlDetection(
+            context,
+            false,
+            text.substring(preIndex, text.length),
+            preIndex,
+            chatUIConfig: chatUIConfig,
+            remoteExtension: remoteExtension,
+          ),
+        );
       }
     } else {
-      spans.addAll(ChatMessageHelper.buildTextSpansWithPhoneAndUrlDetection(
-          context, false, text, 0,
-          chatUIConfig: chatUIConfig, remoteExtension: remoteExtension));
+      spans.addAll(
+        ChatMessageHelper.buildTextSpansWithPhoneAndUrlDetection(
+          context,
+          false,
+          text,
+          0,
+          chatUIConfig: chatUIConfig,
+          remoteExtension: remoteExtension,
+        ),
+      );
     }
 
     return SelectableText.rich(
       TextSpan(children: spans),
-      style: TextStyle(
-        fontSize: 16,
-        color: CommonColors.color_333333,
-      ),
+      style: TextStyle(fontSize: 16, color: CommonColors.color_333333),
     );
   }
 }

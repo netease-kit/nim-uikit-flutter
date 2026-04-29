@@ -44,15 +44,16 @@ class ChatSettingViewModel extends ChangeNotifier {
   void _initSetting() {
     accountId = ChatKitUtils.getConversationTargetId(conversationId);
     subscriptions.add(
-        NimCore.instance.userService.onUserProfileChanged.listen((event) async {
-      for (var e in event) {
-        Alog.d(tag: logTag, content: 'onUserProfileChanged ${e.accountId}');
-        if (e.accountId == IMKitClient.account()) {
-          // 个人信息更新，重新拉取置顶AI数字人。因为修改置顶信息在个人信息的扩展字段中保存
-          _loadAIPin();
+      NimCore.instance.userService.onUserProfileChanged.listen((event) async {
+        for (var e in event) {
+          Alog.d(tag: logTag, content: 'onUserProfileChanged ${e.accountId}');
+          if (e.accountId == IMKitClient.account()) {
+            // 个人信息更新，重新拉取置顶AI数字人。因为修改置顶信息在个人信息的扩展字段中保存
+            _loadAIPin();
+          }
         }
-      }
-    }));
+      }),
+    );
     ConversationRepo.getConversation(conversationId).then((conversation) {
       if (conversation.data != null) {
         _isStick = conversation.data!.stickTop;
@@ -77,8 +78,9 @@ class ChatSettingViewModel extends ChangeNotifier {
       _hasPin = true;
       ContactRepo.getUserList([IMKitClient.account()!]).then((value) {
         if (value.isSuccess && value.data != null && value.data!.length > 0) {
-          var userUnpinArray =
-              AIUserManager.instance.getUnpinAIUserList(value.data![0]);
+          var userUnpinArray = AIUserManager.instance.getUnpinAIUserList(
+            value.data![0],
+          );
           if (userUnpinArray.contains(accountId)) {
             _isPin = false;
           } else {

@@ -20,9 +20,11 @@ class ChatKitMessageAudioItem extends StatefulWidget {
 
   final bool showDirection;
 
-  const ChatKitMessageAudioItem(
-      {Key? key, required this.message, this.showDirection = false})
-      : super(key: key);
+  const ChatKitMessageAudioItem({
+    Key? key,
+    required this.message,
+    this.showDirection = false,
+  }) : super(key: key);
 
   @override
   State<StatefulWidget> createState() => ChatKitMessageAudioState();
@@ -33,13 +35,13 @@ class ChatKitMessageAudioState extends State<ChatKitMessageAudioItem>
   final List<String> toAniList = [
     'images/ic_sound_to_1.svg',
     'images/ic_sound_to_2.svg',
-    'images/ic_sound_to_3.svg'
+    'images/ic_sound_to_3.svg',
   ];
 
   final List<String> fromAniList = [
     'images/ic_sound_from_1.svg',
     'images/ic_sound_from_2.svg',
-    'images/ic_sound_from_3.svg'
+    'images/ic_sound_from_3.svg',
   ];
 
   StreamSubscription? _phoneStateSub;
@@ -231,8 +233,12 @@ class ChatKitMessageAudioState extends State<ChatKitMessageAudioItem>
       child: Container(
         width: _getWidth(widget.message),
         color: Color.fromRGBO(0, 0, 0, 0.0),
-        padding:
-            const EdgeInsets.only(left: 16, top: 12, right: 16, bottom: 12),
+        padding: const EdgeInsets.only(
+          left: 16,
+          top: 12,
+          right: 16,
+          bottom: 12,
+        ),
         child: _getAudioUI(widget.message),
       ),
     );

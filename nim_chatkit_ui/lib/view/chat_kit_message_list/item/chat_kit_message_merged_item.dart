@@ -6,8 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/string_utils.dart';
 import 'package:netease_common_ui/widgets/text_untils.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/message/merge_message.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
+import 'package:nim_chatkit_ui/helper/desktop_dialog_helper.dart';
 import 'package:nim_core_v2/nim_core.dart';
 
 import '../../../l10n/S.dart';
@@ -27,14 +29,14 @@ class ChatKitMessageMergedItem extends StatefulWidget {
   ///是否区分不同方向的消息
   final bool diffDirection;
 
-  const ChatKitMessageMergedItem(
-      {Key? key,
-      required this.message,
-      this.chatUIConfig,
-      required this.mergedMessage,
-      this.showMargin = true,
-      this.diffDirection = true})
-      : super(key: key);
+  const ChatKitMessageMergedItem({
+    Key? key,
+    required this.message,
+    this.chatUIConfig,
+    required this.mergedMessage,
+    this.showMargin = true,
+    this.diffDirection = true,
+  }) : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
@@ -53,7 +55,8 @@ class _ChatKitMessageMergedItemState extends State<ChatKitMessageMergedItem> {
     for (int i = 0; i < _mergedMessage.abstracts.length; i++) {
       var abs = _mergedMessage.abstracts[i];
       abstract.write(
-          '${abs.senderNick.subStringWithMaxLength(_maxLengthOfNick)}: ${abs.content}');
+        '${abs.senderNick.subStringWithMaxLength(_maxLengthOfNick)}: ${abs.content}',
+      );
       if (i != _mergedMessage.abstracts.length - 1) {
         abstract.write('\n');
       }
@@ -75,35 +78,61 @@ class _ChatKitMessageMergedItemState extends State<ChatKitMessageMergedItem> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (context) {
-          return MergedMessagePage(
-              mergedMessage: _mergedMessage, message: widget.message);
-        }));
+        if (ChatKitUtils.isDesktopOrWeb) {
+          showDesktopDialog(
+            context,
+            MergedMessagePage(
+              mergedMessage: _mergedMessage,
+              message: widget.message,
+              isDialog: true,
+            ),
+          );
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) {
+                return MergedMessagePage(
+                  mergedMessage: _mergedMessage,
+                  message: widget.message,
+                );
+              },
+            ),
+          );
+        }
       },
-      child: Container(
-        margin: widget.showMargin ? EdgeInsets.all(8) : null,
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: widget.diffDirection
-              ? (isSelf()
-                  ? const BorderRadius.only(
-                      topLeft: Radius.circular(8),
-                      bottomLeft: Radius.circular(8),
-                      bottomRight: Radius.circular(8))
-                  : const BorderRadius.only(
-                      topRight: Radius.circular(8),
-                      bottomLeft: Radius.circular(8),
-                      bottomRight: Radius.circular(8)))
-              : BorderRadius.circular(8),
-          border: widget.showMargin
-              ? null
-              : Border.all(color: '#E4E9F2'.toColor(), width: 1),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: ChatKitUtils.isDesktopOrWeb
+              ? 360.0
+              : MediaQuery.of(context).size.width * 0.75,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            getSingleMiddleEllipsisText(
+        child: Container(
+          margin: widget.showMargin ? EdgeInsets.all(8) : null,
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: widget.diffDirection
+                ? (isSelf()
+                    ? const BorderRadius.only(
+                        topLeft: Radius.circular(8),
+                        bottomLeft: Radius.circular(8),
+                        bottomRight: Radius.circular(8),
+                      )
+                    : const BorderRadius.only(
+                        topRight: Radius.circular(8),
+                        bottomLeft: Radius.circular(8),
+                        bottomRight: Radius.circular(8),
+                      ))
+                : BorderRadius.circular(8),
+            border: widget.showMargin
+                ? null
+                : Border.all(color: '#E4E9F2'.toColor(), width: 1),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              getSingleMiddleEllipsisText(
                 S
                     .of(context)
                     .chatMessageMergedTitle(_mergedMessage.sessionName),
@@ -113,34 +142,28 @@ class _ChatKitMessageMergedItemState extends State<ChatKitMessageMergedItem> {
                   fontSize: 14,
                   color: Color(0xFF333333),
                   fontWeight: FontWeight.w500,
-                )),
-            SizedBox(
-              height: 4,
-            ),
-            Text(
-              getAbstract(),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 14,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                getAbstract(),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 14, color: '#999999'.toColor()),
+              ),
+              Container(
+                margin: EdgeInsets.symmetric(vertical: 8),
+                height: 0.5,
                 color: '#999999'.toColor(),
               ),
-            ),
-            Container(
-              margin: EdgeInsets.symmetric(vertical: 8),
-              height: 0.5,
-              color: '#999999'.toColor(),
-            ),
-            Text(
-              S.of(context).chatMessageChatHistory,
-              style: TextStyle(
-                fontSize: 12,
-                color: '#999999'.toColor(),
+              Text(
+                S.of(context).chatMessageChatHistory,
+                style: TextStyle(fontSize: 12, color: '#999999'.toColor()),
               ),
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        ), // Container
+      ), // ConstrainedBox
     );
   }
 }

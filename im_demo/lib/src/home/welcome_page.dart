@@ -24,28 +24,23 @@ class WelcomePage extends StatelessWidget {
         child: SafeArea(
           child: Column(
             children: [
-              SvgPicture.asset(
-                'assets/ic_yunxin.svg',
-                width: 120,
-                height: 120,
-              ),
-              SizedBox(
-                height: 8,
-              ),
+              SvgPicture.asset('assets/ic_yunxin.svg', width: 120, height: 120),
+              SizedBox(height: 8),
               Text(
                 S.of(context).appName,
                 style: TextStyle(
-                    fontSize: 24,
-                    color: CommonColors.color_333333,
-                    fontWeight: FontWeight.bold),
+                  fontSize: 24,
+                  color: CommonColors.color_333333,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              SizedBox(
-                height: 8,
-              ),
+              SizedBox(height: 8),
               Text(
                 S.of(context).yunxinDesc,
-                style:
-                    TextStyle(fontSize: 16, color: CommonColors.color_666666),
+                style: TextStyle(
+                  fontSize: 16,
+                  color: CommonColors.color_666666,
+                ),
               ),
               if (showButton)
                 Padding(
@@ -56,7 +51,8 @@ class WelcomePage extends StatelessWidget {
                     height: 50,
                     minWidth: 315,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(8))),
+                      borderRadius: BorderRadius.all(Radius.circular(8)),
+                    ),
                     child: Text(
                       S.of(context).welcomeButton,
                       style: TextStyle(color: Colors.white, fontSize: 15),
@@ -72,12 +68,8 @@ class WelcomePage extends StatelessWidget {
                     width: 21,
                     height: 21,
                   ),
-                  SizedBox(
-                    width: 5,
-                  ),
-                  Text(
-                    S.of(context).yunxinName,
-                  )
+                  SizedBox(width: 5),
+                  Text(S.of(context).yunxinName),
                 ],
               ),
             ],

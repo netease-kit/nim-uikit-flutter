@@ -73,7 +73,9 @@ abstract class TeamKitClientLocalizations {
 
   static TeamKitClientLocalizations? of(BuildContext context) {
     return Localizations.of<TeamKitClientLocalizations>(
-        context, TeamKitClientLocalizations);
+      context,
+      TeamKitClientLocalizations,
+    );
   }
 
   static const LocalizationsDelegate<TeamKitClientLocalizations> delegate =
@@ -100,7 +102,7 @@ abstract class TeamKitClientLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
-    Locale('zh')
+    Locale('zh'),
   ];
 
   /// No description provided for @teamSettingTitle.
@@ -537,7 +539,8 @@ class _TeamKitClientLocalizationsDelegate
   @override
   Future<TeamKitClientLocalizations> load(Locale locale) {
     return SynchronousFuture<TeamKitClientLocalizations>(
-        lookupTeamKitClientLocalizations(locale));
+      lookupTeamKitClientLocalizations(locale),
+    );
   }
 
   @override
@@ -558,8 +561,9 @@ TeamKitClientLocalizations lookupTeamKitClientLocalizations(Locale locale) {
   }
 
   throw FlutterError(
-      'TeamKitClientLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
+    'TeamKitClientLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
 }

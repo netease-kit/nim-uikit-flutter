@@ -23,14 +23,15 @@ class PopMenuAction {
 
   bool Function(bool isVoiceFromSpeaker)? onVoiceSpeakerSwitch;
 
-  PopMenuAction(
-      {this.onMessageCollect,
-      this.onMessageCopy,
-      this.onMessageReply,
-      this.onMessageForward,
-      this.onMessagePin,
-      this.onMessageMultiSelect,
-      this.onMessageDelete,
-      this.onMessageRevoke,
-      this.onVoiceSpeakerSwitch});
+  PopMenuAction({
+    this.onMessageCollect,
+    this.onMessageCopy,
+    this.onMessageReply,
+    this.onMessageForward,
+    this.onMessagePin,
+    this.onMessageMultiSelect,
+    this.onMessageDelete,
+    this.onMessageRevoke,
+    this.onVoiceSpeakerSwitch,
+  });
 }

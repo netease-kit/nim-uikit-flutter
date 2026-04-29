@@ -2,8 +2,6 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-
-
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
 import 'demo_kit_client_localizations.dart';
@@ -37,6 +35,12 @@ class DemoKitClientLocalizationsZh extends DemoKitClientLocalizations {
 
   @override
   String get conversation => '会话列表';
+
+  @override
+  String get tabChat => '会话';
+
+  @override
+  String get desktopWelcomeTitle => '欢迎使用网易云信';
 
   @override
   String get dataIsLoading => '数据加载中...';
@@ -190,7 +194,8 @@ class DemoKitClientLocalizationsZh extends DemoKitClientLocalizations {
   String get settingAndResetTips => '设置成功，重启后生效';
 
   @override
-  String get swindleTips => '仅用于体验云信IM 产品功能，请勿轻信汇款、中奖等涉及钱款的信息，勿轻易拨打陌生电话，谨防上当受骗。';
+  String get swindleTips =>
+      '仅用于体验云信IM 产品功能，请勿轻信汇款、中奖等涉及钱款的信息，勿轻易拨打陌生电话，谨防上当受骗。';
 
   @override
   String get aiStreamMode => 'AI数字人流式输出';
@@ -208,6 +213,18 @@ class DemoKitClientLocalizationsZh extends DemoKitClientLocalizations {
   String get save => '保存';
 
   @override
+  String get cancel => '取消';
+
+  @override
+  String get userInfoPhoneHint => '请输入手机号';
+
+  @override
+  String get userInfoEmailHint => '请输入邮箱';
+
+  @override
+  String get userInfoSignHint => '请输入签名';
+
+  @override
   String get kickedOff => '您已被踢下线';
 
   @override
@@ -215,4 +232,10 @@ class DemoKitClientLocalizationsZh extends DemoKitClientLocalizations {
 
   @override
   String get enableCloudMessageSearch => '云端消息搜索';
+
+  @override
+  String get labelYes => '是';
+
+  @override
+  String get labelNo => '否';
 }

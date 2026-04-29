@@ -62,17 +62,18 @@ class ConversationTitleBarConfig {
   /// Title Bar 标题颜色值
   final Color titleBarTitleColor;
 
-  const ConversationTitleBarConfig(
-      {this.showTitleBar = true,
-      this.showTitleBarLeftIcon = true,
-      this.showTitleBarRightIcon = true,
-      this.showTitleBarRight2Icon = true,
-      this.centerTitle = false,
-      this.titleBarLeftIcon,
-      this.titleBarRightIcon,
-      this.titleBarRight2Icon,
-      this.titleBarTitle,
-      this.titleBarTitleColor = CommonColors.color_333333});
+  const ConversationTitleBarConfig({
+    this.showTitleBar = true,
+    this.showTitleBarLeftIcon = true,
+    this.showTitleBarRightIcon = true,
+    this.showTitleBarRight2Icon = true,
+    this.centerTitle = false,
+    this.titleBarLeftIcon,
+    this.titleBarRightIcon,
+    this.titleBarRight2Icon,
+    this.titleBarTitle,
+    this.titleBarTitleColor = CommonColors.color_333333,
+  });
 }
 
 class ConversationItemConfig {
@@ -118,32 +119,95 @@ class ConversationItemConfig {
   ///是否在删除会话的时候同步删除消息
   final bool clearMessageWhenDeleteSession;
 
-  const ConversationItemConfig(
-      {this.itemTitleColor = CommonColors.color_333333,
-      this.itemTitleSize = 16,
-      this.itemContentColor = CommonColors.color_999999,
-      this.itemContentSize = 13,
-      this.itemDateColor = CommonColors.color_cccccc,
-      this.itemAitTextColor = Colors.red,
-      this.itemDateSize = 12,
-      this.avatarCornerRadius = 21,
-      this.itemClick,
-      this.itemLongClick,
-      this.avatarClick,
-      this.avatarLongClick,
-      this.conversationComparator,
-      this.customItemBuilder,
-      this.lastMessageContentBuilder,
-      this.clearMessageWhenDeleteSession = false});
+  /// 删除会话后的回调，参数为被删除的会话 ID
+  /// 桌面/Web 端可用于在删除当前选中会话时关闭聊天页
+  final void Function(String conversationId)? onDeleteConversation;
+
+  const ConversationItemConfig({
+    this.itemTitleColor = CommonColors.color_333333,
+    this.itemTitleSize = 16,
+    this.itemContentColor = CommonColors.color_999999,
+    this.itemContentSize = 13,
+    this.itemDateColor = CommonColors.color_cccccc,
+    this.itemAitTextColor = Colors.red,
+    this.itemDateSize = 12,
+    this.avatarCornerRadius = 21,
+    this.itemClick,
+    this.itemLongClick,
+    this.avatarClick,
+    this.avatarLongClick,
+    this.conversationComparator,
+    this.customItemBuilder,
+    this.lastMessageContentBuilder,
+    this.clearMessageWhenDeleteSession = false,
+    this.onDeleteConversation,
+  });
+
+  /// 基于当前配置派生一份新配置，仅覆盖显式传入的字段。
+  /// 适用于桌面 Shell 等需要在全局配置之上扩展少量字段的场景。
+  ConversationItemConfig copyWith({
+    Color? itemTitleColor,
+    double? itemTitleSize,
+    Color? itemContentColor,
+    double? itemContentSize,
+    Color? itemDateColor,
+    Color? itemAitTextColor,
+    double? itemDateSize,
+    double? avatarCornerRadius,
+    ConversationItemClick? itemClick,
+    ConversationItemLongClick? itemLongClick,
+    ConversationAvatarClick? avatarClick,
+    ConversationAvatarLongClick? avatarLongClick,
+    Comparator<ConversationInfo>? conversationComparator,
+    ConversationItemBuilder? customItemBuilder,
+    ConversationLastMessageContentBuilder? lastMessageContentBuilder,
+    bool? clearMessageWhenDeleteSession,
+    void Function(String conversationId)? onDeleteConversation,
+  }) {
+    return ConversationItemConfig(
+      itemTitleColor: itemTitleColor ?? this.itemTitleColor,
+      itemTitleSize: itemTitleSize ?? this.itemTitleSize,
+      itemContentColor: itemContentColor ?? this.itemContentColor,
+      itemContentSize: itemContentSize ?? this.itemContentSize,
+      itemDateColor: itemDateColor ?? this.itemDateColor,
+      itemAitTextColor: itemAitTextColor ?? this.itemAitTextColor,
+      itemDateSize: itemDateSize ?? this.itemDateSize,
+      avatarCornerRadius: avatarCornerRadius ?? this.avatarCornerRadius,
+      itemClick: itemClick ?? this.itemClick,
+      itemLongClick: itemLongClick ?? this.itemLongClick,
+      avatarClick: avatarClick ?? this.avatarClick,
+      avatarLongClick: avatarLongClick ?? this.avatarLongClick,
+      conversationComparator:
+          conversationComparator ?? this.conversationComparator,
+      customItemBuilder: customItemBuilder ?? this.customItemBuilder,
+      lastMessageContentBuilder:
+          lastMessageContentBuilder ?? this.lastMessageContentBuilder,
+      clearMessageWhenDeleteSession:
+          clearMessageWhenDeleteSession ?? this.clearMessageWhenDeleteSession,
+      onDeleteConversation: onDeleteConversation ?? this.onDeleteConversation,
+    );
+  }
 }
 
 class ConversationUIConfig {
   final ConversationTitleBarConfig titleBarConfig;
   final ConversationItemConfig itemConfig;
 
-  const ConversationUIConfig(
-      {this.titleBarConfig = const ConversationTitleBarConfig(),
-      this.itemConfig = const ConversationItemConfig()});
+  const ConversationUIConfig({
+    this.titleBarConfig = const ConversationTitleBarConfig(),
+    this.itemConfig = const ConversationItemConfig(),
+  });
+
+  /// 基于当前配置派生一份新配置，仅覆盖显式传入的字段。
+  ConversationUIConfig copyWith({
+    ConversationTitleBarConfig? titleBarConfig,
+    ConversationItemConfig? itemConfig,
+  }) {
+    return ConversationUIConfig(
+      titleBarConfig: titleBarConfig ?? this.titleBarConfig,
+      itemConfig: itemConfig ?? this.itemConfig,
+    );
+  }
 }
 
 class ConversationKitClient {
@@ -163,9 +227,13 @@ class ConversationKitClient {
       RouterConstants.PATH_CONVERSATION_PAGE,
       (context) => ConversationPage(
         config: IMKitRouter.getArgumentFormMap<ConversationUIConfig>(
-            context, 'config'),
+          context,
+          'config',
+        ),
         onUnreadCountChanged: IMKitRouter.getArgumentFormMap<ValueChanged<int>>(
-            context, 'onUnreadCountChanged'),
+          context,
+          'onUnreadCountChanged',
+        ),
       ),
     );
     IMKitRouter.instance.registerRouter(
@@ -173,8 +241,10 @@ class ConversationKitClient {
       (context) => const AddFriendPage(),
     );
 
-    XKitReporter()
-        .register(moduleName: 'ConversationUIKit', moduleVersion: '10.0.0');
+    XKitReporter().register(
+      moduleName: 'ConversationUIKit',
+      moduleVersion: '10.0.0',
+    );
 
     if (IMKitClient.enableAit) {
       //初始化@消息服务

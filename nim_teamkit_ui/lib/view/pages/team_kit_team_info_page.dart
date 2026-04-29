@@ -3,18 +3,18 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/background.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:netease_common_ui/widgets/update_text_info_page.dart';
+import 'package:nim_chatkit/repo/team_repo.dart';
 import 'package:nim_chatkit/service_locator.dart';
 import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
 import 'package:nim_chatkit/services/team/team_provider.dart';
+import 'package:nim_chatkit/utils/toast_utils.dart';
 import 'package:nim_core_v2/nim_core.dart';
-import 'package:nim_chatkit/repo/team_repo.dart';
 import 'package:nim_teamkit_ui/view/pages/team_kit_avatar_editor_page.dart';
 
 import '../../l10n/S.dart';
@@ -24,9 +24,11 @@ class TeamKitTeamInfoPage extends StatefulWidget {
 
   final bool hasPrivilegeToUpdateInfo;
 
-  const TeamKitTeamInfoPage(
-      {Key? key, required this.team, this.hasPrivilegeToUpdateInfo = true})
-      : super(key: key);
+  const TeamKitTeamInfoPage({
+    Key? key,
+    required this.team,
+    this.hasPrivilegeToUpdateInfo = true,
+  }) : super(key: key);
 
   @override
   State<StatefulWidget> createState() => _TeamKitTeamInfoState();
@@ -46,20 +48,26 @@ class _TeamKitTeamInfoState extends State<TeamKitTeamInfoPage> {
     }
 
     if (name.trim().isEmpty) {
-      Fluttertoast.showToast(msg: S.of(context).teamNameMustNotEmpty);
+      ChatUIToast.show(S.of(context).teamNameMustNotEmpty);
       return Future(() => false);
     }
     return TeamRepo.updateTeamName(
-            widget.team.teamId, widget.team.teamType, name)
-        .then((value) {
+      widget.team.teamId,
+      widget.team.teamType,
+      name,
+    ).then((value) {
       _updatedName = name;
       if (!value) {
         if (!NIMChatCache.instance.hasPrivilegeToModify()) {
-          Fluttertoast.showToast(
-              msg: S.of(context).teamPermissionDeny, gravity: ToastGravity.TOP);
+          ChatUIToast.show(
+            S.of(context).teamPermissionDeny,
+            gravity: ToastGravity.TOP,
+          );
         } else {
-          Fluttertoast.showToast(
-              msg: S.of(context).teamSettingFailed, gravity: ToastGravity.TOP);
+          ChatUIToast.show(
+            S.of(context).teamSettingFailed,
+            gravity: ToastGravity.TOP,
+          );
         }
       }
       return value;
@@ -73,14 +81,16 @@ class _TeamKitTeamInfoState extends State<TeamKitTeamInfoPage> {
     }
 
     return TeamRepo.updateTeamIntroduce(
-            widget.team.teamId, widget.team.teamType, introduce)
-        .then((result) {
+      widget.team.teamId,
+      widget.team.teamType,
+      introduce,
+    ).then((result) {
       _updatedIntroduce = introduce;
       if (!result) {
         if (!NIMChatCache.instance.hasPrivilegeToModify()) {
-          Fluttertoast.showToast(msg: S.of(context).teamPermissionDeny);
+          ChatUIToast.show(S.of(context).teamPermissionDeny);
         } else {
-          Fluttertoast.showToast(msg: S.of(context).teamSettingFailed);
+          ChatUIToast.show(S.of(context).teamSettingFailed);
         }
       }
       return result;
@@ -107,14 +117,21 @@ class _TeamKitTeamInfoState extends State<TeamKitTeamInfoPage> {
               InkWell(
                 onTap: () {
                   if (!NIMChatCache.instance.hasPrivilegeToModify()) {
-                    Fluttertoast.showToast(msg: S.of(context).teamNoPermission);
+                    ChatUIToast.show(S.of(context).teamNoPermission);
                     return;
                   }
 
-                  Navigator.push(context, MaterialPageRoute(builder: (context) {
-                    return TeamKitAvatarEditorPage(
-                        team: widget.team, avatar: avatar);
-                  })).then((value) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) {
+                        return TeamKitAvatarEditorPage(
+                          team: widget.team,
+                          avatar: avatar,
+                        );
+                      },
+                    ),
+                  ).then((value) {
                     if (value?.isNotEmpty == true) {
                       setState(() {
                         avatar = value;
@@ -129,10 +146,16 @@ class _TeamKitTeamInfoState extends State<TeamKitTeamInfoPage> {
                       alignment: Alignment.centerLeft,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                            vertical: 14, horizontal: 16),
-                        child: Text(S.of(context).teamIconTitle,
-                            style: TextStyle(
-                                fontSize: 16, color: '#333333'.toColor())),
+                          vertical: 14,
+                          horizontal: 16,
+                        ),
+                        child: Text(
+                          S.of(context).teamIconTitle,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: '#333333'.toColor(),
+                          ),
+                        ),
                       ),
                     ),
                     Align(
@@ -141,58 +164,70 @@ class _TeamKitTeamInfoState extends State<TeamKitTeamInfoPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 14, horizontal: 12),
-                              child: Avatar(
-                                width: 42,
-                                height: 42,
-                                avatar: avatar,
-                                name: widget.team.name,
-                              )),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 14,
+                              horizontal: 12,
+                            ),
+                            child: Avatar(
+                              width: 42,
+                              height: 42,
+                              avatar: avatar,
+                              name: widget.team.name,
+                            ),
+                          ),
                           const Padding(
                             padding: EdgeInsets.only(right: 16),
                             child: Icon(
                               Icons.keyboard_arrow_right_outlined,
                               color: CommonColors.color_999999,
                             ),
-                          )
+                          ),
                         ],
                       ),
-                    )
+                    ),
                   ],
                 ),
               ),
               InkWell(
                 onTap: () {
                   Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => UpdateTextInfoPage(
-                                title: S.of(context).teamNameTitle,
-                                content: _updatedName ?? widget.team.name,
-                                maxLength: 30,
-                                privilege: NIMChatCache.instance
-                                    .hasPrivilegeToModify(),
-                                onSave: _updateName,
-                                leading: Text(
-                                  S.of(context).teamCancel,
-                                  style: const TextStyle(
-                                      fontSize: 16,
-                                      color: CommonColors.color_666666),
-                                ),
-                                sureStr: S.of(context).teamSave,
-                              )));
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => UpdateTextInfoPage(
+                        title: S.of(context).teamNameTitle,
+                        content: _updatedName ?? widget.team.name,
+                        maxLength: 30,
+                        privilege: NIMChatCache.instance.hasPrivilegeToModify(),
+                        onSave: _updateName,
+                        leading: Text(
+                          S.of(context).teamCancel,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: CommonColors.color_666666,
+                          ),
+                        ),
+                        sureStr: S.of(context).teamSave,
+                      ),
+                    ),
+                  );
                 },
                 child: Stack(
                   children: [
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 14, horizontal: 16),
-                          child: Text(S.of(context).teamNameTitle,
-                              style: TextStyle(
-                                  fontSize: 16, color: '#333333'.toColor()))),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 14,
+                          horizontal: 16,
+                        ),
+                        child: Text(
+                          S.of(context).teamNameTitle,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: '#333333'.toColor(),
+                          ),
+                        ),
+                      ),
                     ),
                     Align(
                       alignment: Alignment.centerRight,
@@ -203,7 +238,7 @@ class _TeamKitTeamInfoState extends State<TeamKitTeamInfoPage> {
                           color: CommonColors.color_999999,
                         ),
                       ),
-                    )
+                    ),
                   ],
                 ),
               ),
@@ -211,35 +246,44 @@ class _TeamKitTeamInfoState extends State<TeamKitTeamInfoPage> {
                 InkWell(
                   onTap: () {
                     Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => UpdateTextInfoPage(
-                                  title: S.of(context).teamIntroduceTitle,
-                                  content:
-                                      _updatedIntroduce ?? widget.team.intro,
-                                  maxLength: 100,
-                                  privilege: NIMChatCache.instance
-                                      .hasPrivilegeToModify(),
-                                  onSave: _updateIntroduce,
-                                  leading: Text(
-                                    S.of(context).teamCancel,
-                                    style: const TextStyle(
-                                        fontSize: 16,
-                                        color: CommonColors.color_666666),
-                                  ),
-                                  sureStr: S.of(context).teamSave,
-                                )));
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => UpdateTextInfoPage(
+                          title: S.of(context).teamIntroduceTitle,
+                          content: _updatedIntroduce ?? widget.team.intro,
+                          maxLength: 100,
+                          privilege:
+                              NIMChatCache.instance.hasPrivilegeToModify(),
+                          onSave: _updateIntroduce,
+                          leading: Text(
+                            S.of(context).teamCancel,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: CommonColors.color_666666,
+                            ),
+                          ),
+                          sureStr: S.of(context).teamSave,
+                        ),
+                      ),
+                    );
                   },
                   child: Stack(
                     children: [
                       Align(
                         alignment: Alignment.centerLeft,
                         child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 14, horizontal: 16),
-                            child: Text(S.of(context).teamIntroduceTitle,
-                                style: TextStyle(
-                                    fontSize: 16, color: '#333333'.toColor()))),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 14,
+                            horizontal: 16,
+                          ),
+                          child: Text(
+                            S.of(context).teamIntroduceTitle,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: '#333333'.toColor(),
+                            ),
+                          ),
+                        ),
                       ),
                       Align(
                         alignment: Alignment.centerRight,
@@ -250,7 +294,7 @@ class _TeamKitTeamInfoState extends State<TeamKitTeamInfoPage> {
                             color: CommonColors.color_999999,
                           ),
                         ),
-                      )
+                      ),
                     ],
                   ),
                 ),

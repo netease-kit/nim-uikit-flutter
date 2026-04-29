@@ -5,20 +5,22 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/repo/config_repo.dart';
 import 'package:nim_chatkit/repo/contact_repo.dart';
+import 'package:nim_chatkit/utils/toast_utils.dart';
 import 'package:nim_core_v2/nim_core.dart';
 
 import '../../l10n/S.dart';
 
 class ValidationMessageViewModel extends ChangeNotifier {
-  List<ValidationFriendMessageMerged> friendAddApplications =
-      List.empty(growable: true);
+  List<ValidationFriendMessageMerged> friendAddApplications = List.empty(
+    growable: true,
+  );
 
-  List<ValidationTeamMessageMerged> teamApplications =
-      List.empty(growable: true);
+  List<ValidationTeamMessageMerged> teamApplications = List.empty(
+    growable: true,
+  );
 
   static const queryMessageLimit = 100;
 
@@ -52,13 +54,22 @@ class ValidationMessageViewModel extends ChangeNotifier {
 
   NIMFriendAddApplication? lastMessage;
 
-  StreamSubscription? _subscription;
+  final List<StreamSubscription> _subscriptions = [];
+  bool _isDisposed = false;
+
+  @override
+  void notifyListeners() {
+    if (_isDisposed) return;
+    super.notifyListeners();
+  }
 
   ///分页请求行通知
   ///如果返回false 表示 需要继续请求
   Future<bool> queryNIMFriendAddApplication({int offset = 0}) {
-    return ContactRepo.getAddApplicationList(queryMessageLimit, offset: offset)
-        .then((value) {
+    return ContactRepo.getAddApplicationList(
+      queryMessageLimit,
+      offset: offset,
+    ).then((value) {
       if (value.isSuccess) {
         int preLen = friendAddApplications.length;
         _setSysMsgExpire(value.data?.infos);
@@ -92,7 +103,8 @@ class ValidationMessageViewModel extends ChangeNotifier {
 
   void queryTeamActions() {
     NimCore.instance.teamService
-        .getTeamJoinActionInfoList(NIMTeamJoinActionInfoQueryOption(limit: 100))
+        .getTeamJoinActionInfoList(
+            NIMTeamJoinActionInfoQueryOption(offset: 0, limit: 100))
         .then((value) {
       if (value.data?.infos != null) {
         _addNewToTeamActions(value.data!.infos!);
@@ -114,8 +126,10 @@ class ValidationMessageViewModel extends ChangeNotifier {
     });
   }
 
-  _addNewToNIMFriendAddApplications(List<NIMFriendAddApplication> newMsg,
-      {bool insertToFirst = false}) {
+  _addNewToNIMFriendAddApplications(
+    List<NIMFriendAddApplication> newMsg, {
+    bool insertToFirst = false,
+  }) {
     newMsg.forEach((msg) {
       var index = -1;
       for (int i = 0; i < friendAddApplications.length; i++) {
@@ -127,10 +141,13 @@ class ValidationMessageViewModel extends ChangeNotifier {
       if (index < 0) {
         if (insertToFirst) {
           friendAddApplications.insert(
-              0, ValidationFriendMessageMerged(lastMsg: msg));
+            0,
+            ValidationFriendMessageMerged(lastMsg: msg),
+          );
         } else {
-          friendAddApplications
-              .add(ValidationFriendMessageMerged(lastMsg: msg));
+          friendAddApplications.add(
+            ValidationFriendMessageMerged(lastMsg: msg),
+          );
         }
       } else if (insertToFirst) {
         var item = friendAddApplications.removeAt(index);
@@ -140,8 +157,10 @@ class ValidationMessageViewModel extends ChangeNotifier {
   }
 
   ///添加新的数据到数据列表
-  _addNewToTeamActions(List<NIMTeamJoinActionInfo> newMsg,
-      {bool insertToFirst = false}) {
+  _addNewToTeamActions(
+    List<NIMTeamJoinActionInfo> newMsg, {
+    bool insertToFirst = false,
+  }) {
     newMsg.forEach((msg) {
       var index = -1;
       for (int i = 0; i < teamApplications.length; i++) {
@@ -164,26 +183,29 @@ class ValidationMessageViewModel extends ChangeNotifier {
   }
 
   void _setMessageNotifyListener() {
-    _subscription =
-        ContactRepo.registerFriendAddApplicationObserver().listen((event) {
+    _subscriptions
+        .add(ContactRepo.registerFriendAddApplicationObserver().listen((
+      event,
+    ) {
       _addNewToNIMFriendAddApplications([event], insertToFirst: true);
       notifyListeners();
-    });
+    }));
 
-    _subscription =
-        ContactRepo.registerFriendAddRejectedObserver().listen((event) {
+    _subscriptions.add(ContactRepo.registerFriendAddRejectedObserver().listen((
+      event,
+    ) {
       if (event.operatorAccountId == IMKitClient.account()) {
         return;
       }
       _addNewToNIMFriendAddApplications([event], insertToFirst: true);
       notifyListeners();
-    });
+    }));
 
-    _subscription = NimCore.instance.teamService.onReceiveTeamJoinActionInfo
+    _subscriptions.add(NimCore.instance.teamService.onReceiveTeamJoinActionInfo
         .listen((event) {
       _addNewToTeamActions([event], insertToFirst: true);
       notifyListeners();
-    });
+    }));
   }
 
   void init() {
@@ -195,7 +217,9 @@ class ValidationMessageViewModel extends ChangeNotifier {
   }
 
   void agreeTeamActions(
-      ValidationTeamMessageMerged mergeMessage, BuildContext context) async {
+    ValidationTeamMessageMerged mergeMessage,
+    BuildContext context,
+  ) async {
     if (mergeMessage.lastMsg.actionStatus ==
         NIMTeamJoinActionStatus.joinActionStatusInit) {
       final message = mergeMessage.lastMsg;
@@ -205,60 +229,68 @@ class ValidationMessageViewModel extends ChangeNotifier {
           NIMTeamJoinActionType.joinActionTypeInvitation) {
         result = await NimCore.instance.teamService.acceptInvitation(message);
       } else {
-        result =
-            await NimCore.instance.teamService.acceptJoinApplication(message);
+        result = await NimCore.instance.teamService.acceptJoinApplication(
+          message,
+        );
       }
 
       if (result.isSuccess == true) {
         _handTeamActionAgree(mergeMessage, context);
       } else if (result.code == teamMemberNotExist) {
         // 该验证消息已在其他端处理
-        Fluttertoast.showToast(msg: S.of(context).verifyMessageHaveBeenHandled);
+        ChatUIToast.show(S.of(context).verifyMessageHaveBeenHandled);
         _handTeamActionExpired(mergeMessage, context);
       } else if (result.code == teamMemberLimitInvited) {
-        Fluttertoast.showToast(msg: S.of(context).teamMemberLimited);
+        ChatUIToast.show(S.of(context).teamMemberLimited);
       } else if (result.code == teamInvitationNotExist) {
-        Fluttertoast.showToast(msg: S.of(context).verifyMessageHaveBeenHandled);
+        ChatUIToast.show(S.of(context).verifyMessageHaveBeenHandled);
         _handTeamActionExpired(mergeMessage, context);
       } else if (result.code == alreadyInTeamCode) {
         _handTeamActionExpired(mergeMessage, context);
-        Fluttertoast.showToast(msg: S.of(context).teamMemberAlreadyExist);
+        ChatUIToast.show(S.of(context).teamMemberAlreadyExist);
       } else if (result.code == teamNotExist) {
         _handTeamActionExpired(mergeMessage, context);
-        Fluttertoast.showToast(msg: S.of(context).teamNotExist);
+        ChatUIToast.show(S.of(context).teamNotExist);
       } else if (result.code == noPermission) {
-        Fluttertoast.showToast(msg: S.of(context).teamVerifyNoPermission);
+        ChatUIToast.show(S.of(context).teamVerifyNoPermission);
       } else {
-        Fluttertoast.showToast(
-            msg: S.of(context).operationFailed(result.code.toString()));
+        ChatUIToast.show(
+          S.of(context).operationFailed(result.code.toString()),
+        );
       }
     }
   }
 
   void agreeUserApplication(
-      ValidationFriendMessageMerged message, BuildContext context) async {
+    ValidationFriendMessageMerged message,
+    BuildContext context,
+  ) async {
     if (message.lastMsg.status ==
             NIMFriendAddApplicationStatus.nimFriendAddApplicationStatusInit &&
         message.lastMsg.applicantAccountId?.isNotEmpty == true) {
-      NIMResult<void> result =
-          await ContactRepo.acceptAddApplication(message.lastMsg);
+      NIMResult<void> result = await ContactRepo.acceptAddApplication(
+        message.lastMsg,
+      );
 
       if (result.isSuccess == true) {
         _handUserApplicationAgree(message, context);
       } else if (result.code == resInvalid) {
         // 该验证消息已在其他端处理
-        Fluttertoast.showToast(msg: S.of(context).verifyMessageHaveBeenHandled);
+        ChatUIToast.show(S.of(context).verifyMessageHaveBeenHandled);
         _handUserApplicationAgree(message, context);
       } else {
-        Fluttertoast.showToast(
-            msg: S.of(context).operationFailed(result.code.toString()));
+        ChatUIToast.show(
+          S.of(context).operationFailed(result.code.toString()),
+        );
       }
     }
   }
 
   ///处理群申请过期
   void _handTeamActionExpired(
-      ValidationTeamMessageMerged messageMerged, BuildContext context) {
+    ValidationTeamMessageMerged messageMerged,
+    BuildContext context,
+  ) {
     var message = messageMerged.lastMsg;
     var index = teamApplications.indexWhere((e) => e.isSameMessage(message));
     if (index >= 0) {
@@ -284,7 +316,9 @@ class ValidationMessageViewModel extends ChangeNotifier {
   }
 
   void _handTeamActionAgree(
-      ValidationTeamMessageMerged messageMerged, BuildContext context) {
+    ValidationTeamMessageMerged messageMerged,
+    BuildContext context,
+  ) {
     var message = messageMerged.lastMsg;
     var index = teamApplications.indexWhere((e) => e.isSameMessage(message));
     if (index >= 0) {
@@ -310,13 +344,16 @@ class ValidationMessageViewModel extends ChangeNotifier {
   }
 
   void _handUserApplicationAgree(
-      ValidationFriendMessageMerged messageMerged, BuildContext context) {
+    ValidationFriendMessageMerged messageMerged,
+    BuildContext context,
+  ) {
     var message = messageMerged.lastMsg;
     if (message.applicantAccountId != null) {
       _sendVerifyMessage(message.applicantAccountId!, context);
     }
-    var index =
-        friendAddApplications.indexWhere((e) => e.isSameMessage(message));
+    var index = friendAddApplications.indexWhere(
+      (e) => e.isSameMessage(message),
+    );
     if (index >= 0) {
       messageMerged.lastMsg.status =
           NIMFriendAddApplicationStatus.nimFriendAddApplicationStatusAgreed;
@@ -342,23 +379,30 @@ class ValidationMessageViewModel extends ChangeNotifier {
   }
 
   void _sendVerifyMessage(String accId, BuildContext context) {
-    MessageCreator.createTextMessage(S.of(context).verifyAgreeMessageText)
-        .then((message) async {
-      if (message.isSuccess && message.data != null) {
-        var conversationId =
-            (await NimCore.instance.conversationIdUtil.p2pConversationId(accId))
-                .data;
-        if (conversationId != null) {
-          NimCore.instance.messageService.sendMessage(
-              message: message.data!, conversationId: conversationId);
+    MessageCreator.createTextMessage(S.of(context).verifyAgreeMessageText).then(
+      (message) async {
+        if (message.isSuccess && message.data != null) {
+          var conversationId =
+              (await NimCore.instance.conversationIdUtil.p2pConversationId(
+            accId,
+          ))
+                  .data;
+          if (conversationId != null) {
+            NimCore.instance.messageService.sendMessage(
+              message: message.data!,
+              conversationId: conversationId,
+            );
+          }
         }
-      }
-    });
+      },
+    );
   }
 
   void rejectAddApplication(
-      ValidationFriendMessageMerged messageMerged, BuildContext context,
-      {String? reason}) async {
+    ValidationFriendMessageMerged messageMerged,
+    BuildContext context, {
+    String? reason,
+  }) async {
     var message = messageMerged.lastMsg;
     if (message.status ==
             NIMFriendAddApplicationStatus.nimFriendAddApplicationStatusInit &&
@@ -368,51 +412,59 @@ class ValidationMessageViewModel extends ChangeNotifier {
         _handleRejectUserApplication(messageMerged);
       } else if (result.code == resInvalid) {
         // 该验证消息已在其他端处理
-        Fluttertoast.showToast(msg: S.of(context).verifyMessageHaveBeenHandled);
+        ChatUIToast.show(S.of(context).verifyMessageHaveBeenHandled);
         _handUserApplicationAgree(messageMerged, context);
       } else {
-        Fluttertoast.showToast(
-            msg: S.of(context).operationFailed(result.code.toString()));
+        ChatUIToast.show(
+          S.of(context).operationFailed(result.code.toString()),
+        );
       }
     }
   }
 
   void rejectTeamAction(
-      ValidationTeamMessageMerged messageMerged, BuildContext context,
-      {String? reason}) async {
+    ValidationTeamMessageMerged messageMerged,
+    BuildContext context, {
+    String? reason,
+  }) async {
     var message = messageMerged.lastMsg;
     if (message.actionStatus == NIMTeamJoinActionStatus.joinActionStatusInit) {
       NIMResult<void> result;
       if (message.actionType ==
           NIMTeamJoinActionType.joinActionTypeInvitation) {
-        result =
-            await NimCore.instance.teamService.rejectInvitation(message, null);
+        result = await NimCore.instance.teamService.rejectInvitation(
+          message,
+          null,
+        );
       } else {
-        result = await NimCore.instance.teamService
-            .rejectJoinApplication(message, null);
+        result = await NimCore.instance.teamService.rejectJoinApplication(
+          message,
+          null,
+        );
       }
       if (result.isSuccess == true) {
         _handleRejectTeamAction(messageMerged);
       } else if (result.code == teamMemberNotExist) {
         // 该验证消息已在其他端处理
-        Fluttertoast.showToast(msg: S.of(context).verifyMessageHaveBeenHandled);
+        ChatUIToast.show(S.of(context).verifyMessageHaveBeenHandled);
         _handTeamActionExpired(messageMerged, context);
       } else if (result.code == teamMemberLimitInvited) {
-        Fluttertoast.showToast(msg: S.of(context).teamMemberLimited);
+        ChatUIToast.show(S.of(context).teamMemberLimited);
       } else if (result.code == teamInvitationNotExist) {
-        Fluttertoast.showToast(msg: S.of(context).verifyMessageHaveBeenHandled);
+        ChatUIToast.show(S.of(context).verifyMessageHaveBeenHandled);
         _handTeamActionExpired(messageMerged, context);
       } else if (result.code == alreadyInTeamCode) {
         _handTeamActionExpired(messageMerged, context);
-        Fluttertoast.showToast(msg: S.of(context).teamMemberAlreadyExist);
+        ChatUIToast.show(S.of(context).teamMemberAlreadyExist);
       } else if (result.code == teamNotExist) {
         _handTeamActionExpired(messageMerged, context);
-        Fluttertoast.showToast(msg: S.of(context).teamNotExist);
+        ChatUIToast.show(S.of(context).teamNotExist);
       } else if (result.code == noPermission) {
-        Fluttertoast.showToast(msg: S.of(context).teamVerifyNoPermission);
+        ChatUIToast.show(S.of(context).teamVerifyNoPermission);
       } else {
-        Fluttertoast.showToast(
-            msg: S.of(context).operationFailed(result.code.toString()));
+        ChatUIToast.show(
+          S.of(context).operationFailed(result.code.toString()),
+        );
       }
     }
   }
@@ -443,10 +495,12 @@ class ValidationMessageViewModel extends ChangeNotifier {
   }
 
   void _handleRejectUserApplication(
-      ValidationFriendMessageMerged messageMerged) {
+    ValidationFriendMessageMerged messageMerged,
+  ) {
     var message = messageMerged.lastMsg;
-    var index =
-        friendAddApplications.indexWhere((e) => e.isSameMessage(message));
+    var index = friendAddApplications.indexWhere(
+      (e) => e.isSameMessage(message),
+    );
     if (index >= 0) {
       messageMerged.lastMsg.status =
           NIMFriendAddApplicationStatus.nimFriendAddApplicationStatusRejected;
@@ -485,8 +539,11 @@ class ValidationMessageViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _isDisposed = true;
+    for (var sub in _subscriptions) {
+      sub.cancel();
+    }
     super.dispose();
-    _subscription?.cancel();
   }
 }
 

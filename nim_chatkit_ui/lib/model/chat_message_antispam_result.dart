@@ -336,9 +336,7 @@ class LanguageDetail {
   LanguageDetail({this.type});
 
   factory LanguageDetail.fromJson(Map<String, dynamic> json) {
-    return LanguageDetail(
-      type: json['type'],
-    );
+    return LanguageDetail(type: json['type']);
   }
 
   Map<String, dynamic> toJson() {

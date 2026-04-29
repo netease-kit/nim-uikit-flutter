@@ -568,6 +568,10 @@
   "chatMessageQuickSearch": "快速搜索聊天消息",
   "chatMessageSearchHistory": "搜索聊天记录",
   "chatQuickSearchTeamMember": "群成员",
+  "chatMemberPickerSearchHint": "搜索成员",
+  "chatMemberPickerEmpty": "暂无成员",
+  "chatMemberRoleOwner": "群主",
+  "chatMemberRoleManager": "管理员",
   "chatQuickSearchPicture": "图片",
   "chatQuickSearchVideo": "视频",
   "chatQuickSearchDate": "日期",
@@ -595,6 +599,18 @@
   "chatDateToday": "今天",
   "chatDateRecent7Days": "最近7天",
   "chatDateRecent30Days": "最近30天",
+  "chatDateRecent3Days": "近三天",
+  "chatDateThisWeek": "本周",
+  "chatDateThisMonth": "本月",
+  "chatDateRecent3Months": "近三个月",
+  "chatDateCustom": "自定义范围",
+  "chatDateStartHint": "开始日期",
+  "chatDateEndHint": "结束日期",
+  "chatDateStart": "开始时间",
+  "chatDateEnd": "结束时间",
+  "chatDateConfirm": "确定",
+  "chatDateCancel": "取消",
+  "chatDatePlaceholder": "--",
   "chatHistoryLoadMore": "加载更多消息",
   "chatHistoryDateFormatMonthDay": "M月d日",
   "chatHistoryDateFormaYearMonthDay": "y年M月d日",
@@ -606,6 +622,10 @@
   "chatHistoryDateFormatHourMine": "HH:mm",
   "chatHistoryMessageNotAnyMore": "没有更多了",
   "chatHistoryOrientation":"定位到聊天",
+  "chatFileDownloadStart": "开始下载",
+  "chatFileContextMenuDownload": "下载",
+  "chatFileContextMenuForward": "转发",
+  "chatFileContextMenuLocate": "定位到聊天",
   "chatCollectionFrom": "来自于{name}",
   "@chatCollectionFrom": {
     "placeholders": {
@@ -627,5 +647,31 @@
   "chatCollectionDeleteConfirm": "删除此收藏？",
   "chatSearchImageMessageEmpty": "暂无图片",
   "chatSearchVideoMessageEmpty": "暂无视频",
-  "chatSearchFileMessageEmpty": "暂无文件"
+  "chatSearchFileMessageEmpty": "暂无文件",
+  "chatMessageDesktopInputHint": "按Enter发送, Shift+Enter换行",
+  "chatCreateGroupTitle": "创建群组",
+  "chatCreateGroupNameLabel": "群名称",
+  "chatCreateGroupNameHint": "请输入群名称",
+  "chatCreateGroupAvatarLabel": "群头像",
+  "chatCreateGroupSelectAvatar": "选择群头像",
+  "chatCreateGroupCancel": "取消",
+  "chatCreateGroupConfirm": "创建",
+  "chatCreateGroupSelectContact": "请选择联系人",
+  "chatCreateGroupSelected": "已选：{count} 位",
+  "@chatCreateGroupSelected": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "chatSearchToday": "今天",
+  "chatSearchLastThreeDays": "近三天",
+  "chatSearchThisWeek": "本周",
+  "chatSearchThisMonth": "本月",
+  "chatSearchLastThreeMonths": "近三个月",
+  "chatSearchCustomDateRange": "自定义",
+  "chatSearchDownload": "下载",
+  "chatSearchForward": "转发",
+  "chatSearchLocateMessage": "定位到原始消息"
 }

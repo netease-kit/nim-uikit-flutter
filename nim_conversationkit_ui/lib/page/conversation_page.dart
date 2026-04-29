@@ -2,31 +2,35 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/base/base_state.dart';
-import 'package:netease_common_ui/ui/avatar.dart';
-import 'package:nim_chatkit/repo/config_repo.dart';
+import 'package:netease_common_ui/widgets/no_network_tip.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
 import 'package:nim_conversationkit_ui/widgets/conversation_list.dart';
 import 'package:nim_conversationkit_ui/widgets/conversation_pop_menu_button.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:netease_common_ui/widgets/no_network_tip.dart';
-import 'package:nim_core_v2/nim_core.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/S.dart';
 import '../view_model/conversation_view_model.dart';
 
 class ConversationPage extends StatefulWidget {
-  const ConversationPage(
-      {Key? key, this.config, this.onUnreadCountChanged, this.topWidget})
-      : super(key: key);
+  const ConversationPage({
+    Key? key,
+    this.config,
+    this.onUnreadCountChanged,
+    this.topWidget,
+    this.selectedConversationId,
+  }) : super(key: key);
 
   final ValueChanged<int>? onUnreadCountChanged;
   final ConversationUIConfig? config;
 
   final Widget? topWidget;
+
+  /// 桌面端：外部传入的当前选中会话 ID，用于同步高亮状态
+  final String? selectedConversationId;
 
   @override
   State<ConversationPage> createState() => _ConversationPageState();
@@ -62,16 +66,15 @@ class _ConversationPageState extends BaseState<ConversationPage> {
                           package: kPackage,
                         ),
                   if (_titleBarConfig.showTitleBarLeftIcon)
-                    const SizedBox(
-                      width: 12,
-                    ),
+                    const SizedBox(width: 12),
                   Text(
                     _titleBarConfig.titleBarTitle ??
                         S.of(context).conversationTitle,
                     style: TextStyle(
-                        fontSize: 20,
-                        color: _titleBarConfig.titleBarTitleColor,
-                        fontWeight: FontWeight.bold),
+                      fontSize: 20,
+                      color: _titleBarConfig.titleBarTitleColor,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -92,13 +95,15 @@ class _ConversationPageState extends BaseState<ConversationPage> {
                       ),
                 if (_titleBarConfig.showTitleBarRightIcon)
                   _titleBarConfig.titleBarRightIcon ??
-                      ConversationPopMenuButton()
+                      ConversationPopMenuButton(),
               ],
             )
           : null,
       body: ChangeNotifierProvider(
-        create: (context) => ConversationViewModel(widget.onUnreadCountChanged,
-            uiConfig.itemConfig.conversationComparator),
+        create: (context) => ConversationViewModel(
+          widget.onUnreadCountChanged,
+          uiConfig.itemConfig.conversationComparator,
+        ),
         builder: (context, child) {
           return Column(
             children: [
@@ -108,8 +113,9 @@ class _ConversationPageState extends BaseState<ConversationPage> {
                 child: ConversationList(
                   config: uiConfig.itemConfig,
                   onUnreadCountChanged: widget.onUnreadCountChanged,
+                  selectedConversationId: widget.selectedConversationId,
                 ),
-              )
+              ),
             ],
           );
         },

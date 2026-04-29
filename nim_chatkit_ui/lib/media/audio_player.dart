@@ -3,8 +3,10 @@
 // found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:nim_chatkit/repo/config_repo.dart';
 import 'package:yunxin_alog/yunxin_alog.dart';
 
@@ -28,34 +30,45 @@ class ChatAudioPlayer {
     _setupSpeaker();
   }
 
+  /// 桌面端（Windows/macOS/Linux）不支持 setAudioContext，跳过设置。
+  static bool get _isMobile =>
+      !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+
   //初始化设置播放器属性
   void _setupSpeaker() async {
+    // setAudioContext 仅 Android/iOS 支持，桌面端跳过
+    if (!_isMobile) return;
     audioContextDefault = await _getAudioContext();
     await AudioPlayer.global.setAudioContext(audioContextDefault!);
   }
 
-  //获取播放器属性
+  //获取播放器属性（仅移动端使用）
   Future<AudioContext> _getAudioContext() async {
     var value = await ConfigRepo.getAudioPlayModel();
     bool isSpeakerphoneOn = value != ConfigRepo.audioPlayEarpiece;
     Alog.d(
-        tag: 'ChatAudioPlayer',
-        content: 'isSpeakerphoneOn is = $isSpeakerphoneOn');
+      tag: 'ChatAudioPlayer',
+      content: 'isSpeakerphoneOn is = $isSpeakerphoneOn',
+    );
     return AudioContext(
-        android: AudioContextAndroid(
-            usageType: isSpeakerphoneOn
-                ? AndroidUsageType.media
-                : AndroidUsageType.voiceCommunication,
-            audioMode: isSpeakerphoneOn
-                ? AndroidAudioMode.normal
-                : AndroidAudioMode.inCommunication,
-            isSpeakerphoneOn: isSpeakerphoneOn),
-        iOS: AudioContextIOS(
-            category: isSpeakerphoneOn
-                ? AVAudioSessionCategory.playback
-                : AVAudioSessionCategory.playAndRecord,
-            options: Set<AVAudioSessionOptions>.from(
-                [AVAudioSessionOptions.mixWithOthers])));
+      android: AudioContextAndroid(
+        usageType: isSpeakerphoneOn
+            ? AndroidUsageType.media
+            : AndroidUsageType.voiceCommunication,
+        audioMode: isSpeakerphoneOn
+            ? AndroidAudioMode.normal
+            : AndroidAudioMode.inCommunication,
+        isSpeakerphoneOn: isSpeakerphoneOn,
+      ),
+      iOS: AudioContextIOS(
+        category: isSpeakerphoneOn
+            ? AVAudioSessionCategory.playback
+            : AVAudioSessionCategory.playAndRecord,
+        options: Set<AVAudioSessionOptions>.from([
+          AVAudioSessionOptions.mixWithOthers,
+        ]),
+      ),
+    );
   }
 
   Future<bool> play(
@@ -85,8 +98,8 @@ class ChatAudioPlayer {
     });
     _subscription?.cancel();
     players.removeWhere((key, value) => key != id);
-    //使用默认的context
-    var audioContext = ctx ?? audioContextDefault;
+    // 桌面端不支持 AudioContext，传 null 避免触发 setAudioContext
+    var audioContext = _isMobile ? (ctx ?? audioContextDefault) : null;
 
     _stopAction = stopAction;
     var audioPlayer = players[id];
@@ -97,12 +110,14 @@ class ChatAudioPlayer {
       }
     });
     return audioPlayer
-        .play(source,
-            volume: volume,
-            balance: balance,
-            ctx: audioContext,
-            position: position,
-            mode: mode)
+        .play(
+          source,
+          volume: volume,
+          balance: balance,
+          ctx: audioContext,
+          position: position,
+          mode: mode,
+        )
         .then((value) => true);
   }
 

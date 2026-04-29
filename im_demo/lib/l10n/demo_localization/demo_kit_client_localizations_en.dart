@@ -2,8 +2,6 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-
-
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
 import 'demo_kit_client_localizations.dart';
@@ -37,6 +35,12 @@ class DemoKitClientLocalizationsEn extends DemoKitClientLocalizations {
 
   @override
   String get conversation => 'conversation';
+
+  @override
+  String get tabChat => 'Chats';
+
+  @override
+  String get desktopWelcomeTitle => 'Welcome to Netease CommsEase';
 
   @override
   String get dataIsLoading => 'Loading...';
@@ -110,7 +114,8 @@ class DemoKitClientLocalizationsEn extends DemoKitClientLocalizations {
   String get mineLogout => 'Logout';
 
   @override
-  String get logoutDialogContent => 'Are you sure to log out of the current login account?';
+  String get logoutDialogContent =>
+      'Are you sure to log out of the current login account?';
 
   @override
   String get logoutDialogAgree => 'YES';
@@ -155,7 +160,8 @@ class DemoKitClientLocalizationsEn extends DemoKitClientLocalizations {
   String get settingNotifyPushSync => 'Receive pushes synchronously on PC/Web';
 
   @override
-  String get settingNotifyPushDetail => 'Notification bar does not show message details';
+  String get settingNotifyPushDetail =>
+      'Notification bar does not show message details';
 
   @override
   String get clearMessage => 'Clear all chat history';
@@ -187,10 +193,12 @@ class DemoKitClientLocalizationsEn extends DemoKitClientLocalizations {
   String get localConversation => 'Local Conversation';
 
   @override
-  String get settingAndResetTips => 'The setting succeeds and takes effect after the restart';
+  String get settingAndResetTips =>
+      'The setting succeeds and takes effect after the restart';
 
   @override
-  String get swindleTips => 'For test only. Beware of money transfer, lottery winnings & strange call scams.';
+  String get swindleTips =>
+      'For test only. Beware of money transfer, lottery winnings & strange call scams.';
 
   @override
   String get aiStreamMode => 'AI Stream Mode';
@@ -208,6 +216,18 @@ class DemoKitClientLocalizationsEn extends DemoKitClientLocalizations {
   String get save => 'Save';
 
   @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get userInfoPhoneHint => 'Enter phone number';
+
+  @override
+  String get userInfoEmailHint => 'Enter email';
+
+  @override
+  String get userInfoSignHint => 'Enter signature';
+
+  @override
   String get kickedOff => 'Kicked Off';
 
   @override
@@ -215,4 +235,10 @@ class DemoKitClientLocalizationsEn extends DemoKitClientLocalizations {
 
   @override
   String get enableCloudMessageSearch => 'Search Message From Cloud';
+
+  @override
+  String get labelYes => 'Yes';
+
+  @override
+  String get labelNo => 'No';
 }

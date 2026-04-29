@@ -5,19 +5,21 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/im_kit_config_center.dart';
 import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit/manager/subscription_manager.dart';
+import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit/repo/contact_repo.dart';
 import 'package:nim_chatkit/repo/conversation_repo.dart';
 import 'package:nim_chatkit/repo/team_repo.dart';
 import 'package:nim_chatkit/service_locator.dart';
 import 'package:nim_chatkit/services/contact/contact_provider.dart';
 import 'package:nim_chatkit/services/login/im_login_service.dart';
+import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
 import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
 import 'package:nim_conversationkit_ui/service/ait/ait_server.dart';
 import 'package:nim_core_v2/nim_core.dart';
@@ -55,8 +57,10 @@ class ConversationViewModel extends ChangeNotifier {
 
   final subscriptions = <StreamSubscription?>[];
 
-  ConversationViewModel(ValueChanged<int>? onUnreadChanged,
-      Comparator<ConversationInfo>? comparator) {
+  ConversationViewModel(
+    ValueChanged<int>? onUnreadChanged,
+    Comparator<ConversationInfo>? comparator,
+  ) {
     this.onUnreadCountChanged = onUnreadChanged;
     if (comparator != null) {
       _comparator = comparator;
@@ -81,8 +85,9 @@ class ConversationViewModel extends ChangeNotifier {
 
   /// 补充会话信息，会话列表中的个人信息和群组信息都在这里填充
   List<ConversationInfo>? convertConversationInfo(
-      List<NIMConversation>? infoList,
-      {bool fillUserInfo = true}) {
+    List<NIMConversation>? infoList, {
+    bool fillUserInfo = true,
+  }) {
     if (infoList == null) {
       return null;
     }
@@ -102,163 +107,188 @@ class ConversationViewModel extends ChangeNotifier {
     queryConversationList();
 
     // 会话列表同步完成（仅保证列表完整性，会话具体信息如 name 需等待其他同步回调）
-    subscriptions.add(ConversationRepo.onSyncFinished().listen((event) {
-      _logI('conversationService onSyncFinished');
-      queryConversationList();
-    }));
+    subscriptions.add(
+      ConversationRepo.onSyncFinished().listen((event) {
+        _logI('conversationService onSyncFinished');
+        queryConversationList();
+      }),
+    );
 
     // 主数据同步完成（包含 P2P 数据，iOS 不包含群信息）
-    subscriptions.add(NimCore.instance.loginService.onDataSync.listen((event) {
-      _logI('loginService onDataSync');
-      if (event.type == NIMDataSyncType.nimDataSyncMain &&
-          event.state == NIMDataSyncState.nimDataSyncStateCompleted) {
-        queryConversationList();
-      }
-    }));
+    subscriptions.add(
+      NimCore.instance.loginService.onDataSync.listen((event) {
+        _logI('loginService onDataSync');
+        if (event.type == NIMDataSyncType.nimDataSyncMain &&
+            event.state == NIMDataSyncState.nimDataSyncStateCompleted) {
+          queryConversationList();
+        }
+      }),
+    );
 
     // 群信息同步完成
-    subscriptions
-        .add(NimCore.instance.teamService.onSyncFinished.listen((event) {
-      _logI('teamService onSyncFinished');
-      if (Platform.isIOS) {
-        queryConversationList();
-      }
-    }));
+    subscriptions.add(
+      NimCore.instance.teamService.onSyncFinished.listen((event) {
+        _logI('teamService onSyncFinished');
+        if (!kIsWeb && Platform.isIOS) {
+          queryConversationList();
+        }
+      }),
+    );
 
     // ios 端处理会话信息不更新的问题
-    if (Platform.isIOS) {
+    if (kIsWeb || !Platform.isAndroid) {
       final contactInfoChange = getIt<ContactProvider>().onContactInfoUpdated;
       if (contactInfoChange != null) {
-        subscriptions.add(contactInfoChange.listen((userInfo) {
-          for (var conversationInfo in conversationList) {
-            var sessionId = ChatKitUtils.getConversationTargetId(
-                conversationInfo.conversation.conversationId);
-            if (sessionId == userInfo.user.accountId) {
-              conversationInfo.conversation.name = userInfo.getName();
-              conversationInfo.conversation.avatar = userInfo.user.avatar;
-              notifyListeners();
-              return;
+        subscriptions.add(
+          contactInfoChange.listen((userInfo) {
+            for (var conversationInfo in conversationList) {
+              var sessionId = ChatKitUtils.getConversationTargetId(
+                conversationInfo.conversation.conversationId,
+              );
+              if (sessionId == userInfo.user.accountId) {
+                conversationInfo.conversation.name = userInfo.getName();
+                conversationInfo.conversation.avatar = userInfo.user.avatar;
+                notifyListeners();
+                return;
+              }
             }
-          }
-        }));
+          }),
+        );
       }
     }
 
     subscriptions.add(
-        NimCore.instance.userService.onUserProfileChanged.listen((event) async {
-      _logI('onUserProfileChanged -->> ${event.length}');
-      for (var e in event) {
-        if (IMKitClient.enableAi && e.accountId == IMKitClient.account()) {
-          // 个人信息更新，重新拉取置顶AI数字人。因为修改置顶信息在个人信息的扩展字段中保存
-          queryTopAIUser();
+      NimCore.instance.userService.onUserProfileChanged.listen((event) async {
+        _logI('onUserProfileChanged -->> ${event.length}');
+        for (var e in event) {
+          if (IMKitClient.enableAi && e.accountId == IMKitClient.account()) {
+            // 个人信息更新，重新拉取置顶AI数字人。因为修改置顶信息在个人信息的扩展字段中保存
+            queryTopAIUser();
+          }
         }
-      }
-    }));
+      }),
+    );
 
     // getIt<MessageProvider>().initListener();
     // change observer
-    subscriptions
-        .add(ConversationRepo.onConversationChanged().listen((event) async {
-      List<ConversationInfo>? result = convertConversationInfo(event);
-      if (result != null) {
-        for (var conversationInfo in result) {
-          _updateItem(conversationInfo);
-          _logI(
-              'changeObserver:onSuccess:update ${conversationInfo.getConversationId()}');
-          // }
+    subscriptions.add(
+      ConversationRepo.onConversationChanged().listen((event) async {
+        List<ConversationInfo>? result = convertConversationInfo(event);
+        if (result != null) {
+          for (var conversationInfo in result) {
+            _updateItem(conversationInfo);
+            _logI(
+              'changeObserver:onSuccess:update ${conversationInfo.getConversationId()}',
+            );
+            // }
+          }
+          doUnreadCallback();
         }
-        doUnreadCallback();
-      }
-    }));
+      }),
+    );
 
     // delete observer
-    subscriptions.add(ConversationRepo.onConversationDeleted().listen((event) {
-      _logI('onConversationDeleted ${event.length}');
-      _deleteItem(event);
-      doUnreadCallback();
-    }));
+    subscriptions.add(
+      ConversationRepo.onConversationDeleted().listen((event) {
+        _logI('onConversationDeleted ${event.length}');
+        _deleteItem(event);
+        doUnreadCallback();
+      }),
+    );
 
     // create observer
-    subscriptions
-        .add(ConversationRepo.onConversationCreated().listen((event) async {
-      _logI('onConversationCreated ${event.conversationId}');
-      if (!(await _isValidConversation(event))) {
-        deleteConversationById(event.conversationId);
-        return;
-      }
-      ConversationInfo conversationInfo = ConversationInfo(event);
-      if (event.type == NIMConversationType.team &&
-          IMKitClient.account() != null) {
-        conversationInfo.haveBeenAit = await AitServer.instance
-            .isAitConversation(event.conversationId, IMKitClient.account()!);
-      }
-      _addItem(conversationInfo);
-      if (event.type == NIMConversationType.p2p) {
-        subscribeP2PUserStatus([conversationInfo]);
-      }
-      doUnreadCallback();
-    }));
+    subscriptions.add(
+      ConversationRepo.onConversationCreated().listen((event) async {
+        _logI('onConversationCreated ${event.conversationId}');
+        if (!(await _isValidConversation(event))) {
+          deleteConversationById(event.conversationId);
+          return;
+        }
+        ConversationInfo conversationInfo = ConversationInfo(event);
+        if (event.type == NIMConversationType.team &&
+            IMKitClient.account() != null) {
+          conversationInfo.haveBeenAit = await AitServer.instance
+              .isAitConversation(event.conversationId, IMKitClient.account()!);
+        }
+        _addItem(conversationInfo);
+        if (event.type == NIMConversationType.p2p) {
+          subscribeP2PUserStatus([conversationInfo]);
+        }
+        doUnreadCallback();
+      }),
+    );
 
     // ait observer
     subscriptions.add(
-        AitServer.instance.onSessionAitUpdated.listen((AitSession? aitSession) {
-      final index = _conversationList.indexWhere(
-          (element) => element.getConversationId() == aitSession?.sessionId);
-      if (index > -1) {
-        _conversationList[index].haveBeenAit = aitSession!.isAit;
-        notifyListeners();
-      }
-    }));
+      AitServer.instance.onSessionAitUpdated.listen((AitSession? aitSession) {
+        final index = _conversationList.indexWhere(
+          (element) => element.getConversationId() == aitSession?.sessionId,
+        );
+        if (index > -1) {
+          _conversationList[index].haveBeenAit = aitSession!.isAit;
+          notifyListeners();
+        }
+      }),
+    );
     // 群解散通知，删除相关群会话
-    subscriptions
-        .add(NimCore.instance.teamService.onTeamDismissed.listen((team) async {
-      var conversationId =
-          (await ConversationIdUtil().teamConversationId(team.teamId)).data;
-      _logI('onTeamDismissed ${team.teamId}');
-      if (IMKitConfigCenter.deleteTeamSessionWhenLeave &&
-          conversationId != null) {
-        deleteConversationById(conversationId);
-      }
-    }));
+    subscriptions.add(
+      NimCore.instance.teamService.onTeamDismissed.listen((team) async {
+        var conversationId = (await ConversationIdUtil().teamConversationId(
+          team.teamId,
+        ))
+            .data;
+        _logI('onTeamDismissed ${team.teamId}');
+        if (IMKitConfigCenter.deleteTeamSessionWhenLeave &&
+            conversationId != null) {
+          deleteConversationById(conversationId);
+        }
+      }),
+    );
 
     // 退群通知，删除相关群会话
     subscriptions.add(
-        NimCore.instance.teamService.onTeamLeft.listen((teamLeftResult) async {
-      var conversationId = (await ConversationIdUtil()
-              .teamConversationId(teamLeftResult.team.teamId))
-          .data;
-      _logI('onTeamLeft ${teamLeftResult.team.teamId}');
-      if (IMKitConfigCenter.deleteTeamSessionWhenLeave &&
-          conversationId != null) {
-        deleteConversationById(conversationId);
-      }
-    }));
-
-    subscriptions.add(NimCore.instance.subscriptionService.onUserStatusChanged
-        .listen((List<NIMUserStatus> userList) {
-      final Map<String, NIMUserStatus> userMap = {};
-      for (final user in userList) {
-        userMap[user.accountId] = user; // 直接以 id 为键，user 对象为值
-      }
-      conversationList.forEach((e) {
-        if (e.conversation.type == NIMConversationType.p2p) {
-          if (userMap.containsKey(e.targetId)) {
-            e.isOnline = userMap[e.targetId]?.statusType == 1;
-          }
+      NimCore.instance.teamService.onTeamLeft.listen((teamLeftResult) async {
+        var conversationId = (await ConversationIdUtil().teamConversationId(
+          teamLeftResult.team.teamId,
+        ))
+            .data;
+        _logI('onTeamLeft ${teamLeftResult.team.teamId}');
+        if (IMKitConfigCenter.deleteTeamSessionWhenLeave &&
+            conversationId != null) {
+          deleteConversationById(conversationId);
         }
-      });
-      notifyListeners();
-    }));
+      }),
+    );
+
+    subscriptions.add(
+      NimCore.instance.subscriptionService.onUserStatusChanged.listen((
+        List<NIMUserStatus> userList,
+      ) {
+        final Map<String, NIMUserStatus> userMap = {};
+        for (final user in userList) {
+          userMap[user.accountId] = user; // 直接以 id 为键，user 对象为值
+        }
+        conversationList.forEach((e) {
+          if (e.conversation.type == NIMConversationType.p2p) {
+            if (userMap.containsKey(e.targetId)) {
+              e.isOnline = userMap[e.targetId]?.statusType == 1;
+            }
+          }
+        });
+        notifyListeners();
+      }),
+    );
 
     // 查询置顶AI数字人列表，数字人配置为置顶，并且当前账号没有取消置顶
     if (IMKitClient.enableAi) {
       _logI('init queryTopAIUser ');
       queryTopAIUser();
       subscriptions.add(
-          AIUserManager.instance.aiUserChanged?.listen((userListData) async {
-        _logI('aiUserChanged size: ${userListData.length}');
-        queryTopAIUser();
-      }));
+        AIUserManager.instance.aiUserChanged?.listen((userListData) async {
+          _logI('aiUserChanged size: ${userListData.length}');
+          queryTopAIUser();
+        }),
+      );
     }
   }
 
@@ -291,8 +321,9 @@ class ConversationViewModel extends ChangeNotifier {
     }
     if (conversation.type == NIMConversationType.team) {
       final team = await TeamRepo.getTeamInfo(
-          ChatKitUtils.getConversationTargetId(conversation.conversationId),
-          NIMTeamType.typeNormal);
+        ChatKitUtils.getConversationTargetId(conversation.conversationId),
+        NIMTeamType.typeNormal,
+      );
       if (team?.isValidTeam != true) {
         return false;
       }
@@ -300,15 +331,35 @@ class ConversationViewModel extends ChangeNotifier {
     return true;
   }
 
+  /// 桌面端/Web端：若该会话当前正处于打开状态，强制清零未读数，并通知 SDK 清除
+  void _clearUnreadIfCurrentSessionOnDesktop(
+      ConversationInfo conversationInfo) {
+    if (!ChatKitUtils.isDesktopOrWeb) return;
+    final currentSession = NIMChatCache.instance.currentChatSession;
+    if (currentSession != null &&
+        currentSession.conversationId == conversationInfo.getConversationId()) {
+      conversationInfo.conversation.unreadCount = 0;
+      ConversationRepo.clearSessionUnreadCount(
+          conversationInfo.getConversationId());
+      _logI(
+        'desktop: clear unread for current session ${conversationInfo.getConversationId()}',
+      );
+    }
+  }
+
   _addItem(ConversationInfo conversationInfo) async {
-    int index = _conversationList
-        .indexWhere((element) => element.isSame(conversationInfo));
+    // 桌面端/Web端：若该会话当前处于打开状态，强制清零未读数
+    _clearUnreadIfCurrentSessionOnDesktop(conversationInfo);
+    int index = _conversationList.indexWhere(
+      (element) => element.isSame(conversationInfo),
+    );
     if (index > -1) {
       if (conversationInfo.getConversationType() == NIMConversationType.team) {
         bool haveBeenAit = _conversationList[index].haveBeenAit;
         if ((conversationInfo.conversation.unreadCount ?? 0) <= 0) {
-          AitServer.instance
-              .clearAitMessage(conversationInfo.getConversationId());
+          AitServer.instance.clearAitMessage(
+            conversationInfo.getConversationId(),
+          );
           haveBeenAit = false;
         }
         if (haveBeenAit) {
@@ -318,7 +369,8 @@ class ConversationViewModel extends ChangeNotifier {
       _conversationList.removeAt(index);
       int insertIndex = _searchComparatorIndex(conversationInfo);
       _logI(
-          'additem insertIndex:$insertIndex unread:${conversationInfo.conversation.unreadCount} haveBeenAit:${conversationInfo.haveBeenAit}');
+        'additem insertIndex:$insertIndex unread:${conversationInfo.conversation.unreadCount} haveBeenAit:${conversationInfo.haveBeenAit}',
+      );
       _conversationList.insert(insertIndex, conversationInfo);
     } else {
       int insertIndex = _searchComparatorIndex(conversationInfo);
@@ -328,14 +380,18 @@ class ConversationViewModel extends ChangeNotifier {
   }
 
   _updateItem(ConversationInfo conversationInfo) async {
-    int index = _conversationList
-        .indexWhere((element) => element.isSame(conversationInfo));
+    // 桌面端/Web端：若该会话当前处于打开状态，强制清零未读数
+    _clearUnreadIfCurrentSessionOnDesktop(conversationInfo);
+    int index = _conversationList.indexWhere(
+      (element) => element.isSame(conversationInfo),
+    );
     if (index > -1) {
       if (conversationInfo.getConversationType() == NIMConversationType.team) {
         bool haveBeenAit = _conversationList[index].haveBeenAit;
         if ((conversationInfo.conversation.unreadCount ?? 0) <= 0) {
-          AitServer.instance
-              .clearAitMessage(conversationInfo.getConversationId());
+          AitServer.instance.clearAitMessage(
+            conversationInfo.getConversationId(),
+          );
           haveBeenAit = false;
         }
         if (haveBeenAit) {
@@ -348,13 +404,15 @@ class ConversationViewModel extends ChangeNotifier {
       _conversationList.removeAt(index);
       int insertIndex = _searchComparatorIndex(conversationInfo);
       _logI(
-          'insertIndex:$insertIndex unread:${conversationInfo.conversation.unreadCount} haveBeenAit:${conversationInfo.haveBeenAit}');
+        'insertIndex:$insertIndex unread:${conversationInfo.conversation.unreadCount} haveBeenAit:${conversationInfo.haveBeenAit}',
+      );
       _conversationList.insert(insertIndex, conversationInfo);
     } else {
       bool isValid = true;
-      if (Platform.isIOS) {
+      if (!kIsWeb && Platform.isIOS) {
         final conversationUpdated = await ConversationRepo.getConversation(
-            conversationInfo.conversation.conversationId);
+          conversationInfo.conversation.conversationId,
+        );
         isValid = conversationUpdated.data != null;
       }
       if (isValid) {
@@ -373,7 +431,8 @@ class ConversationViewModel extends ChangeNotifier {
       // 清除@消息
       AitServer.instance.clearAitMessage(conversationId);
       int index = _conversationList.indexWhere(
-          (element) => element.getConversationId() == conversationId);
+        (element) => element.getConversationId() == conversationId,
+      );
       if (index > -1) {
         _conversationList.removeAt(index);
         notifyListeners();
@@ -388,8 +447,10 @@ class ConversationViewModel extends ChangeNotifier {
       return;
     }
     _isLoading = true;
-    final _resultData =
-        await ConversationRepo.getConversationList(0, pageLimit);
+    final _resultData = await ConversationRepo.getConversationList(
+      0,
+      pageLimit,
+    );
     if (_resultData != null) {
       _offset = _resultData.offset;
       _finished = _resultData.finished;
@@ -437,20 +498,25 @@ class ConversationViewModel extends ChangeNotifier {
 
   void queryConversationNextList() async {
     int offset = _conversationList.length;
-    _logI('queryConversationNextList _isLoading ${offset},${_isLoading},'
-        '${_finished}');
+    _logI(
+      'queryConversationNextList _isLoading ${offset},${_isLoading},'
+      '${_finished}',
+    );
     if (_isLoading || _finished) {
       return;
     }
     _isLoading = true;
-    final _resultData =
-        await ConversationRepo.getConversationList(_offset, pageLimit);
+    final _resultData = await ConversationRepo.getConversationList(
+      _offset,
+      pageLimit,
+    );
     if (_resultData != null) {
       _offset = _resultData.offset;
       _finished = _resultData.finished;
       final myId = IMKitClient.account();
       _logI(
-          'queryConversationNextList ${_offset},${_finished},${_resultData.conversationList?.length}');
+        'queryConversationNextList ${_offset},${_finished},${_resultData.conversationList?.length}',
+      );
 
       if (myId != null) {
         final aitSessionList = await AitServer.instance.getAllAitSession(myId);
@@ -491,8 +557,31 @@ class ConversationViewModel extends ChangeNotifier {
           .where((e) => e.conversation.type == NIMConversationType.p2p)
           .map((e) => e.targetId)
           .toList();
-      SubscriptionManager.instance.subscribeUserStatus(userAccountIds);
+      subscribeUserStatusByIds(userAccountIds);
     }
+  }
+
+  /// 根据用户ID列表订阅在线状态，并立即从缓存恢复已知状态
+  void subscribeUserStatusByIds(List<String> userAccountIds) {
+    SubscriptionManager.instance.subscribeUserStatus(
+      userAccountIds,
+      onCachedStatusAvailable: _applyCachedUserStatus,
+    );
+  }
+
+  /// 将缓存的用户状态应用到会话列表
+  void _applyCachedUserStatus(List<NIMUserStatus> cachedStatuses) {
+    final Map<String, NIMUserStatus> userMap = {};
+    for (final user in cachedStatuses) {
+      userMap[user.accountId] = user;
+    }
+    for (var e in _conversationList) {
+      if (e.conversation.type == NIMConversationType.p2p &&
+          userMap.containsKey(e.targetId)) {
+        e.isOnline = userMap[e.targetId]?.statusType == 1;
+      }
+    }
+    notifyListeners();
   }
 
   bool _isQuerying = false; // 标志位
@@ -509,8 +598,9 @@ class ConversationViewModel extends ChangeNotifier {
       ContactRepo.getUserList([IMKitClient.account()!]).then((value) {
         _isQuerying = false; // 查询结束，重置标志位
         if (value.isSuccess && value.data != null && value.data!.isNotEmpty) {
-          var userUnpinArray =
-              AIUserManager.instance.getUnpinAIUserList(value.data![0]);
+          var userUnpinArray = AIUserManager.instance.getUnpinAIUserList(
+            value.data![0],
+          );
           for (var user in userList) {
             if (!userUnpinArray.contains(user.accountId) &&
                 !_topAIUserList.contains(user.accountId)) {
@@ -534,8 +624,10 @@ class ConversationViewModel extends ChangeNotifier {
   }
 
   ///删除会话
-  void deleteConversation(ConversationInfo conversationInfo,
-      {bool? clearMessageHistory}) async {
+  void deleteConversation(
+    ConversationInfo conversationInfo, {
+    bool? clearMessageHistory,
+  }) async {
     if (!await haveConnectivity()) {
       return;
     }
@@ -543,8 +635,10 @@ class ConversationViewModel extends ChangeNotifier {
   }
 
   ///通过ID 删除会话
-  void deleteConversationById(String conversationId,
-      {bool? clearMessageHistory}) {
+  void deleteConversationById(
+    String conversationId, {
+    bool? clearMessageHistory,
+  }) {
     if (clearMessageHistory == null) {
       clearMessageHistory = ConversationKitClient.instance.conversationUIConfig
           .itemConfig.clearMessageWhenDeleteSession;
@@ -590,12 +684,24 @@ class ConversationViewModel extends ChangeNotifier {
     }
   }
 
+  void muteConversation(ConversationInfo info, bool mute) async {
+    if (await haveConnectivity()) {
+      if (info.conversation.type == NIMConversationType.p2p) {
+        ChatMessageRepo.setNotify(info.targetId, !mute);
+      } else if (info.conversation.type == NIMConversationType.team ||
+          info.conversation.type == NIMConversationType.superTeam) {
+        TeamRepo.updateTeamNotify(info.targetId, mute);
+      }
+    }
+  }
+
   @override
   void dispose() {
     _logI('dispose');
     for (var element in subscriptions) {
       element?.cancel();
     }
+    subscriptions.clear();
     super.dispose();
   }
 }

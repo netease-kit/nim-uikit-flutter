@@ -18,6 +18,7 @@
   },
   "conversationNetworkErrorTip": "The current network is unavailable, please check your network settings.",
   "addFriend": "add friends",
+  "conversationSearchHint": "Search friends or groups",
   "addFriendSearchHint": "Please enter account",
   "addFriendSearchEmptyTips": "This user does not exist",
   "createGroupTeam": "create group team",
@@ -37,5 +38,7 @@
   "joinTeamSearchHint": "Please enter team Id",
   "joinTeamSearchEmptyTips": "This team does not exist",
   "chatMessageBriefVideoCall": "[Video Call]",
-  "chatMessageBriefAudioCall": "[Voice Call]"
+  "chatMessageBriefAudioCall": "[Voice Call]",
+  "muteTitle": "Mute",
+  "cancelMuteTitle": "Unmute"
 }

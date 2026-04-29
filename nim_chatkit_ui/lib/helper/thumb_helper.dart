@@ -12,7 +12,11 @@ class ThumbHelper {
   /// [originH] 图片原始高度
   ///  缩略图url
   static String? makeImageThumbUrl(
-      BuildContext context, String url, int originW, int originH) {
+    BuildContext context,
+    String url,
+    int originW,
+    int originH,
+  ) {
     Thumb thumb = Thumb.Internal;
     if (originH > 0 && originW > 0) {
       int ration =
@@ -101,8 +105,4 @@ class ThumbHelper {
   }
 }
 
-enum Thumb {
-  Internal,
-  Crop,
-  External,
-}
+enum Thumb { Internal, Crop, External }

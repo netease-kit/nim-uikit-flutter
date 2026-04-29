@@ -28,17 +28,17 @@ class ChatKitMessageMultiLineItem extends StatefulWidget {
 
   final bool checkDetailEnable;
 
-  const ChatKitMessageMultiLineItem(
-      {Key? key,
-      required this.message,
-      this.chatUIConfig,
-      this.body,
-      this.needPadding = true,
-      this.checkDetailEnable = false,
-      this.titleMaxLines,
-      this.bodyMaxLines,
-      required this.title})
-      : super(key: key);
+  const ChatKitMessageMultiLineItem({
+    Key? key,
+    required this.message,
+    this.chatUIConfig,
+    this.body,
+    this.needPadding = true,
+    this.checkDetailEnable = false,
+    this.titleMaxLines,
+    this.bodyMaxLines,
+    required this.title,
+  }) : super(key: key);
 
   @override
   State<StatefulWidget> createState() => ChatKitMessageMultiLineState();
@@ -62,39 +62,58 @@ class ChatKitMessageMultiLineState extends State<ChatKitMessageMultiLineItem> {
     if (matches.isNotEmpty) {
       for (final match in matches) {
         if (match.start > preIndex) {
-          spans.addAll(ChatMessageHelper.buildTextSpansWithPhoneAndUrlDetection(
+          spans.addAll(
+            ChatMessageHelper.buildTextSpansWithPhoneAndUrlDetection(
               context,
               widget.message.isSelf ?? false,
               text.substring(preIndex, match.start),
               preIndex,
               end: match.start,
               chatUIConfig: widget.chatUIConfig,
-              remoteExtension: remoteExtension));
+              remoteExtension: remoteExtension,
+            ),
+          );
         }
         var span = ChatMessageHelper.imageSpan(match.group(0));
         if (span != null) {
           spans.add(span);
         } else if (match.group(0)?.isNotEmpty == true) {
-          spans.addAll(ChatMessageHelper.buildTextSpansWithPhoneAndUrlDetection(
-              context, widget.message.isSelf ?? false, match.group(0)!, 0,
+          spans.addAll(
+            ChatMessageHelper.buildTextSpansWithPhoneAndUrlDetection(
+              context,
+              widget.message.isSelf ?? false,
+              match.group(0)!,
+              0,
               chatUIConfig: widget.chatUIConfig,
-              remoteExtension: remoteExtension));
+              remoteExtension: remoteExtension,
+            ),
+          );
         }
         preIndex = match.end;
       }
       if (preIndex < text.length) {
-        spans.addAll(ChatMessageHelper.buildTextSpansWithPhoneAndUrlDetection(
+        spans.addAll(
+          ChatMessageHelper.buildTextSpansWithPhoneAndUrlDetection(
             context,
             widget.message.isSelf ?? false,
             text.substring(preIndex, text.length),
             preIndex,
             chatUIConfig: widget.chatUIConfig,
-            remoteExtension: remoteExtension));
+            remoteExtension: remoteExtension,
+          ),
+        );
       }
     } else {
-      spans.addAll(ChatMessageHelper.buildTextSpansWithPhoneAndUrlDetection(
-          context, widget.message.isSelf ?? false, text, 0,
-          chatUIConfig: widget.chatUIConfig, remoteExtension: remoteExtension));
+      spans.addAll(
+        ChatMessageHelper.buildTextSpansWithPhoneAndUrlDetection(
+          context,
+          widget.message.isSelf ?? false,
+          text,
+          0,
+          chatUIConfig: widget.chatUIConfig,
+          remoteExtension: remoteExtension,
+        ),
+      );
     }
     Widget content = Container(
       //放到里面
@@ -104,20 +123,23 @@ class ChatKitMessageMultiLineState extends State<ChatKitMessageMultiLineItem> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              maxLines: widget.titleMaxLines,
-              overflow:
-                  (widget.titleMaxLines != null) ? TextOverflow.ellipsis : null,
-              style: TextStyle(
-                  fontSize: (widget.message.isSelf == true
-                          ? widget.chatUIConfig?.sendMessageTextSize
-                          : widget.chatUIConfig?.receiveMessageTextSize) ??
-                      16,
-                  color: (widget.message.isSelf == true
-                          ? widget.chatUIConfig?.sendMessageTextColor
-                          : widget.chatUIConfig?.receiveMessageTextColor) ??
-                      CommonColors.color_333333,
-                  fontWeight: FontWeight.w600)),
+          Text(
+            title,
+            maxLines: widget.titleMaxLines,
+            overflow:
+                (widget.titleMaxLines != null) ? TextOverflow.ellipsis : null,
+            style: TextStyle(
+              fontSize: (widget.message.isSelf == true
+                      ? widget.chatUIConfig?.sendMessageTextSize
+                      : widget.chatUIConfig?.receiveMessageTextSize) ??
+                  16,
+              color: (widget.message.isSelf == true
+                      ? widget.chatUIConfig?.sendMessageTextColor
+                      : widget.chatUIConfig?.receiveMessageTextColor) ??
+                  CommonColors.color_333333,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           if (text.isNotEmpty)
             Text.rich(
               TextSpan(children: spans),
@@ -131,13 +153,18 @@ class ChatKitMessageMultiLineState extends State<ChatKitMessageMultiLineItem> {
     if (widget.checkDetailEnable) {
       return GestureDetector(
         onTap: () {
-          Navigator.push(context, MaterialPageRoute(builder: (context) {
-            return ChatKitMessageDetailTextPage(
-              title: widget.title,
-              content: widget.body ?? '',
-              chatUIConfig: widget.chatUIConfig,
-            );
-          }));
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) {
+                return ChatKitMessageDetailTextPage(
+                  title: widget.title,
+                  content: widget.body ?? '',
+                  chatUIConfig: widget.chatUIConfig,
+                );
+              },
+            ),
+          );
         },
         child: content,
       );

@@ -9,10 +9,11 @@ import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit/model/ait/ait_contacts_model.dart';
 import 'package:nim_chatkit/model/ait/ait_msg.dart';
+import 'package:nim_chatkit/model/team_models.dart';
 import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
-import 'package:nim_chatkit/manager/ai_user_manager.dart';
 
 import '../../chat_kit_client.dart';
 import '../../l10n/S.dart';
@@ -24,9 +25,18 @@ class AitManager {
 
   get aitContactsModel => _aitContactsModel;
 
+  /// 暴露 AI 用户列表，供桌面端弹框使用
+  List<AitBean> get aiUserList => _aiUserList ?? [];
+
+  /// 暴露成员列表通知器，供桌面端弹框监听
+  ValueNotifier<List<AitBean>?> get aitMemberList => _aitMemberList;
+
   ScrollController _scrollController = ScrollController();
 
   final String teamId;
+
+  /// 是否为 P2P 单聊场景，P2P 场景下只展示 AI 数字人
+  final bool isP2P;
 
   StreamSubscription? _teamSub;
 
@@ -34,32 +44,53 @@ class AitManager {
 
   List<AitBean>? _aiUserList;
 
-  AitManager(this.teamId) {
+  AitManager(this.teamId, {this.isP2P = false}) {
+    // _aiUserList 只保存 AI 数字人，不混入群成员，防止切换群聊时旧群成员污染新群
     _aiUserList = AIUserManager.instance
         .getAIChatUserList()
         .map((e) => AitBean(aiUser: e))
         .toList();
-    //注意去除AI聊天用户，防止重复这哪行四
-    final teamMembers = NIMChatCache.instance.teamMembers
-        .where((member) => !AIUserManager.instance
-            .isAIChatUserByAccount(member.teamInfo.accountId))
-        .map((e) => AitBean(teamMember: e))
-        .toList();
-    _aiUserList!.addAll(teamMembers);
 
-    _aitMemberList.value = _aiUserList!;
-    _teamSub = NIMChatCache.instance.teamMembersNotifier.listen((event) {
-      List<AitBean> aitList = [];
-      if (_aiUserList?.isNotEmpty == true) {
-        aitList.addAll(_aiUserList!);
-      }
-      aitList.addAll(event
-          .where((member) => !AIUserManager.instance
-              .isAIChatUserByAccount(member.teamInfo.accountId))
-          .map((e) => AitBean(teamMember: e)));
-      _aitMemberList.value = aitList;
-    });
+    if (!isP2P) {
+      // 初始加载：AI用户 + 当前群成员
+      _aitMemberList.value = _buildAitList(NIMChatCache.instance.teamMembers);
+      // 监听群成员变化，动态刷新列表
+      _teamSub = NIMChatCache.instance.teamMembersNotifier.listen((event) {
+        _aitMemberList.value = _buildAitList(event);
+      });
+    } else {
+      // P2P 场景：只展示 AI 数字人，不监听群成员变化
+      _aitMemberList.value = _aiUserList!;
+    }
     _scrollController.addListener(_scrollListener);
+  }
+
+  /// 构建 @ 成员列表：AI用户（始终最新）+ 本次群成员快照（去除已是AI的成员）
+  List<AitBean> _buildAitList(List<UserInfoWithTeam> teamMembers) {
+    final List<AitBean> aitList = [];
+    // 先加 AI 用户（重新从 AIUserManager 获取，确保最新）
+    aitList.addAll(
+      AIUserManager.instance.getAIChatUserList().map((e) => AitBean(aiUser: e)),
+    );
+    // 再加群成员（去除 AI 用户，防止重复）
+    aitList.addAll(
+      teamMembers
+          .where(
+            (member) => !AIUserManager.instance.isAIChatUserByAccount(
+              member.teamInfo.accountId,
+            ),
+          )
+          .map((e) => AitBean(teamMember: e)),
+    );
+    return aitList;
+  }
+
+  /// 刷新成员列表（从当前 NIMChatCache 实时获取），供桌面端弹框显示前调用
+  /// 防止切换会话时初始化读到旧缓存
+  void refreshMemberList() {
+    if (!isP2P) {
+      _aitMemberList.value = _buildAitList(NIMChatCache.instance.teamMembers);
+    }
   }
 
   ///通过@文本添加@用户
@@ -158,83 +189,95 @@ class AitManager {
 
   ///选择@的成员
   Future<dynamic> selectMember(BuildContext context) async {
+    // P2P 场景：无数字人则不弹框，直接返回 null
+    if (isP2P && (_aiUserList == null || _aiUserList!.isEmpty)) {
+      return null;
+    }
     return showModalBottomSheet(
-        context: context,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(8), topRight: Radius.circular(8))),
-        builder: (context) {
-          return ValueListenableBuilder(
-            valueListenable: _aitMemberList,
-            builder:
-                (BuildContext context, List<AitBean>? value, Widget? child) {
-              var _teamMembers = value
-                  ?.where((element) =>
-                      element.getAccountId() != IMKitClient.account())
-                  .toList();
-              return Column(
-                children: [
-                  SizedBox(
-                    height: 48,
-                    child: Stack(
-                      alignment: Alignment.centerLeft,
-                      children: [
-                        IconButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            icon: Icon(
-                              Icons.keyboard_arrow_down_rounded,
-                              color: CommonColors.color_999999,
-                            )),
-                        Align(
-                            alignment: Alignment.center,
-                            child:
-                                Text(S.of(context).chatMessageAitContactTitle))
-                      ],
-                    ),
-                  ),
-                  if (NIMChatCache.instance.haveAitAllPrivilege())
-                    ListTile(
-                      leading: SvgPicture.asset(
-                        'images/ic_team_all.svg',
-                        package: kPackage,
-                        height: 42,
-                        width: 42,
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(8),
+          topRight: Radius.circular(8),
+        ),
+      ),
+      builder: (context) {
+        return ValueListenableBuilder(
+          valueListenable: _aitMemberList,
+          builder: (BuildContext context, List<AitBean>? value, Widget? child) {
+            var _teamMembers = value
+                ?.where(
+                  (element) => element.getAccountId() != IMKitClient.account(),
+                )
+                .toList();
+            return Column(
+              children: [
+                SizedBox(
+                  height: 48,
+                  child: Stack(
+                    alignment: Alignment.centerLeft,
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        icon: Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: CommonColors.color_999999,
+                        ),
                       ),
-                      title: Text(S.of(context).chatTeamAitAll),
-                      onTap: () {
-                        Navigator.pop(context, AitContactsModel.accountAll);
+                      Align(
+                        alignment: Alignment.center,
+                        child: Text(S.of(context).chatMessageAitContactTitle),
+                      ),
+                    ],
+                  ),
+                ),
+                // P2P 单聊不显示"@所有人"
+                if (!isP2P && NIMChatCache.instance.haveAitAllPrivilege())
+                  ListTile(
+                    leading: SvgPicture.asset(
+                      'images/ic_team_all.svg',
+                      package: kPackage,
+                      height: 42,
+                      width: 42,
+                    ),
+                    title: Text(S.of(context).chatTeamAitAll),
+                    onTap: () {
+                      Navigator.pop(context, AitContactsModel.accountAll);
+                    },
+                  ),
+                if (_teamMembers?.isNotEmpty == true)
+                  Expanded(
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      itemCount: _teamMembers!.length,
+                      itemBuilder: (context, index) {
+                        var user = _teamMembers[index];
+                        return ListTile(
+                          leading: Avatar(
+                            avatar: user.getAvatar(),
+                            name: user.getAvatarName(),
+                            height: 42,
+                            width: 42,
+                          ),
+                          title: Text(
+                            user.getName(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          onTap: () {
+                            Navigator.pop(context, user);
+                          },
+                        );
                       },
                     ),
-                  if (_teamMembers?.isNotEmpty == true)
-                    Expanded(
-                        child: ListView.builder(
-                            controller: _scrollController,
-                            itemCount: _teamMembers!.length,
-                            itemBuilder: (context, index) {
-                              var user = _teamMembers[index];
-                              return ListTile(
-                                leading: Avatar(
-                                  avatar: user.getAvatar(),
-                                  name: user.getAvatarName(),
-                                  height: 42,
-                                  width: 42,
-                                ),
-                                title: Text(
-                                  user.getName(),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                onTap: () {
-                                  Navigator.pop(context, user);
-                                },
-                              );
-                            }))
-                ],
-              );
-            },
-          );
-        });
+                  ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 }

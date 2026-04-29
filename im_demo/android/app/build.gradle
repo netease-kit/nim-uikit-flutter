@@ -45,7 +45,7 @@ if (keystorePropertiesFile.exists()) {
 android {
     compileSdkVersion 35
 
-    buildToolsVersion "35.0.0"
+    buildToolsVersion "34.0.0"
 
     namespace 'com.netease.yunxin.app.flutter.im'
 
@@ -102,7 +102,7 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
-            // TODO: Add your own signing config for the debug build.
+            signingConfig signingConfigs.release
         }
     }
 
@@ -134,5 +134,4 @@ dependencies {
     implementation 'com.huawei.hms:push:6.10.0.300'
     implementation "com.huawei.agconnect:agconnect-core:1.7.2.300"
     implementation 'com.netease.yunxin.kit:alog:1.1.1'
-
 }

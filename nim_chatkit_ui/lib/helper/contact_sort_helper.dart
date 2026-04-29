@@ -9,7 +9,8 @@ import '../view_model/chat_forward_view_model.dart';
 
 /// 对好友列表进行自定义排序
 List<SearchResult<ContactInfo>> sortFriends(
-    List<SearchResult<ContactInfo>> friends) {
+  List<SearchResult<ContactInfo>> friends,
+) {
   final sortedFriends = List<SearchResult<ContactInfo>>.from(friends);
 
   sortedFriends.sort((a, b) {
@@ -49,8 +50,11 @@ String _getSortKey(String name) {
   // 判断首字符是否为中文
   if (_isChinese(firstChar)) {
     // 中文转拼音
-    final pinyin = PinyinHelper.getPinyinE(name,
-        separator: '', format: PinyinFormat.WITHOUT_TONE);
+    final pinyin = PinyinHelper.getPinyinE(
+      name,
+      separator: '',
+      format: PinyinFormat.WITHOUT_TONE,
+    );
     return pinyin.toLowerCase();
   } else if (_isLetter(firstChar)) {
     // 英文字母

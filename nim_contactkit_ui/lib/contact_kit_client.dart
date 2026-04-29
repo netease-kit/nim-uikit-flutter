@@ -6,21 +6,27 @@ import 'package:flutter/material.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_corekit/report/xkit_report.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/router/imkit_router.dart';
 import 'package:nim_chatkit/router/imkit_router_constants.dart';
+import 'package:nim_chatkit/router/imkit_router_factory.dart';
 
 import 'l10n/S.dart';
 import 'page/contact_kit_black_list_page.dart';
 import 'page/contact_kit_contact_selector_page.dart';
 import 'page/contact_kit_detail_page.dart';
-import 'page/contact_kit_verify_message_page.dart';
 import 'page/contact_kit_team_list_page.dart';
+import 'page/contact_kit_verify_message_page.dart';
 import 'page/contact_page.dart';
 import 'widgets/contact_kit_contact_list_view.dart';
 
 typedef TopEntranceClick = bool Function(int position, TopListItem data);
 typedef ContactItemClick = bool Function(int position, ContactInfo data);
 typedef ContactItemSelect = void Function(bool select, ContactInfo data);
+
+/// 桌面端通讯录分类选中回调
+/// [categoryIndex] 分类索引: 0=验证消息, 1=黑名单, 2=我的好友, 3=我的群聊, 4=我的数字人
+typedef DesktopContactCategorySelect = void Function(int categoryIndex);
 
 typedef TopListItemBuilder = Widget? Function(TopListItem item);
 typedef ContactItemBuilder = Widget Function(ContactInfo data);
@@ -52,15 +58,16 @@ class ContactTitleBarConfig {
   /// Title Bar 标题颜色值
   final Color titleColor;
 
-  const ContactTitleBarConfig(
-      {this.showTitleBar = true,
-      this.showTitleBarRightIcon = true,
-      this.showTitleBarRight2Icon = true,
-      this.titleBarRightIcon,
-      this.titleBarRight2Icon,
-      this.title,
-      this.centerTitle = false,
-      this.titleColor = CommonColors.color_333333});
+  const ContactTitleBarConfig({
+    this.showTitleBar = true,
+    this.showTitleBarRightIcon = true,
+    this.showTitleBarRight2Icon = true,
+    this.titleBarRightIcon,
+    this.titleBarRight2Icon,
+    this.title,
+    this.centerTitle = false,
+    this.titleColor = CommonColors.color_333333,
+  });
 }
 
 class ContactListConfig {
@@ -75,15 +82,16 @@ class ContactListConfig {
   final double avatarCornerRadius;
   final Color divideLineColor;
 
-  const ContactListConfig(
-      {this.nameTextColor = CommonColors.color_333333,
-      this.nameTextSize = 14,
-      this.indexTextColor = CommonColors.color_b3b7bc,
-      this.indexTextSize = 14,
-      this.showIndexBar,
-      this.showSelector,
-      this.avatarCornerRadius = 18,
-      this.divideLineColor = CommonColors.color_dbe0e8});
+  const ContactListConfig({
+    this.nameTextColor = CommonColors.color_333333,
+    this.nameTextSize = 14,
+    this.indexTextColor = CommonColors.color_b3b7bc,
+    this.indexTextSize = 14,
+    this.showIndexBar,
+    this.showSelector,
+    this.avatarCornerRadius = 18,
+    this.divideLineColor = CommonColors.color_dbe0e8,
+  });
 }
 
 class ContactUIConfig {
@@ -114,16 +122,17 @@ class ContactUIConfig {
   /// 通讯录好友的选择（通讯录列表 isCanSelectMemberItem 字段为true时有效，默认false）
   final ContactItemSelect? contactItemSelect;
 
-  const ContactUIConfig(
-      {this.contactTitleBarConfig = const ContactTitleBarConfig(),
-      this.contactListConfig = const ContactListConfig(),
-      this.showHeader = true,
-      this.headerData,
-      this.topListItemBuilder,
-      this.topEntranceClick,
-      this.contactItemClick,
-      this.contactItemSelect,
-      this.contactItemBuilder});
+  const ContactUIConfig({
+    this.contactTitleBarConfig = const ContactTitleBarConfig(),
+    this.contactListConfig = const ContactListConfig(),
+    this.showHeader = true,
+    this.headerData,
+    this.topListItemBuilder,
+    this.topEntranceClick,
+    this.contactItemClick,
+    this.contactItemSelect,
+    this.contactItemBuilder,
+  });
 }
 
 class ContactKitClient {
@@ -140,21 +149,45 @@ class ContactKitClient {
   static init() {
     // ContactKitClientRepo.init();
     IMKitRouter.instance.registerRouter(
-        RouterConstants.PATH_CONTACT_PAGE, (context) => ContactPage());
+      RouterConstants.PATH_CONTACT_PAGE,
+      (context) => ContactPage(),
+    );
 
     IMKitRouter.instance.registerRouter(
-        RouterConstants.PATH_CONTACT_SELECTOR_PAGE,
-        (context) => ContactKitSelectorPage(
-              mostSelectedCount:
-                  IMKitRouter.getArgumentFormMap<int>(context, 'mostCount'),
-              filterUsers: IMKitRouter.getArgumentFormMap<List<String>>(
-                  context, 'filterUser'),
-              returnContact: IMKitRouter.getArgumentFormMap<bool>(
-                  context, 'returnContact'),
-              includeAIUser: IMKitRouter.getArgumentFormMap<bool>(
-                      context, 'includeAIUser') ??
-                  false,
-            ));
+      RouterConstants.PATH_CONTACT_SELECTOR_PAGE,
+      (context) => ContactKitSelectorPage(
+        mostSelectedCount: IMKitRouter.getArgumentFormMap<int>(
+          context,
+          'mostCount',
+        ),
+        filterUsers: IMKitRouter.getArgumentFormMap<List<String>>(
+          context,
+          'filterUser',
+        ),
+        returnContact: IMKitRouter.getArgumentFormMap<bool>(
+          context,
+          'returnContact',
+        ),
+        includeAIUser:
+            IMKitRouter.getArgumentFormMap<bool>(context, 'includeAIUser') ??
+                false,
+        includeBlackList:
+            IMKitRouter.getArgumentFormMap<bool>(context, 'includeBlackList') ??
+                false,
+        includeSelf:
+            IMKitRouter.getArgumentFormMap<bool>(context, 'includeSelf') ??
+                false,
+        isDialog:
+            IMKitRouter.getArgumentFormMap<bool>(context, 'isDialog') ?? false,
+        isEmbed:
+            IMKitRouter.getArgumentFormMap<bool>(context, 'isEmbed') ?? false,
+        dialogTitle:
+            IMKitRouter.getArgumentFormMap<String>(context, 'dialogTitle'),
+        onSelectionChanged:
+            IMKitRouter.getArgumentFormMap<ValueChanged<List<ContactInfo>>>(
+                context, 'onSelectionChanged'),
+      ),
+    );
 
     IMKitRouter.instance.registerRouter(
       RouterConstants.PATH_USER_INFO_PAGE,
@@ -169,18 +202,34 @@ class ContactKitClient {
     );
 
     IMKitRouter.instance.registerRouter(
-        RouterConstants.PATH_MY_TEAM_PAGE,
-        (context) => ContactKitTeamListPage(
-              selectorModel: IMKitRouter.getArgumentFormMap<bool>(
-                  context, 'selectorModel'),
-            ));
+      RouterConstants.PATH_MY_TEAM_PAGE,
+      (context) => ContactKitTeamListPage(
+        selectorModel: IMKitRouter.getArgumentFormMap<bool>(
+          context,
+          'selectorModel',
+        ),
+      ),
+    );
 
     IMKitRouter.instance.registerRouter(
       RouterConstants.PATH_MY_NOTIFICATION_PAGE,
       (context) => ContactKitSystemNotifyMessagePage(),
     );
 
-    XKitReporter()
-        .register(moduleName: 'ContactUIKit', moduleVersion: '10.3.0');
+    // 桌面/Web 端：注入联系人详情弹框 Builder，使 goToContactDetail 在桌面端自动以 Dialog 展示
+    // 仅桌面/Web 端注册，移动端不注入，保持原有 push 行为
+    if (ChatKitUtils.isDesktopOrWeb) {
+      setDesktopContactDetailBuilder(
+        (accId) => ContactKitDetailPage(
+          accId: accId,
+          isDesktopDialog: true,
+        ),
+      );
+    }
+
+    XKitReporter().register(
+      moduleName: 'ContactUIKit',
+      moduleVersion: '10.3.0',
+    );
   }
 }

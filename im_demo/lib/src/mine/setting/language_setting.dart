@@ -63,7 +63,7 @@ class _LanguageSettingPageState extends State<LanguageSettingPage> {
             saveLanguage();
           },
           child: Text(S.of(context).save),
-        )
+        ),
       ],
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -74,7 +74,9 @@ class _LanguageSettingPageState extends State<LanguageSettingPage> {
               title: Text(
                 S.of(context).languageChinese,
                 style: const TextStyle(
-                    color: CommonColors.color_333333, fontSize: 16),
+                  color: CommonColors.color_333333,
+                  fontSize: 16,
+                ),
               ),
               trailing: Radio<String>(
                 value: languageZh,
@@ -87,9 +89,13 @@ class _LanguageSettingPageState extends State<LanguageSettingPage> {
               ),
             ),
             ListTile(
-              title: Text(S.of(context).languageEnglish,
-                  style: const TextStyle(
-                      color: CommonColors.color_333333, fontSize: 16)),
+              title: Text(
+                S.of(context).languageEnglish,
+                style: const TextStyle(
+                  color: CommonColors.color_333333,
+                  fontSize: 16,
+                ),
+              ),
               trailing: Radio<String>(
                 value: languageEn,
                 groupValue: selectedLanguage,

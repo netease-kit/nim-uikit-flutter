@@ -8,6 +8,8 @@
   "contact": "contact",
   "mine": "mine",
   "conversation": "conversation",
+  "tabChat": "Chats",
+  "desktopWelcomeTitle": "Welcome to Netease CommsEase",
   "dataIsLoading": "Loading...",
   "tabMineAccount": "Account:{account}",
   "@tabMineAccount": {
@@ -77,7 +79,13 @@
   "languageChinese": "中文",
   "languageEnglish": "English",
   "save": "Save",
+  "cancel": "Cancel",
+  "userInfoPhoneHint": "Enter phone number",
+  "userInfoEmailHint": "Enter email",
+  "userInfoSignHint": "Enter signature",
   "kickedOff": "Kicked Off",
   "textSafetyNotice": "Text Safety Notice",
-  "enableCloudMessageSearch": "Search Message From Cloud"
+  "enableCloudMessageSearch": "Search Message From Cloud",
+  "labelYes": "Yes",
+  "labelNo": "No"
 }

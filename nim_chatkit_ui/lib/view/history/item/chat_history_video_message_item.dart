@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/extension.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/extension.dart';
 import 'package:nim_chatkit/repo/chat_service_observer_repo.dart';
 import 'package:nim_chatkit_ui/media/audio_player.dart';
@@ -45,7 +46,6 @@ class _ChatHistoryMessageVideoState extends State<ChatHistoryVideoMessageItem> {
   }
 
   Size _getVideoSize() {
-    // 检查 width 和 height 是否为有效正数
     if (attachment.width != null &&
         attachment.width! > 0 &&
         attachment.height != null &&
@@ -57,47 +57,47 @@ class _ChatHistoryMessageVideoState extends State<ChatHistoryVideoMessageItem> {
       } else {
         rat = attachment.height! / 190;
       }
-      // 再次检查，防止 rat 为 0 导致除法错误
       if (rat == 0) {
         return Size(110, 190);
       }
       return Size(attachment.width! / rat, attachment.height! / rat);
     }
-    // 如果 width 或 height 无效，返回一个默认的安全尺寸
     return Size(110, 190);
   }
 
   Widget _buildLoading() {
     return StreamBuilder<double>(
-        stream: _progress.stream,
-        initialData: 1,
-        builder: (BuildContext context, AsyncSnapshot<double> snapshot) {
-          _log(
-              'buildLoading file downloaded:${widget.message.isFileDownload()}, progress:${snapshot.data}');
-          if (widget.message.isFileDownload() || snapshot.data == 1) {
-            return Container();
-          }
-          return Stack(
-            alignment: Alignment.center,
-            children: [
-              SvgPicture.asset(
-                'images/ic_video_pause_thumb.svg',
-                package: kPackage,
-                width: 13,
-                height: 18,
+      stream: _progress.stream,
+      initialData: 1,
+      builder: (BuildContext context, AsyncSnapshot<double> snapshot) {
+        _log(
+          'buildLoading file downloaded:${widget.message.isFileDownload()}, progress:${snapshot.data}',
+        );
+        if (widget.message.isFileDownload() || snapshot.data == 1) {
+          return Container();
+        }
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            SvgPicture.asset(
+              'images/ic_video_pause_thumb.svg',
+              package: kPackage,
+              width: 13,
+              height: 18,
+            ),
+            SizedBox(
+              width: 42,
+              height: 42,
+              child: CircularProgressIndicator(
+                value: snapshot.data,
+                color: Colors.white,
+                backgroundColor: const Color(0x4d000000),
               ),
-              SizedBox(
-                width: 42,
-                height: 42,
-                child: CircularProgressIndicator(
-                  value: snapshot.data,
-                  color: Colors.white,
-                  backgroundColor: const Color(0x4d000000),
-                ),
-              )
-            ],
-          );
-        });
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _goVideoViewer(String? path) {
@@ -105,19 +105,18 @@ class _ChatHistoryMessageVideoState extends State<ChatHistoryVideoMessageItem> {
     if (attachment.path?.isNotEmpty != true) {
       attachment.path = path;
     }
-
-    //播放视频前停止播放语音消息
     ChatAudioPlayer.instance.stopAll();
-
     Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) => VideoViewer(
-                  message: widget.message,
-                )));
+      context,
+      MaterialPageRoute(
+        builder: (context) => VideoViewer(message: widget.message),
+      ),
+    );
   }
 
   void _videoOnTap() async {
+    // 桌面/Web 端：左键点击无反应
+    if (ChatKitUtils.isDesktopOrWeb) return;
     if (attachment.path?.isNotEmpty == true) {
       _localPath = attachment.path;
     }
@@ -126,11 +125,11 @@ class _ChatHistoryMessageVideoState extends State<ChatHistoryVideoMessageItem> {
       _goVideoViewer(_localPath);
     } else {
       var params = NIMDownloadMessageAttachmentParams(
-          attachment: attachment,
-          type: NIMDownloadAttachmentType.nimDownloadAttachmentTypeSource,
-          thumbSize:
-              NIMSize(width: attachment.width, height: attachment.height),
-          messageClientId: widget.message.messageClientId);
+        attachment: attachment,
+        type: NIMDownloadAttachmentType.nimDownloadAttachmentTypeSource,
+        thumbSize: NIMSize(width: attachment.width, height: attachment.height),
+        messageClientId: widget.message.messageClientId,
+      );
       NimCore.instance.storageService.downloadAttachment(params).then((result) {
         if (result.data?.isNotEmpty == true) {
           _localPath = result.data;
@@ -145,13 +144,13 @@ class _ChatHistoryMessageVideoState extends State<ChatHistoryVideoMessageItem> {
   void initState() {
     super.initState();
     _progress = StreamController<double>.broadcast();
-
     _subscriptionMsgDownload =
         ChatServiceObserverRepo.observeAttachmentProgress().listen((event) {
       if (event.downloadParam?.messageClientId ==
           widget.message.messageClientId) {
         _log(
-            'onAttachmentProgress -->> ${event.downloadParam?.messageClientId} : ${event.progress}');
+          'onAttachmentProgress -->> ${event.downloadParam?.messageClientId} : ${event.progress}',
+        );
         if (event.progress != null) {
           _progress.add(event.progress! / 100);
         }
@@ -184,11 +183,7 @@ class _ChatHistoryMessageVideoState extends State<ChatHistoryVideoMessageItem> {
             radius: BorderRadius.zero,
             thumbFromRemote: true,
           ),
-          Positioned.fill(
-            child: Center(
-              child: _buildLoading(),
-            ),
-          ),
+          Positioned.fill(child: Center(child: _buildLoading())),
           Positioned(
             child: Row(
               children: [
@@ -199,14 +194,12 @@ class _ChatHistoryMessageVideoState extends State<ChatHistoryVideoMessageItem> {
                   height: 24,
                 ),
                 if (url.isNotEmpty && attachment.duration != null) ...[
-                  const SizedBox(
-                    width: 4,
-                  ),
+                  const SizedBox(width: 4),
                   Text(
                     _videoDuration(),
                     style: const TextStyle(color: Colors.white, fontSize: 10),
-                  )
-                ]
+                  ),
+                ],
               ],
             ),
             bottom: 4,

@@ -27,15 +27,15 @@ class ChatKitMessageTextItem extends StatefulWidget {
 
   final bool checkDetailEnable;
 
-  const ChatKitMessageTextItem(
-      {Key? key,
-      required this.message,
-      this.chatUIConfig,
-      this.needPadding = true,
-      this.checkDetailEnable = false,
-      this.keyword,
-      this.maxLines})
-      : super(key: key);
+  const ChatKitMessageTextItem({
+    Key? key,
+    required this.message,
+    this.chatUIConfig,
+    this.needPadding = true,
+    this.checkDetailEnable = false,
+    this.keyword,
+    this.maxLines,
+  }) : super(key: key);
 
   @override
   State<StatefulWidget> createState() => ChatKitMessageTextState();
@@ -57,25 +57,28 @@ class ChatKitMessageTextState extends State<ChatKitMessageTextItem> {
           V2NIMMessageAIStreamStatus
               .V2NIM_MESSAGE_AI_STREAM_STATUS_PLACEHOLDER) {
         return Container(
-            // lottie 动画占位
-            padding: widget.needPadding
-                ? const EdgeInsets.only(
-                    left: 16, top: 12, right: 16, bottom: 12)
-                : null,
-            child: Lottie.asset('lottie/ani_ai_stream_holder.json',
-                package: kPackage, width: 24, height: 24));
+          // lottie 动画占位
+          padding: widget.needPadding
+              ? const EdgeInsets.only(left: 16, top: 12, right: 16, bottom: 12)
+              : null,
+          child: Lottie.asset(
+            'lottie/ani_ai_stream_holder.json',
+            package: kPackage,
+            width: 24,
+            height: 24,
+          ),
+        );
       } else {
         return Container(
-            padding: widget.needPadding
-                ? const EdgeInsets.only(
-                    left: 16, top: 12, right: 16, bottom: 12)
-                : null,
-            child: Markdown(
-              data: widget.message.text ?? '',
-              shrinkWrap: true, // 关键：收缩内容高度// 最大行数控制// 溢出处理)),
-              padding: EdgeInsets.all(0.0),
-              physics: ClampingScrollPhysics(), //禁用内部的滚动
-            ));
+          padding: widget.needPadding
+              ? const EdgeInsets.only(left: 16, top: 12, right: 16, bottom: 12)
+              : null,
+          child: MarkdownBody(
+            data: widget.message.text ?? '',
+            shrinkWrap: true,
+            fitContent: true,
+          ),
+        );
       }
     }
     final String text = widget.message.text ?? '';
@@ -90,31 +93,54 @@ class ChatKitMessageTextState extends State<ChatKitMessageTextItem> {
     if (matches.isNotEmpty) {
       for (final match in matches) {
         if (match.start > preIndex) {
-          spans.addAll(_buildTextSpans(
-              context, text.substring(preIndex, match.start), preIndex,
+          spans.addAll(
+            _buildTextSpans(
+              context,
+              text.substring(preIndex, match.start),
+              preIndex,
               end: match.start,
               chatUIConfig: widget.chatUIConfig,
-              remoteExtension: remoteExtension));
+              remoteExtension: remoteExtension,
+            ),
+          );
         }
         var span = ChatMessageHelper.imageSpan(match.group(0));
         if (span != null) {
           spans.add(span);
         } else if (match.group(0)?.isNotEmpty == true) {
-          spans.addAll(_buildTextSpans(context, match.group(0)!, 0,
+          spans.addAll(
+            _buildTextSpans(
+              context,
+              match.group(0)!,
+              0,
               chatUIConfig: widget.chatUIConfig,
-              remoteExtension: remoteExtension));
+              remoteExtension: remoteExtension,
+            ),
+          );
         }
         preIndex = match.end;
       }
       if (preIndex < text.length) {
-        spans.addAll(_buildTextSpans(
-            context, text.substring(preIndex, text.length), preIndex,
+        spans.addAll(
+          _buildTextSpans(
+            context,
+            text.substring(preIndex, text.length),
+            preIndex,
             chatUIConfig: widget.chatUIConfig,
-            remoteExtension: remoteExtension));
+            remoteExtension: remoteExtension,
+          ),
+        );
       }
     } else {
-      spans.addAll(_buildTextSpans(context, text, 0,
-          chatUIConfig: widget.chatUIConfig, remoteExtension: remoteExtension));
+      spans.addAll(
+        _buildTextSpans(
+          context,
+          text,
+          0,
+          chatUIConfig: widget.chatUIConfig,
+          remoteExtension: remoteExtension,
+        ),
+      );
     }
     Widget content = Container(
       //放到里面
@@ -132,12 +158,17 @@ class ChatKitMessageTextState extends State<ChatKitMessageTextItem> {
     if (widget.checkDetailEnable) {
       return GestureDetector(
         onTap: () {
-          Navigator.push(context, MaterialPageRoute(builder: (context) {
-            return ChatKitMessageDetailTextPage(
-              content: widget.message.text ?? '',
-              chatUIConfig: widget.chatUIConfig,
-            );
-          }));
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) {
+                return ChatKitMessageDetailTextPage(
+                  content: widget.message.text ?? '',
+                  chatUIConfig: widget.chatUIConfig,
+                );
+              },
+            ),
+          );
         },
         child: content,
       );
@@ -203,8 +234,48 @@ class ChatKitMessageTextState extends State<ChatKitMessageTextItem> {
 
     while (matchIndex != -1) {
       if (matchIndex > currentStartIndex) {
-        result.add(TextSpan(
-          text: text.substring(currentStartIndex, matchIndex),
+        result.add(
+          TextSpan(
+            text: text.substring(currentStartIndex, matchIndex),
+            style: span.style,
+            recognizer: span.recognizer,
+            mouseCursor: span.mouseCursor,
+            onEnter: span.onEnter,
+            onExit: span.onExit,
+            semanticsLabel: span.semanticsLabel,
+            locale: span.locale,
+            spellOut: span.spellOut,
+          ),
+        );
+      }
+
+      // Highlighted part
+      TextStyle highlightStyle = (span.style ?? const TextStyle()).copyWith(
+        color: CommonColors.color_007aff,
+      );
+
+      result.add(
+        TextSpan(
+          text: keyword,
+          style: highlightStyle,
+          recognizer: span.recognizer,
+          mouseCursor: span.mouseCursor,
+          onEnter: span.onEnter,
+          onExit: span.onExit,
+          semanticsLabel: span.semanticsLabel,
+          locale: span.locale,
+          spellOut: span.spellOut,
+        ),
+      );
+
+      currentStartIndex = matchIndex + keyword.length;
+      matchIndex = text.indexOf(keyword, currentStartIndex);
+    }
+
+    if (currentStartIndex < text.length) {
+      result.add(
+        TextSpan(
+          text: text.substring(currentStartIndex),
           style: span.style,
           recognizer: span.recognizer,
           mouseCursor: span.mouseCursor,
@@ -213,41 +284,8 @@ class ChatKitMessageTextState extends State<ChatKitMessageTextItem> {
           semanticsLabel: span.semanticsLabel,
           locale: span.locale,
           spellOut: span.spellOut,
-        ));
-      }
-
-      // Highlighted part
-      TextStyle highlightStyle = (span.style ?? const TextStyle())
-          .copyWith(color: CommonColors.color_007aff);
-
-      result.add(TextSpan(
-        text: keyword,
-        style: highlightStyle,
-        recognizer: span.recognizer,
-        mouseCursor: span.mouseCursor,
-        onEnter: span.onEnter,
-        onExit: span.onExit,
-        semanticsLabel: span.semanticsLabel,
-        locale: span.locale,
-        spellOut: span.spellOut,
-      ));
-
-      currentStartIndex = matchIndex + keyword.length;
-      matchIndex = text.indexOf(keyword, currentStartIndex);
-    }
-
-    if (currentStartIndex < text.length) {
-      result.add(TextSpan(
-        text: text.substring(currentStartIndex),
-        style: span.style,
-        recognizer: span.recognizer,
-        mouseCursor: span.mouseCursor,
-        onEnter: span.onEnter,
-        onExit: span.onExit,
-        semanticsLabel: span.semanticsLabel,
-        locale: span.locale,
-        spellOut: span.spellOut,
-      ));
+        ),
+      );
     }
 
     return result;

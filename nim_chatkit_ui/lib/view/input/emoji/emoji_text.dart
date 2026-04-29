@@ -29,18 +29,19 @@ class EmojiText extends SpecialText {
       }
 
       return EmojiSpan(
-          Image.asset(
-            EmojiUtil.instance.emojiMap[key]!.source,
-            package: kPackage,
-            height: 16,
-            width: 16,
-          ),
-          actualText: key,
-          imageWidth: size,
-          imageHeight: size,
-          start: start!,
-          //fit: BoxFit.fill,
-          margin: const EdgeInsets.all(2));
+        Image.asset(
+          EmojiUtil.instance.emojiMap[key]!.source,
+          package: kPackage,
+          height: 16,
+          width: 16,
+        ),
+        actualText: key,
+        imageWidth: size,
+        imageHeight: size,
+        start: start!,
+        //fit: BoxFit.fill,
+        margin: const EdgeInsets.all(2),
+      );
     }
 
     return TextSpan(text: toString(), style: textStyle);

@@ -25,57 +25,67 @@ class TeamListViewModel extends ChangeNotifier {
 
   void init() {
     fetchTeamList();
-    subscriptions
-        .add(NimCore.instance.teamService.onTeamDismissed.listen((event) {
-      teamList.removeWhere((element) => event.teamId == element.teamId);
-      notifyListeners();
-    }));
+    subscriptions.add(
+      NimCore.instance.teamService.onTeamDismissed.listen((event) {
+        teamList.removeWhere((element) => event.teamId == element.teamId);
+        notifyListeners();
+      }),
+    );
 
-    subscriptions.add(NimCore.instance.teamService.onTeamLeft.listen((event) {
-      teamList.removeWhere((element) => event.team.teamId == element.teamId);
-      notifyListeners();
-    }));
+    subscriptions.add(
+      NimCore.instance.teamService.onTeamLeft.listen((event) {
+        teamList.removeWhere((element) => event.team.teamId == element.teamId);
+        notifyListeners();
+      }),
+    );
 
-    subscriptions
-        .add(NimCore.instance.teamService.onTeamCreated.listen((event) {
-      int index =
-          teamList.indexWhere((element) => element.teamId == event.teamId);
-      if (event.isValidTeam == true) {
-        if (index >= 0) {
-          teamList[index] = event;
-        } else {
-          teamList.insert(0, event);
+    subscriptions.add(
+      NimCore.instance.teamService.onTeamCreated.listen((event) {
+        int index = teamList.indexWhere(
+          (element) => element.teamId == event.teamId,
+        );
+        if (event.isValidTeam == true) {
+          if (index >= 0) {
+            teamList[index] = event;
+          } else {
+            teamList.insert(0, event);
+          }
         }
-      }
-      notifyListeners();
-    }));
+        notifyListeners();
+      }),
+    );
 
-    subscriptions.add(NimCore.instance.teamService.onTeamJoined.listen((event) {
-      int index =
-          teamList.indexWhere((element) => element.teamId == event.teamId);
-      if (event.isValidTeam == true) {
-        if (index >= 0) {
-          teamList[index] = event;
-        } else {
-          teamList.insert(0, event);
+    subscriptions.add(
+      NimCore.instance.teamService.onTeamJoined.listen((event) {
+        int index = teamList.indexWhere(
+          (element) => element.teamId == event.teamId,
+        );
+        if (event.isValidTeam == true) {
+          if (index >= 0) {
+            teamList[index] = event;
+          } else {
+            teamList.insert(0, event);
+          }
         }
-      }
-      notifyListeners();
-    }));
+        notifyListeners();
+      }),
+    );
 
-    subscriptions
-        .add(NimCore.instance.teamService.onTeamInfoUpdated.listen((event) {
-      int index =
-          teamList.indexWhere((element) => element.teamId == event.teamId);
-      if (event.isValidTeam == true) {
-        if (index >= 0) {
-          teamList[index] = event;
-        } else {
-          teamList.insert(0, event);
+    subscriptions.add(
+      NimCore.instance.teamService.onTeamInfoUpdated.listen((event) {
+        int index = teamList.indexWhere(
+          (element) => element.teamId == event.teamId,
+        );
+        if (event.isValidTeam == true) {
+          if (index >= 0) {
+            teamList[index] = event;
+          } else {
+            teamList.insert(0, event);
+          }
         }
-      }
-      notifyListeners();
-    }));
+        notifyListeners();
+      }),
+    );
   }
 
   @override

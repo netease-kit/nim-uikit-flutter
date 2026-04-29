@@ -151,6 +151,7 @@
     }
   },
   "contactSelectEmptyTip": "请选择联系人",
+  "contactSelectedMembers": "已选成员",
   "contactFriendEmpty": "暂无好友",
   "myFriend": "我的好友",
     "aiUsers": "数字人",

@@ -14,10 +14,12 @@ class NeSpecialTextSpanBuilder extends SpecialTextSpanBuilder {
   final bool showAtBackground;
 
   @override
-  SpecialText? createSpecialText(String flag,
-      {TextStyle? textStyle,
-      SpecialTextGestureTapCallback? onTap,
-      int? index}) {
+  SpecialText? createSpecialText(
+    String flag, {
+    TextStyle? textStyle,
+    SpecialTextGestureTapCallback? onTap,
+    int? index,
+  }) {
     if (flag == '') {
       return null;
     }

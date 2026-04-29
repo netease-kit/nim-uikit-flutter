@@ -95,6 +95,9 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
   String get chatMessageVideoSaveFail => 'Failed to save video';
 
   @override
+  String get chatSaveFileDialogTitle => 'Save File';
+
+  @override
   String get chatMessageActionCopy => 'copy';
 
   @override
@@ -792,6 +795,18 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
   String get chatQuickSearchTeamMember => 'Team Member';
 
   @override
+  String get chatMemberPickerSearchHint => 'Search Member';
+
+  @override
+  String get chatMemberPickerEmpty => 'No Member';
+
+  @override
+  String get chatMemberRoleOwner => 'Owner';
+
+  @override
+  String get chatMemberRoleManager => 'Admin';
+
+  @override
   String get chatQuickSearchPicture => 'Picture';
 
   @override
@@ -823,7 +838,43 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
   String get chatDateRecent7Days => 'Last 7 days';
 
   @override
+  String get chatDateRecent3Days => 'Last 3 days';
+
+  @override
+  String get chatDateThisWeek => 'This week';
+
+  @override
+  String get chatDateThisMonth => 'This month';
+
+  @override
+  String get chatDateRecent3Months => 'Last 3 months';
+
+  @override
+  String get chatDateCustom => 'Custom range';
+
+  @override
+  String get chatDateStartHint => 'Start date';
+
+  @override
+  String get chatDateEndHint => 'End date';
+
+  @override
   String get chatDateRecent30Days => 'Last 30 days';
+
+  @override
+  String get chatDateStart => 'Start time';
+
+  @override
+  String get chatDateEnd => 'End time';
+
+  @override
+  String get chatDateConfirm => 'Confirm';
+
+  @override
+  String get chatDateCancel => 'Cancel';
+
+  @override
+  String get chatDatePlaceholder => '--';
 
   @override
   String get chatHistoryLoadMore => 'Load more messages';
@@ -859,6 +910,18 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
   String get chatHistoryOrientation => 'Find in chat';
 
   @override
+  String get chatFileDownloadStart => 'Starting download';
+
+  @override
+  String get chatFileContextMenuDownload => 'Download';
+
+  @override
+  String get chatFileContextMenuForward => 'Forward';
+
+  @override
+  String get chatFileContextMenuLocate => 'Find in chat';
+
+  @override
   String chatCollectionFrom(String name) {
     return 'From$name';
   }
@@ -885,4 +948,64 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
 
   @override
   String get chatSearchFileMessageEmpty => 'NO File Message';
+
+  @override
+  String get chatMessageDesktopInputHint =>
+      'Press Enter to send, Shift+Enter for new line';
+
+  @override
+  String get chatCreateGroupTitle => 'Create Group';
+
+  @override
+  String get chatCreateGroupNameLabel => 'Group Name';
+
+  @override
+  String get chatCreateGroupNameHint => 'Enter group name';
+
+  @override
+  String get chatCreateGroupAvatarLabel => 'Group Avatar';
+
+  @override
+  String get chatCreateGroupSelectAvatar => 'Select Group Avatar';
+
+  @override
+  String get chatCreateGroupCancel => 'Cancel';
+
+  @override
+  String get chatCreateGroupConfirm => 'Create';
+
+  @override
+  String get chatCreateGroupSelectContact => 'Please select contacts';
+
+  @override
+  String chatCreateGroupSelected(String count) {
+    return 'Selected: $count';
+  }
+
+  @override
+  String get chatSearchToday => 'Today';
+
+  @override
+  String get chatSearchLastThreeDays => 'Last 3 days';
+
+  @override
+  String get chatSearchThisWeek => 'This week';
+
+  @override
+  String get chatSearchThisMonth => 'This month';
+
+  @override
+  String get chatSearchLastThreeMonths => 'Last 3 months';
+
+  @override
+  String get chatSearchCustomDateRange => 'Custom';
+
+  @override
+  String get chatSearchDownload => 'Download';
+
+  @override
+  String get chatSearchForward => 'Forward';
+
+  @override
+  String get chatSearchLocateMessage => 'Locate in chat';
 }

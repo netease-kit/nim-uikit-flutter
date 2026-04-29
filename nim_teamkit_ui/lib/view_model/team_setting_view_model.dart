@@ -72,12 +72,14 @@ class TeamSettingViewModel extends ChangeNotifier {
   }
 
   void addTeamSubscribe() {
-    _teamSub.add(TeamRepo.registerTeamUpdateObserver().listen((team) {
-      if (team.teamId == teamWithMember?.team.teamId) {
-        teamWithMember?.team = team;
-        notifyListeners();
-      }
-    }));
+    _teamSub.add(
+      TeamRepo.registerTeamUpdateObserver().listen((team) {
+        if (team.teamId == teamWithMember?.team.teamId) {
+          teamWithMember?.team = team;
+          notifyListeners();
+        }
+      }),
+    );
 
     _teamSub.addAll([
       NIMChatCache.instance.teamMembersNotifier.listen((event) {
@@ -89,7 +91,8 @@ class TeamSettingViewModel extends ChangeNotifier {
           var allMembers =
               userInfoData?.map((e) => e.teamInfo.accountId).toList();
           selectedList.removeWhere(
-              (element) => !allMembers!.contains(element.teamInfo.accountId));
+            (element) => !allMembers!.contains(element.teamInfo.accountId),
+          );
         }
         notifyListeners();
       }),
@@ -116,8 +119,11 @@ class TeamSettingViewModel extends ChangeNotifier {
   }
 
   void addTeamManager(String tid, List<String> accounts) {
-    TeamRepo.addTeamManager(tid, NIMTeamType.typeNormal, accounts)
-        .then((value) {});
+    TeamRepo.addTeamManager(
+      tid,
+      NIMTeamType.typeNormal,
+      accounts,
+    ).then((value) {});
   }
 
   Future<NIMResult<void>> removeTeamManager(String tid, String accId) {
@@ -218,8 +224,9 @@ class TeamSettingViewModel extends ChangeNotifier {
   }
 
   void updateInvitePrivilege(String teamId, NIMTeamInviteMode modeEnum) {
-    TeamRepo.updateInviteMode(teamId, NIMTeamType.typeNormal, modeEnum)
-        .then((value) {
+    TeamRepo.updateInviteMode(teamId, NIMTeamType.typeNormal, modeEnum).then((
+      value,
+    ) {
       if (value) {
         inviteMode = modeEnum;
         notifyListeners();
@@ -228,8 +235,11 @@ class TeamSettingViewModel extends ChangeNotifier {
   }
 
   void updateInfoPrivilege(String teamId, NIMTeamUpdateInfoMode modeEnum) {
-    TeamRepo.updateTeamInfoPrivilege(teamId, NIMTeamType.typeNormal, modeEnum)
-        .then((value) {
+    TeamRepo.updateTeamInfoPrivilege(
+      teamId,
+      NIMTeamType.typeNormal,
+      modeEnum,
+    ).then((value) {
       if (value) {
         updateInfoMode = modeEnum;
         notifyListeners();
@@ -238,21 +248,19 @@ class TeamSettingViewModel extends ChangeNotifier {
   }
 
   void updateBeInviteMode(String teamId, bool needAgree) {
-    TeamRepo.updateBeInviteMode(teamId, NIMTeamType.typeNormal, needAgree)
-        .then((value) {
-      if (value) {
-        agreeMode = needAgree;
-        notifyListeners();
-      }
-    });
+    TeamRepo.updateBeInviteMode(teamId, NIMTeamType.typeNormal, needAgree).then(
+      (value) {
+        if (value) {
+          agreeMode = needAgree;
+          notifyListeners();
+        }
+      },
+    );
   }
 
   Future<bool> quitTeam(String teamId) async {
     if (await haveConnectivity()) {
-      return TeamRepo.quitTeam(
-        teamId,
-        NIMTeamType.typeNormal,
-      );
+      return TeamRepo.quitTeam(teamId, NIMTeamType.typeNormal);
     } else {
       return Future(() => false);
     }
@@ -260,19 +268,19 @@ class TeamSettingViewModel extends ChangeNotifier {
 
   Future<bool> dismissTeam(String teamId) async {
     if (await haveConnectivity()) {
-      return TeamRepo.dismissTeam(
-        teamId,
-        NIMTeamType.typeNormal,
-      );
+      return TeamRepo.dismissTeam(teamId, NIMTeamType.typeNormal);
     } else {
       return Future(() => false);
     }
   }
 
   Future<bool> updateNickname(String teamId, String nickname) {
-    return TeamRepo.updateMemberNick(teamId, NIMTeamType.typeNormal,
-            getIt<IMLoginService>().userInfo!.accountId!, nickname)
-        .then((value) {
+    return TeamRepo.updateMemberNick(
+      teamId,
+      NIMTeamType.typeNormal,
+      getIt<IMLoginService>().userInfo!.accountId!,
+      nickname,
+    ).then((value) {
       if (value) {
         myTeamNickName = nickname;
         notifyListeners();
@@ -282,7 +290,9 @@ class TeamSettingViewModel extends ChangeNotifier {
   }
 
   Future<NIMResult<List<String>>> addMembers(
-      String teamId, List<String> members) {
+    String teamId,
+    List<String> members,
+  ) {
     return TeamRepo.inviteUser(teamId, NIMTeamType.typeNormal, members, null);
   }
 
