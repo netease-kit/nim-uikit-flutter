@@ -2,7 +2,9 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'dart:ffi' hide Size;
 import 'dart:io';
+import 'dart:ui' show AppExitResponse;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -110,6 +112,10 @@ class _MainAppState extends State<MainApp> {
 
   Uint8List? _deviceToken;
 
+  AppLifecycleListener? _appLifecycleListener;
+
+  bool _hasReleasedAlog = false;
+
   ///设置默认的语言，不设置则根据系统语言
   void _setDefaultLanguage() async {
     CommonUIDefaultLanguage.commonDefaultLanguage =
@@ -122,7 +128,61 @@ class _MainAppState extends State<MainApp> {
     _setDefaultLanguage();
     _initPlugins();
     _initAIUser();
+    if (!kIsWeb && (Platform.isMacOS || Platform.isWindows)) {
+      _appLifecycleListener = AppLifecycleListener(
+        onExitRequested: _handleExitRequested,
+      );
+    }
     GestureBinding.instance.resamplingEnabled = true;
+  }
+
+  Future<AppExitResponse> _handleExitRequested() async {
+    final released = await _releaseIMSDK();
+    return released ? AppExitResponse.exit : AppExitResponse.cancel;
+  }
+
+  Future<bool> _releaseIMSDK() async {
+    try {
+      await _releaseCallKit();
+      final shouldReleaseAlog = NimCore.instance.isInitialized;
+      if (shouldReleaseAlog) {
+        final result = await NimCore.instance.releaseDesktop();
+        if (!result.isSuccess) {
+          return false;
+        }
+      }
+      _releaseAlog();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _releaseCallKit() async {
+    try {
+      await NECallEngine.instance.destroy();
+    } catch (_) {}
+  }
+
+  void _releaseAlog() {
+    if (_hasReleasedAlog) {
+      return;
+    }
+    _hasReleasedAlog = true;
+    try {
+      Alog.flushSync();
+    } catch (_) {}
+    try {
+      final release = DynamicLibrary.open('libne-alog.dylib')
+          .lookupFunction<Int32 Function(), int Function()>('alogger_release');
+      release();
+    } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    _appLifecycleListener?.dispose();
+    super.dispose();
   }
 
   Widget _buildMaterialApp(Widget home) {
