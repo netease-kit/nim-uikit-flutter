@@ -2,7 +2,6 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'dart:ffi' hide Size;
 import 'dart:io';
 import 'dart:ui' show AppExitResponse;
 
@@ -114,7 +113,6 @@ class _MainAppState extends State<MainApp> {
 
   AppLifecycleListener? _appLifecycleListener;
 
-  bool _hasReleasedAlog = false;
 
   ///设置默认的语言，不设置则根据系统语言
   void _setDefaultLanguage() async {
@@ -151,7 +149,6 @@ class _MainAppState extends State<MainApp> {
           return false;
         }
       }
-      _releaseAlog();
       return true;
     } catch (_) {
       return false;
@@ -161,21 +158,6 @@ class _MainAppState extends State<MainApp> {
   Future<void> _releaseCallKit() async {
     try {
       await NECallEngine.instance.destroy();
-    } catch (_) {}
-  }
-
-  void _releaseAlog() {
-    if (_hasReleasedAlog) {
-      return;
-    }
-    _hasReleasedAlog = true;
-    try {
-      Alog.flushSync();
-    } catch (_) {}
-    try {
-      final release = DynamicLibrary.open('libne-alog.dylib')
-          .lookupFunction<Int32 Function(), int Function()>('alogger_release');
-      release();
     } catch (_) {}
   }
 
