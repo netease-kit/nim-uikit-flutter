@@ -104,7 +104,7 @@ class _DesktopMoreMenuState extends State<DesktopMoreMenu> {
   /// LoginModel 状态变化无人响应，导致无法跳转到登录页。
   void _doSwitchLanguage(BuildContext context, String lang) {
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const SplashPage(deviceToken: null)),
+      MaterialPageRoute(builder: (_) => const SplashPage()),
       (route) => false,
     );
   }

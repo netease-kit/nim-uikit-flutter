@@ -75,6 +75,9 @@ class ConversationKitClientLocalizationsEn
   String get somebodyAitMe => '[somebody @ me]';
 
   @override
+  String get robotSubConversation => '[Sub-conversation]';
+
+  @override
   String get audioMessageType => '[Audio]';
 
   @override
@@ -106,6 +109,9 @@ class ConversationKitClientLocalizationsEn
 
   @override
   String get joinTeamSearchEmptyTips => 'This team does not exist';
+
+  @override
+  String get scanRobot => 'Scan';
 
   @override
   String get chatMessageBriefVideoCall => '[Video Call]';

@@ -15,12 +15,15 @@ import 'package:nim_chatkit_ui/view/history/chat_history_message_page.dart';
 import 'package:nim_chatkit_ui/view/page/chat_collection_message_list_page.dart';
 import 'package:nim_chatkit_ui/view/page/chat_pin_page.dart';
 import 'package:nim_core_v2/nim_core.dart';
+import 'package:nim_chatkit/model/bot_subsession_models.dart';
 
 import 'l10n/S.dart';
 import 'view/chat_kit_message_list/item/chat_kit_message_item.dart';
 import 'view/input/actions.dart';
+import 'view/page/bot_subsession_list_page.dart';
 import 'view/page/chat_page.dart';
 import 'view/page/chat_search_page.dart';
+import 'view/page/topic_chat_page.dart';
 
 ///发送消息前的回调类型
 ///[message] 待发送的消息
@@ -304,6 +307,34 @@ class ChatKitClient {
         )!,
         anchor: IMKitRouter.getArgumentFormMap<NIMMessage>(context, 'anchor'),
         anchorDate: IMKitRouter.getArgumentFormMap<int>(context, 'anchorDate'),
+      ),
+    );
+
+    IMKitRouter.instance.registerRouter(
+      RouterConstants.PATH_BOT_SUBSESSION_LIST_PAGE,
+      (context) => BotSubsessionListPage(
+        conversationId: IMKitRouter.getArgumentFormMap<String>(
+          context,
+          'conversationId',
+        )!,
+        conversationType: IMKitRouter.getArgumentFormMap<NIMConversationType>(
+          context,
+          'conversationType',
+        )!,
+      ),
+    );
+
+    IMKitRouter.instance.registerRouter(
+      RouterConstants.PATH_TOPIC_CHAT_PAGE,
+      (context) => TopicChatPage(
+        conversationId: IMKitRouter.getArgumentFormMap<String>(
+          context,
+          'conversationId',
+        )!,
+        topicContext: IMKitRouter.getArgumentFormMap<BotSubsessionTopicContext>(
+          context,
+          'topicContext',
+        )!,
       ),
     );
 

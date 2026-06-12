@@ -4,7 +4,6 @@
 
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'chat_kit_client_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -82,19 +81,19 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
   String get chatMessageUnknownType => '未知类型';
 
   @override
-  String get chatMessageImageSave => '图片已保存';
+  String get chatMessageImageSave => '图片已保存到手机';
 
   @override
   String get chatMessageImageSaveFail => '图片保存失败';
 
   @override
-  String get chatMessageVideoSave => '视频已保存';
+  String get chatMessageVideoSave => '视频已保存到手机';
 
   @override
   String get chatMessageVideoSaveFail => '视频保存失败';
 
   @override
-  String get chatSaveFileDialogTitle => '保存文件';
+  String get chatSaveFileDialogTitle => 'Save File';
 
   @override
   String get chatMessageActionCopy => '复制';
@@ -181,10 +180,42 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
   String get chatMessageBriefFile => '[文件]';
 
   @override
+  String get chatMessageBriefMessage => '[消息]';
+
+  @override
   String get chatMessageBriefCustom => '[自定义消息]';
 
   @override
   String get chatMessageBriefChatHistory => '[聊天记录]';
+
+  @override
+  String get botSubsessionNewSession => '新会话';
+
+  @override
+  String botSubsessionChatEmptyTips(String chatTitle) {
+    return '和$chatTitle开始聊一聊';
+  }
+
+  @override
+  String get botSubsessionRename => '重命名';
+
+  @override
+  String get botSubsessionRenameHint => '请输入子会话名称';
+
+  @override
+  String get botSubsessionNameInvalid => '名称不能为空且不能超过20字符';
+
+  @override
+  String get botSubsessionRenameFailed => '修改失败';
+
+  @override
+  String get botSubsessionDeleteTitle => '删除子会话';
+
+  @override
+  String get botSubsessionDeleteConfirm => '确认删除当前子会话吗？';
+
+  @override
+  String get botSubsessionDeleteFailed => '删除失败';
 
   @override
   String get chatSetting => '聊天设置';
@@ -373,6 +404,9 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
 
   @override
   String get messageSearchHint => '搜索聊天内容';
+
+  @override
+  String get botSubsessionSearchHint => '搜索子会话名称';
 
   @override
   String get messageSearchEmpty => '暂无搜索结果';
@@ -841,9 +875,6 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
   String get chatDateEndHint => '结束日期';
 
   @override
-  String get chatDateRecent30Days => '最近30天';
-
-  @override
   String get chatDateStart => '开始时间';
 
   @override
@@ -857,6 +888,9 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
 
   @override
   String get chatDatePlaceholder => '--';
+
+  @override
+  String get chatDateRecent30Days => '最近30天';
 
   @override
   String get chatHistoryLoadMore => '加载更多消息';

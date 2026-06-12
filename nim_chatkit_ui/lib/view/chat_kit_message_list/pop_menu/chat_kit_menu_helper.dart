@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
+import 'package:nim_chatkit/manager/ai_robot_manager.dart';
 import 'package:nim_chatkit/message/message_helper.dart';
 import 'package:nim_chatkit/services/message/chat_message.dart';
 import 'package:nim_chatkit_ui/l10n/S.dart';
@@ -103,6 +104,11 @@ class ChatKitMenuHelper {
 
   static bool showRevoke(ChatUIConfig? config, ChatMessage message) {
     if (message.nimMessage.messageType == NIMMessageType.call) {
+      return false;
+    }
+    // 机器人消息不能撤回
+    if (AIRobotManager.instance.isRobot(ChatKitUtils.getConversationTargetId(
+        message.nimMessage.conversationId!))) {
       return false;
     }
     return isSelf(message.nimMessage) &&

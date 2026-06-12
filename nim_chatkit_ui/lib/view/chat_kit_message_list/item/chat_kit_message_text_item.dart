@@ -51,7 +51,8 @@ class ChatKitMessageTextState extends State<ChatKitMessageTextItem> {
   Widget build(BuildContext context) {
     //处理数字人返回的消息
     if (widget.maxLines == null &&
-        ChatMessageHelper.isReceivedMessageFromAi(widget.message)) {
+        (ChatMessageHelper.isReceivedMessageFromAi(widget.message) ||
+            ChatMessageHelper.isReceivedMessageFromRobot(widget.message))) {
       //占位
       if (widget.message.aiConfig?.aiStreamStatus ==
           V2NIMMessageAIStreamStatus

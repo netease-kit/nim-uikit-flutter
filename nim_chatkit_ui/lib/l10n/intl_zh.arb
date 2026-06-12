@@ -80,8 +80,25 @@
   "chatMessageBriefVideo": "[视频]",
   "chatMessageBriefLocation": "[地理位置]",
   "chatMessageBriefFile": "[文件]",
+  "chatMessageBriefMessage": "[消息]",
   "chatMessageBriefCustom": "[自定义消息]",
   "chatMessageBriefChatHistory": "[聊天记录]",
+  "botSubsessionNewSession": "新会话",
+  "botSubsessionChatEmptyTips": "和{chatTitle}开始聊一聊",
+  "@botSubsessionChatEmptyTips": {
+    "placeholders": {
+      "chatTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "botSubsessionRename": "重命名",
+  "botSubsessionRenameHint": "请输入子会话名称",
+  "botSubsessionNameInvalid": "名称不能为空且不能超过20字符",
+  "botSubsessionRenameFailed": "修改失败",
+  "botSubsessionDeleteTitle": "删除子会话",
+  "botSubsessionDeleteConfirm": "确认删除当前子会话吗？",
+  "botSubsessionDeleteFailed": "删除失败",
   "chatSetting": "聊天设置",
   "chatMessageSignal": "标记",
   "chatMessageOpenMessageNotice": "开启消息提醒",
@@ -352,6 +369,7 @@
   "chatMessageYou": "你",
   "messageSearchTitle": "查找聊天内容",
   "messageSearchHint": "搜索聊天内容",
+  "botSubsessionSearchHint": "搜索子会话名称",
   "messageSearchEmpty": "暂无搜索结果",
   "messageForwardToP2p": "转发到个人",
   "messageForwardToTeam": "转发到群组",

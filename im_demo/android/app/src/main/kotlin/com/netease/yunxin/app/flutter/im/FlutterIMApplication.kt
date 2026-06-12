@@ -7,23 +7,5 @@
 package com.netease.yunxin.app.flutter.im
 
 import android.app.Application
-import com.heytap.msp.push.HeytapPushManager
-import com.huawei.hms.support.common.ActivityMgr
-import com.vivo.push.PushClient
-import com.vivo.push.util.VivoPushException
 
-class FlutterIMApplication : Application() {
-
-    override fun onCreate() {
-        super.onCreate()
-        // huawei push
-        ActivityMgr.INST.init(this)
-        // oppo push
-        HeytapPushManager.init(this, true)
-        try {
-            // vivo push
-            PushClient.getInstance(this).initialize()
-        } catch (e: VivoPushException) {
-        }
-    }
-}
+class FlutterIMApplication : Application()

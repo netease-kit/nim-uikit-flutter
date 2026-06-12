@@ -216,6 +216,12 @@ abstract class ConversationKitClientLocalizations {
   /// **'[somebody @ me]'**
   String get somebodyAitMe;
 
+  /// No description provided for @robotSubConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'[Sub-conversation]'**
+  String get robotSubConversation;
+
   /// No description provided for @audioMessageType.
   ///
   /// In en, this message translates to:
@@ -281,6 +287,8 @@ abstract class ConversationKitClientLocalizations {
   /// In en, this message translates to:
   /// **'This team does not exist'**
   String get joinTeamSearchEmptyTips;
+
+  String get scanRobot;
 
   /// No description provided for @chatMessageBriefVideoCall.
   ///

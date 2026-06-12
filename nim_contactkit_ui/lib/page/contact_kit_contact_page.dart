@@ -10,6 +10,7 @@ import 'package:nim_chatkit/im_kit_config_center.dart';
 import 'package:nim_contactkit_ui/page/contact_kit_ai_user_list_page.dart';
 import 'package:nim_contactkit_ui/page/contact_kit_black_list_page.dart';
 import 'package:nim_contactkit_ui/page/contact_kit_team_list_page.dart';
+import 'package:nim_contactkit_ui/page/contact_kit_user_ai_bot_list_page.dart';
 import 'package:nim_contactkit_ui/page/contact_kit_verify_message_page.dart';
 import 'package:nim_contactkit_ui/page/viewmodel/contact_viewmodel.dart';
 import 'package:provider/provider.dart';
@@ -115,6 +116,28 @@ class _ContactKitContactState extends State<ContactKitContactPage> {
               MaterialPageRoute(
                 builder: (context) {
                   return ContactKitTeamListPage(
+                    listConfig: uiConfig.contactListConfig,
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      if (IMKitClient.enableRobot)
+        TopListItem(
+          name: S.of(context).contactMyRobot,
+          icon: SvgPicture.asset(
+            'images/ic_robot_user_list.svg',
+            package: kPackage,
+            height: 36,
+            width: 36,
+          ),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) {
+                  return ContactKitUserAIBotListPage(
                     listConfig: uiConfig.contactListConfig,
                   );
                 },
@@ -228,6 +251,17 @@ class _ContactKitContactState extends State<ContactKitContactPage> {
           ),
           categoryIndex: 3,
         ),
+      if (IMKitClient.enableRobot)
+        _DesktopCategoryItem(
+          name: S.of(context).contactMyRobot,
+          icon: SvgPicture.asset(
+            'images/ic_robot_user_list.svg',
+            package: kPackage,
+            height: 36,
+            width: 36,
+          ),
+          categoryIndex: 4,
+        ),
       if (IMKitClient.enableAi)
         _DesktopCategoryItem(
           name: S.of(context).contactAIUserList,
@@ -237,7 +271,7 @@ class _ContactKitContactState extends State<ContactKitContactPage> {
             height: 36,
             width: 36,
           ),
-          categoryIndex: 4,
+          categoryIndex: 5,
         ),
     ];
 
@@ -261,20 +295,6 @@ class _ContactKitContactState extends State<ContactKitContactPage> {
             }
           },
         );
-      },
-    );
-  }
-
-  /// 桌面端分类菜单项
-  Widget _buildDesktopCategoryTile(
-    _DesktopCategoryItem item,
-    bool isSelected,
-  ) {
-    return _DesktopCategoryTile(
-      item: item,
-      isSelected: isSelected,
-      onTap: () {
-        widget.onDesktopCategorySelect?.call(item.categoryIndex);
       },
     );
   }

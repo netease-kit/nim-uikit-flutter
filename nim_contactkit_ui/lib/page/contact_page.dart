@@ -5,6 +5,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
+import 'package:nim_chatkit/router/imkit_router.dart';
+import 'package:nim_chatkit/router/imkit_router_constants.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_contactkit_ui/contact_kit_client.dart';
 import 'package:nim_contactkit_ui/page/contact_kit_contact_page.dart';
@@ -90,7 +92,17 @@ class _ContactState extends State<ContactPage> {
                   _titleBarConfig.titleBarRightIcon ??
                       IconButton(
                         onPressed: () {
-                          goAddFriendPage(context);
+                          if (ChatKitUtils.isDesktopOrWeb) {
+                            final builder = IMKitRouter.instance
+                                .routes[RouterConstants.PATH_ADD_FRIEND_PAGE];
+                            if (builder != null) {
+                              showDesktopDialog(context, builder(context));
+                            } else {
+                              goAddFriendPage(context);
+                            }
+                          } else {
+                            goAddFriendPage(context);
+                          }
                         },
                         icon: SvgPicture.asset(
                           'images/ic_more.svg',

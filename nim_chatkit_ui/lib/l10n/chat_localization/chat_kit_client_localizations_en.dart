@@ -4,7 +4,6 @@
 
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'chat_kit_client_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -183,10 +182,43 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
   String get chatMessageBriefFile => '[File]';
 
   @override
+  String get chatMessageBriefMessage => '[Message]';
+
+  @override
   String get chatMessageBriefCustom => '[Custom Message]';
 
   @override
   String get chatMessageBriefChatHistory => '[Chat History]';
+
+  @override
+  String get botSubsessionNewSession => 'New Session';
+
+  @override
+  String botSubsessionChatEmptyTips(String chatTitle) {
+    return 'Start chatting with $chatTitle';
+  }
+
+  @override
+  String get botSubsessionRename => 'Rename';
+
+  @override
+  String get botSubsessionRenameHint => 'Enter subsession name';
+
+  @override
+  String get botSubsessionNameInvalid =>
+      'Name cannot be empty or longer than 20 characters';
+
+  @override
+  String get botSubsessionRenameFailed => 'Failed to rename';
+
+  @override
+  String get botSubsessionDeleteTitle => 'Delete subsession';
+
+  @override
+  String get botSubsessionDeleteConfirm => 'Delete this subsession?';
+
+  @override
+  String get botSubsessionDeleteFailed => 'Failed to delete';
 
   @override
   String get chatSetting => 'Chat setting';
@@ -376,6 +408,9 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
 
   @override
   String get messageSearchHint => 'Search chat content';
+
+  @override
+  String get botSubsessionSearchHint => 'Search subsession name';
 
   @override
   String get messageSearchEmpty => 'No chat history';
@@ -859,9 +894,6 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
   String get chatDateEndHint => 'End date';
 
   @override
-  String get chatDateRecent30Days => 'Last 30 days';
-
-  @override
   String get chatDateStart => 'Start time';
 
   @override
@@ -875,6 +907,9 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
 
   @override
   String get chatDatePlaceholder => '--';
+
+  @override
+  String get chatDateRecent30Days => 'Last 30 days';
 
   @override
   String get chatHistoryLoadMore => 'Load more messages';

@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/repo/config_repo.dart';
+import 'package:nim_chatkit_pushkit/nim_chatkit_pushkit.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -38,13 +39,16 @@ class NIMSDKOptionsConfig {
             appkey: appKey,
             enableV2CloudConversation: enableCloudConversation,
             apiVersion: 'v2',
-            debugLevel: 'debug',
+            debugLevel: 'off',
           ),
           appKey: appKey);
     } else if (Platform.isAndroid) {
       final directory = await getExternalStorageDirectory();
       NIMStatusBarNotificationConfig config =
           await loadStatusBarNotificationConfig();
+      config = await PushKit.instance.buildDefaultAndroidNotificationConfig(
+        baseConfig: config,
+      );
       options = NIMAndroidSDKOptions(
           appKey: appKey,
           shouldSyncStickTopSessionInfos: true,

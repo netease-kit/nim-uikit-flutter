@@ -16,7 +16,7 @@
 
 set -e
 
-NIM_SDK_VERSION="10.9.80"
+NIM_SDK_VERSION="10.9.90"
 # V2 API 使用 dist/v2 目录下的 SDK
 NIM_SDK_URL="https://unpkg.com/nim-web-sdk-ng@${NIM_SDK_VERSION}/dist/v2/NIM_BROWSER_SDK.js"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -23,6 +23,8 @@ class ChatKitMessagePopMenu {
 
   ChatUIConfig? chatUIConfig;
 
+  Offset? globalPosition;
+
   bool isVoiceFromSpeaker = true;
 
   ChatKitMessagePopMenu(
@@ -31,34 +33,29 @@ class ChatKitMessagePopMenu {
     this.context, {
     this.popMenuAction,
     this.chatUIConfig,
+    this.globalPosition,
   }) {
-    double arrowTipDistance = 30;
-    TooltipDirection popupDirection = TooltipDirection.up;
+    double arrowTipDistance = 2;
+    TooltipDirection popupDirection = _getPopupDirection(context);
 
     //重设arrowTipDistance
-    var resetDistance = true;
+    var resetDistance = globalPosition == null;
 
-    RenderBox? box = context.findRenderObject() as RenderBox?;
+    final box = context.findRenderObject() as RenderBox?;
     bool isTargetHeadVisible = true;
-    if (box != null) {
-      Offset position = box.localToGlobal(Offset.zero);
+    if (box != null && globalPosition == null) {
+      final position = box.localToGlobal(Offset.zero);
       final topPadding = MediaQuery.of(context).padding.top + kToolbarHeight;
       if (position.dy - topPadding < 240) {
         popupDirection = TooltipDirection.down;
       }
-      // 获取 Widget 的全局坐标
       final size = box.size;
-      final widgetTop = position.dy;
-      final widgetBottom = widgetTop + size.height;
       // 检查是否在可滚动容器内
-      final scrollable = Scrollable.of(context);
+      final scrollable = Scrollable.maybeOf(context);
       if (scrollable != null) {
         final scrollPosition = scrollable.position;
         final scrollOffset = scrollPosition.pixels;
         final viewportHeight = scrollPosition.viewportDimension;
-
-        // 计算视口边界
-        final viewportTop = scrollOffset;
         final viewportBottom = scrollOffset + viewportHeight;
 
         // 获取 Widget 在滚动容器内的相对位置
@@ -109,8 +106,25 @@ class ChatKitMessagePopMenu {
       isTargetHeadVisible: isTargetHeadVisible,
       showCloseButton: ShowCloseButton.none,
       touchThroughAreaShape: ClipAreaShape.rectangle,
+      targetGlobalPosition: globalPosition,
       content: _getTooltipAction(context, chatUIConfig, message),
     );
+  }
+
+  TooltipDirection _getPopupDirection(BuildContext context) {
+    final position = globalPosition;
+    if (position == null) {
+      return TooltipDirection.up;
+    }
+    final mediaQuery = MediaQuery.of(context);
+    final top = mediaQuery.padding.top + kToolbarHeight;
+    final bottom = mediaQuery.size.height - mediaQuery.padding.bottom;
+    final spaceAbove = position.dy - top;
+    final spaceBelow = bottom - position.dy;
+    if (spaceAbove < 120 && spaceBelow > spaceAbove) {
+      return TooltipDirection.down;
+    }
+    return TooltipDirection.up;
   }
 
   Widget _getTooltipAction(

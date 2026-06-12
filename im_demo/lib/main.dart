@@ -109,8 +109,6 @@ class _MainAppState extends State<MainApp> {
     };
   }
 
-  Uint8List? _deviceToken;
-
   AppLifecycleListener? _appLifecycleListener;
 
 
@@ -215,7 +213,7 @@ class _MainAppState extends State<MainApp> {
 
   @override
   Widget build(BuildContext context) {
-    final home = SplashPage(deviceToken: _deviceToken);
+    final home = SplashPage();
 
     // 桌面端/Web 不使用 ScreenUtil 缩放，避免基于移动端设计尺寸的缩放导致 UI 异常
     if (ChatKitUtils.isDesktopOrWeb) {

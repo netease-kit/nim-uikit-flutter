@@ -81,8 +81,25 @@
   "chatMessageBriefVideo": "[Video]",
   "chatMessageBriefLocation": "[Location]",
   "chatMessageBriefFile": "[File]",
+  "chatMessageBriefMessage": "[Message]",
   "chatMessageBriefCustom": "[Custom Message]",
   "chatMessageBriefChatHistory": "[Chat History]",
+  "botSubsessionNewSession": "New Session",
+  "botSubsessionChatEmptyTips": "Start chatting with {chatTitle}",
+  "@botSubsessionChatEmptyTips": {
+    "placeholders": {
+      "chatTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "botSubsessionRename": "Rename",
+  "botSubsessionRenameHint": "Enter subsession name",
+  "botSubsessionNameInvalid": "Name cannot be empty or longer than 20 characters",
+  "botSubsessionRenameFailed": "Failed to rename",
+  "botSubsessionDeleteTitle": "Delete subsession",
+  "botSubsessionDeleteConfirm": "Delete this subsession?",
+  "botSubsessionDeleteFailed": "Failed to delete",
   "chatSetting": "Chat setting",
   "chatMessageSignal": "Message mark",
   "chatMessageOpenMessageNotice": "Open message notice",
@@ -353,6 +370,7 @@
   "chatMessageYou": "you",
   "messageSearchTitle": "Search Message",
   "messageSearchHint": "Search chat content",
+  "botSubsessionSearchHint": "Search subsession name",
   "messageSearchEmpty": "No chat history",
   "messageForwardToP2p": "Forward to person",
   "messageForwardToTeam": "Forward to team",

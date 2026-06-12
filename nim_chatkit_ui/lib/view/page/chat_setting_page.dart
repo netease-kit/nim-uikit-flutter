@@ -12,6 +12,7 @@ import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/im_kit_config_center.dart';
+import 'package:nim_chatkit/manager/ai_robot_manager.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_chatkit/service_locator.dart';
@@ -31,6 +32,7 @@ class ChatSettingPage extends StatefulWidget {
     Key? key,
     this.isDesktopDialog = false,
     this.onClose,
+    this.botSubsessionMode = false,
   }) : super(key: key);
 
   final ContactInfo contactInfo;
@@ -44,6 +46,8 @@ class ChatSettingPage extends StatefulWidget {
   /// 面板模式下的关闭回调，优先于 Navigator.pop()
   final VoidCallback? onClose;
 
+  final bool botSubsessionMode;
+
   @override
   State<StatefulWidget> createState() => _ChatSettingPageState();
 }
@@ -52,6 +56,10 @@ class _ChatSettingPageState extends State<ChatSettingPage> {
   late String accountId;
   // AI数字人PIN置顶信息KEY
   String KEY_UNPIN_AI_USERS = "unpinAIUsers";
+
+  bool get _isRobot => AIRobotManager.instance.isRobot(accountId);
+
+  bool get _hideRobotUnsupportedItems => widget.botSubsessionMode || _isRobot;
 
   Widget _member() {
     return Container(
@@ -86,7 +94,7 @@ class _ChatSettingPageState extends State<ChatSettingPage> {
             ],
           ),
           const SizedBox(width: 16),
-          if (IMKitConfigCenter.enableTeam)
+          if (IMKitConfigCenter.enableTeam && !_isRobot)
             GestureDetector(
               onTap: () {
                 if (_isDesktopMode) {
@@ -218,7 +226,7 @@ class _ChatSettingPageState extends State<ChatSettingPage> {
         context: context,
         tiles: [
           // 桌面/Web 端：标记 & 查找聊天内容已移至侧边工具栏，此处仅移动端显示
-          if (!_isDesktopMode)
+          if (!_isDesktopMode && !_hideRobotUnsupportedItems)
             ListTile(
               title: Text(S.of(context).chatMessageSignal, style: style),
               trailing: const Icon(Icons.keyboard_arrow_right_outlined),
@@ -231,7 +239,7 @@ class _ChatSettingPageState extends State<ChatSettingPage> {
                 );
               },
             ),
-          if (!_isDesktopMode)
+          if (!_isDesktopMode && !_hideRobotUnsupportedItems)
             ListTile(
               title: Text(S.of(context).messageSearchTitle, style: style),
               trailing: const Icon(Icons.keyboard_arrow_right_outlined),
@@ -272,7 +280,7 @@ class _ChatSettingPageState extends State<ChatSettingPage> {
               value: stick,
             ),
           ),
-          if (hasAIPin)
+          if (hasAIPin && !widget.botSubsessionMode)
             ListTile(
               title: Text(S.of(context).chatMessageSetPin, style: style),
               trailing: CupertinoSwitch(

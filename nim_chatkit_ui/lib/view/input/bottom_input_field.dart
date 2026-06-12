@@ -20,6 +20,7 @@ import 'package:netease_common_ui/widgets/imagePicker/wechat_assets_picker.dart'
 import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit/manager/ai_robot_manager.dart';
 import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit/model/ait/ait_contacts_model.dart';
 import 'package:nim_chatkit/service_locator.dart';
@@ -1367,6 +1368,9 @@ class _BottomInputFieldState extends State<BottomInputField>
     final accountId = ChatKitUtils.getConversationTargetId(
       widget.conversationId,
     );
+    if (AIRobotManager.instance.isRobot(accountId)) {
+      return false;
+    }
     if (AIUserManager.instance.isAIUser(accountId)) {
       return false;
     }

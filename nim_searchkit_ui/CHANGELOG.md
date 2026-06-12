@@ -1,5 +1,9 @@
 # NimSearchKitUI ChangeLog
 
+## 10.9.0(Jun 11, 2026)
+* 新增机器人功能
+* 新增子会话功能
+
 ## 10.8.0(Apr 14, 2026)
 * 新增适配Mac Windows
 * 新增适配Web（beta）

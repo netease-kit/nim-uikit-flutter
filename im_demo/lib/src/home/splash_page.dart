@@ -19,9 +19,7 @@ import 'package:provider/provider.dart';
 import '../../l10n/S.dart';
 
 class SplashPage extends StatefulWidget {
-  final Uint8List? deviceToken;
-
-  const SplashPage({Key? key, this.deviceToken}) : super(key: key);
+  const SplashPage({Key? key}) : super(key: key);
 
   @override
   State<StatefulWidget> createState() => _SplashState();
@@ -52,15 +50,6 @@ class _SplashState extends State<SplashPage> {
     _doInit(IMDemoConfig.AppKey);
   }
 
-  void updateAPNsToken() {
-    if (!kIsWeb &&
-        NimCore.instance.isInitialized &&
-        Platform.isIOS &&
-        widget.deviceToken != null) {
-      NimCore.instance.apnsService.updateApnsToken(widget.deviceToken!);
-    }
-  }
-
   /// init depends package for app
   void _doInit(String appKey) async {
 
@@ -89,7 +78,6 @@ class _SplashState extends State<SplashPage> {
         syncLevel: NIMDataSyncLevel.dataSyncLevelBasic))
         .then((value) {
       if(value.isSuccess){
-        updateAPNsToken();
         //登录成功之后，初始化CallKit
         ChatKitCall.instance.init(
             appKey: IMDemoConfig.AppKey,

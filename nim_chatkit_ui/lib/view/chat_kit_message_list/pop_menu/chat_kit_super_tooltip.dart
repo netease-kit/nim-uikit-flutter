@@ -150,6 +150,9 @@ class SuperTooltip {
   /// Enable background overlay
   final bool containsBackgroundOverlay;
 
+  /// Uses a fixed global anchor point instead of the target widget bounds.
+  final Offset? targetGlobalPosition;
+
   ///target 的上下两头，有一头空间可以展示弹框
   bool isTargetHeadVisible = true;
 
@@ -194,6 +197,7 @@ class SuperTooltip {
     this.touchThroughArea,
     this.dismissOnTapOutside = true,
     this.containsBackgroundOverlay = true,
+    this.targetGlobalPosition,
     this.isTargetHeadVisible = true,
   })  : assert((maxWidth ?? double.infinity) >= (minWidth ?? 0.0)),
         assert((maxHeight ?? double.infinity) >= (minHeight ?? 0.0));
@@ -218,10 +222,15 @@ class SuperTooltip {
     final overlay =
         Overlay.of(targetContext).context.findRenderObject() as RenderBox?;
 
-    _targetCenter = renderBox.localToGlobal(
-      renderBox.size.center(Offset.zero),
-      ancestor: overlay,
-    );
+    final fixedTargetCenter = targetGlobalPosition == null
+        ? null
+        : overlay?.globalToLocal(targetGlobalPosition!) ?? targetGlobalPosition;
+
+    _targetCenter = fixedTargetCenter ??
+        renderBox.localToGlobal(
+          renderBox.size.center(Offset.zero),
+          ancestor: overlay,
+        );
 
     //如果两端都不可见，位置显示到屏幕的特定位置
     if (!isTargetHeadVisible) {
@@ -244,7 +253,9 @@ class SuperTooltip {
       }
     }
 
-    if (isTargetHeadVisible && popupDirection == TooltipDirection.up) {
+    if (fixedTargetCenter == null &&
+        isTargetHeadVisible &&
+        popupDirection == TooltipDirection.up) {
       _targetCenter = renderBox.localToGlobal(
         renderBox.size.topCenter(Offset.zero),
         ancestor: overlay,
@@ -252,7 +263,9 @@ class SuperTooltip {
       arrowTipDistance = 2.0;
     }
 
-    if (isTargetHeadVisible && popupDirection == TooltipDirection.down) {
+    if (fixedTargetCenter == null &&
+        isTargetHeadVisible &&
+        popupDirection == TooltipDirection.down) {
       _targetCenter = renderBox.localToGlobal(
         renderBox.size.bottomCenter(Offset.zero),
         ancestor: overlay,

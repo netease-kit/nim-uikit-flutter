@@ -421,6 +421,12 @@ abstract class ChatKitClientLocalizations {
   /// **'[File]'**
   String get chatMessageBriefFile;
 
+  /// No description provided for @chatMessageBriefMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'[Message]'**
+  String get chatMessageBriefMessage;
+
   /// No description provided for @chatMessageBriefCustom.
   ///
   /// In en, this message translates to:
@@ -432,6 +438,60 @@ abstract class ChatKitClientLocalizations {
   /// In en, this message translates to:
   /// **'[Chat History]'**
   String get chatMessageBriefChatHistory;
+
+  /// No description provided for @botSubsessionNewSession.
+  ///
+  /// In en, this message translates to:
+  /// **'New Session'**
+  String get botSubsessionNewSession;
+
+  /// No description provided for @botSubsessionChatEmptyTips.
+  ///
+  /// In en, this message translates to:
+  /// **'Start chatting with {chatTitle}'**
+  String botSubsessionChatEmptyTips(String chatTitle);
+
+  /// No description provided for @botSubsessionRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get botSubsessionRename;
+
+  /// No description provided for @botSubsessionRenameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter subsession name'**
+  String get botSubsessionRenameHint;
+
+  /// No description provided for @botSubsessionNameInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Name cannot be empty or longer than 20 characters'**
+  String get botSubsessionNameInvalid;
+
+  /// No description provided for @botSubsessionRenameFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to rename'**
+  String get botSubsessionRenameFailed;
+
+  /// No description provided for @botSubsessionDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete subsession'**
+  String get botSubsessionDeleteTitle;
+
+  /// No description provided for @botSubsessionDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this subsession?'**
+  String get botSubsessionDeleteConfirm;
+
+  /// No description provided for @botSubsessionDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete'**
+  String get botSubsessionDeleteFailed;
 
   /// No description provided for @chatSetting.
   ///
@@ -690,6 +750,12 @@ abstract class ChatKitClientLocalizations {
   /// In en, this message translates to:
   /// **'Search chat content'**
   String get messageSearchHint;
+
+  /// No description provided for @botSubsessionSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search subsession name'**
+  String get botSubsessionSearchHint;
 
   /// No description provided for @messageSearchEmpty.
   ///
@@ -1546,7 +1612,7 @@ abstract class ChatKitClientLocalizations {
   /// No description provided for @chatDateCustom.
   ///
   /// In en, this message translates to:
-  /// **'Custom'**
+  /// **'Custom range'**
   String get chatDateCustom;
 
   /// No description provided for @chatDateStartHint.
@@ -1560,12 +1626,6 @@ abstract class ChatKitClientLocalizations {
   /// In en, this message translates to:
   /// **'End date'**
   String get chatDateEndHint;
-
-  /// No description provided for @chatDateRecent30Days.
-  ///
-  /// In en, this message translates to:
-  /// **'Last 30 days'**
-  String get chatDateRecent30Days;
 
   /// No description provided for @chatDateStart.
   ///
@@ -1596,6 +1656,12 @@ abstract class ChatKitClientLocalizations {
   /// In en, this message translates to:
   /// **'--'**
   String get chatDatePlaceholder;
+
+  /// No description provided for @chatDateRecent30Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
+  String get chatDateRecent30Days;
 
   /// No description provided for @chatHistoryLoadMore.
   ///

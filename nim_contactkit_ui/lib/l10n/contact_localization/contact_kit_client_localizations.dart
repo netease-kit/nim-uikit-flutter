@@ -474,6 +474,264 @@ abstract class ContactKitClientLocalizations {
   /// In en, this message translates to:
   /// **'Have No Permission'**
   String get teamVerifyNoPermission;
+
+  /// No description provided for @contactMyRobot.
+  ///
+  /// In en, this message translates to:
+  /// **'My Robot'**
+  String get contactMyRobot;
+
+  /// No description provided for @contactRobotEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No robots'**
+  String get contactRobotEmpty;
+
+  /// No description provided for @contactRobotEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the top-right button to create'**
+  String get contactRobotEmptyHint;
+
+  /// No description provided for @contactRobotCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Robot'**
+  String get contactRobotCreate;
+
+  /// No description provided for @contactRobotEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get contactRobotEdit;
+
+  /// No description provided for @contactRobotName.
+  ///
+  /// In en, this message translates to:
+  /// **'Nickname'**
+  String get contactRobotName;
+
+  /// No description provided for @contactRobotAvatar.
+  ///
+  /// In en, this message translates to:
+  /// **'Avatar'**
+  String get contactRobotAvatar;
+
+  /// No description provided for @contactRobotSendMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get contactRobotSendMessage;
+
+  /// No description provided for @contactRobotTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Robot'**
+  String get contactRobotTitle;
+
+  /// No description provided for @contactRobotEditPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Robot'**
+  String get contactRobotEditPageTitle;
+
+  /// No description provided for @contactRobotViewConfig.
+  ///
+  /// In en, this message translates to:
+  /// **'View Config'**
+  String get contactRobotViewConfig;
+
+  /// No description provided for @contactRobotRefreshToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh Token'**
+  String get contactRobotRefreshToken;
+
+  /// No description provided for @contactRobotDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Robot'**
+  String get contactRobotDelete;
+
+  /// No description provided for @contactRobotConfigTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Config String'**
+  String get contactRobotConfigTitle;
+
+  /// No description provided for @contactRobotConfigLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Config String:'**
+  String get contactRobotConfigLabel;
+
+  /// No description provided for @contactRobotCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get contactRobotCopy;
+
+  /// No description provided for @contactRobotConfigNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep it safe and do not share it.'**
+  String get contactRobotConfigNotice;
+
+  /// No description provided for @contactRobotRefreshConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh Token?'**
+  String get contactRobotRefreshConfirmTitle;
+
+  /// No description provided for @contactRobotRefreshConfirmContent.
+  ///
+  /// In en, this message translates to:
+  /// **'After refreshing, the old token becomes invalid immediately and connected robots need reconfiguration.'**
+  String get contactRobotRefreshConfirmContent;
+
+  /// No description provided for @contactRobotDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Robot?'**
+  String get contactRobotDeleteConfirmTitle;
+
+  /// No description provided for @contactRobotDeleteConfirmContent.
+  ///
+  /// In en, this message translates to:
+  /// **'After deletion, connected robots will be disconnected and need to be reconfigured.'**
+  String get contactRobotDeleteConfirmContent;
+
+  /// No description provided for @contactRobotBind.
+  ///
+  /// In en, this message translates to:
+  /// **'Bind Robot'**
+  String get contactRobotBind;
+
+  /// No description provided for @contactRobotScan.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan'**
+  String get contactRobotScan;
+
+  /// No description provided for @contactRobotBindNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Create New Robot'**
+  String get contactRobotBindNew;
+
+  /// No description provided for @contactRobotBindSelectHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a robot to bind:'**
+  String get contactRobotBindSelectHint;
+
+  /// No description provided for @contactRobotBindExistingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Or select an existing robot:'**
+  String get contactRobotBindExistingHint;
+
+  /// No description provided for @contactRobotBindConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bind this account?'**
+  String get contactRobotBindConfirmTitle;
+
+  /// No description provided for @contactRobotBindConfirmContent.
+  ///
+  /// In en, this message translates to:
+  /// **'After binding, robots already configured with this account will be disconnected and need reconfiguration.'**
+  String get contactRobotBindConfirmContent;
+
+  /// No description provided for @contactRobotLimitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Robot limit reached'**
+  String get contactRobotLimitTitle;
+
+  /// No description provided for @contactRobotLimitContent.
+  ///
+  /// In en, this message translates to:
+  /// **'You have already created 10 robots. Please select an existing robot or delete one first.'**
+  String get contactRobotLimitContent;
+
+  /// No description provided for @contactRobotLimitToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Robot limit reached. Select an existing robot or delete one first.'**
+  String get contactRobotLimitToast;
+
+  /// No description provided for @contactRobotSelectExisting.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Existing Robot'**
+  String get contactRobotSelectExisting;
+
+  /// No description provided for @contactRobotGoDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Robot First'**
+  String get contactRobotGoDelete;
+
+  /// No description provided for @contactRobotNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Nickname cannot be empty'**
+  String get contactRobotNameRequired;
+
+  /// No description provided for @contactRobotConfigCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Config copied'**
+  String get contactRobotConfigCopied;
+
+  /// No description provided for @contactRobotInvalidQrCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid QR code'**
+  String get contactRobotInvalidQrCode;
+
+  /// No description provided for @contactRobotScanFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan failed, please try again'**
+  String get contactRobotScanFailed;
+
+  /// No description provided for @contactRobotQrCodeExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'QR code expired'**
+  String get contactRobotQrCodeExpired;
+
+  /// No description provided for @contactRobotQrCodeBound.
+  ///
+  /// In en, this message translates to:
+  /// **'QR code already bound'**
+  String get contactRobotQrCodeBound;
+
+  /// No description provided for @contactRobotConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get contactRobotConfirm;
+
+  /// No description provided for @contactRobotQrCode.
+  ///
+  /// In en, this message translates to:
+  /// **'QR Code'**
+  String get contactRobotQrCode;
+
+  /// No description provided for @contactRobotManualInputHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste QR content'**
+  String get contactRobotManualInputHint;
+
+  /// No description provided for @contactRobotBindingSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Binding successful'**
+  String get contactRobotBindingSuccess;
 }
 
 class _ContactKitClientLocalizationsDelegate

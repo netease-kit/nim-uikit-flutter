@@ -37,6 +37,33 @@ found in the LICENSE file. -->
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+    <script>
+      (function () {
+        var replacementChar = '\uFFFD';
+        var methods = ['debug', 'log', 'info', 'warn', 'error'];
+        var sanitize = function (value) {
+          if (typeof value === 'string') {
+            return value.indexOf(replacementChar) === -1
+                ? value
+                : value.replace(/\uFFFD/g, '\\uFFFD');
+          }
+          return value;
+        };
+
+        methods.forEach(function (method) {
+          var original = console[method];
+          if (typeof original !== 'function') {
+            return;
+          }
+          console[method] = function () {
+            return original.apply(
+              console,
+              Array.prototype.map.call(arguments, sanitize)
+            );
+          };
+        });
+      })();
+    </script>
     <script src="NIM_BROWSER_SDK.js"></script>
     <!-- AWS S3 SDK (如果存储功能需要) -->
     <script src="https://sdk.amazonaws.com/js/aws-sdk-2.410.0.min.js"></script>

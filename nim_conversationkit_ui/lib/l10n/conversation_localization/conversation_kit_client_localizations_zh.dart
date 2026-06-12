@@ -74,6 +74,9 @@ class ConversationKitClientLocalizationsZh
   String get somebodyAitMe => '[有人@我]';
 
   @override
+  String get robotSubConversation => '[子会话]';
+
+  @override
   String get audioMessageType => '[语音]';
 
   @override
@@ -105,6 +108,9 @@ class ConversationKitClientLocalizationsZh
 
   @override
   String get joinTeamSearchEmptyTips => '该群组不存在';
+
+  @override
+  String get scanRobot => '扫一扫';
 
   @override
   String get chatMessageBriefVideoCall => '[视频通话]';

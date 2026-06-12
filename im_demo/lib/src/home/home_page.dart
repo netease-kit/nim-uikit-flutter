@@ -22,6 +22,7 @@ import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_chatkit/service_locator.dart';
 import 'package:nim_chatkit/services/login/im_login_service.dart';
 import 'package:nim_chatkit/utils/toast_utils.dart';
+import 'package:nim_chatkit_pushkit/nim_chatkit_pushkit.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_chatkit_ui/l10n/S.dart' as chatkit_s;
 import 'package:nim_chatkit_ui/media/audio_player.dart';
@@ -33,9 +34,6 @@ import 'package:nim_conversationkit_ui/page/conversation_page.dart';
 import 'package:nim_core_v2/nim_core.dart';
 
 import '../desktop/desktop_shell.dart';
-
-const channelName = "com.netease.yunxin.app.flutter.im/channel";
-const pushMethodName = "pushMessage";
 
 class HomePage extends StatefulWidget {
   final int pageIndex;
@@ -56,6 +54,7 @@ class _HomePageState extends State<HomePage> {
 
   StreamSubscription? _contactUnreadSub;
   StreamSubscription? _teamActionsUnreadSub;
+  StreamSubscription? _pushClickSub;
 
   initUnread() {
     ConversationRepo.getMsgUnreadCount().then((value) {
@@ -82,30 +81,10 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  Future<dynamic> _handleMethodCall(MethodCall call) async {
-    if (call.method == pushMethodName && call.arguments is Map) {
-      _dispatchMessage(call.arguments);
-    }
-  }
-
-  ///解析从Native端传递过来的消息，并分发
-  void _handleMessageFromNative() {
-    const channel = MethodChannel(channelName);
-
-    //注册回调，用于页面没有被销毁的时候的回调监听
-    channel.setMethodCallHandler((call) => _handleMethodCall(call));
-
-    //方法调用，用于页面被销毁时候的情况
-    channel.invokeMapMethod<String, dynamic>(pushMethodName).then((value) {
-      Alog.d(tag: 'HomePage', content: "Message from Native is = $value}");
-      _dispatchMessage(value);
-    });
-  }
-
   //分发消息，跳转到聊天页面
-  void _dispatchMessage(Map? params) {
-    var sessionType = params?['sessionType'] as String?;
-    var sessionId = params?['sessionId'] as String?;
+  void _dispatchPushMessage(PushKitMessage? message) {
+    var sessionType = message?.sessionType;
+    var sessionId = message?.sessionId;
     if (sessionType?.isNotEmpty == true && sessionId?.isNotEmpty == true) {
       if (sessionType == 'p2p') {
         goToP2pChat(context, sessionId!);
@@ -123,10 +102,11 @@ class _HomePageState extends State<HomePage> {
     //注册撤回消息监听
     ChatKitClient.instance.registerRevokedMessage();
     //设置pushPayload
-    ChatKitClient.instance.chatUIConfig.getPushPayload = _getPushPayload;
+    ChatKitClient.instance.chatUIConfig.getPushPayload =
+        PushKit.instance.buildDefaultPushPayload;
     //处理native端传递过来的消息
     if (ChatKitUtils.isMobleClient) {
-      _handleMessageFromNative();
+      _initPushKit();
     }
 
     // 警告提示栏仅移动端注入，桌面端和 web 端不显示
@@ -200,80 +180,28 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  void _initPushKit() {
+    PushKit.instance.init();
+    _pushClickSub = PushKit.instance.onNotificationClick.listen((message) {
+      Alog.d(tag: 'HomePage', content: "PushKit message = ${message.toMap()}");
+      _dispatchPushMessage(message);
+    });
+    PushKit.instance.getInitialNotification().then((message) {
+      Alog.d(
+        tag: 'HomePage',
+        content: "PushKit initial message = ${message?.toMap()}",
+      );
+      _dispatchPushMessage(message);
+    });
+  }
+
   @override
   void dispose() {
     _contactUnreadSub?.cancel();
     _teamActionsUnreadSub?.cancel();
+    _pushClickSub?.cancel();
     ChatKitClient.instance.unregisterRevokedMessage();
     super.dispose();
-  }
-
-  //获取pushPayload
-  Future<Map<String, dynamic>> _getPushPayload(
-    NIMMessage message,
-    String conversationId,
-  ) async {
-    Map<String, dynamic> pushPayload = Map();
-    String? sessionId;
-    String? sessionType;
-    if ((await NimCore.instance.conversationIdUtil.conversationType(
-          conversationId,
-        ))
-            .data ==
-        NIMConversationType.p2p) {
-      sessionId = getIt<IMLoginService>().userInfo?.accountId;
-      sessionType = "p2p";
-    } else {
-      sessionId = ChatKitUtils.getConversationTargetId(conversationId);
-      sessionType = "team";
-    }
-    // 添加 apns payload
-    // var alert = {
-    //   "title" : "your title",
-    //   "subtitle" : "your sub Title",
-    //   "body" : "your title"
-    // };
-    // var category = {"category" : "your category"};
-    // var apsField = {
-    //   "alert":alert,
-    //   "category":category
-    // };
-    // pushPayload["apsField"] = apsField;
-
-    // 添加oppo 的pushPayload
-    var oppoParam = {"sessionId": sessionId, "sessionType": sessionType};
-    var oppoField = {
-      "click_action_type": 4,
-      "click_action_activity": 'com.netease.yunxin.app.flutter.im.MainActivity',
-      "action_parameters": oppoParam,
-    };
-    pushPayload["oppoField"] = oppoField;
-    // 添加vivo 推送参数
-
-    var vivoField = {
-      "pushMode": 1, //推送模式 0：正式推送；1：测试推送，不填默认为0
-    };
-
-    pushPayload["vivoField"] = vivoField;
-
-    //添加华为推送参数
-    var huaweiClickAction = {
-      'type': 1,
-      'action': 'com.netease.yunxin.app.flutter.im.push',
-    };
-
-    var config = {
-      'category': 'IM',
-      'data': jsonEncode({'sessionId': sessionId, 'sessionType': sessionType}),
-    };
-    pushPayload['hwField'] = {
-      'click_action': huaweiClickAction,
-      'androidConfig': config,
-    };
-    //添加通用的参数
-    pushPayload["sessionId"] = sessionId;
-    pushPayload["sessionType"] = sessionType;
-    return pushPayload;
   }
 
   Widget _getIcon(Widget tabIcon, {bool showRedPoint = false}) {

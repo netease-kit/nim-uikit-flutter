@@ -4,6 +4,7 @@
 
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
@@ -14,13 +15,17 @@ import 'package:nim_chatkit/repo/contact_repo.dart';
 import 'package:nim_chatkit/repo/conversation_repo.dart';
 import 'package:nim_chatkit/repo/team_repo.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
+import 'package:nim_chatkit_ui/l10n/S.dart' as chatkit_s;
+import 'package:nim_chatkit_ui/view/page/bot_subsession_list_page.dart';
 import 'package:nim_chatkit_ui/view/page/chat_collection_message_list_page.dart';
 import 'package:nim_chatkit_ui/view/page/chat_page.dart';
+import 'package:nim_chatkit_ui/view/page/topic_chat_page.dart';
 import 'package:nim_contactkit_ui/contact_kit_client.dart';
 import 'package:nim_contactkit_ui/page/contact_kit_ai_user_list_page.dart';
 import 'package:nim_contactkit_ui/page/contact_kit_black_list_page.dart';
 import 'package:nim_contactkit_ui/page/contact_kit_friend_list_page.dart';
 import 'package:nim_contactkit_ui/page/contact_kit_team_list_page.dart';
+import 'package:nim_contactkit_ui/page/contact_kit_user_ai_bot_list_page.dart';
 import 'package:nim_contactkit_ui/page/contact_kit_verify_message_page.dart';
 import 'package:nim_contactkit_ui/page/contact_page.dart';
 import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
@@ -29,6 +34,7 @@ import 'package:nim_conversationkit_ui/widgets/conversation_desktop_top_bar.dart
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:nim_searchkit_ui/page/search_kit_search_page.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../l10n/S.dart';
 import 'desktop_content_controller.dart';
@@ -54,7 +60,11 @@ class DesktopShell extends StatefulWidget {
 }
 
 class _DesktopShellState extends State<DesktopShell> {
+  static final Uri _reportUri =
+      Uri.parse('https://yunxin.163.com/survey/report');
+
   final DesktopContentController _controller = DesktopContentController();
+  late final TapGestureRecognizer _reportTapRecognizer;
 
   int _chatUnreadCount = 0;
   int _contactUnreadCount = 0;
@@ -67,6 +77,10 @@ class _DesktopShellState extends State<DesktopShell> {
     super.initState();
     // 注册桌面端聊天导航回调，使 goToP2pChat/goToTeamChat 通过状态切换打开聊天
     setDesktopChatNavigator(_controller.navigateToChat);
+    _reportTapRecognizer = TapGestureRecognizer()
+      ..onTap = () async {
+        await launchUrl(_reportUri, mode: LaunchMode.externalApplication);
+      };
     _initUnread();
     // 切换到通讯录 tab 时清空通讯录红点
     _controller.addListener(_onNavChanged);
@@ -153,6 +167,7 @@ class _DesktopShellState extends State<DesktopShell> {
     for (var sub in _subscriptions) {
       sub.cancel();
     }
+    _reportTapRecognizer.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -226,10 +241,27 @@ class _DesktopShellState extends State<DesktopShell> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 12),
       alignment: Alignment.center,
-      color: Color(0xfffff5e1),
-      child: Text(
-        S.of(context).swindleTips,
-        style: TextStyle(fontSize: 14, color: Color(0xffeb9718)),
+      color: const Color(0xfffff5e1),
+      child: RichText(
+        text: TextSpan(
+          style: const TextStyle(
+            fontSize: 14,
+            color: Color(0xffeb9718),
+          ),
+          children: [
+            TextSpan(
+              text: chatkit_s.S.of(context).chatMessageWarningTips,
+            ),
+            TextSpan(
+              text: chatkit_s.S.of(context).chatMessageTapToReport,
+              style: const TextStyle(
+                color: Colors.blue,
+                fontWeight: FontWeight.bold,
+              ),
+              recognizer: _reportTapRecognizer,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -435,19 +467,20 @@ class _DesktopShellState extends State<DesktopShell> {
         } else {
           // 通讯录列表（隐藏 AppBar）—— 桌面端只显示分类菜单
           return ContactPage(
-            config: ContactUIConfig(
-              contactTitleBarConfig: const ContactTitleBarConfig(
+            config: const ContactUIConfig(
+              contactTitleBarConfig: ContactTitleBarConfig(
                 showTitleBar: false,
               ),
             ),
             onDesktopCategorySelect: (categoryIndex) {
-              // categoryIndex: 0=验证消息, 1=黑名单, 2=我的好友, 3=我的群聊, 4=我的数字人
+              // categoryIndex: 0=验证消息, 1=黑名单, 2=我的好友, 3=我的群聊, 4=我的机器人, 5=我的数字人
               final categoryMap = {
                 0: ContactCategory.verifyMessage,
                 1: ContactCategory.blackList,
                 2: ContactCategory.myFriends,
                 3: ContactCategory.myTeams,
-                4: ContactCategory.myAIUsers,
+                4: ContactCategory.myRobots,
+                5: ContactCategory.myAIUsers,
               };
               final category =
                   categoryMap[categoryIndex] ?? ContactCategory.none;
@@ -472,8 +505,10 @@ class _DesktopShellState extends State<DesktopShell> {
         return 2;
       case ContactCategory.myTeams:
         return 3;
-      case ContactCategory.myAIUsers:
+      case ContactCategory.myRobots:
         return 4;
+      case ContactCategory.myAIUsers:
+        return 5;
       case ContactCategory.none:
         return null;
     }
@@ -501,6 +536,51 @@ class _DesktopShellState extends State<DesktopShell> {
       if (components.length == 3) {
         conversationType = ConversationTypeEx.getTypeFromValue(
           int.tryParse(components[1]),
+        );
+      }
+      if (controller.conversationContentKind ==
+          ConversationContentKind.botSubsessionList) {
+        return Row(
+          children: [
+            SizedBox(
+              width: 240,
+              child: BotSubsessionListPage(
+                key: ValueKey('bot_subsession_$conversationId'),
+                conversationId: conversationId,
+                conversationType: NIMConversationType.p2p,
+                selectedTopicContext: controller.currentTopicContext,
+                onTopicSelected: controller.selectBotSubsessionTopic,
+                showDesktopBorder: true,
+              ),
+            ),
+            Expanded(
+              child: controller.currentTopicContext == null
+                  ? const DesktopWelcomePage()
+                  : TopicChatPage(
+                      key: ValueKey(
+                        'topic_chat_${controller.currentTopicContext!.topicKey}',
+                      ),
+                      conversationId: conversationId,
+                      topicContext: controller.currentTopicContext!,
+                      onTopicResolved: controller.selectBotSubsessionTopic,
+                      onBackToList: () {
+                        controller.selectConversation(conversationId);
+                      },
+                    ),
+            ),
+          ],
+        );
+      }
+      if (controller.conversationContentKind ==
+              ConversationContentKind.topicChat &&
+          controller.currentTopicContext != null) {
+        return TopicChatPage(
+          key: ValueKey('topic_chat_$conversationId'),
+          conversationId: conversationId,
+          topicContext: controller.currentTopicContext!,
+          onBackToList: () {
+            controller.selectConversation(conversationId);
+          },
         );
       }
       return ChatPage(
@@ -533,6 +613,10 @@ class _DesktopShellState extends State<DesktopShell> {
       case ContactCategory.myTeams:
         return const ContactKitTeamListPage(
           key: ValueKey('my_teams'),
+        );
+      case ContactCategory.myRobots:
+        return const ContactKitUserAIBotListPage(
+          key: ValueKey('my_robots'),
         );
       case ContactCategory.myAIUsers:
         return const ContactKitAIUserListPage(

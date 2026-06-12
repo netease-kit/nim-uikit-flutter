@@ -212,6 +212,18 @@ class ChatViewModel extends ChangeNotifier {
   bool voiceFromSpeaker = false;
 
   initData({NIMMessage? anchorMessage}) async {
+    await initBaseData();
+    if (anchorMessage != null) {
+      loadMessageWithAnchor(anchorMessage);
+    } else if (this.findAnchorDate != null) {
+      loadMessageWithAnchorDate(this.findAnchorDate!);
+    } else {
+      _initFetch();
+    }
+  }
+
+  @protected
+  Future<void> initBaseData({bool updateTitle = true}) async {
     int v = await ConfigRepo.getAudioPlayModel();
     voiceFromSpeaker = v == ConfigRepo.audioPlayOutside;
     _sessionId =
@@ -223,8 +235,12 @@ class ChatViewModel extends ChangeNotifier {
       getIt<ContactProvider>().getContact(_sessionId!).then((value) {
         updateContactInfo(value);
 
-        chatTitle = value!.getName();
-        initUserState(value.user.accountId!);
+        if (updateTitle) {
+          chatTitle = value!.getName();
+        }
+        if (value?.user.accountId?.isNotEmpty == true) {
+          initUserState(value!.user.accountId!);
+        }
         notifyListeners();
       });
       ChatMessageRepo.getP2PMessageReceipt(conversationId).then((result) {
@@ -237,7 +253,9 @@ class ChatViewModel extends ChangeNotifier {
       ChatMessageRepo.queryTeam(_sessionId!).then((value) {
         if (value.isSuccess) {
           teamInfo = value.data;
-          chatTitle = value.data!.name;
+          if (updateTitle) {
+            chatTitle = value.data!.name;
+          }
           NIMChatCache.instance.getMyTeamMember(_sessionId!).then((value) {
             mute = (teamInfo?.chatBannedMode ==
                         NIMTeamChatBannedMode.chatBannedModeBannedNormal &&
@@ -249,13 +267,6 @@ class ChatViewModel extends ChangeNotifier {
           });
         }
       });
-    }
-    if (anchorMessage != null) {
-      loadMessageWithAnchor(anchorMessage!);
-    } else if (this.findAnchorDate != null) {
-      loadMessageWithAnchorDate(this.findAnchorDate!);
-    } else {
-      _initFetch();
     }
   }
 
@@ -345,6 +356,23 @@ class ChatViewModel extends ChangeNotifier {
 
   final subscriptions = <StreamSubscription>[];
 
+  @protected
+  bool shouldHandleCurrentMessage(NIMMessage message) {
+    return message.conversationId == conversationId;
+  }
+
+  @protected
+  bool shouldHandleMessageRefer(NIMMessageRefer? messageRefer) {
+    return messageRefer?.conversationId == conversationId;
+  }
+
+  @protected
+  Future<void> handleSendMessageResult(
+    NIMResult<NIMSendMessageResult> result,
+  ) async {
+    _handleMessageSendResult(result);
+  }
+
   bool _isFilterMessage(NIMMessage message) {
     if (message.messageType == NIMMessageType.notification &&
         message.attachment is NIMMessageNotificationAttachment) {
@@ -371,13 +399,13 @@ class ChatViewModel extends ChangeNotifier {
     //new message
     subscriptions.add(
       NimCore.instance.messageService.onReceiveMessages.listen((event) async {
-        //非当前会话的消息不处理
-        if (event.first.conversationId != conversationId) {
+        //非当前视图消息不处理
+        if (!event.any(shouldHandleCurrentMessage)) {
           return;
         }
         _logI('receive msg -->> ${event.length}');
         List<NIMMessage> list = event.where((element) {
-          return element.conversationId == conversationId &&
+          return shouldHandleCurrentMessage(element) &&
               element.messageServerId != null &&
               !_isFilterMessage(element);
         }).toList();
@@ -403,8 +431,8 @@ class ChatViewModel extends ChangeNotifier {
     //message status change
     subscriptions.add(
       NimCore.instance.messageService.onSendMessage.listen((msg) {
-        //非当前会话的消息不处理
-        if (msg.conversationId != conversationId) {
+        //非当前视图消息不处理
+        if (!shouldHandleCurrentMessage(msg)) {
           return;
         }
         _logI(
@@ -426,7 +454,7 @@ class ChatViewModel extends ChangeNotifier {
                         msg.sendingState == NIMMessageSendingState.succeeded,
                   ) ==
                   false &&
-              msg.conversationId == conversationId) {
+              shouldHandleCurrentMessage(msg)) {
             //撤回的本地消息，不插入
             final chatMessage = ChatMessage(msg);
             if (chatMessage.isRevoke) {
@@ -448,7 +476,7 @@ class ChatViewModel extends ChangeNotifier {
       ChatServiceObserverRepo.observeMessageDelete().listen((event) {
         if (event.isNotEmpty) {
           for (var msg in event) {
-            if (msg.messageRefer?.conversationId == conversationId &&
+            if (shouldHandleMessageRefer(msg.messageRefer) &&
                 msg.messageRefer?.conversationType == conversationType) {
               _messageList.removeWhere(
                 (element) =>
@@ -529,7 +557,7 @@ class ChatViewModel extends ChangeNotifier {
       //p2p message receipt
       subscriptions.add(
         ChatServiceObserverRepo.observeMessageReceipt().listen((event) {
-          _updateP2PReceipt(event);
+          updateP2PReceipt(event);
         }),
       );
 
@@ -601,7 +629,7 @@ class ChatViewModel extends ChangeNotifier {
       ChatServiceObserverRepo.observeRevokeMessage().listen((messages) {
         _logI('received revokeMessage notify and save a local message');
         messages.forEach((e) {
-          if (e.messageRefer?.conversationId == conversationId) {
+          if (shouldHandleMessageRefer(e.messageRefer)) {
             _onMessageRevokedNotify(e);
           }
         });
@@ -1128,7 +1156,7 @@ class ChatViewModel extends ChangeNotifier {
     }
   }
 
-  void _updateP2PReceipt(List<NIMP2PMessageReadReceipt> receipts) {
+  void updateP2PReceipt(List<NIMP2PMessageReadReceipt> receipts) {
     for (var element in receipts) {
       if (receiptTime < element.timestamp!) {
         receiptTime = element.timestamp!;
@@ -1470,7 +1498,7 @@ class ChatViewModel extends ChangeNotifier {
         replyMsg: replyMsg,
         params: params,
       ).then((result) {
-        _handleMessageSendResult(result);
+        handleSendMessageResult(result);
       });
     } else {
       ChatMessageRepo.sendMessage(
@@ -1478,7 +1506,7 @@ class ChatViewModel extends ChangeNotifier {
         conversationId: conversationId,
         params: params,
       ).then((result) {
-        _handleMessageSendResult(result);
+        handleSendMessageResult(result);
       });
     }
   }

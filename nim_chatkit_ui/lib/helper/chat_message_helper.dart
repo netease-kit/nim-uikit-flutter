@@ -16,6 +16,7 @@ import 'package:netease_common_ui/widgets/common_browse_page.dart';
 import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit/manager/ai_robot_manager.dart';
 import 'package:nim_chatkit/message/message_helper.dart';
 import 'package:nim_chatkit/model/ait/ait_contacts_model.dart';
 import 'package:nim_chatkit/model/ait/ait_msg.dart';
@@ -1367,6 +1368,12 @@ class ChatMessageHelper {
           aiConfig.accountId?.isNotEmpty == true;
     }
     return false;
+  }
+
+  /// 是否是机器人发送的消息
+  static bool isReceivedMessageFromRobot(NIMMessage message) {
+    final sendId = message.senderId;
+    return AIRobotManager.instance.isRobot(sendId);
   }
 }
 

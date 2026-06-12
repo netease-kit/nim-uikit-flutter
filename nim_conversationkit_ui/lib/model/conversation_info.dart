@@ -4,6 +4,7 @@
 
 import 'package:netease_common_ui/extension.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
+import 'package:nim_chatkit/manager/ai_robot_manager.dart';
 import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_core_v2/nim_core.dart';
 
@@ -55,6 +56,11 @@ class ConversationInfo {
 
   bool isMute() {
     return this.conversation.mute;
+  }
+
+  ///是否是机器人
+  bool isRobot() {
+    return AIRobotManager.instance.isRobot(targetId);
   }
 
   NIMLastMessage? getLastMessage() {

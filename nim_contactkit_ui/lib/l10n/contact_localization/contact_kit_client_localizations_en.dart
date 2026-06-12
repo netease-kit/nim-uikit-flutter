@@ -4,7 +4,6 @@
 
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'contact_kit_client_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -235,4 +234,138 @@ class ContactKitClientLocalizationsEn extends ContactKitClientLocalizations {
 
   @override
   String get teamVerifyNoPermission => 'Have No Permission';
+
+  @override
+  String get contactMyRobot => 'My Robot';
+
+  @override
+  String get contactRobotEmpty => 'No robots';
+
+  @override
+  String get contactRobotEmptyHint => 'Tap the top-right button to create';
+
+  @override
+  String get contactRobotCreate => 'Create Robot';
+
+  @override
+  String get contactRobotEdit => 'Edit';
+
+  @override
+  String get contactRobotName => 'Nickname';
+
+  @override
+  String get contactRobotAvatar => 'Avatar';
+
+  @override
+  String get contactRobotSendMessage => 'Chat';
+
+  @override
+  String get contactRobotTitle => 'Robot';
+
+  @override
+  String get contactRobotEditPageTitle => 'Edit Robot';
+
+  @override
+  String get contactRobotViewConfig => 'View Config';
+
+  @override
+  String get contactRobotRefreshToken => 'Refresh Token';
+
+  @override
+  String get contactRobotDelete => 'Delete Robot';
+
+  @override
+  String get contactRobotConfigTitle => 'Config String';
+
+  @override
+  String get contactRobotConfigLabel => 'Config String:';
+
+  @override
+  String get contactRobotCopy => 'Copy';
+
+  @override
+  String get contactRobotConfigNotice => 'Keep it safe and do not share it.';
+
+  @override
+  String get contactRobotRefreshConfirmTitle => 'Refresh Token?';
+
+  @override
+  String get contactRobotRefreshConfirmContent =>
+      'After refreshing, the old token becomes invalid immediately and connected robots need reconfiguration.';
+
+  @override
+  String get contactRobotDeleteConfirmTitle => 'Delete Robot?';
+
+  @override
+  String get contactRobotDeleteConfirmContent =>
+      'After deletion, connected robots will be disconnected and need to be reconfigured.';
+
+  @override
+  String get contactRobotBind => 'Bind Robot';
+
+  @override
+  String get contactRobotScan => 'Scan';
+
+  @override
+  String get contactRobotBindNew => 'Create New Robot';
+
+  @override
+  String get contactRobotBindSelectHint => 'Please select a robot to bind:';
+
+  @override
+  String get contactRobotBindExistingHint => 'Or select an existing robot:';
+
+  @override
+  String get contactRobotBindConfirmTitle => 'Bind this account?';
+
+  @override
+  String get contactRobotBindConfirmContent =>
+      'After binding, robots already configured with this account will be disconnected and need reconfiguration.';
+
+  @override
+  String get contactRobotLimitTitle => 'Robot limit reached';
+
+  @override
+  String get contactRobotLimitContent =>
+      'You have already created 10 robots. Please select an existing robot or delete one first.';
+
+  @override
+  String get contactRobotLimitToast =>
+      'Robot limit reached. Select an existing robot or delete one first.';
+
+  @override
+  String get contactRobotSelectExisting => 'Select Existing Robot';
+
+  @override
+  String get contactRobotGoDelete => 'Delete Robot First';
+
+  @override
+  String get contactRobotNameRequired => 'Nickname cannot be empty';
+
+  @override
+  String get contactRobotConfigCopied => 'Config copied';
+
+  @override
+  String get contactRobotInvalidQrCode => 'Invalid QR code';
+
+  @override
+  String get contactRobotScanFailed => 'Scan failed, please try again';
+
+  @override
+  String get contactRobotQrCodeExpired => 'QR code expired';
+
+  @override
+  String get contactRobotQrCodeBound => 'QR code already bound';
+
+  @override
+  String get contactRobotConfirm => 'Confirm';
+
+  @override
+  String get contactRobotQrCode => 'QR Code';
+
+  @override
+  String get contactRobotManualInputHint => 'Paste QR content';
+
+  @override
+  String get contactRobotBindingSuccess => 'Binding successful';
 }

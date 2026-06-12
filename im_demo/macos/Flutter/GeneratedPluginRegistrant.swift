@@ -14,6 +14,7 @@ import file_selector_macos
 import flutter_image_compress_macos
 import media_kit_libs_macos_video
 import media_kit_video
+import mobile_scanner
 import netease_callkit
 import netease_callkit_ui
 import nim_core_v2_macos
@@ -39,6 +40,7 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   FlutterImageCompressMacosPlugin.register(with: registry.registrar(forPlugin: "FlutterImageCompressMacosPlugin"))
   MediaKitLibsMacosVideoPlugin.register(with: registry.registrar(forPlugin: "MediaKitLibsMacosVideoPlugin"))
   MediaKitVideoPlugin.register(with: registry.registrar(forPlugin: "MediaKitVideoPlugin"))
+  MobileScannerPlugin.register(with: registry.registrar(forPlugin: "MobileScannerPlugin"))
   CallkitPlugin.register(with: registry.registrar(forPlugin: "CallkitPlugin"))
   CallKitUIPlugin.register(with: registry.registrar(forPlugin: "CallKitUIPlugin"))
   NimCoreMacosPlugin.register(with: registry.registrar(forPlugin: "NimCoreMacosPlugin"))

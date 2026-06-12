@@ -1,1 +1,5 @@
-{}
+{
+  "zh": [
+    "chatSaveFileDialogTitle"
+  ]
+}

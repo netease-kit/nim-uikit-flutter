@@ -262,7 +262,7 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
     _desktopContextMenu!.show();
   }
 
-  _onLongPress(BuildContext context) async {
+  _onLongPress(BuildContext context, LongPressStartDetails details) async {
     //如果是正在流式消息，Stream 或者PlaceHolder 长按无反应
     if (ChatMessageHelper.isReceivedMessageFromAi(
           widget.chatMessage.nimMessage,
@@ -285,6 +285,7 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
       context,
       popMenuAction: widget.popMenuAction,
       chatUIConfig: widget.chatUIConfig,
+      globalPosition: details.globalPosition,
     );
     _popMenu!.show();
   }
@@ -366,7 +367,9 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
 
   NIMMessageRefer? _getReplyMessageRefer(ChatMessage message) {
     if (message.nimMessage.threadReply != null &&
-        message.nimMessage.threadReply?.messageClientId?.isNotEmpty == true) {
+        message.nimMessage.threadReply?.messageClientId?.isNotEmpty == true &&
+        message.nimMessage.threadReply?.messageClientId !=
+            message.nimMessage.threadRoot?.messageClientId) {
       return message.nimMessage.threadReply;
     }
     var remoteExtension = null;
@@ -394,7 +397,16 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   }
 
   bool _showReplyMessage(ChatMessage message) {
-    return _getReplyMessageRefer(message)?.messageClientId?.isNotEmpty == true;
+    final refer = _getReplyMessageRefer(message);
+    if (refer?.messageClientId?.isNotEmpty != true) {
+      return false;
+    }
+    final rootRefer = message.nimMessage.threadRoot;
+    if (rootRefer?.messageClientId?.isNotEmpty == true &&
+        refer?.messageClientId == rootRefer?.messageClientId) {
+      return false;
+    }
+    return true;
   }
 
   Widget _buildMessageReply(ChatMessage message) {
@@ -1018,8 +1030,6 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
 
   @override
   Widget build(BuildContext context) {
-    var screenWidth = MediaQuery.of(context).size.width;
-
     var pinTextStyle = TextStyle(color: '#3EAF96'.toColor(), fontSize: 11);
 
     var chatViewModel = context.watch<ChatViewModel>();
@@ -1231,7 +1241,8 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
                                                                   );
                                                                 }
                                                               : null,
-                                                      onLongPress: () {
+                                                      onLongPressStart:
+                                                          (details) {
                                                         //long press
                                                         if (widget.chatUIConfig
                                                                     ?.enableMessageLongPress ==
@@ -1247,7 +1258,9 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
                                                               .chatMessage
                                                               .isRevoke) {
                                                             _onLongPress(
-                                                                context);
+                                                              context,
+                                                              details,
+                                                            );
                                                           }
                                                         }
                                                       },

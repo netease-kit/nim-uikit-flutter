@@ -253,6 +253,14 @@ class ConversationItem extends StatelessWidget {
                             color: config.itemAitTextColor,
                           ),
                         ),
+                      if (conversationInfo.isRobot())
+                        TextSpan(
+                          text: S.of(context).robotSubConversation,
+                          style: TextStyle(
+                            fontSize: config.itemContentSize,
+                            color: config.itemContentColor,
+                          ),
+                        ),
                       TextSpan(
                         text: _getLastMessageContent(context),
                         style: TextStyle(

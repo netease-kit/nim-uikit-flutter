@@ -4,7 +4,6 @@
 
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'contact_kit_client_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -235,4 +234,134 @@ class ContactKitClientLocalizationsZh extends ContactKitClientLocalizations {
 
   @override
   String get teamVerifyNoPermission => '暂无权限';
+
+  @override
+  String get contactMyRobot => '我的机器人';
+
+  @override
+  String get contactRobotEmpty => '暂无机器人';
+
+  @override
+  String get contactRobotEmptyHint => '点击右上角创建';
+
+  @override
+  String get contactRobotCreate => '创建机器人';
+
+  @override
+  String get contactRobotEdit => '编辑';
+
+  @override
+  String get contactRobotName => '昵称';
+
+  @override
+  String get contactRobotAvatar => '头像';
+
+  @override
+  String get contactRobotSendMessage => '聊天';
+
+  @override
+  String get contactRobotTitle => '机器人';
+
+  @override
+  String get contactRobotEditPageTitle => '编辑机器人';
+
+  @override
+  String get contactRobotViewConfig => '查看配置串';
+
+  @override
+  String get contactRobotRefreshToken => '刷新Token';
+
+  @override
+  String get contactRobotDelete => '删除机器人';
+
+  @override
+  String get contactRobotConfigTitle => '配置串';
+
+  @override
+  String get contactRobotConfigLabel => '配置串：';
+
+  @override
+  String get contactRobotCopy => '复制';
+
+  @override
+  String get contactRobotConfigNotice => '请妥善保管，不要泄露给他人';
+
+  @override
+  String get contactRobotRefreshConfirmTitle => '确认刷新Token？';
+
+  @override
+  String get contactRobotRefreshConfirmContent =>
+      '刷新后，旧Token将立即失效，正在使用的机器人需要重新配置';
+
+  @override
+  String get contactRobotDeleteConfirmTitle => '确认删除机器人？';
+
+  @override
+  String get contactRobotDeleteConfirmContent => '删除后，正在使用的机器人将断开连接，需要重新配置';
+
+  @override
+  String get contactRobotBind => '绑定机器人';
+
+  @override
+  String get contactRobotScan => '扫一扫';
+
+  @override
+  String get contactRobotBindNew => '创建机器人';
+
+  @override
+  String get contactRobotBindSelectHint => '请选择要绑定的机器人：';
+
+  @override
+  String get contactRobotBindExistingHint => '或选择已有机器人：';
+
+  @override
+  String get contactRobotBindConfirmTitle => '确认绑定该账号？';
+
+  @override
+  String get contactRobotBindConfirmContent => '绑定后，已经配置过该账号的机器人将断开连接，需要重新配置';
+
+  @override
+  String get contactRobotLimitTitle => '机器人数量已达上限';
+
+  @override
+  String get contactRobotLimitContent => '您已创建10个机器人，请选择已有机器人或先删除一个。';
+
+  @override
+  String get contactRobotLimitToast => '机器人数量已达上限，选择已有机器人或去删除机器人';
+
+  @override
+  String get contactRobotSelectExisting => '选择已有机器人';
+
+  @override
+  String get contactRobotGoDelete => '去删除机器人';
+
+  @override
+  String get contactRobotNameRequired => '昵称不能为空';
+
+  @override
+  String get contactRobotConfigCopied => '配置串已复制';
+
+  @override
+  String get contactRobotInvalidQrCode => '无效二维码';
+
+  @override
+  String get contactRobotScanFailed => '扫码失败';
+
+  @override
+  String get contactRobotQrCodeExpired => '二维码已过期';
+
+  @override
+  String get contactRobotQrCodeBound => '二维码已被绑定';
+
+  @override
+  String get contactRobotConfirm => '确认';
+
+  @override
+  String get contactRobotQrCode => '二维码';
+
+  @override
+  String get contactRobotManualInputHint => '请输入二维码内容';
+
+  @override
+  String get contactRobotBindingSuccess => '绑定成功';
 }

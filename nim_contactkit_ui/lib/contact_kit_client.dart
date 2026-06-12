@@ -10,12 +10,19 @@ import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/router/imkit_router.dart';
 import 'package:nim_chatkit/router/imkit_router_constants.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
+import 'package:nim_core_v2/nim_core.dart';
 
 import 'l10n/S.dart';
 import 'page/contact_kit_black_list_page.dart';
 import 'page/contact_kit_contact_selector_page.dart';
 import 'page/contact_kit_detail_page.dart';
 import 'page/contact_kit_team_list_page.dart';
+import 'page/contact_kit_user_ai_bot_binding_page.dart';
+import 'page/contact_kit_user_ai_bot_config_page.dart';
+import 'page/contact_kit_user_ai_bot_form_page.dart';
+import 'page/contact_kit_user_ai_bot_list_page.dart';
+import 'page/contact_kit_user_ai_bot_profile_page.dart';
+import 'page/contact_kit_user_ai_bot_scan_page.dart';
 import 'page/contact_kit_verify_message_page.dart';
 import 'page/contact_page.dart';
 import 'widgets/contact_kit_contact_list_view.dart';
@@ -214,6 +221,44 @@ class ContactKitClient {
     IMKitRouter.instance.registerRouter(
       RouterConstants.PATH_MY_NOTIFICATION_PAGE,
       (context) => ContactKitSystemNotifyMessagePage(),
+    );
+
+    IMKitRouter.instance.registerRouter(
+      RouterConstants.PATH_MY_ROBOT_PAGE,
+      (context) => ContactKitUserAIBotListPage(),
+    );
+
+    IMKitRouter.instance.registerRouter(
+      RouterConstants.PATH_MY_ROBOT_PROFILE_PAGE,
+      (context) => ContactKitUserAIBotProfilePage(
+        bot: IMKitRouter.getArgumentFormMap<V2NIMUserAIBot>(context, 'bot')!,
+      ),
+    );
+
+    IMKitRouter.instance.registerRouter(
+      RouterConstants.PATH_MY_ROBOT_FORM_PAGE,
+      (context) => ContactKitUserAIBotFormPage(
+        bot: IMKitRouter.getArgumentFormMap<V2NIMUserAIBot>(context, 'bot'),
+      ),
+    );
+
+    IMKitRouter.instance.registerRouter(
+      RouterConstants.PATH_MY_ROBOT_CONFIG_PAGE,
+      (context) => ContactKitUserAIBotConfigPage(
+        config: IMKitRouter.getArgumentFormMap<String>(context, 'config') ?? '',
+      ),
+    );
+
+    IMKitRouter.instance.registerRouter(
+      RouterConstants.PATH_MY_ROBOT_BIND_PAGE,
+      (context) => ContactKitUserAIBotBindingPage(
+        qrCode: IMKitRouter.getArgumentFormMap<String>(context, 'qrCode') ?? '',
+      ),
+    );
+
+    IMKitRouter.instance.registerRouter(
+      RouterConstants.PATH_MY_ROBOT_SCAN_PAGE,
+      (context) => const ContactKitUserAIBotScanPage(),
     );
 
     // 桌面/Web 端：注入联系人详情弹框 Builder，使 goToContactDetail 在桌面端自动以 Dialog 展示
