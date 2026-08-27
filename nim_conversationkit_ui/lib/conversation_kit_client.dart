@@ -13,7 +13,12 @@ import 'package:nim_conversationkit_ui/service/ait/ait_server.dart';
 import 'l10n/S.dart';
 import 'model/conversation_info.dart';
 import 'page/add_friend_page.dart';
+import 'page/conversation_group_add_conversation_page.dart';
+import 'page/conversation_group_manage_page.dart';
+import 'page/conversation_group_setting_page.dart';
 import 'page/conversation_page.dart';
+import 'model/conversation_group_ui_model.dart';
+import 'view_model/conversation_group_view_model.dart';
 
 typedef ConversationItemClick = bool Function(
     ConversationInfo data, int position);
@@ -239,6 +244,41 @@ class ConversationKitClient {
     IMKitRouter.instance.registerRouter(
       RouterConstants.PATH_ADD_FRIEND_PAGE,
       (context) => const AddFriendPage(),
+    );
+    IMKitRouter.instance.registerRouter(
+      RouterConstants.PATH_CONVERSATION_GROUP_MANAGE_PAGE,
+      (context) => ConversationGroupManagePage(
+        model: IMKitRouter.getArgumentFormMap<ConversationGroupViewModel>(
+          context,
+          'model',
+        )!,
+      ),
+    );
+    IMKitRouter.instance.registerRouter(
+      RouterConstants.PATH_CONVERSATION_GROUP_SETTING_PAGE,
+      (context) => ConversationGroupSettingPage(
+        model: IMKitRouter.getArgumentFormMap<ConversationGroupViewModel>(
+          context,
+          'model',
+        )!,
+        group: IMKitRouter.getArgumentFormMap<ConversationGroupUiModel>(
+          context,
+          'group',
+        )!,
+      ),
+    );
+    IMKitRouter.instance.registerRouter(
+      RouterConstants.PATH_CONVERSATION_GROUP_ADD_CONVERSATION_PAGE,
+      (context) => ConversationGroupAddConversationPage(
+        model: IMKitRouter.getArgumentFormMap<ConversationGroupViewModel>(
+          context,
+          'model',
+        )!,
+        group: IMKitRouter.getArgumentFormMap<ConversationGroupUiModel>(
+          context,
+          'group',
+        )!,
+      ),
     );
 
     XKitReporter().register(

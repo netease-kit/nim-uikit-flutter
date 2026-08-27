@@ -12,6 +12,7 @@ import 'package:netease_corekit/report/xkit_report.dart';
 import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/im_kit_config_center.dart';
+import 'package:nim_chatkit/manager/ai_robot_manager.dart';
 import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit/utils/toast_utils.dart';
@@ -85,7 +86,12 @@ class ChatKitCall {
                 String targetId = ChatKitUtils.getConversationTargetId(
                   conversationId,
                 );
+                //数字人不展示
                 if (AIUserManager.instance.isAIUser(targetId)) {
+                  return false;
+                }
+                //机器人不展示
+                if (AIRobotManager.instance.isRobot(targetId)) {
                   return false;
                 }
                 return true;

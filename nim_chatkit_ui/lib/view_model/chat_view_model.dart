@@ -8,15 +8,18 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, protected;
 import 'package:flutter/widgets.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:nim_chatkit/chatkit_client_repo.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
+import 'package:nim_chatkit/extension.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/location.dart';
 import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit/manager/subscription_manager.dart';
+import 'package:nim_chatkit/message/message_translation.dart';
+import 'package:nim_chatkit/message/message_voice_to_text.dart';
 import 'package:nim_chatkit/message/message_revoke_info.dart';
 import 'package:nim_chatkit/model/ait/ait_contacts_model.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
@@ -39,9 +42,12 @@ import '../chat_kit_client.dart';
 import '../helper/chat_message_user_helper.dart';
 import '../l10n/S.dart';
 import '../media/audio_player.dart';
+import '../view/chat_kit_message_list/pop_menu/chat_kit_menu_helper.dart';
 
 class ChatViewModel extends ChangeNotifier {
   static const String logTag = 'ChatViewModel';
+
+  static final Map<String, List<NIMMessage>> _routePendingNewMessages = {};
 
   static const String typeState = "typing";
 
@@ -134,6 +140,100 @@ class ChatViewModel extends ChangeNotifier {
   List<ChatMessage> newMessages = [];
 
   bool showNewMessage = true;
+
+  bool _isChatRouteVisible = true;
+
+  @protected
+  String get routePendingNewMessageKey => conversationId;
+
+  void setChatRouteVisible(bool visible) {
+    _isChatRouteVisible = visible;
+    if (!visible && newMessages.isNotEmpty) {
+      _cacheRoutePendingNewMessages(
+        newMessages.map((message) => message.nimMessage),
+      );
+    }
+  }
+
+  void _upsertPendingNewMessage(ChatMessage message) {
+    final index = newMessages.indexWhere(
+      (item) => _isSameNIMMessage(item.nimMessage, message.nimMessage),
+    );
+    if (index >= 0) {
+      newMessages[index] = message;
+    } else {
+      newMessages.add(message);
+    }
+    newMessages.sort(
+      (a, b) => (b.nimMessage.createTime ?? 0) - (a.nimMessage.createTime ?? 0),
+    );
+  }
+
+  void _cacheRoutePendingNewMessages(Iterable<NIMMessage> messages) {
+    final pending = _routePendingNewMessages.putIfAbsent(
+      routePendingNewMessageKey,
+      () => <NIMMessage>[],
+    );
+    for (final message in messages) {
+      final index = pending.indexWhere(
+        (item) => _isSameNIMMessage(item, message),
+      );
+      if (index >= 0) {
+        pending[index] = message;
+      } else {
+        pending.add(message);
+      }
+    }
+    pending.sort(
+      (a, b) => (b.createTime ?? 0) - (a.createTime ?? 0),
+    );
+  }
+
+  void _removeRoutePendingNewMessages(Iterable<NIMMessage> messages) {
+    final pending = _routePendingNewMessages[routePendingNewMessageKey];
+    if (pending == null) {
+      return;
+    }
+    pending.removeWhere(
+      (cached) => messages.any(
+        (message) => _isSameNIMMessage(cached, message),
+      ),
+    );
+    if (pending.isEmpty) {
+      clearRoutePendingNewMessages();
+    }
+  }
+
+  @protected
+  void clearRoutePendingNewMessages() {
+    _routePendingNewMessages.remove(routePendingNewMessageKey);
+  }
+
+  @protected
+  void prepareForAnchorLoading() {
+    showNewMessage = false;
+    final pending = _routePendingNewMessages.remove(
+      routePendingNewMessageKey,
+    );
+    if (pending?.isNotEmpty != true) {
+      return;
+    }
+    unawaited(_restoreRoutePendingNewMessages(pending!));
+  }
+
+  Future<void> _restoreRoutePendingNewMessages(
+    List<NIMMessage> pending,
+  ) async {
+    final messages = await ChatMessageRepo.fillUserInfo(pending);
+    if (_isDisposed) {
+      return;
+    }
+    for (final message in messages) {
+      _upsertPendingNewMessage(message);
+    }
+    checkAutoTranslateMessages(messages);
+    notifyListeners();
+  }
 
   set reeditMessage(RevokedMessageInfo? value) {
     _reeditMessage = value;
@@ -301,13 +401,26 @@ class ChatViewModel extends ChangeNotifier {
       _messageList.clear();
       showNewMessage = true;
       newMessages.clear();
+      clearRoutePendingNewMessages();
       _initFetch(scrollToBottom: true);
       return;
     }
     if (newMessages.isNotEmpty) {
-      _messageList.insertAll(0, newMessages);
+      final insertedMessages = newMessages
+          .where(
+            (pending) => !_messageList.any(
+              (message) => _isSameNIMMessage(
+                message.nimMessage,
+                pending.nimMessage,
+              ),
+            ),
+          )
+          .toList();
+      _messageList.insertAll(0, insertedMessages);
       newMessages.clear();
+      checkAutoTranslateMessages(insertedMessages);
     }
+    clearRoutePendingNewMessages();
     showNewMessage = true;
     if (scrollToEnd) {
       _scrollToEnd?.call();
@@ -336,6 +449,18 @@ class ChatViewModel extends ChangeNotifier {
 
   List<ChatMessage> get messageList => _messageList.toList();
 
+  final Set<String> _translatingMessageIds = {};
+
+  final Map<String, MessageTranslationState> _messageTranslationStates = {};
+
+  String? _activeManualTranslationMessageId;
+
+  int _manualTranslationSerial = 0;
+
+  final Set<String> _voiceToTextConvertingMessageIds = {};
+
+  final Map<String, MessageVoiceToTextState> _voiceToTextStates = {};
+
   //收到消息后滚动到最下边的回调
   void Function()? _scrollToEnd;
 
@@ -352,6 +477,44 @@ class ChatViewModel extends ChangeNotifier {
   set messageList(List<ChatMessage> value) {
     _messageList = value;
     notifyListeners();
+  }
+
+  bool isMessageTranslating(NIMMessage message) {
+    final messageId = MessageTranslationHelper.messageIdentity(message);
+    return messageId.isNotEmpty && _translatingMessageIds.contains(messageId);
+  }
+
+  MessageTranslationState? getMessageTranslationState(NIMMessage message) {
+    final messageId = MessageTranslationHelper.messageIdentity(message);
+    final memoryState =
+        messageId.isEmpty ? null : _messageTranslationStates[messageId];
+    if (memoryState?.translation?.hidden == true) {
+      return memoryState;
+    }
+    final info = MessageTranslationHelper.parseMessageTranslation(message);
+    if (info != null) {
+      return MessageTranslationState(translation: info, source: info.source);
+    }
+    if (messageId.isEmpty) {
+      return null;
+    }
+    return memoryState;
+  }
+
+  bool isVoiceToTextConverting(NIMMessage message) {
+    final messageId = MessageVoiceToTextHelper.messageIdentity(message);
+    return messageId.isNotEmpty &&
+        _voiceToTextConvertingMessageIds.contains(messageId);
+  }
+
+  MessageVoiceToTextState? getVoiceToTextState(NIMMessage message) {
+    final messageId = MessageVoiceToTextHelper.messageIdentity(message);
+    final memoryState =
+        messageId.isEmpty ? null : _voiceToTextStates[messageId];
+    return MessageVoiceToTextHelper.resolveVoiceToTextState(
+      message,
+      memoryState: memoryState,
+    );
   }
 
   final subscriptions = <StreamSubscription>[];
@@ -410,12 +573,25 @@ class ChatViewModel extends ChangeNotifier {
               !_isFilterMessage(element);
         }).toList();
         if (list.isNotEmpty) {
+          // Cache before filling user data. The current route may be replaced
+          // while the asynchronous contact lookup is still running.
+          _cacheRoutePendingNewMessages(list);
           var res = await ChatMessageRepo.fillUserInfo(list);
+          if (_isDisposed) {
+            return;
+          }
+          if (!_isChatRouteVisible) {
+            showNewMessage = false;
+          }
           if (!showNewMessage) {
-            newMessages.insertAll(0, res);
+            for (final message in res) {
+              _upsertPendingNewMessage(message);
+            }
+            checkAutoTranslateMessages(res);
             notifyListeners();
             return;
           }
+          _removeRoutePendingNewMessages(list);
           //用户数据填充完成后再更新过滤
           //解决非常罕见的在填充数据时，消息状态更新回调，导致消息多一条的问题
           _insertMessages(
@@ -804,6 +980,414 @@ class ChatViewModel extends ChangeNotifier {
     }
     if (_isDisposed) return;
     notifyListeners();
+    checkAutoTranslateMessages(messages);
+  }
+
+  Future<void> translateMessage(
+    ChatMessage message, {
+    MessageTranslationSource source = MessageTranslationSource.manual,
+  }) async {
+    if (!IMKitClient.enableMessageTranslation) {
+      return;
+    }
+    final nimMessage = message.nimMessage;
+    final text = nimMessage.text?.trim();
+    if (nimMessage.messageType != NIMMessageType.text ||
+        text?.isNotEmpty != true) {
+      return;
+    }
+    final translationContent =
+        MessageTranslationHelper.buildTextTranslationContent(
+      nimMessage.text!,
+      serverExtension: nimMessage.serverExtension,
+    );
+    final translatableParts = translationContent.translatableParts;
+    if (translatableParts.isEmpty) {
+      return;
+    }
+    final messageId = MessageTranslationHelper.messageIdentity(nimMessage);
+    if (messageId.isEmpty || _translatingMessageIds.contains(messageId)) {
+      return;
+    }
+    final targetLanguage = await ConfigRepo.getMessageTranslateTargetLanguage();
+    final existing = MessageTranslationHelper.parseMessageTranslation(
+      nimMessage,
+    );
+    final existingMemoryState = _messageTranslationStates[messageId];
+    if (existing != null &&
+        existing.text.isNotEmpty &&
+        existing.targetLanguage == targetLanguage) {
+      if (existing.hidden) {
+        await _saveMessageTranslation(
+          nimMessage,
+          existing.copyWith(hidden: false),
+          messageId,
+          existing.source,
+        );
+        if (!_isDisposed) {
+          notifyListeners();
+        }
+      }
+      return;
+    }
+    if (existingMemoryState?.translation?.text.isNotEmpty == true &&
+        existingMemoryState?.translation?.targetLanguage == targetLanguage) {
+      final memoryTranslation = existingMemoryState!.translation!;
+      if (memoryTranslation.hidden) {
+        await _saveMessageTranslation(
+          nimMessage,
+          memoryTranslation.copyWith(hidden: false),
+          messageId,
+          memoryTranslation.source,
+        );
+        if (!_isDisposed) {
+          notifyListeners();
+        }
+      }
+      return;
+    }
+    final isManual = source == MessageTranslationSource.manual;
+    var manualSerial = _manualTranslationSerial;
+    if (isManual) {
+      final previousMessageId = _activeManualTranslationMessageId;
+      if (previousMessageId?.isNotEmpty == true &&
+          previousMessageId != messageId) {
+        _translatingMessageIds.remove(previousMessageId);
+        _messageTranslationStates.remove(previousMessageId);
+      }
+      _activeManualTranslationMessageId = messageId;
+      manualSerial = ++_manualTranslationSerial;
+    }
+    if (isManual && manualSerial != _manualTranslationSerial) {
+      return;
+    }
+    if (!await haveConnectivity()) {
+      if (isManual && manualSerial == _manualTranslationSerial) {
+        _activeManualTranslationMessageId = null;
+      }
+      return;
+    }
+    if (isManual && manualSerial != _manualTranslationSerial) {
+      return;
+    }
+    _translatingMessageIds.add(messageId);
+    _messageTranslationStates.remove(messageId);
+    notifyListeners();
+    try {
+      final translatedParts = <String>[];
+      String? sourceLanguage;
+      var resolvedTargetLanguage = targetLanguage;
+      for (final part in translatableParts) {
+        final result = await NimCore.instance.messageService.translateText(
+          params: NIMTextTranslateParams(
+            text: part.textToTranslate,
+            targetLanguage: targetLanguage,
+          ),
+          config: NIMTranslatorConfig(strictMode: false),
+        );
+        if (_isDisposed ||
+            (isManual && manualSerial != _manualTranslationSerial)) {
+          return;
+        }
+        final translatedPart = result.data?.translatedText?.trim();
+        if (!result.isSuccess || translatedPart?.isNotEmpty != true) {
+          _setMessageTranslationFailed(messageId, source);
+          return;
+        }
+        translatedParts.add(translatedPart!);
+        sourceLanguage ??= result.data?.sourceLanguage;
+        if (result.data?.targetLanguage?.isNotEmpty == true) {
+          resolvedTargetLanguage = result.data!.targetLanguage!;
+        }
+      }
+      final translatedText = translationContent.combine(translatedParts).trim();
+      if (translatedText.isEmpty) {
+        _setMessageTranslationFailed(messageId, source);
+        return;
+      }
+      final info = MessageTranslationInfo(
+        targetLanguage: resolvedTargetLanguage,
+        sourceLanguage: sourceLanguage,
+        text: translatedText,
+        translatedAt: DateTime.now().millisecondsSinceEpoch,
+        source: source,
+      );
+      await _saveMessageTranslation(nimMessage, info, messageId, source);
+    } catch (e) {
+      Alog.e(
+        tag: logTag,
+        moduleName: 'message translation',
+        content: 'translate message failed: $e',
+      );
+      if (!_isDisposed &&
+          (!isManual || manualSerial == _manualTranslationSerial)) {
+        _setMessageTranslationFailed(messageId, source);
+      }
+    } finally {
+      if (!_isDisposed) {
+        _translatingMessageIds.remove(messageId);
+        if (isManual && manualSerial == _manualTranslationSerial) {
+          _activeManualTranslationMessageId = null;
+        }
+        notifyListeners();
+      }
+    }
+  }
+
+  Future<void> voiceToTextMessage(ChatMessage message) async {
+    if (!IMKitClient.enableVoiceToText) {
+      return;
+    }
+    final nimMessage = message.nimMessage;
+    if (nimMessage.messageType != NIMMessageType.audio) {
+      return;
+    }
+    final messageId = MessageVoiceToTextHelper.messageIdentity(nimMessage);
+    if (messageId.isEmpty ||
+        _voiceToTextConvertingMessageIds.contains(messageId)) {
+      return;
+    }
+    final existingMemoryState = _voiceToTextStates[messageId];
+    if (existingMemoryState?.voiceToText?.isValid == true) {
+      return;
+    }
+    final attachment = nimMessage.attachment;
+    if (attachment is! NIMMessageAudioAttachment) {
+      ChatUIToast.show(S.of().chatMessageVoiceToTextFailed);
+      return;
+    }
+    final voicePath = attachment.path?.trim();
+    final voiceUrl = attachment.url?.trim();
+    if (voicePath?.isNotEmpty != true && voiceUrl?.isNotEmpty != true) {
+      ChatUIToast.show(S.of().chatMessageVoiceToTextFailed);
+      return;
+    }
+    if (!await haveConnectivity()) {
+      return;
+    }
+    _voiceToTextConvertingMessageIds.add(messageId);
+    _voiceToTextStates.remove(messageId);
+    notifyListeners();
+    try {
+      final result = await NimCore.instance.messageService.voiceToText(
+        params: NIMVoiceToTextParams(
+          voicePath: voicePath?.isNotEmpty == true ? voicePath : null,
+          voiceUrl: voiceUrl,
+          duration: attachment.duration,
+        ),
+      );
+      if (_isDisposed) {
+        return;
+      }
+      final text = result.data?.trim();
+      if (!result.isSuccess || text?.isNotEmpty != true) {
+        ChatUIToast.show(S.of().chatMessageVoiceToTextFailed);
+        return;
+      }
+      final info = MessageVoiceToTextInfo(
+        text: text!,
+        convertedAt: DateTime.now().millisecondsSinceEpoch,
+        source: 'manual',
+      );
+      _saveVoiceToText(info, messageId);
+    } catch (e) {
+      Alog.e(
+        tag: logTag,
+        moduleName: 'voice to text',
+        content: 'voice to text failed: $e',
+      );
+      if (!_isDisposed) {
+        ChatUIToast.show(S.of().chatMessageVoiceToTextFailed);
+      }
+    } finally {
+      if (!_isDisposed) {
+        _voiceToTextConvertingMessageIds.remove(messageId);
+        notifyListeners();
+      }
+    }
+  }
+
+  void _saveVoiceToText(
+    MessageVoiceToTextInfo info,
+    String messageId,
+  ) {
+    if (_isDisposed) {
+      return;
+    }
+    _voiceToTextStates[messageId] = MessageVoiceToTextState(
+      voiceToText: info,
+    );
+  }
+
+  Future<void> _saveMessageTranslation(
+    NIMMessage message,
+    MessageTranslationInfo info,
+    String messageId,
+    MessageTranslationSource source,
+  ) async {
+    if (_isDisposed) {
+      return;
+    }
+    final localExtension = MessageTranslationHelper.mergeMessageTranslation(
+      message.localExtension,
+      info,
+    );
+    if (kIsWeb) {
+      _messageTranslationStates[messageId] = MessageTranslationState(
+        translation: info,
+        source: source,
+      );
+      return;
+    }
+    final result =
+        await NimCore.instance.messageService.updateMessageLocalExtension(
+      message: message,
+      localExtension: localExtension,
+    );
+    if (_isDisposed) {
+      return;
+    }
+    if (!result.isSuccess) {
+      _setMessageTranslationFailed(messageId, source);
+      return;
+    }
+    final updatedMessage = result.data ?? message;
+    updatedMessage.localExtension = localExtension;
+    _messageTranslationStates[messageId] = MessageTranslationState(
+      translation: info,
+      source: source,
+    );
+    _replaceMessageById(updatedMessage);
+  }
+
+  Future<void> hideMessageTranslation(ChatMessage message) async {
+    final nimMessage = message.nimMessage;
+    final messageId = MessageTranslationHelper.messageIdentity(nimMessage);
+    final info = getMessageTranslationState(nimMessage)?.translation;
+    if (messageId.isEmpty || info == null || info.hidden) {
+      return;
+    }
+    final hiddenInfo = info.copyWith(hidden: true);
+    if (kIsWeb) {
+      _messageTranslationStates[messageId] = MessageTranslationState(
+        translation: hiddenInfo,
+        source: hiddenInfo.source,
+      );
+      notifyListeners();
+      return;
+    }
+    final localExtension = MessageTranslationHelper.mergeMessageTranslation(
+      nimMessage.localExtension,
+      hiddenInfo,
+    );
+    final result =
+        await NimCore.instance.messageService.updateMessageLocalExtension(
+      message: nimMessage,
+      localExtension: localExtension,
+    );
+    if (_isDisposed || !result.isSuccess) {
+      return;
+    }
+    final updatedMessage = result.data ?? nimMessage;
+    updatedMessage.localExtension = localExtension;
+    _messageTranslationStates[messageId] = MessageTranslationState(
+      translation: hiddenInfo,
+      source: hiddenInfo.source,
+    );
+    _replaceMessageById(updatedMessage);
+    notifyListeners();
+  }
+
+  Future<void> forwardTranslatedText(
+    String text,
+    String conversationId, {
+    String? postScript,
+  }) async {
+    final result = await MessageCreator.createTextMessage(text);
+    if (!result.isSuccess || result.data == null) {
+      return;
+    }
+    forwardMessage(
+      result.data!,
+      conversationId,
+      postScript: postScript,
+    );
+  }
+
+  void _replaceMessageById(NIMMessage message) {
+    for (var chatMessage in _messageList) {
+      if (_isSameNIMMessage(chatMessage.nimMessage, message)) {
+        chatMessage.nimMessage = message;
+      }
+    }
+    for (var chatMessage in newMessages) {
+      if (_isSameNIMMessage(chatMessage.nimMessage, message)) {
+        chatMessage.nimMessage = message;
+      }
+    }
+  }
+
+  bool _isSameNIMMessage(NIMMessage first, NIMMessage second) {
+    final firstServerId = first.messageServerId;
+    final secondServerId = second.messageServerId;
+    if (firstServerId?.isNotEmpty == true &&
+        firstServerId != '-1' &&
+        secondServerId?.isNotEmpty == true &&
+        secondServerId != '-1') {
+      return firstServerId == secondServerId;
+    }
+    return first.messageClientId == second.messageClientId;
+  }
+
+  void _setMessageTranslationFailed(
+    String messageId,
+    MessageTranslationSource source,
+  ) {
+    _messageTranslationStates[messageId] = MessageTranslationState(
+      failed: true,
+      source: source,
+    );
+  }
+
+  Future<void> checkAutoTranslateMessages([List<ChatMessage>? messages]) async {
+    if (!IMKitClient.enableMessageTranslation) {
+      return;
+    }
+    final autoTranslate = await ConfigRepo.getMessageAutoTranslate();
+    if (!autoTranslate) {
+      return;
+    }
+    final enabledAt = await ConfigRepo.getMessageAutoTranslateEnabledAt();
+    if (enabledAt <= 0) {
+      return;
+    }
+    final candidates = messages ?? _messageList;
+    for (final message in candidates) {
+      if (!_shouldAutoTranslateMessage(message.nimMessage, enabledAt)) {
+        continue;
+      }
+      await translateMessage(
+        message,
+        source: MessageTranslationSource.auto,
+      );
+    }
+  }
+
+  bool _shouldAutoTranslateMessage(NIMMessage message, int enabledAt) {
+    final text = message.text?.trim();
+    final messageId = MessageTranslationHelper.messageIdentity(message);
+    return messageId.isNotEmpty &&
+        !_translatingMessageIds.contains(messageId) &&
+        _messageTranslationStates[messageId]?.failed != true &&
+        _messageTranslationStates[messageId]?.translation == null &&
+        MessageTranslationHelper.parseMessageTranslation(message) == null &&
+        message.messageType == NIMMessageType.text &&
+        text?.isNotEmpty == true &&
+        ChatKitMenuHelper.isSelf(message) != true &&
+        message.createTime != null &&
+        message.createTime! > enabledAt &&
+        (!ChatMessageHelper.isReceivedMessageFromAi(message) ||
+            ChatMessageHelper.isReceivedMessageFromRobot(message));
   }
 
   void sendInputNotification(bool isTyping) {
@@ -821,6 +1405,7 @@ class ChatViewModel extends ChangeNotifier {
 
   void _initFetch({bool scrollToBottom = false}) async {
     _logI('initFetch -->>');
+    clearRoutePendingNewMessages();
     hasMoreForwardMessages = true;
     hasMoreNewerMessages = false;
     _fetchMoreMessage(
@@ -831,8 +1416,19 @@ class ChatViewModel extends ChangeNotifier {
     );
   }
 
+  /// Resolves the full message represented by a message reference.
+  Future<NIMResult<NIMMessage>> getMessageByRefer(
+    NIMMessageRefer messageRefer,
+  ) {
+    return ChatMessageRepo.getMessageByRefer(messageRefer);
+  }
+
   void loadMessageWithAnchor(NIMMessage anchor) {
     _logI('initFetch -->> anchor:${anchor.text}');
+    // Historical navigation positions the list away from the latest message.
+    // Keep later messages in the pending list so the user gets the new-message
+    // prompt instead of being scrolled away from the selected message.
+    prepareForAnchorLoading();
     hasMoreForwardMessages = true;
     hasMoreNewerMessages = true;
     if (ChatKitUtils.isDesktopOrWeb) {
@@ -844,6 +1440,7 @@ class ChatViewModel extends ChangeNotifier {
 
   void loadMessageWithAnchorDate(int date) async {
     _logI('initFetch -->> anchor date:$date');
+    prepareForAnchorLoading();
     hasMoreForwardMessages = true;
     hasMoreNewerMessages = true;
     _fetchMessageListBothDirectByAnchorDate(date);
@@ -920,6 +1517,7 @@ class ChatViewModel extends ChangeNotifier {
       this.findAnchorDate = _messageList.last.nimMessage.createTime!;
     }
     notifyListeners();
+    checkAutoTranslateMessages();
   }
 
   _fetchMessageListBothDirect(NIMMessage anchor) async {
@@ -927,7 +1525,26 @@ class ChatViewModel extends ChangeNotifier {
 
     isLoading = true;
 
-    bool haveClean = false;
+    // Keep the searched message while loading both sides. An empty or failed
+    // page request must not remove the only message that can be located.
+    _messageList.clear();
+    final anchorMessage = ChatMessage(anchor);
+    _messageList.add(anchorMessage);
+
+    if (anchor.senderId?.isNotEmpty == true) {
+      unawaited(() async {
+        try {
+          final contact = await getIt<ContactProvider>().getContact(
+            anchor.senderId!,
+            needFriend: false,
+          );
+          anchorMessage.fromUser = contact?.user;
+          if (!_isDisposed && !isLoading) {
+            notifyListeners();
+          }
+        } catch (_) {}
+      }());
+    }
 
     NIMMessageListOption optionNewer = NIMMessageListOption(
       conversationId: conversationId,
@@ -943,23 +1560,16 @@ class ChatViewModel extends ChangeNotifier {
     );
 
     if (newerMsgs.isSuccess) {
-      if (!haveClean) {
-        _messageList.clear();
-        haveClean = true;
-      }
       hasMoreNewerMessages =
           (newerMsgs.data?.length ?? 0) >= (messageLimit / 2).toInt();
       if (newerMsgs.data?.isNotEmpty == true) {
-        _messageList.addAll(newerMsgs.data!);
+        _messageList.addAll(
+          newerMsgs.data!.where(
+            (message) => !message.nimMessage.isSameMessage(anchor),
+          ),
+        );
       }
     }
-
-    ChatMessage anchorMessage = ChatMessage(anchor);
-    var contact = await getIt<ContactProvider>().getContact(
-      anchor.senderId!,
-      needFriend: false,
-    );
-    anchorMessage.fromUser = contact?.user;
 
     List<NIMMessagePin> pinRes = NIMChatCache.instance.pinnedMessages;
     if (pinRes.isNotEmpty) {
@@ -968,8 +1578,6 @@ class ChatViewModel extends ChangeNotifier {
         (pin) => _isSameMessage(anchorMessage.nimMessage, pin),
       );
     }
-
-    _messageList.add(anchorMessage);
 
     NIMMessageListOption optionOlder = NIMMessageListOption(
       conversationId: conversationId,
@@ -984,14 +1592,14 @@ class ChatViewModel extends ChangeNotifier {
       addUserInfo: true,
     );
     if (olderMsgs.isSuccess) {
-      if (!haveClean) {
-        _messageList.clear();
-        haveClean = true;
-      }
       hasMoreForwardMessages =
           (olderMsgs.data?.length ?? 0) >= (messageLimit / 2).toInt();
       if (olderMsgs.data?.isNotEmpty == true) {
-        _messageList.addAll(olderMsgs.data!);
+        _messageList.addAll(
+          olderMsgs.data!.where(
+            (message) => !message.nimMessage.isSameMessage(anchor),
+          ),
+        );
       }
     }
 
@@ -1001,6 +1609,7 @@ class ChatViewModel extends ChangeNotifier {
     );
 
     notifyListeners();
+    checkAutoTranslateMessages();
   }
 
   fetchMoreMessage(NIMQueryDirection direction) {
@@ -1102,20 +1711,8 @@ class ChatViewModel extends ChangeNotifier {
       }
     } else {
       hasMoreNewerMessages = (list?.length ?? 0) >= limit;
-      //移除newMessages 中与list重复的消息
-      if (!hasMoreNewerMessages &&
-          newMessages.isNotEmpty &&
-          list?.isNotEmpty == true) {
-        newMessages.removeWhere(
-          (element) =>
-              list?.any(
-                (e) =>
-                    e.nimMessage.messageClientId ==
-                    element.nimMessage.messageClientId,
-              ) ==
-              true,
-        );
-      }
+      // newMessages 同时承担提醒标记。即使同一消息已随分页进入列表，
+      // 也要等用户真正滑到最新消息端后再清除提醒。
       list = _successMessageFilter(list);
       _logI('newer load has more:$hasMoreNewerMessages');
       if (list != null) {

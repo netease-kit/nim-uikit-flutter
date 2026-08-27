@@ -5,7 +5,6 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/manager/ai_robot_manager.dart';
@@ -15,7 +14,16 @@ import 'package:nim_chatkit/repo/conversation_repo.dart';
 import 'package:nim_chatkit/repo/text_search.dart';
 import 'package:nim_chatkit/repo/topic_repo.dart';
 import 'package:nim_chatkit_ui/helper/topic_message_helper.dart';
+import 'package:nim_chatkit_ui/l10n/S.dart';
 import 'package:nim_core_v2/nim_core.dart';
+
+/// Whether the platform supports querying Topic messages from local storage.
+@visibleForTesting
+bool shouldLoadLatestTopicMessageFromLocal({
+  required bool isWeb,
+}) {
+  return !isWeb;
+}
 
 class BotSubsessionListViewModel extends ChangeNotifier {
   static const int pageSize = 50;
@@ -28,30 +36,40 @@ class BotSubsessionListViewModel extends ChangeNotifier {
 
   final List<StreamSubscription> _subscriptions = [];
   final List<BotSubsessionListItem> _allItems = [];
+  int _unreadStateRevision = 0;
 
   List<BotSubsessionListItem> _items = [];
+
   List<BotSubsessionListItem> get items => _items;
 
   bool _isLoading = false;
+
   bool get isLoading => _isLoading;
 
   bool _isLoadingMore = false;
+
   bool get isLoadingMore => _isLoadingMore;
 
   bool _loadFailed = false;
+
   bool get loadFailed => _loadFailed;
 
   bool _hasMore = false;
+
   bool get hasMore => _hasMore;
 
   bool _fallbackToLinearChat = false;
+  bool _isDisposed = false;
+
   bool get fallbackToLinearChat => _fallbackToLinearChat;
 
   String _keyword = '';
+
   String get keyword => _keyword;
 
   String? _nextToken;
   BotSubsessionTopicContext? _draftContext;
+  final Map<int, NIMMessage> _pendingTopicMessages = {};
 
   String get targetId => ChatKitUtils.getConversationTargetId(conversationId);
 
@@ -73,15 +91,32 @@ class BotSubsessionListViewModel extends ChangeNotifier {
 
   Future<void> markConversationRead() async {
     await ConversationRepo.clearSessionUnreadCount(conversationId);
-    for (var i = 0; i < _allItems.length; i++) {
-      if (_allItems[i].showUnreadDot) {
-        _allItems[i] = _allItems[i].copyWith(showUnreadDot: false);
-      }
-    }
-    _applyFilter();
+    // 更新会话已读时间戳，子会话列表红点基于 latestMessageTime > readTime 判定，
+    // 仅清未读数不会更新 readTime，重新进入列表时红点会复现。
+    await ConversationRepo.markConversationRead(conversationId);
+    _clearUnreadDots();
   }
 
   void _bindTopicEvents() {
+    _subscriptions.add(
+      ConversationRepo.onConversationReadTimeUpdated().listen((event) {
+        if (event.conversationId != conversationId) {
+          return;
+        }
+        _clearUnreadDots();
+      }),
+    );
+    _subscriptions.add(
+      ConversationRepo.onConversationChanged().listen((conversations) {
+        if (conversations.any(
+          (conversation) =>
+              conversation.conversationId == conversationId &&
+              (conversation.unreadCount ?? 0) <= 0,
+        )) {
+          _clearUnreadDots();
+        }
+      }),
+    );
     _subscriptions.add(
       TopicRepo.instance.onTopicAdded.listen((topic) {
         if (topic.conversationId == conversationId) {
@@ -121,6 +156,11 @@ class BotSubsessionListViewModel extends ChangeNotifier {
           _handleTopicMessage(message);
         }
       }),
+    );
+    _subscriptions.add(
+      ChatServiceObserverRepo.observeMessageDelete().listen(
+        _handleTopicMessageDeleted,
+      ),
     );
   }
 
@@ -205,6 +245,7 @@ class BotSubsessionListViewModel extends ChangeNotifier {
       title: _draftContext!.placeholderTitle,
       summary: '',
       latestTime: DateTime.now().millisecondsSinceEpoch,
+      sortTime: DateTime.now().millisecondsSinceEpoch,
       showUnreadDot: false,
     );
     if (existingIndex >= 0) {
@@ -224,15 +265,26 @@ class BotSubsessionListViewModel extends ChangeNotifier {
       _upsertTopic(topic);
       return;
     }
-    final latestTime = DateTime.now().millisecondsSinceEpoch;
+    final pendingMessage = topic.topicId == null
+        ? null
+        : _pendingTopicMessages.remove(topic.topicId);
+    final latestTime = pendingMessage?.createTime ??
+        topic.updateTime ??
+        topic.messageTime ??
+        topic.createTime ??
+        DateTime.now().millisecondsSinceEpoch;
     final item = BotSubsessionListItem(
       context: BotSubsessionTopicContext(
         conversationId: conversationId,
         topic: topic,
+        localKey: placeholderContext.localKey,
       ),
       title: TopicMessageHelper.resolveTopicTitle(topic),
-      summary: '',
+      summary: pendingMessage == null
+          ? ''
+          : TopicMessageHelper.buildSummaryText(pendingMessage),
       latestTime: latestTime,
+      sortTime: latestTime,
       showUnreadDot: false,
     );
     final placeholderIndex =
@@ -252,6 +304,9 @@ class BotSubsessionListViewModel extends ChangeNotifier {
     }
     _draftContext = null;
     _applyFilter(notify: notify);
+    if (pendingMessage == null) {
+      _upsertTopic(topic);
+    }
   }
 
   void discardPlaceholder({
@@ -322,9 +377,21 @@ class BotSubsessionListViewModel extends ChangeNotifier {
       readTime = readTimeRes.data!;
     }
 
+    final conversationType = !kIsWeb
+        ? (await NimCore.instance.conversationIdUtil.conversationType(
+              conversationId,
+            ))
+                .data ??
+            NIMConversationType.p2p
+        : null;
+
     return Future.wait(topics.map((topic) async {
       final title = TopicMessageHelper.resolveTopicTitle(topic);
-      final latestMessageInfo = await _loadLatestMessageInfo(topic, readTime);
+      final latestMessageInfo = await _loadLatestMessageInfo(
+        topic,
+        readTime,
+        conversationType,
+      );
       return BotSubsessionListItem(
         context: BotSubsessionTopicContext(
           conversationId: conversationId,
@@ -332,7 +399,8 @@ class BotSubsessionListViewModel extends ChangeNotifier {
         ),
         title: title,
         summary: latestMessageInfo.summary,
-        latestTime: latestMessageInfo.latestTime,
+        latestTime: latestMessageInfo.latestMessageTime,
+        sortTime: latestMessageInfo.sortTime,
         showUnreadDot: latestMessageInfo.showUnreadDot,
       );
     }));
@@ -341,9 +409,95 @@ class BotSubsessionListViewModel extends ChangeNotifier {
   Future<_TopicLatestMessageInfo> _loadLatestMessageInfo(
     V2NIMTopic topic,
     int readTime,
+    NIMConversationType? conversationType,
   ) async {
     final topicTime =
         topic.updateTime ?? topic.messageTime ?? topic.createTime ?? 0;
+    final fallbackMessageTime = topic.messageTime ?? topic.createTime ?? 0;
+    if (shouldLoadLatestTopicMessageFromLocal(
+      isWeb: kIsWeb,
+    )) {
+      final localLatestMessageInfo = await _queryLatestMessageInfoFromLocal(
+        topic,
+        readTime,
+        topicTime,
+        fallbackMessageTime,
+        conversationType,
+      );
+      if (localLatestMessageInfo != null) {
+        return localLatestMessageInfo;
+      }
+    }
+
+    final cloudLatestMessageInfo = await _queryLatestMessageInfoFromCloud(
+      topic,
+      readTime,
+      topicTime,
+      fallbackMessageTime,
+    );
+    return cloudLatestMessageInfo ??
+        _buildFallbackLatestMessageInfo(
+          fallbackMessageTime,
+          topicTime,
+        );
+  }
+
+  Future<_TopicLatestMessageInfo?> _queryLatestMessageInfoFromLocal(
+    V2NIMTopic topic,
+    int readTime,
+    int topicTime,
+    int fallbackMessageTime,
+    NIMConversationType? conversationType,
+  ) async {
+    final messageClientId = topic.messageClientId;
+    final messageServerId = topic.messageServerId;
+    if (messageClientId?.isEmpty != false &&
+        messageServerId?.isEmpty != false) {
+      return null;
+    }
+
+    final result =
+        await NimCore.instance.messageService.getLocalThreadMessageList(
+      messageRefer: NIMMessageRefer(
+        conversationId: topic.conversationId ?? conversationId,
+        conversationType: conversationType,
+        messageClientId: messageClientId,
+        messageServerId: messageServerId,
+        createTime: topic.messageTime ?? topic.createTime,
+      ),
+    );
+    if (!result.isSuccess) {
+      return null;
+    }
+
+    final latestMessage = TopicMessageHelper.findLatestMessage(
+      <NIMMessage?>[
+        result.data?.message,
+        ...?result.data?.replyList,
+      ],
+    );
+    if (latestMessage == null) {
+      return null;
+    }
+
+    final latestMessageTime = latestMessage.createTime ?? fallbackMessageTime;
+    final sortTime =
+        latestMessageTime > topicTime ? latestMessageTime : topicTime;
+    return _TopicLatestMessageInfo(
+      summary: TopicMessageHelper.buildSummaryText(latestMessage),
+      latestMessageTime: latestMessageTime,
+      sortTime: sortTime,
+      showUnreadDot:
+          _isReceivedMessage(latestMessage) && latestMessageTime > readTime,
+    );
+  }
+
+  Future<_TopicLatestMessageInfo?> _queryLatestMessageInfoFromCloud(
+    V2NIMTopic topic,
+    int readTime,
+    int topicTime,
+    int fallbackMessageTime,
+  ) async {
     final result = await TopicRepo.instance.getTopicMessageList(
       V2NIMTopicMessageListOption(
         topic: topic,
@@ -352,32 +506,45 @@ class BotSubsessionListViewModel extends ChangeNotifier {
       ),
     );
     if (!result.isSuccess) {
-      return _TopicLatestMessageInfo(
-        summary: '',
-        latestTime: topicTime,
-        showUnreadDot: false,
-      );
+      return null;
     }
     final messages = result.data?.replyList;
     if (messages == null || messages.isEmpty) {
-      return _TopicLatestMessageInfo(
-        summary: '',
-        latestTime: topicTime,
-        showUnreadDot: false,
-      );
+      return null;
     }
-    final latestMessage = messages.first;
-    final latestTime = latestMessage.createTime ?? topicTime;
+    final latestMessage = TopicMessageHelper.findLatestMessage(messages);
+    if (latestMessage == null) {
+      return null;
+    }
+    final latestMessageTime = latestMessage.createTime ?? fallbackMessageTime;
+    final sortTime =
+        latestMessageTime > topicTime ? latestMessageTime : topicTime;
     return _TopicLatestMessageInfo(
       summary: TopicMessageHelper.buildSummaryText(latestMessage),
-      latestTime: latestTime,
-      showUnreadDot: _isReceivedMessage(latestMessage) && latestTime > readTime,
+      latestMessageTime: latestMessageTime,
+      sortTime: sortTime,
+      showUnreadDot:
+          _isReceivedMessage(latestMessage) && latestMessageTime > readTime,
+    );
+  }
+
+  _TopicLatestMessageInfo _buildFallbackLatestMessageInfo(
+    int fallbackMessageTime,
+    int topicTime,
+  ) {
+    return _TopicLatestMessageInfo(
+      summary: '',
+      latestMessageTime: fallbackMessageTime,
+      sortTime:
+          topicTime > fallbackMessageTime ? topicTime : fallbackMessageTime,
+      showUnreadDot: false,
     );
   }
 
   void _upsertTopic(V2NIMTopic topic) async {
+    final unreadStateRevision = _unreadStateRevision;
     final items = await _buildItems([topic]);
-    if (items.isEmpty) {
+    if (_isDisposed || items.isEmpty) {
       return;
     }
     final item = items.first;
@@ -385,8 +552,20 @@ class BotSubsessionListViewModel extends ChangeNotifier {
       (element) => element.context.topic?.topicId == topic.topicId,
     );
     if (index >= 0) {
+      final existing = _allItems[index];
       _allItems[index] = item.copyWith(
-        showUnreadDot: _allItems[index].showUnreadDot || item.showUnreadDot,
+        title: item.title == S.of().botSubsessionNewSession
+            ? existing.title
+            : item.title,
+        summary: item.summary.isEmpty ? existing.summary : item.summary,
+        latestTime: item.latestTime > existing.latestTime
+            ? item.latestTime
+            : existing.latestTime,
+        sortTime: item.sortTime > existing.sortTime
+            ? item.sortTime
+            : existing.sortTime,
+        showUnreadDot: existing.showUnreadDot ||
+            (unreadStateRevision == _unreadStateRevision && item.showUnreadDot),
       );
     } else {
       _allItems.insert(0, item);
@@ -400,31 +579,85 @@ class BotSubsessionListViewModel extends ChangeNotifier {
     }
     final topicRefer = message.topicRefer;
     final topicId = topicRefer?.topicId;
-    if (topicRefer?.conversationId != conversationId || topicId == null) {
+    if (topicRefer == null ||
+        topicRefer.conversationId != conversationId ||
+        topicId == null) {
       return;
     }
     final index = _allItems.indexWhere(
       (item) => item.context.topic?.topicId == topicId,
     );
     if (index < 0) {
-      _refreshTopicByRefer(topicRefer!);
+      _pendingTopicMessages[topicId] = message;
+      _refreshTopicByRefer(topicRefer);
       return;
     }
 
     final item = _allItems[index];
     final latestTime =
         message.createTime ?? DateTime.now().millisecondsSinceEpoch;
+    final topicTime = item.context.topic?.updateTime ??
+        item.context.topic?.messageTime ??
+        item.context.topic?.createTime ??
+        0;
     _allItems[index] = item.copyWith(
       summary: TopicMessageHelper.buildSummaryText(message),
       latestTime: latestTime,
+      sortTime: latestTime > topicTime ? latestTime : topicTime,
       showUnreadDot: item.showUnreadDot || _isReceivedMessage(message),
     );
     _applyFilter();
   }
 
+  void _handleTopicMessageDeleted(
+    List<NIMMessageDeletedNotification> notifications,
+  ) {
+    final hasDeletedMessageInConversation = notifications.any(
+      (notification) =>
+          notification.messageRefer?.conversationId == conversationId,
+    );
+    if (!hasDeletedMessageInConversation) {
+      return;
+    }
+    _refreshLoadedTopicItems();
+  }
+
+  Future<void> _refreshLoadedTopicItems() async {
+    final topics = _allItems
+        .map((item) => item.context.topic)
+        .whereType<V2NIMTopic>()
+        .toList();
+    if (topics.isEmpty) {
+      return;
+    }
+
+    final refreshedItems = await _buildItems(topics);
+    if (_isDisposed) {
+      return;
+    }
+    final refreshedItemsByTopicId = <int, BotSubsessionListItem>{
+      for (final item in refreshedItems)
+        if (item.context.topic?.topicId != null)
+          item.context.topic!.topicId!: item,
+    };
+    var hasUpdatedItem = false;
+    for (var index = 0; index < _allItems.length; index++) {
+      final topicId = _allItems[index].context.topic?.topicId;
+      final refreshedItem =
+          topicId == null ? null : refreshedItemsByTopicId[topicId];
+      if (refreshedItem != null) {
+        _allItems[index] = refreshedItem;
+        hasUpdatedItem = true;
+      }
+    }
+    if (hasUpdatedItem) {
+      _applyFilter();
+    }
+  }
+
   Future<void> _refreshTopicByRefer(V2NIMTopicRefer topicRefer) async {
     final result = await TopicRepo.instance.getTopicByRefer(topicRefer);
-    if (result.isSuccess && result.data != null) {
+    if (!_isDisposed && result.isSuccess && result.data != null) {
       _upsertTopic(result.data!);
     }
   }
@@ -437,6 +670,20 @@ class BotSubsessionListViewModel extends ChangeNotifier {
       return false;
     }
     return message.senderId != IMKitClient.account();
+  }
+
+  void _clearUnreadDots() {
+    _unreadStateRevision++;
+    var changed = false;
+    for (var i = 0; i < _allItems.length; i++) {
+      if (_allItems[i].showUnreadDot) {
+        _allItems[i] = _allItems[i].copyWith(showUnreadDot: false);
+        changed = true;
+      }
+    }
+    if (changed) {
+      _applyFilter();
+    }
   }
 
   void _applyFilter({bool notify = true}) {
@@ -461,7 +708,7 @@ class BotSubsessionListViewModel extends ChangeNotifier {
       if (a.isPlaceholder != b.isPlaceholder) {
         return a.isPlaceholder ? -1 : 1;
       }
-      return b.latestTime.compareTo(a.latestTime);
+      return b.sortTime.compareTo(a.sortTime);
     });
     if (notify) {
       notifyListeners();
@@ -470,6 +717,8 @@ class BotSubsessionListViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _isDisposed = true;
+    _pendingTopicMessages.clear();
     for (final subscription in _subscriptions) {
       subscription.cancel();
     }
@@ -479,12 +728,14 @@ class BotSubsessionListViewModel extends ChangeNotifier {
 
 class _TopicLatestMessageInfo {
   final String summary;
-  final int latestTime;
+  final int latestMessageTime;
+  final int sortTime;
   final bool showUnreadDot;
 
   const _TopicLatestMessageInfo({
     required this.summary,
-    required this.latestTime,
+    required this.latestMessageTime,
+    required this.sortTime,
     required this.showUnreadDot,
   });
 }

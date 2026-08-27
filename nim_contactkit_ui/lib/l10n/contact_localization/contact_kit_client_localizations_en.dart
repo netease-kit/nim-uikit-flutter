@@ -301,6 +301,9 @@ class ContactKitClientLocalizationsEn extends ContactKitClientLocalizations {
       'After deletion, connected robots will be disconnected and need to be reconfigured.';
 
   @override
+  String get contactRobotDeleteConfirmAction => 'Delete';
+
+  @override
   String get contactRobotBind => 'Bind Robot';
 
   @override
@@ -313,7 +316,7 @@ class ContactKitClientLocalizationsEn extends ContactKitClientLocalizations {
   String get contactRobotBindSelectHint => 'Please select a robot to bind:';
 
   @override
-  String get contactRobotBindExistingHint => 'Or select an existing robot:';
+  String get contactRobotBindExistingHint => 'Select an existing robot:';
 
   @override
   String get contactRobotBindConfirmTitle => 'Bind this account?';

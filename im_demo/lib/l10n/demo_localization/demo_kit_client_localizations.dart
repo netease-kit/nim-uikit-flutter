@@ -460,7 +460,7 @@ abstract class DemoKitClientLocalizations {
   /// No description provided for @swindleTips.
   ///
   /// In en, this message translates to:
-  /// **'For test only. Beware of money transfer, lottery winnings & strange call scams.'**
+  /// **'For Yunxin IM product demo use only. Do not trust messages involving money transfers or winning prizes. Do not call unknown numbers. Beware of scams.'**
   String get swindleTips;
 
   /// No description provided for @aiStreamMode.
@@ -546,6 +546,12 @@ abstract class DemoKitClientLocalizations {
   /// In en, this message translates to:
   /// **'No'**
   String get labelNo;
+
+  /// No description provided for @messageTranslationSetting.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate'**
+  String get messageTranslationSetting;
 }
 
 class _DemoKitClientLocalizationsDelegate

@@ -246,6 +246,12 @@ class PopMenuConfig {
   ///撤回
   bool? enableRevoke;
 
+  ///文本消息翻译
+  bool? enableTranslate;
+
+  ///语音转文字
+  bool? enableVoiceToText;
+
   PopMenuConfig({
     this.enableForward,
     this.enableCopy,
@@ -256,6 +262,8 @@ class PopMenuConfig {
     this.enableDelete,
     this.enableRevoke,
     this.enableVoiceSwitch,
+    this.enableTranslate,
+    this.enableVoiceToText,
   });
 }
 

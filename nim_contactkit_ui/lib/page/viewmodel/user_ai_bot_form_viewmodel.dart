@@ -28,39 +28,16 @@ class UserAIBotFormViewModel extends ChangeNotifier {
   }) async {
     isSubmitting = true;
     notifyListeners();
-    final result = await NimCore.instance.aiService.createUserAIBot(
+    final result = await AIRobotManager.instance.createRobot(
       V2NIMCreateUserAIBotParams(
         accid: accid,
         name: name,
         icon: icon,
       ),
     );
-    if (!result.isSuccess) {
-      isSubmitting = false;
-      notifyListeners();
-      return NIMResult.failure(message: result.errorDetails);
-    }
-    final botResult = await NimCore.instance.aiService.getUserAIBot(
-      V2NIMGetUserAIBotParams(accid: accid),
-    );
     isSubmitting = false;
     notifyListeners();
-    if (botResult.isSuccess && botResult.data != null) {
-      if ((botResult.data?.token?.isEmpty ?? true) &&
-          result.data?.token?.isNotEmpty == true) {
-        botResult.data!.token = result.data!.token;
-      }
-      AIRobotManager.instance.upsertRobot(botResult.data!);
-      return botResult;
-    }
-    final bot = V2NIMUserAIBot(
-      accid: accid,
-      name: name,
-      icon: icon,
-      token: result.data?.token,
-    );
-    AIRobotManager.instance.upsertRobot(bot);
-    return NIMResult.success(data: bot);
+    return result;
   }
 
   Future<NIMResult<V2NIMUserAIBot>> updateBot({
@@ -70,33 +47,15 @@ class UserAIBotFormViewModel extends ChangeNotifier {
   }) async {
     isSubmitting = true;
     notifyListeners();
-    final result = await NimCore.instance.aiService.updateUserAIBot(
+    final result = await AIRobotManager.instance.updateRobot(
       V2NIMUpdateUserAIBotParams(
         accid: accid,
         name: name,
         icon: icon,
       ),
     );
-    if (!result.isSuccess) {
-      isSubmitting = false;
-      notifyListeners();
-      return NIMResult.failure(message: result.errorDetails);
-    }
-    final botResult = await NimCore.instance.aiService.getUserAIBot(
-      V2NIMGetUserAIBotParams(accid: accid),
-    );
     isSubmitting = false;
     notifyListeners();
-    if (botResult.isSuccess && botResult.data != null) {
-      AIRobotManager.instance.upsertRobot(botResult.data!);
-      return botResult;
-    }
-    final bot = V2NIMUserAIBot(
-      accid: accid,
-      name: name,
-      icon: icon,
-    );
-    AIRobotManager.instance.upsertRobot(bot);
-    return NIMResult.success(data: bot);
+    return result;
   }
 }

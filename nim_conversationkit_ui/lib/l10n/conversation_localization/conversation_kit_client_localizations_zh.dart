@@ -4,7 +4,6 @@
 
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'conversation_kit_client_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -123,4 +122,92 @@ class ConversationKitClientLocalizationsZh
 
   @override
   String get cancelMuteTitle => '取消免打扰';
+
+  @override
+  String get closeTitle => '关闭';
+
+  @override
+  String get saveTitle => '保存';
+
+  @override
+  String get conversationGroupTitle => '会话分组';
+
+  @override
+  String get conversationGroupAll => '全部';
+
+  @override
+  String get conversationGroupAitMe => '@我';
+
+  @override
+  String get conversationGroupUnread => '未读';
+
+  @override
+  String get conversationGroupVisible => '常用分组';
+
+  @override
+  String get conversationGroupHidden => '隐藏分组';
+
+  @override
+  String get conversationGroupCreate => '新建分组';
+
+  @override
+  String get conversationGroupSetting => '设置会话分组';
+
+  @override
+  String get conversationGroupName => '分组名称';
+
+  @override
+  String get conversationGroupNameHint => '请输入分组名称';
+
+  @override
+  String get conversationGroupConversationList => '会话列表';
+
+  @override
+  String conversationGroupConversationCount(int count) {
+    return '会话($count)';
+  }
+
+  @override
+  String get conversationGroupAddConversation => '添加会话';
+
+  @override
+  String get conversationGroupSearchHint => '请输入你需要搜索的会话';
+
+  @override
+  String get conversationGroupOperationFailed => '操作失败';
+
+  @override
+  String get conversationGroupLimit => '会话分组超限';
+
+  @override
+  String get conversationGroupPartialAddFailed => '部分会话添加失败';
+
+  @override
+  String get conversationGroupConversationNotExist => '会话不存在';
+
+  @override
+  String get conversationGroupConversationCountLimit => '会话分组中的会话数量超限';
+
+  @override
+  String get conversationGroupDeleteConfirmTitle => '删除分组';
+
+  @override
+  String get conversationGroupDeleteConfirmContent => '删除后仅删除分组关系，不会删除会话。';
+
+  @override
+  String get conversationGroupConversationLimit => '会话数量已达上限';
+
+  @override
+  String get conversationGroupJoinedLimit => '该会话已达到可加入分组数量上限';
+
+  @override
+  String get conversationTimeCurrentYearFormat => 'M月d日';
+
+  @override
+  String get conversationTimeOtherYearFormat => 'yyyy年M月d日';
+
+  @override
+  String conversationGroupAddTitle(int selected, int max) {
+    return '添加会话($selected/$max)';
+  }
 }

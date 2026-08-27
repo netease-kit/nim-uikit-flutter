@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/foundation.dart';
+import 'package:nim_chatkit/manager/ai_robot_manager.dart';
 import 'package:nim_core_v2/nim_core.dart';
 
 class UserAIBotProfileViewModel extends ChangeNotifier {
@@ -11,15 +12,14 @@ class UserAIBotProfileViewModel extends ChangeNotifier {
 
   void setBot(V2NIMUserAIBot value) {
     bot = value;
+    AIRobotManager.instance.upsertRobot(value);
     notifyListeners();
   }
 
   Future<NIMResult<V2NIMUserAIBot>> fetchBot(String accid) async {
     isLoading = true;
     notifyListeners();
-    final result = await NimCore.instance.aiService.getUserAIBot(
-      V2NIMGetUserAIBotParams(accid: accid),
-    );
+    final result = await AIRobotManager.instance.fetchRobot(accid);
     if (result.isSuccess) {
       bot = result.data;
     }
@@ -33,24 +33,12 @@ class UserAIBotProfileViewModel extends ChangeNotifier {
     if (accid == null || accid.isEmpty) {
       return NIMResult.failure(message: 'invalid accid');
     }
-    final result = await NimCore.instance.aiService.refreshUserAIBotToken(
-      V2NIMRefreshUserAIBotTokenParams(accid: accid),
-    );
-    if (!result.isSuccess) {
-      return NIMResult.failure(message: result.errorDetails);
-    }
-    if (result.data?.token?.isNotEmpty == true) {
-      bot?.token = result.data?.token;
-    }
-    final latest = await fetchBot(accid);
-    if (latest.isSuccess && latest.data != null) {
-      latest.data!.token = latest.data!.token ?? result.data?.token;
-      bot = latest.data;
+    final result = await AIRobotManager.instance.refreshRobotToken(accid);
+    if (result.isSuccess && result.data != null) {
+      bot = result.data;
       notifyListeners();
-      return latest;
     }
-    notifyListeners();
-    return NIMResult.success(data: bot);
+    return result;
   }
 
   Future<NIMResult<void>> deleteBot() async {
@@ -58,8 +46,6 @@ class UserAIBotProfileViewModel extends ChangeNotifier {
     if (accid == null || accid.isEmpty) {
       return NIMResult.failure(message: 'invalid accid');
     }
-    return NimCore.instance.aiService.deleteUserAIBot(
-      V2NIMDeleteUserAIBotParams(accid: accid),
-    );
+    return AIRobotManager.instance.deleteRobot(accid);
   }
 }

@@ -11,7 +11,6 @@ import 'package:intl/intl.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/background.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
-import 'package:netease_common_ui/ui/photo.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
@@ -129,12 +128,13 @@ class _UserInfoPageState extends State<UserInfoPage> {
       return;
     }
     if (type == EditType.avatar) {
-      pickImageForPlatform(
-        context,
-        mobilePhotoSelector: (ctx) => showPhotoSelector(ctx),
-      ).then((path) async {
-        if (path != null) {
-          final fileParams = NIMUploadFileParams(filePath: path);
+      pickAvatarImageForPlatform(context).then((selection) async {
+        if (selection != null) {
+          final uploadPath = await normalizeImageForUpload(
+            selection.path,
+            isCamera: selection.isCamera,
+          );
+          final fileParams = NIMUploadFileParams(filePath: uploadPath);
           final task = await NimCore.instance.storageService
               .createUploadFileTask(fileParams);
           if (task.isSuccess && task.data != null) {

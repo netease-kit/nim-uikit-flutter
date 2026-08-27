@@ -4,7 +4,6 @@
 
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'conversation_kit_client_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -124,4 +123,97 @@ class ConversationKitClientLocalizationsEn
 
   @override
   String get cancelMuteTitle => 'Unmute';
+
+  @override
+  String get closeTitle => 'Close';
+
+  @override
+  String get saveTitle => 'Save';
+
+  @override
+  String get conversationGroupTitle => 'Conversation Groups';
+
+  @override
+  String get conversationGroupAll => 'All';
+
+  @override
+  String get conversationGroupAitMe => '@Me';
+
+  @override
+  String get conversationGroupUnread => 'Unread';
+
+  @override
+  String get conversationGroupVisible => 'Visible Groups';
+
+  @override
+  String get conversationGroupHidden => 'Hidden Groups';
+
+  @override
+  String get conversationGroupCreate => 'New Group';
+
+  @override
+  String get conversationGroupSetting => 'Group Settings';
+
+  @override
+  String get conversationGroupName => 'Group Name';
+
+  @override
+  String get conversationGroupNameHint => 'Enter group name';
+
+  @override
+  String get conversationGroupConversationList => 'Conversation List';
+
+  @override
+  String conversationGroupConversationCount(int count) {
+    return 'Conversations ($count)';
+  }
+
+  @override
+  String get conversationGroupAddConversation => 'Add Conversation';
+
+  @override
+  String get conversationGroupSearchHint => 'Search conversations';
+
+  @override
+  String get conversationGroupOperationFailed => 'Operation failed';
+
+  @override
+  String get conversationGroupLimit => 'Conversation group limit reached';
+
+  @override
+  String get conversationGroupPartialAddFailed =>
+      'Some conversations failed to add';
+
+  @override
+  String get conversationGroupConversationNotExist =>
+      'Conversation does not exist';
+
+  @override
+  String get conversationGroupConversationCountLimit =>
+      'Conversation count in the group exceeded the limit';
+
+  @override
+  String get conversationGroupDeleteConfirmTitle => 'Delete Group';
+
+  @override
+  String get conversationGroupDeleteConfirmContent =>
+      'Only the group relation will be deleted. Conversations remain.';
+
+  @override
+  String get conversationGroupConversationLimit => 'Conversation limit reached';
+
+  @override
+  String get conversationGroupJoinedLimit =>
+      'This conversation has reached the group limit';
+
+  @override
+  String get conversationTimeCurrentYearFormat => 'MM-dd';
+
+  @override
+  String get conversationTimeOtherYearFormat => 'yyyy-MM-dd';
+
+  @override
+  String conversationGroupAddTitle(int selected, int max) {
+    return 'Add Conversation($selected/$max)';
+  }
 }

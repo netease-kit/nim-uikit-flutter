@@ -6,9 +6,12 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:nim_chatkit/message/message_translation.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
+import 'package:nim_chatkit_ui/l10n/S.dart';
 import 'package:nim_chatkit_ui/view/page/chat_kit_message_detail_text_page.dart';
 import 'package:nim_core_v2/nim_core.dart';
 
@@ -27,6 +30,24 @@ class ChatKitMessageTextItem extends StatefulWidget {
 
   final bool checkDetailEnable;
 
+  final MessageTranslationState? translationState;
+
+  final bool isTranslating;
+
+  final VoidCallback? onRetryTranslate;
+
+  final void Function(
+    BuildContext context,
+    LongPressStartDetails details,
+    String translatedText,
+  )? onTranslationLongPress;
+
+  final void Function(
+    BuildContext context,
+    TapUpDetails details,
+    String translatedText,
+  )? onTranslationSecondaryTap;
+
   const ChatKitMessageTextItem({
     Key? key,
     required this.message,
@@ -35,6 +56,11 @@ class ChatKitMessageTextItem extends StatefulWidget {
     this.checkDetailEnable = false,
     this.keyword,
     this.maxLines,
+    this.translationState,
+    this.isTranslating = false,
+    this.onRetryTranslate,
+    this.onTranslationLongPress,
+    this.onTranslationSecondaryTap,
   }) : super(key: key);
 
   @override
@@ -42,21 +68,19 @@ class ChatKitMessageTextItem extends StatefulWidget {
 }
 
 class ChatKitMessageTextState extends State<ChatKitMessageTextItem> {
-  // 电话号码正则表达式
-  static final RegExp _phoneRegex = RegExp(
-    r'(?:(?:\+86)|(?:86))?\s*1[3-9]\d{9}|(?:0\d{2,3}[-\s]?)?\d{7,8}',
-  );
-
   @override
   Widget build(BuildContext context) {
+    final isRobotMessage =
+        ChatMessageHelper.isReceivedMessageFromRobot(widget.message);
+    final isAiMessage =
+        ChatMessageHelper.isReceivedMessageFromAi(widget.message);
+    final isSpecialMessage = isAiMessage || isRobotMessage;
     //处理数字人返回的消息
-    if (widget.maxLines == null &&
-        (ChatMessageHelper.isReceivedMessageFromAi(widget.message) ||
-            ChatMessageHelper.isReceivedMessageFromRobot(widget.message))) {
-      //占位
-      if (widget.message.aiConfig?.aiStreamStatus ==
-          V2NIMMessageAIStreamStatus
-              .V2NIM_MESSAGE_AI_STREAM_STATUS_PLACEHOLDER) {
+    if (widget.maxLines == null && isSpecialMessage) {
+      if (isAiMessage &&
+          widget.message.aiConfig?.aiStreamStatus ==
+              V2NIMMessageAIStreamStatus
+                  .V2NIM_MESSAGE_AI_STREAM_STATUS_PLACEHOLDER) {
         return Container(
           // lottie 动画占位
           padding: widget.needPadding
@@ -69,18 +93,21 @@ class ChatKitMessageTextState extends State<ChatKitMessageTextItem> {
             height: 24,
           ),
         );
-      } else {
-        return Container(
-          padding: widget.needPadding
-              ? const EdgeInsets.only(left: 16, top: 12, right: 16, bottom: 12)
-              : null,
-          child: MarkdownBody(
-            data: widget.message.text ?? '',
-            shrinkWrap: true,
-            fitContent: true,
-          ),
-        );
       }
+      final markdownContent = MarkdownBody(
+        data: widget.message.text ?? '',
+        shrinkWrap: true,
+        fitContent: true,
+      );
+      if (_shouldShowTranslation()) {
+        return _buildTextContent(context, markdownContent);
+      }
+      return Container(
+        padding: widget.needPadding
+            ? const EdgeInsets.only(left: 16, top: 12, right: 16, bottom: 12)
+            : null,
+        child: markdownContent,
+      );
     }
     final String text = widget.message.text ?? '';
     var matches = RegExp("\\[[^\\[]{1,10}\\]").allMatches(text);
@@ -143,18 +170,42 @@ class ChatKitMessageTextState extends State<ChatKitMessageTextItem> {
         ),
       );
     }
-    Widget content = Container(
+    Widget textContent = widget.maxLines == null
+        ? Text.rich(TextSpan(children: spans))
+        : Text.rich(
+            TextSpan(children: spans),
+            maxLines: widget.maxLines,
+            overflow: TextOverflow.ellipsis,
+          );
+    return _buildTextContent(context, textContent);
+  }
+
+  Widget _buildTextContent(BuildContext context, Widget textContent) {
+    if (_shouldShowTranslation()) {
+      textContent = IntrinsicWidth(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            textContent,
+            const SizedBox(height: 10),
+            Container(
+              height: 1,
+              width: double.infinity,
+              color: const Color(0x14000000),
+            ),
+            const SizedBox(height: 8),
+            _buildTranslationContent(context),
+          ],
+        ),
+      );
+    }
+    final content = Container(
       //放到里面
       padding: widget.needPadding
           ? const EdgeInsets.only(left: 16, top: 12, right: 16, bottom: 12)
           : null,
-      child: widget.maxLines == null
-          ? Text.rich(TextSpan(children: spans))
-          : Text.rich(
-              TextSpan(children: spans),
-              maxLines: widget.maxLines,
-              overflow: TextOverflow.ellipsis,
-            ),
+      child: textContent,
     );
     if (widget.checkDetailEnable) {
       return GestureDetector(
@@ -173,9 +224,114 @@ class ChatKitMessageTextState extends State<ChatKitMessageTextItem> {
         },
         child: content,
       );
-    } else {
-      return content;
     }
+    return content;
+  }
+
+  bool _shouldShowTranslation() {
+    if (widget.maxLines != null) {
+      return false;
+    }
+    return (widget.translationState?.translation != null &&
+            widget.translationState?.translation?.hidden != true) ||
+        widget.translationState?.failed == true ||
+        widget.isTranslating;
+  }
+
+  Widget _buildTranslationContent(BuildContext context) {
+    if (widget.isTranslating) {
+      return _buildTranslationStatus(
+        text: S.of(context).messageTranslationTranslating,
+        icon: 'images/ic_chat_translate.svg',
+      );
+    }
+    final translation = widget.translationState?.translation;
+    if (translation != null && !translation.hidden) {
+      return Builder(
+        builder: (translationContext) => GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onLongPressStart: widget.onTranslationLongPress == null
+              ? null
+              : (details) => widget.onTranslationLongPress!(
+                    translationContext,
+                    details,
+                    translation.text,
+                  ),
+          onSecondaryTapUp: widget.onTranslationSecondaryTap == null
+              ? null
+              : (details) => widget.onTranslationSecondaryTap!(
+                    translationContext,
+                    details,
+                    translation.text,
+                  ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                translation.text,
+                style: _translationTextStyle(),
+              ),
+              const SizedBox(height: 4),
+              _buildTranslationStatus(
+                text: S.of(context).messageTranslationTranslatedLabel,
+                icon: 'images/ic_chat_translate.svg',
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: widget.onRetryTranslate,
+      child: _buildTranslationStatus(
+        text: S.of(context).messageTranslationFailedRetry,
+        icon: 'images/ic_chat_failed.svg',
+      ),
+    );
+  }
+
+  Widget _buildTranslationStatus({
+    required String text,
+    required String icon,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SvgPicture.asset(
+          icon,
+          package: kPackage,
+          width: 14,
+          height: 14,
+        ),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            text,
+            style: const TextStyle(
+              color: CommonColors.color_999999,
+              fontSize: 12,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  TextStyle _translationTextStyle() {
+    final isSelf = widget.message.isSelf == true;
+    return TextStyle(
+      fontSize: isSelf
+          ? widget.chatUIConfig?.sendMessageTextSize ?? 16
+          : widget.chatUIConfig?.receiveMessageTextSize ?? 16,
+      color: isSelf
+          ? widget.chatUIConfig?.sendMessageTextColor ??
+              CommonColors.color_333333
+          : widget.chatUIConfig?.receiveMessageTextColor ??
+              CommonColors.color_333333,
+    );
   }
 
   List<InlineSpan> _buildTextSpans(

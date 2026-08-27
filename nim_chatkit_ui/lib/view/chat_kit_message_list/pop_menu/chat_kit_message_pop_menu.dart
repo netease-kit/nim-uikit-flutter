@@ -7,8 +7,10 @@ import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:nim_chatkit/services/message/chat_message.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
+import 'package:provider/provider.dart';
 
 import '../../../chat_kit_client.dart';
+import '../../../view_model/chat_view_model.dart';
 import 'chat_kit_menu_helper.dart';
 import 'chat_kit_super_tooltip.dart';
 
@@ -158,6 +160,12 @@ class ChatKitMessagePopMenu {
       message,
       config,
       isVoiceFromSpeaker,
+      context
+              .read<ChatViewModel>()
+              .getVoiceToTextState(message.nimMessage)
+              ?.voiceToText
+              ?.isValid ==
+          true,
     );
     return firstRowList
         .map(

@@ -9,6 +9,35 @@ import 'package:nim_core_v2/nim_core.dart';
 class TopicMessageHelper {
   TopicMessageHelper._();
 
+  /// Returns the newest message regardless of the SDK list order.
+  static NIMMessage? findLatestMessage(Iterable<NIMMessage?> messages) {
+    NIMMessage? latestMessage;
+    for (final message in messages) {
+      if (message == null) {
+        continue;
+      }
+      if (latestMessage == null ||
+          (message.createTime ?? 0) >= (latestMessage.createTime ?? 0)) {
+        latestMessage = message;
+      }
+    }
+    return latestMessage;
+  }
+
+  /// Checks whether a message matches a referenced message identity.
+  static bool matchesMessageRefer(
+    NIMMessage message,
+    NIMMessageRefer messageRefer,
+  ) {
+    final messageServerId = messageRefer.messageServerId;
+    if (messageServerId?.isNotEmpty == true && messageServerId != '-1') {
+      return message.messageServerId == messageServerId;
+    }
+    final messageClientId = messageRefer.messageClientId;
+    return messageClientId?.isNotEmpty == true &&
+        message.messageClientId == messageClientId;
+  }
+
   static String resolveTopicTitle(
     V2NIMTopic? topic, {
     String? fallback,

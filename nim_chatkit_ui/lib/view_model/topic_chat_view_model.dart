@@ -58,6 +58,9 @@ class TopicChatViewModel extends ChatViewModel {
   String get rootSessionTitle => currentRobot?.name?.isNotEmpty == true
       ? currentRobot!.name!
       : ChatKitUtils.getConversationTargetId(conversationId);
+  @override
+  String get routePendingNewMessageKey =>
+      '$conversationId|topic:${topicContext.topicKey}';
   bool _topicDeleted = false;
   bool get topicDeleted => _topicDeleted;
   String get _placeholderTitle => topicContext.placeholderTitle.isNotEmpty
@@ -114,6 +117,7 @@ class TopicChatViewModel extends ChatViewModel {
   }
 
   void _initTopicFetch() {
+    clearRoutePendingNewMessages();
     if (isPlaceholder) {
       hasMoreForwardMessages = false;
       hasMoreNewerMessages = false;
@@ -133,6 +137,7 @@ class TopicChatViewModel extends ChatViewModel {
 
   @override
   void loadMessageWithAnchor(NIMMessage anchor) {
+    prepareForAnchorLoading();
     hasMoreForwardMessages = true;
     hasMoreNewerMessages = false;
     _fetchTopicMessages(
@@ -140,8 +145,57 @@ class TopicChatViewModel extends ChatViewModel {
   }
 
   @override
+  Future<NIMResult<NIMMessage>> getMessageByRefer(
+    NIMMessageRefer messageRefer,
+  ) async {
+    final localResult = await super.getMessageByRefer(messageRefer);
+    if (localResult.isSuccess && localResult.data != null) {
+      return localResult;
+    }
+
+    final topic = _currentTopic;
+    final createTime = messageRefer.createTime;
+    if (topic == null || createTime == null || createTime <= 0) {
+      return localResult;
+    }
+
+    final result = await TopicRepo.instance.getTopicMessageList(
+      V2NIMTopicMessageListOption(
+        topic: topic,
+        beginTime: createTime,
+        endTime: createTime,
+        limit: 100,
+        direction: NIMQueryDirection.desc,
+      ),
+    );
+    if (!result.isSuccess) {
+      Alog.e(
+        tag: 'TopicChatViewModel',
+        moduleName: 'getTopicMessageList',
+        content: 'getTopicMessageList error code: ${result.code}',
+      );
+      return NIMResult.failure(
+        message: result.errorDetails,
+        code: result.code,
+      );
+    }
+
+    final candidates = <NIMMessage>[
+      ...?result.data?.replyList,
+      if (result.data?.anchorMessage != null) result.data!.anchorMessage!,
+    ];
+    for (final message in candidates) {
+      if (TopicMessageHelper.matchesMessageRefer(message, messageRefer)) {
+        return NIMResult.success(data: message);
+      }
+    }
+    return NIMResult.failure(message: 'message not found');
+  }
+
+  @override
   void loadMessageWithAnchorDate(int date) {
     findAnchorDate = date;
+    prepareForAnchorLoading();
     hasMoreForwardMessages = true;
     hasMoreNewerMessages = false;
     _fetchTopicMessages(
@@ -183,12 +237,27 @@ class TopicChatViewModel extends ChatViewModel {
       ),
     );
     if (!result.isSuccess) {
+      Alog.e(
+        tag: 'TopicChatViewModel',
+        moduleName: 'getTopicMessageList 2',
+        content: 'getTopicMessageList error code: ${result.code}',
+      );
       isLoading = false;
       notifyListeners();
       return;
     }
-    final replyList = result.data?.replyList ?? const <NIMMessage>[];
-    final filled = await ChatMessageRepo.fillUserInfo(replyList);
+    final fetchedMessages = <NIMMessage>[
+      ...?result.data?.replyList,
+    ];
+    final resolvedAnchor = result.data?.anchorMessage ?? anchor;
+    if (resolvedAnchor != null &&
+        !fetchedMessages.any(
+          (message) =>
+              TopicMessageHelper.matchesMessageRefer(message, resolvedAnchor),
+        )) {
+      fetchedMessages.add(resolvedAnchor);
+    }
+    final filled = await ChatMessageRepo.fillUserInfo(fetchedMessages);
     final sorted = List<ChatMessage>.from(filled)
       ..sort((a, b) =>
           (b.nimMessage.createTime ?? 0) - (a.nimMessage.createTime ?? 0));
@@ -311,12 +380,7 @@ class TopicChatViewModel extends ChatViewModel {
             topicTitle = autoTitle;
             notifyListeners();
             final topic = _currentTopic!;
-            resolvedContext = BotSubsessionTopicContext(
-              conversationId: conversationId,
-              topic: topic,
-              localKey: topicContext.localKey,
-            );
-            await TopicRepo.instance.updateTopic(
+            final updateResult = await TopicRepo.instance.updateTopic(
               V2NIMUpdateTopicParams(
                 topic: topic,
                 topicName: autoTitle,
@@ -330,6 +394,15 @@ class TopicChatViewModel extends ChatViewModel {
             if (_isDisposed) {
               return;
             }
+            if (updateResult.isSuccess && updateResult.data != null) {
+              _currentTopic = updateResult.data;
+              topicTitle = _resolveTitle();
+            }
+            resolvedContext = BotSubsessionTopicContext(
+              conversationId: conversationId,
+              topic: _currentTopic,
+              localKey: topicContext.localKey,
+            );
           }
         }
       }

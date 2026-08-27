@@ -17,6 +17,7 @@ import 'package:nim_chatkit/utils/toast_utils.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';
+import 'package:photo_manager/photo_manager.dart';
 
 import '../chat_kit_client.dart';
 import '../l10n/S.dart';
@@ -278,17 +279,10 @@ class MediaBottomActionOverlay extends StatelessWidget {
 
   void _saveFile(BuildContext context) async {
     if (!kIsWeb && Platform.isIOS) {
-      var result;
-      var attachment = message.attachment;
+      dynamic result;
+      final attachment = message.attachment;
       if (attachment is NIMMessageImageAttachment) {
-        var response = await Dio().get(
-          attachment.url!,
-          options: Options(responseType: ResponseType.bytes),
-        );
-        result = await ImageGallerySaverPlus.saveImage(
-          response.data,
-          name: attachment.name,
-        );
+        result = await _saveIOSImage(attachment);
       } else if (attachment is NIMMessageVideoAttachment) {
         result = await ImageGallerySaverPlus.saveFile(attachment.path!);
       }
@@ -334,6 +328,87 @@ class MediaBottomActionOverlay extends StatelessWidget {
         }
       });
     }
+  }
+
+  Future<dynamic> _saveIOSImage(
+    NIMMessageImageAttachment attachment,
+  ) async {
+    try {
+      final bytes = await _readImageBytes(attachment);
+      if (bytes == null || bytes.isEmpty) {
+        return {'isSuccess': false};
+      }
+
+      final isGif = _isGif(bytes);
+      final fileName = _imageFileName(attachment.name, isGif);
+      if (isGif) {
+        // ImageGallerySaverPlus decodes the data with UIImage on iOS, which
+        // drops all GIF frames. PhotoManager writes the original resource.
+        await PhotoManager.editor.saveImage(
+          bytes,
+          filename: fileName,
+        );
+        return {'isSuccess': true};
+      }
+      return ImageGallerySaverPlus.saveImage(
+        bytes,
+        name: fileName,
+      );
+    } catch (error, stackTrace) {
+      Alog.e(
+        tag: 'ChatKit',
+        moduleName: 'media save',
+        content: 'Failed to save iOS image: $error\n$stackTrace',
+      );
+      return {'isSuccess': false};
+    }
+  }
+
+  Future<Uint8List?> _readImageBytes(
+    NIMMessageImageAttachment attachment,
+  ) async {
+    final path = attachment.path;
+    if (path?.isNotEmpty == true) {
+      final file = File(path!);
+      if (await file.exists()) {
+        return file.readAsBytes();
+      }
+    }
+
+    final url = attachment.url;
+    if (url?.isNotEmpty != true) {
+      return null;
+    }
+    final response = await Dio().get<List<int>>(
+      url!,
+      options: Options(responseType: ResponseType.bytes),
+    );
+    final data = response.data;
+    return data == null ? null : Uint8List.fromList(data);
+  }
+
+  bool _isGif(Uint8List bytes) {
+    return bytes.length >= 6 &&
+        bytes[0] == 0x47 &&
+        bytes[1] == 0x49 &&
+        bytes[2] == 0x46 &&
+        bytes[3] == 0x38 &&
+        (bytes[4] == 0x37 || bytes[4] == 0x39) &&
+        bytes[5] == 0x61;
+  }
+
+  String _imageFileName(String? name, bool isGif) {
+    final fileName = name?.trim();
+    if (fileName?.isNotEmpty == true) {
+      if (!isGif || fileName!.toLowerCase().endsWith('.gif')) {
+        return fileName!;
+      }
+      final dotIndex = fileName.lastIndexOf('.');
+      final baseName =
+          dotIndex > 0 ? fileName.substring(0, dotIndex) : fileName;
+      return '$baseName.gif';
+    }
+    return isGif ? 'image.gif' : 'image.jpg';
   }
 
   @override

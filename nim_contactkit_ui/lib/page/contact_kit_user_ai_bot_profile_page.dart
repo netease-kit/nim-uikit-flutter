@@ -4,9 +4,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:netease_common_ui/base/base_state.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_chatkit/utils/toast_utils.dart';
 import 'package:nim_core_v2/nim_core.dart';
@@ -31,7 +33,7 @@ class ContactKitUserAIBotProfilePage extends StatefulWidget {
 }
 
 class _ContactKitUserAIBotProfilePageState
-    extends State<ContactKitUserAIBotProfilePage> {
+    extends BaseState<ContactKitUserAIBotProfilePage> {
   bool _changed = false;
 
   void _popProfile() {
@@ -61,14 +63,20 @@ class _ContactKitUserAIBotProfilePageState
       ChatUIToast.show(S.of(context).contactRobotInvalidQrCode);
       return;
     }
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ContactKitUserAIBotConfigPage(
-          config: buildUserAIBotConfigString(accid: accid, token: token),
+    final config = buildUserAIBotConfigString(accid: accid, token: token);
+    if (ChatKitUtils.isDesktopOrWeb) {
+      await showDialog<void>(
+        context: context,
+        builder: (_) => ContactKitUserAIBotConfigDialog(config: config),
+      );
+    } else {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ContactKitUserAIBotConfigPage(config: config),
         ),
-      ),
-    );
+      );
+    }
   }
 
   Future<void> _refreshToken(UserAIBotProfileViewModel viewModel) async {
@@ -76,9 +84,12 @@ class _ContactKitUserAIBotProfilePageState
       context: context,
       title: S.of(context).contactRobotRefreshConfirmTitle,
       content: S.of(context).contactRobotRefreshConfirmContent,
-      positiveContent: '确认',
+      positiveContent: S.of(context).contactRobotConfirm,
     );
     if (confirmed != true) return;
+    if (!checkNetwork()) {
+      return;
+    }
     final result = await viewModel.refreshToken();
     if (!mounted) return;
     if (!result.isSuccess) {
@@ -91,9 +102,12 @@ class _ContactKitUserAIBotProfilePageState
       context: context,
       title: S.of(context).contactRobotDeleteConfirmTitle,
       content: S.of(context).contactRobotDeleteConfirmContent,
-      positiveContent: S.of(context).contactRobotDelete,
+      positiveContent: S.of(context).contactRobotDeleteConfirmAction,
     );
     if (confirmed != true) return;
+    if (!checkNetwork()) {
+      return;
+    }
     final result = await viewModel.deleteBot();
     if (!mounted) return;
     if (result.isSuccess) {

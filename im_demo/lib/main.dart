@@ -12,7 +12,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:im_demo/l10n/S.dart';
-import 'package:im_demo/src/home/home_page.dart';
 import 'package:im_demo/src/home/splash_page.dart';
 import 'package:im_demo/src/mine/user_info_page.dart';
 import 'package:netease_callkit_ui/ne_callkit_ui.dart';
@@ -111,6 +110,7 @@ class _MainAppState extends State<MainApp> {
 
   AppLifecycleListener? _appLifecycleListener;
 
+  bool _hasReleasedAlog = false;
 
   ///设置默认的语言，不设置则根据系统语言
   void _setDefaultLanguage() async {

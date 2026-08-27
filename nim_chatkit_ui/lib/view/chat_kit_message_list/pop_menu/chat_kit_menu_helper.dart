@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
+import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/manager/ai_robot_manager.dart';
 import 'package:nim_chatkit/message/message_helper.dart';
 import 'package:nim_chatkit/services/message/chat_message.dart';
@@ -24,6 +25,8 @@ class ChatKitMenuHelper {
   static const String replyMessageId = 'replyMessage';
   static const String collectMessageId = 'collectMessage';
   static const String forwardMessageId = 'forwardMessage';
+  static const String translateMessageId = 'translateMessage';
+  static const String voiceToTextMessageId = 'voiceToTextMessage';
   static const String pinMessageId = 'pinMessage';
   static const String cancelPinMessageId = 'cancelPinMessage';
   static const String multiSelectId = 'multiSelect';
@@ -56,6 +59,7 @@ class ChatKitMenuHelper {
   static bool showSpeaker(ChatUIConfig? config, ChatMessage message) {
     return !ChatKitUtils.isDesktopOrWeb &&
         config?.popMenuConfig?.enableVoiceSwitch != false &&
+        enableStatus(message) &&
         message.nimMessage.messageType == NIMMessageType.audio;
   }
 
@@ -68,6 +72,27 @@ class ChatKitMenuHelper {
       }
     }
     return false;
+  }
+
+  static bool showTranslate(ChatUIConfig? config, ChatMessage message) {
+    return IMKitClient.enableMessageTranslation &&
+        isSelf(message.nimMessage) != true &&
+        config?.popMenuConfig?.enableTranslate != false &&
+        enableStatus(message) &&
+        message.nimMessage.messageType == NIMMessageType.text &&
+        message.nimMessage.text?.trim().isNotEmpty == true;
+  }
+
+  static bool showVoiceToText(
+    ChatUIConfig? config,
+    ChatMessage message, {
+    bool hasVisibleVoiceToText = false,
+  }) {
+    return IMKitClient.enableVoiceToText &&
+        config?.popMenuConfig?.enableVoiceToText != false &&
+        !hasVisibleVoiceToText &&
+        enableStatus(message) &&
+        message.nimMessage.messageType == NIMMessageType.audio;
   }
 
   static bool enableStatus(ChatMessage message) {
@@ -89,6 +114,11 @@ class ChatKitMenuHelper {
 
   static bool showPin(ChatUIConfig? config, ChatMessage message) {
     if (message.nimMessage.messageType == NIMMessageType.call) {
+      return false;
+    }
+    // 机器人会话不显示pin
+    if (AIRobotManager.instance.isRobot(ChatKitUtils.getConversationTargetId(
+        message.nimMessage.conversationId!))) {
       return false;
     }
     return config?.popMenuConfig?.enablePin != false && enableStatus(message);
@@ -116,6 +146,13 @@ class ChatKitMenuHelper {
         enableStatus(message);
   }
 
+  static bool showMultiSelect(ChatUIConfig? config, ChatMessage message) {
+    return config?.popMenuConfig?.enableMultiSelect != false &&
+        message.nimMessage.sendingState != NIMMessageSendingState.sending &&
+        message.nimMessage.messageStatus?.errorCode !=
+            ChatMessage.SERVER_ANTISPAM;
+  }
+
   static bool isSelf(NIMMessage message) {
     if (ChatMessageHelper.isReceivedMessageFromAi(message)) {
       return false;
@@ -133,6 +170,7 @@ class ChatKitMenuHelper {
     ChatMessage message,
     ChatUIConfig? config,
     bool isVoiceFromSpeaker,
+    bool hasVisibleVoiceToText,
   ) {
     return [
       if (showSpeaker(config, message))
@@ -183,9 +221,7 @@ class ChatKitMenuHelper {
           "id": deleteMessageId,
           "icon": "images/ic_chat_delete.svg",
         },
-      if (config?.popMenuConfig?.enableMultiSelect != false &&
-          message.nimMessage.messageStatus?.errorCode !=
-              ChatMessage.SERVER_ANTISPAM)
+      if (showMultiSelect(config, message))
         {
           "label": S.of(context).chatMessageActionMultiSelect,
           "id": multiSelectId,
@@ -196,6 +232,22 @@ class ChatKitMenuHelper {
           "label": S.of(context).chatMessageActionRevoke,
           "id": revokeMessageId,
           "icon": "images/ic_chat_revoke.svg",
+        },
+      if (showTranslate(config, message))
+        {
+          "label": S.of(context).chatMessageActionTranslate,
+          "id": translateMessageId,
+          "icon": "images/ic_chat_translate.svg",
+        },
+      if (showVoiceToText(
+        config,
+        message,
+        hasVisibleVoiceToText: hasVisibleVoiceToText,
+      ))
+        {
+          "label": S.of(context).chatMessageActionVoiceToText,
+          "id": voiceToTextMessageId,
+          "icon": "images/ic_chat_translate.svg",
         },
     ];
   }
@@ -224,6 +276,12 @@ class ChatKitMenuHelper {
         break;
       case forwardMessageId:
         popMenuAction.onMessageForward?.call(message);
+        break;
+      case translateMessageId:
+        popMenuAction.onMessageTranslate?.call(message);
+        break;
+      case voiceToTextMessageId:
+        popMenuAction.onMessageVoiceToText?.call(message);
         break;
       case pinMessageId:
         popMenuAction.onMessagePin?.call(message, false);

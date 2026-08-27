@@ -6,12 +6,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/repo/config_repo.dart';
+import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_chatkit/utils/toast_utils.dart';
+import 'package:nim_chatkit_ui/view/page/message_translation_setting_page.dart';
 
 import '../../l10n/S.dart';
 
 /// 桌面端设置弹窗
-/// 包含消息已读未读、云端会话、AI Stream、安全提示、云端消息搜索 5 个配置项（下拉框样式）
+/// 包含通用开关配置和翻译设置入口。
 class DesktopSettingsDialog extends StatefulWidget {
   const DesktopSettingsDialog({Key? key}) : super(key: key);
 
@@ -148,6 +150,18 @@ class _DesktopSettingsDialogState extends State<DesktopSettingsDialog> {
                           setState(() => _enableCloudMessageSearch = v);
                         },
                       ),
+                    if (IMKitClient.enableMessageTranslation) ...[
+                      const SizedBox(height: 16),
+                      _buildNavigationRow(
+                        label: S.of(context).messageTranslationSetting,
+                        onTap: () {
+                          showDesktopDialog(
+                            context,
+                            const MessageTranslationSettingPage(),
+                          );
+                        },
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -168,11 +182,11 @@ class _DesktopSettingsDialogState extends State<DesktopSettingsDialog> {
         Localizations.localeOf(context).languageCode == 'zh' ? '：' : ': ';
     return Row(
       children: [
-        // 左侧标签，右对齐
+        // 左侧标签统一左对齐
         Expanded(
           child: Text(
             '$label$colon',
-            textAlign: TextAlign.right,
+            textAlign: TextAlign.left,
             style: const TextStyle(fontSize: 14, color: Color(0xFF666666)),
           ),
         ),
@@ -187,6 +201,39 @@ class _DesktopSettingsDialogState extends State<DesktopSettingsDialog> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildNavigationRow({
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(6),
+        onTap: onTap,
+        child: SizedBox(
+          height: 44,
+          child: Row(
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF333333),
+                ),
+              ),
+              const Spacer(),
+              const Icon(
+                Icons.keyboard_arrow_right,
+                color: Color(0xFF8B8FA3),
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -11,6 +11,10 @@ class PopMenuAction {
 
   bool Function(ChatMessage message)? onMessageForward;
 
+  bool Function(ChatMessage message)? onMessageTranslate;
+
+  bool Function(ChatMessage message)? onMessageVoiceToText;
+
   bool Function(ChatMessage message, bool isCancel)? onMessagePin;
 
   bool Function(ChatMessage message)? onMessageMultiSelect;
@@ -28,6 +32,8 @@ class PopMenuAction {
     this.onMessageCopy,
     this.onMessageReply,
     this.onMessageForward,
+    this.onMessageTranslate,
+    this.onMessageVoiceToText,
     this.onMessagePin,
     this.onMessageMultiSelect,
     this.onMessageDelete,

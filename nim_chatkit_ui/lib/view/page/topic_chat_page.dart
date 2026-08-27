@@ -2,6 +2,8 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/base/base_state.dart';
@@ -11,7 +13,9 @@ import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/message/merge_message.dart';
 import 'package:nim_chatkit/model/bot_subsession_models.dart';
+import 'package:nim_chatkit/repo/conversation_repo.dart';
 import 'package:nim_chatkit/router/imkit_router.dart';
+import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
 import 'package:nim_chatkit/utils/toast_utils.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
@@ -62,7 +66,7 @@ class _TopicChatPageState extends BaseState<TopicChatPage> with RouteAware {
   static const int mergedMessageLimit = 100;
   static const int forwardMessageLimit = 10;
 
-  void _setChattingAccount() {
+  Future<void> _setChattingAccount() async {
     NIMChatCache.instance.setCurrentChatSession(
       ChatSession(
         ChatKitUtils.getConversationTargetId(widget.conversationId),
@@ -70,6 +74,14 @@ class _TopicChatPageState extends BaseState<TopicChatPage> with RouteAware {
         widget.conversationId,
       ),
     );
+    // 进入子会话聊天页即视为已读：更新会话已读时间戳，
+    // 否则返回子会话列表时未读红点（latestMessageTime > readTime）不消失。
+    await _markConversationRead();
+  }
+
+  Future<void> _markConversationRead() async {
+    await ConversationRepo.clearSessionUnreadCount(widget.conversationId);
+    await ConversationRepo.markConversationRead(widget.conversationId);
   }
 
   void _clearChattingAccount() {
@@ -91,7 +103,7 @@ class _TopicChatPageState extends BaseState<TopicChatPage> with RouteAware {
     );
     ChatKitClient.instance.registerRevokedMessage();
 
-    _setChattingAccount();
+    unawaited(_setChattingAccount());
 
     Future.delayed(Duration.zero, () {
       IMKitRouter.instance.routeObserver
@@ -102,6 +114,7 @@ class _TopicChatPageState extends BaseState<TopicChatPage> with RouteAware {
   @override
   void dispose() {
     ChatAudioPlayer.instance.stopAll();
+    unawaited(_markConversationRead());
     _clearChattingAccount();
     IMKitRouter.instance.routeObserver.unsubscribe(this);
     super.dispose();
@@ -111,7 +124,7 @@ class _TopicChatPageState extends BaseState<TopicChatPage> with RouteAware {
   void didPopNext() {
     if (NIMChatCache.instance.currentChatSession?.conversationId !=
         widget.conversationId) {
-      _setChattingAccount();
+      unawaited(_setChattingAccount());
     }
     super.didPopNext();
   }
@@ -137,7 +150,7 @@ class _TopicChatPageState extends BaseState<TopicChatPage> with RouteAware {
           _handledTopicDeleted = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;
-            _leaveTopicPage(context);
+            unawaited(_leaveTopicPage(context));
           });
         }
         return ListenableProvider<ChatViewModel>.value(
@@ -147,6 +160,9 @@ class _TopicChatPageState extends BaseState<TopicChatPage> with RouteAware {
             onPopInvokedWithResult: (bool didPop, result) async {
               if (context.read<TopicChatViewModel>().isMultiSelected) {
                 context.read<TopicChatViewModel>().isMultiSelected = false;
+              }
+              if (didPop) {
+                unawaited(_markConversationRead());
               }
             },
             child: ChatKitUtils.isDesktopOrWeb
@@ -196,7 +212,7 @@ class _TopicChatPageState extends BaseState<TopicChatPage> with RouteAware {
                 size: 26,
               ),
           onPressed: () {
-            _leaveTopicPage(context);
+            unawaited(_leaveTopicPage(context));
           },
         ),
         title: _buildMobileTitle(context, title),
@@ -210,7 +226,11 @@ class _TopicChatPageState extends BaseState<TopicChatPage> with RouteAware {
     );
   }
 
-  void _leaveTopicPage(BuildContext context) {
+  Future<void> _leaveTopicPage(BuildContext context) async {
+    await _markConversationRead();
+    if (!mounted) {
+      return;
+    }
     if (widget.onBackToList != null) {
       widget.onBackToList!.call();
       return;
@@ -409,7 +429,7 @@ class _TopicChatPageState extends BaseState<TopicChatPage> with RouteAware {
       return;
     }
 
-    final sessionName = context.read<TopicChatViewModel>().topicTitle;
+    final sessionName = _forwardSessionName(context);
     ChatMessageHelper.showForwardSelector(
       context,
       (conversationId, {String? postScript, bool? isLastUser}) {
@@ -463,7 +483,7 @@ class _TopicChatPageState extends BaseState<TopicChatPage> with RouteAware {
     if (context.read<TopicChatViewModel>().selectedMessages.isEmpty) {
       return;
     }
-    final sessionName = context.read<TopicChatViewModel>().topicTitle;
+    final sessionName = _forwardSessionName(context);
     ChatMessageHelper.showForwardSelector(
       context,
       (conversationId, {String? postScript, bool? isLastUser}) {
@@ -498,7 +518,7 @@ class _TopicChatPageState extends BaseState<TopicChatPage> with RouteAware {
     final actions =
         chatUIConfig?.messageClickListener?.customPopActions ?? PopMenuAction();
     actions.onMessageForward = (message) {
-      final sessionName = context.read<TopicChatViewModel>().rootSessionTitle;
+      final sessionName = _forwardSessionName(context);
       ChatMessageHelper.showForwardSelector(context, (
         conversationId, {
         String? postScript,
@@ -513,6 +533,10 @@ class _TopicChatPageState extends BaseState<TopicChatPage> with RouteAware {
       return true;
     };
     return actions;
+  }
+
+  String _forwardSessionName(BuildContext context) {
+    return context.read<TopicChatViewModel>().rootSessionTitle;
   }
 
   Widget _buildChatBody(
@@ -537,11 +561,30 @@ class _TopicChatPageState extends BaseState<TopicChatPage> with RouteAware {
                   children: [
                     ChatKitMessageList(
                       scrollController: autoController,
+                      hideThreadRootReply: true,
                       popMenuAction: _buildTopicPopActions(context),
                       messageBuilder:
                           widget.messageBuilder ?? chatUIConfig?.messageBuilder,
-                      onTapAvatar: (String? userId, {bool isSelf = false}) =>
-                          true,
+                      onTapAvatar: (String? userId, {bool isSelf = false}) {
+                        if (context
+                            .read<TopicChatViewModel>()
+                            .isMultiSelected) {
+                          return true;
+                        }
+                        final customAvatarTap =
+                            chatUIConfig?.messageClickListener?.onTapAvatar;
+                        if (customAvatarTap != null &&
+                            customAvatarTap(userId, isSelf: isSelf)) {
+                          return true;
+                        }
+                        final robot =
+                            context.read<TopicChatViewModel>().currentRobot;
+                        if (!isSelf && robot != null) {
+                          ChatAudioPlayer.instance.stopAll();
+                          goToRobotProfile(context, robot);
+                        }
+                        return true;
+                      },
                       onAvatarLongPress: (userId, {isSelf = false}) => true,
                       chatUIConfig: chatUIConfig,
                       teamInfo: null,

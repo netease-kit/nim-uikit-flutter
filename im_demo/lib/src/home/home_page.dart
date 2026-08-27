@@ -3,11 +3,9 @@
 // found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:im_demo/l10n/S.dart';
 import 'package:im_demo/src/mine/mine_page.dart';
@@ -19,8 +17,6 @@ import 'package:nim_chatkit/repo/contact_repo.dart';
 import 'package:nim_chatkit/repo/conversation_repo.dart';
 import 'package:nim_chatkit/repo/team_repo.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
-import 'package:nim_chatkit/service_locator.dart';
-import 'package:nim_chatkit/services/login/im_login_service.dart';
 import 'package:nim_chatkit/utils/toast_utils.dart';
 import 'package:nim_chatkit_pushkit/nim_chatkit_pushkit.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';

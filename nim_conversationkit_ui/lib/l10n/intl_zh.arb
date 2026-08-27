@@ -42,5 +42,50 @@
   "chatMessageBriefVideoCall": "[视频通话]",
   "chatMessageBriefAudioCall": "[语音通话]",
   "muteTitle": "开启免打扰",
-  "cancelMuteTitle": "取消免打扰"
+  "cancelMuteTitle": "取消免打扰",
+  "closeTitle": "关闭",
+  "saveTitle": "保存",
+  "conversationGroupTitle": "会话分组",
+  "conversationGroupAll": "全部",
+  "conversationGroupAitMe": "@我",
+  "conversationGroupUnread": "未读",
+  "conversationGroupVisible": "常用分组",
+  "conversationGroupHidden": "隐藏分组",
+  "conversationGroupCreate": "新建分组",
+  "conversationGroupSetting": "设置会话分组",
+  "conversationGroupName": "分组名称",
+  "conversationGroupNameHint": "请输入分组名称",
+  "conversationGroupConversationList": "会话列表",
+  "conversationGroupConversationCount": "会话({count})",
+  "@conversationGroupConversationCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "conversationGroupAddConversation": "添加会话",
+  "conversationGroupSearchHint": "请输入你需要搜索的会话",
+  "conversationGroupOperationFailed": "操作失败",
+  "conversationGroupLimit": "会话分组超限",
+  "conversationGroupPartialAddFailed": "部分会话添加失败",
+  "conversationGroupConversationNotExist": "会话不存在",
+  "conversationGroupConversationCountLimit": "会话分组中的会话数量超限",
+  "conversationGroupDeleteConfirmTitle": "删除分组",
+  "conversationGroupDeleteConfirmContent": "删除后仅删除分组关系，不会删除会话。",
+  "conversationGroupConversationLimit": "会话数量已达上限",
+  "conversationGroupJoinedLimit": "该会话已达到可加入分组数量上限",
+  "conversationTimeCurrentYearFormat": "M月d日",
+  "conversationTimeOtherYearFormat": "yyyy年M月d日",
+  "conversationGroupAddTitle": "添加会话({selected}/{max})",
+  "@conversationGroupAddTitle": {
+    "placeholders": {
+      "selected": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  }
 }

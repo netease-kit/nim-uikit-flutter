@@ -45,18 +45,21 @@ class _ContactKitUserAIBotBindingPageState
 
   Future<void> _bind(
     UserAIBotBindingViewModel viewModel,
-    V2NIMUserAIBot bot,
-  ) async {
+    V2NIMUserAIBot bot, {
+    bool showConfirmation = true,
+  }) async {
     if (!await haveConnectivity()) {
       return;
     }
-    final confirmed = await showCommonDialog(
-      context: context,
-      title: S.of(context).contactRobotBindConfirmTitle,
-      content: S.of(context).contactRobotBindConfirmContent,
-      positiveContent: S.of(context).contactRobotConfirm,
-    );
-    if (confirmed != true) return;
+    if (showConfirmation) {
+      final confirmed = await showCommonDialog(
+        context: context,
+        title: S.of(context).contactRobotBindConfirmTitle,
+        content: S.of(context).contactRobotBindConfirmContent,
+        positiveContent: S.of(context).contactRobotConfirm,
+      );
+      if (confirmed != true) return;
+    }
     final result = await viewModel.bind(widget.qrCode, bot);
     if (!mounted) return;
     if (result.isSuccess && result.data != null) {
@@ -88,7 +91,7 @@ class _ContactKitUserAIBotBindingPageState
     );
     if (!mounted || bot == null) return;
     viewModel.addBot(bot);
-    await _bind(viewModel, bot);
+    await _bind(viewModel, bot, showConfirmation: false);
   }
 
   Widget _buildBotItem(

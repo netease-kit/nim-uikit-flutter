@@ -5,8 +5,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:nim_chatkit/services/message/chat_message.dart';
+import 'package:provider/provider.dart';
 
 import '../../../chat_kit_client.dart';
+import '../../../view_model/chat_view_model.dart';
 import 'chat_kit_menu_helper.dart';
 import 'chat_kit_pop_actions.dart';
 
@@ -50,6 +52,12 @@ class ChatKitDesktopContextMenu {
       message,
       chatUIConfig,
       isVoiceFromSpeaker,
+      context
+              .read<ChatViewModel>()
+              .getVoiceToTextState(message.nimMessage)
+              ?.voiceToText
+              ?.isValid ==
+          true,
     );
 
     if (menuItems.isEmpty) return;

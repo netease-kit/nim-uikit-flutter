@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/background.dart';
-import 'package:netease_common_ui/ui/photo.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
@@ -46,16 +45,17 @@ class TeamKitAvatarEditorState extends State<TeamKitAvatarEditorPage> {
   }
 
   _selectPic() {
-    pickImageForPlatform(
-      context,
-      mobilePhotoSelector: (ctx) => showPhotoSelector(ctx),
-    ).then((value) async {
+    pickAvatarImageForPlatform(context).then((selection) async {
       if (!(await haveConnectivity())) {
         return;
       }
 
-      if (value != null && value.isNotEmpty) {
-        NIMUploadFileParams params = NIMUploadFileParams(filePath: value);
+      if (selection != null) {
+        final uploadPath = await normalizeImageForUpload(
+          selection.path,
+          isCamera: selection.isCamera,
+        );
+        NIMUploadFileParams params = NIMUploadFileParams(filePath: uploadPath);
         final uploadTask =
             await NimCore.instance.storageService.createUploadFileTask(params);
         if (uploadTask.data != null) {

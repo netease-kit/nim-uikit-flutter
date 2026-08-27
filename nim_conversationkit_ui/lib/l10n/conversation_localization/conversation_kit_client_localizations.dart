@@ -73,9 +73,7 @@ abstract class ConversationKitClientLocalizations {
 
   static ConversationKitClientLocalizations? of(BuildContext context) {
     return Localizations.of<ConversationKitClientLocalizations>(
-      context,
-      ConversationKitClientLocalizations,
-    );
+        context, ConversationKitClientLocalizations);
   }
 
   static const LocalizationsDelegate<ConversationKitClientLocalizations>
@@ -102,7 +100,7 @@ abstract class ConversationKitClientLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
-    Locale('zh'),
+    Locale('zh')
   ];
 
   /// No description provided for @conversationTitle.
@@ -172,6 +170,9 @@ abstract class ConversationKitClientLocalizations {
   String get addFriend;
 
   /// No description provided for @conversationSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search friends or groups'**
   String get conversationSearchHint;
 
   /// No description provided for @addFriendSearchHint.
@@ -288,6 +289,10 @@ abstract class ConversationKitClientLocalizations {
   /// **'This team does not exist'**
   String get joinTeamSearchEmptyTips;
 
+  /// No description provided for @scanRobot.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan'**
   String get scanRobot;
 
   /// No description provided for @chatMessageBriefVideoCall.
@@ -313,6 +318,174 @@ abstract class ConversationKitClientLocalizations {
   /// In en, this message translates to:
   /// **'Unmute'**
   String get cancelMuteTitle;
+
+  /// No description provided for @closeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get closeTitle;
+
+  /// No description provided for @saveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get saveTitle;
+
+  /// No description provided for @conversationGroupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation Groups'**
+  String get conversationGroupTitle;
+
+  /// No description provided for @conversationGroupAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get conversationGroupAll;
+
+  /// No description provided for @conversationGroupAitMe.
+  ///
+  /// In en, this message translates to:
+  /// **'@Me'**
+  String get conversationGroupAitMe;
+
+  /// No description provided for @conversationGroupUnread.
+  ///
+  /// In en, this message translates to:
+  /// **'Unread'**
+  String get conversationGroupUnread;
+
+  /// No description provided for @conversationGroupVisible.
+  ///
+  /// In en, this message translates to:
+  /// **'Visible Groups'**
+  String get conversationGroupVisible;
+
+  /// No description provided for @conversationGroupHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden Groups'**
+  String get conversationGroupHidden;
+
+  /// No description provided for @conversationGroupCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'New Group'**
+  String get conversationGroupCreate;
+
+  /// No description provided for @conversationGroupSetting.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Settings'**
+  String get conversationGroupSetting;
+
+  /// No description provided for @conversationGroupName.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Name'**
+  String get conversationGroupName;
+
+  /// No description provided for @conversationGroupNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter group name'**
+  String get conversationGroupNameHint;
+
+  /// No description provided for @conversationGroupConversationList.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation List'**
+  String get conversationGroupConversationList;
+
+  /// No description provided for @conversationGroupConversationCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations ({count})'**
+  String conversationGroupConversationCount(int count);
+
+  /// No description provided for @conversationGroupAddConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Conversation'**
+  String get conversationGroupAddConversation;
+
+  /// No description provided for @conversationGroupSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search conversations'**
+  String get conversationGroupSearchHint;
+
+  /// No description provided for @conversationGroupOperationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation failed'**
+  String get conversationGroupOperationFailed;
+
+  /// No description provided for @conversationGroupLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation group limit reached'**
+  String get conversationGroupLimit;
+
+  /// No description provided for @conversationGroupPartialAddFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Some conversations failed to add'**
+  String get conversationGroupPartialAddFailed;
+
+  /// No description provided for @conversationGroupConversationNotExist.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation does not exist'**
+  String get conversationGroupConversationNotExist;
+
+  /// No description provided for @conversationGroupConversationCountLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation count in the group exceeded the limit'**
+  String get conversationGroupConversationCountLimit;
+
+  /// No description provided for @conversationGroupDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Group'**
+  String get conversationGroupDeleteConfirmTitle;
+
+  /// No description provided for @conversationGroupDeleteConfirmContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the group relation will be deleted. Conversations remain.'**
+  String get conversationGroupDeleteConfirmContent;
+
+  /// No description provided for @conversationGroupConversationLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation limit reached'**
+  String get conversationGroupConversationLimit;
+
+  /// No description provided for @conversationGroupJoinedLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation has reached the group limit'**
+  String get conversationGroupJoinedLimit;
+
+  /// No description provided for @conversationTimeCurrentYearFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'MM-dd'**
+  String get conversationTimeCurrentYearFormat;
+
+  /// No description provided for @conversationTimeOtherYearFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'yyyy-MM-dd'**
+  String get conversationTimeOtherYearFormat;
+
+  /// No description provided for @conversationGroupAddTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Conversation({selected}/{max})'**
+  String conversationGroupAddTitle(int selected, int max);
 }
 
 class _ConversationKitClientLocalizationsDelegate
@@ -322,8 +495,7 @@ class _ConversationKitClientLocalizationsDelegate
   @override
   Future<ConversationKitClientLocalizations> load(Locale locale) {
     return SynchronousFuture<ConversationKitClientLocalizations>(
-      lookupConversationKitClientLocalizations(locale),
-    );
+        lookupConversationKitClientLocalizations(locale));
   }
 
   @override
@@ -335,8 +507,7 @@ class _ConversationKitClientLocalizationsDelegate
 }
 
 ConversationKitClientLocalizations lookupConversationKitClientLocalizations(
-  Locale locale,
-) {
+    Locale locale) {
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
     case 'en':
@@ -346,9 +517,8 @@ ConversationKitClientLocalizations lookupConversationKitClientLocalizations(
   }
 
   throw FlutterError(
-    'ConversationKitClientLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-    'an issue with the localizations generation tool. Please file an issue '
-    'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.',
-  );
+      'ConversationKitClientLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+      'an issue with the localizations generation tool. Please file an issue '
+      'on GitHub with a reproducible sample app and the gen-l10n configuration '
+      'that was used.');
 }

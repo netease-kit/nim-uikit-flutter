@@ -87,5 +87,6 @@
   "textSafetyNotice": "文本安全提示",
   "enableCloudMessageSearch": "云端消息搜索",
   "labelYes": "是",
-  "labelNo": "否"
+  "labelNo": "否",
+  "messageTranslationSetting": "翻译"
 }

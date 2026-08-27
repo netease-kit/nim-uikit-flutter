@@ -283,6 +283,12 @@ abstract class ChatKitClientLocalizations {
   /// **'forward'**
   String get chatMessageActionForward;
 
+  /// No description provided for @messageTranslationHide.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide'**
+  String get messageTranslationHide;
+
   /// No description provided for @chatMessageActionPin.
   ///
   /// In en, this message translates to:
@@ -490,8 +496,32 @@ abstract class ChatKitClientLocalizations {
   /// No description provided for @botSubsessionDeleteFailed.
   ///
   /// In en, this message translates to:
-  /// **'Failed to delete'**
+  /// **'Delete failed. Please try again.'**
   String get botSubsessionDeleteFailed;
+
+  /// No description provided for @botSubsessionLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load subsessions'**
+  String get botSubsessionLoadFailed;
+
+  /// No description provided for @botSubsessionRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get botSubsessionRetry;
+
+  /// No description provided for @botSubsessionEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No subsessions'**
+  String get botSubsessionEmpty;
+
+  /// No description provided for @botSubsessionSearchEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching subsessions'**
+  String get botSubsessionSearchEmpty;
 
   /// No description provided for @chatSetting.
   ///
@@ -1914,6 +1944,186 @@ abstract class ChatKitClientLocalizations {
   /// In en, this message translates to:
   /// **'Locate in chat'**
   String get chatSearchLocateMessage;
+
+  /// No description provided for @chatMessageActionTranslate.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate'**
+  String get chatMessageActionTranslate;
+
+  /// No description provided for @messageTranslationSettingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate'**
+  String get messageTranslationSettingTitle;
+
+  /// No description provided for @messageTranslationTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate text to'**
+  String get messageTranslationTarget;
+
+  /// No description provided for @messageTranslationTargetDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Translation target language'**
+  String get messageTranslationTargetDesc;
+
+  /// No description provided for @messageTranslationAutoTranslate.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto translate messages received in chats'**
+  String get messageTranslationAutoTranslate;
+
+  /// No description provided for @messageTranslationAutoTranslateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on to automatically translate received messages.'**
+  String get messageTranslationAutoTranslateDesc;
+
+  /// No description provided for @messageTranslationLanguageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate text to'**
+  String get messageTranslationLanguageTitle;
+
+  /// No description provided for @messageTranslationSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get messageTranslationSave;
+
+  /// No description provided for @messageTranslationTranslating.
+  ///
+  /// In en, this message translates to:
+  /// **'Translating...'**
+  String get messageTranslationTranslating;
+
+  /// No description provided for @messageTranslationTranslatedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Translation'**
+  String get messageTranslationTranslatedLabel;
+
+  /// No description provided for @messageTranslationFailedRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Translation failed. Tap to retry'**
+  String get messageTranslationFailedRetry;
+
+  /// No description provided for @chatMessageActionVoiceToText.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice to text'**
+  String get chatMessageActionVoiceToText;
+
+  /// No description provided for @chatMessageVoiceToTextConverting.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribing...'**
+  String get chatMessageVoiceToTextConverting;
+
+  /// No description provided for @chatMessageVoiceToTextFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice-to-text failed'**
+  String get chatMessageVoiceToTextFailed;
+
+  /// No description provided for @chatMessageVoiceToTextEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No text recognized'**
+  String get chatMessageVoiceToTextEmpty;
+
+  /// No description provided for @translationLangZhChs.
+  ///
+  /// In en, this message translates to:
+  /// **'Simplified Chinese'**
+  String get translationLangZhChs;
+
+  /// No description provided for @translationLangZhCht.
+  ///
+  /// In en, this message translates to:
+  /// **'Traditional Chinese'**
+  String get translationLangZhCht;
+
+  /// No description provided for @translationLangAr.
+  ///
+  /// In en, this message translates to:
+  /// **'Arabic'**
+  String get translationLangAr;
+
+  /// No description provided for @translationLangDe.
+  ///
+  /// In en, this message translates to:
+  /// **'German'**
+  String get translationLangDe;
+
+  /// No description provided for @translationLangEn.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get translationLangEn;
+
+  /// No description provided for @translationLangEs.
+  ///
+  /// In en, this message translates to:
+  /// **'Spanish'**
+  String get translationLangEs;
+
+  /// No description provided for @translationLangFr.
+  ///
+  /// In en, this message translates to:
+  /// **'French'**
+  String get translationLangFr;
+
+  /// No description provided for @translationLangId.
+  ///
+  /// In en, this message translates to:
+  /// **'Indonesian'**
+  String get translationLangId;
+
+  /// No description provided for @translationLangIt.
+  ///
+  /// In en, this message translates to:
+  /// **'Italian'**
+  String get translationLangIt;
+
+  /// No description provided for @translationLangJa.
+  ///
+  /// In en, this message translates to:
+  /// **'Japanese'**
+  String get translationLangJa;
+
+  /// No description provided for @translationLangKo.
+  ///
+  /// In en, this message translates to:
+  /// **'Korean'**
+  String get translationLangKo;
+
+  /// No description provided for @translationLangPt.
+  ///
+  /// In en, this message translates to:
+  /// **'Portuguese'**
+  String get translationLangPt;
+
+  /// No description provided for @translationLangRu.
+  ///
+  /// In en, this message translates to:
+  /// **'Russian'**
+  String get translationLangRu;
+
+  /// No description provided for @translationLangTh.
+  ///
+  /// In en, this message translates to:
+  /// **'Thai'**
+  String get translationLangTh;
+
+  /// No description provided for @translationLangVi.
+  ///
+  /// In en, this message translates to:
+  /// **'Vietnamese'**
+  String get translationLangVi;
 }
 
 class _ChatKitClientLocalizationsDelegate

@@ -106,6 +106,9 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
   String get chatMessageActionForward => 'forward';
 
   @override
+  String get messageTranslationHide => 'Hide';
+
+  @override
   String get chatMessageActionPin => 'pin';
 
   @override
@@ -218,7 +221,19 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
   String get botSubsessionDeleteConfirm => 'Delete this subsession?';
 
   @override
-  String get botSubsessionDeleteFailed => 'Failed to delete';
+  String get botSubsessionDeleteFailed => 'Delete failed. Please try again.';
+
+  @override
+  String get botSubsessionLoadFailed => 'Failed to load subsessions';
+
+  @override
+  String get botSubsessionRetry => 'Retry';
+
+  @override
+  String get botSubsessionEmpty => 'No subsessions';
+
+  @override
+  String get botSubsessionSearchEmpty => 'No matching subsessions';
 
   @override
   String get chatSetting => 'Chat setting';
@@ -1043,4 +1058,97 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
 
   @override
   String get chatSearchLocateMessage => 'Locate in chat';
+
+  @override
+  String get chatMessageActionTranslate => 'Translate';
+
+  @override
+  String get messageTranslationSettingTitle => 'Translate';
+
+  @override
+  String get messageTranslationTarget => 'Translate text to';
+
+  @override
+  String get messageTranslationTargetDesc => 'Translation target language';
+
+  @override
+  String get messageTranslationAutoTranslate =>
+      'Auto translate messages received in chats';
+
+  @override
+  String get messageTranslationAutoTranslateDesc =>
+      'Turn on to automatically translate received messages.';
+
+  @override
+  String get messageTranslationLanguageTitle => 'Translate text to';
+
+  @override
+  String get messageTranslationSave => 'Save';
+
+  @override
+  String get messageTranslationTranslating => 'Translating...';
+
+  @override
+  String get messageTranslationTranslatedLabel => 'Translation';
+
+  @override
+  String get messageTranslationFailedRetry =>
+      'Translation failed. Tap to retry';
+
+  @override
+  String get chatMessageActionVoiceToText => 'Voice to text';
+
+  @override
+  String get chatMessageVoiceToTextConverting => 'Transcribing...';
+
+  @override
+  String get chatMessageVoiceToTextFailed => 'Voice-to-text failed';
+
+  @override
+  String get chatMessageVoiceToTextEmpty => 'No text recognized';
+
+  @override
+  String get translationLangZhChs => 'Simplified Chinese';
+
+  @override
+  String get translationLangZhCht => 'Traditional Chinese';
+
+  @override
+  String get translationLangAr => 'Arabic';
+
+  @override
+  String get translationLangDe => 'German';
+
+  @override
+  String get translationLangEn => 'English';
+
+  @override
+  String get translationLangEs => 'Spanish';
+
+  @override
+  String get translationLangFr => 'French';
+
+  @override
+  String get translationLangId => 'Indonesian';
+
+  @override
+  String get translationLangIt => 'Italian';
+
+  @override
+  String get translationLangJa => 'Japanese';
+
+  @override
+  String get translationLangKo => 'Korean';
+
+  @override
+  String get translationLangPt => 'Portuguese';
+
+  @override
+  String get translationLangRu => 'Russian';
+
+  @override
+  String get translationLangTh => 'Thai';
+
+  @override
+  String get translationLangVi => 'Vietnamese';
 }

@@ -4,7 +4,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:intl/intl.dart';
 import 'package:netease_common_ui/base/base_state.dart';
+import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
@@ -404,11 +406,38 @@ class _BotSubsessionListPageState extends BaseState<BotSubsessionListPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('加载失败'),
+            SvgPicture.asset(
+              'images/ic_list_empty.svg',
+              package: kPackage,
+            ),
+            const SizedBox(height: 18),
+            Text(
+              S.of(context).botSubsessionLoadFailed,
+              style: const TextStyle(
+                color: Color(0xFF8C8C8C),
+                fontSize: 14,
+              ),
+            ),
             const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: model.reload,
-              child: const Text('重试'),
+            SizedBox(
+              height: 36,
+              child: OutlinedButton.icon(
+                onPressed: model.reload,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: Text(S.of(context).botSubsessionRetry),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: CommonColors.color_337eff,
+                  side: const BorderSide(color: CommonColors.color_337eff),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -416,7 +445,9 @@ class _BotSubsessionListPageState extends BaseState<BotSubsessionListPage> {
     }
     if (model.items.isEmpty) {
       return _buildEmpty(
-        model.keyword.isEmpty ? '暂无子会话' : '未找到相关子会话',
+        model.keyword.isEmpty
+            ? S.of(context).botSubsessionEmpty
+            : S.of(context).botSubsessionSearchEmpty,
       );
     }
     return NotificationListener<ScrollNotification>(
@@ -573,7 +604,7 @@ class _TopicListTile extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        _formatTime(item.latestTime),
+                        _formatTime(context, item.latestTime),
                         style: const TextStyle(
                           fontSize: 12,
                           color: Color(0xFFBFBFBF),
@@ -677,7 +708,7 @@ class _TopicListTile extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          _formatTime(item.latestTime),
+                          _formatTime(context, item.latestTime),
                           style: const TextStyle(
                             fontSize: 11,
                             color: Color(0xFF8C8C8C),
@@ -773,24 +804,21 @@ class _TopicListTile extends StatelessWidget {
     );
   }
 
-  String _formatTime(int millis) {
+  String _formatTime(BuildContext context, int millis) {
     if (millis <= 0) {
       return '';
     }
     final time = DateTime.fromMillisecondsSinceEpoch(millis);
     final now = DateTime.now();
-    final startOfToday = DateTime(now.year, now.month, now.day);
-    final startOfYesterday = startOfToday.subtract(const Duration(days: 1));
-    if (time.isAfter(startOfToday)) {
-      final hh = time.hour.toString().padLeft(2, '0');
-      final mm = time.minute.toString().padLeft(2, '0');
-      return '$hh:$mm';
+    if (time.year == now.year &&
+        time.month == now.month &&
+        time.day == now.day) {
+      return DateFormat(S.of(context).chatHistoryDateFormatHourMine)
+          .format(time);
     }
-    if (time.isAfter(startOfYesterday)) {
-      return '昨天';
-    }
-    final month = time.month.toString().padLeft(2, '0');
-    final day = time.day.toString().padLeft(2, '0');
-    return '$month-$day';
+    final format = time.year == now.year
+        ? S.of(context).chatHistoryDateFormatMonthDay
+        : S.of(context).chatHistoryDateFormaYearMonthDay;
+    return DateFormat(format).format(time);
   }
 }

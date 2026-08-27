@@ -109,15 +109,36 @@ class ChatKitMessageAudioState extends State<ChatKitMessageAudioItem>
   void _startAudioPlay(NIMMessage message) {
     isPlaying = true;
     _timer?.cancel();
-    var attachment = message.attachment as NIMMessageAudioAttachment;
-    if (attachment.url?.isNotEmpty == true) {
-      _playAudio(UrlSource(attachment.url!), attachment.duration!);
-    } else if (attachment.path != null && File(attachment.path!).existsSync()) {
-      _playAudio(DeviceFileSource(attachment.path!), attachment.duration!);
+    final attachment = message.attachment as NIMMessageAudioAttachment;
+    final localPath = attachment.path;
+    final hasLocalFile =
+        localPath?.isNotEmpty == true && File(localPath!).existsSync();
+    final hasRemoteUrl = attachment.url?.isNotEmpty == true;
+
+    // iOS AVPlayer may reject some remote audio URLs even when the SDK has
+    // already downloaded a playable local cache file.
+    if (Platform.isIOS && hasLocalFile) {
+      _playAudio(
+        DeviceFileSource(localPath),
+        attachment.duration!,
+        fallbackSource: hasRemoteUrl ? UrlSource(attachment.url!) : null,
+      );
+    } else if (hasRemoteUrl) {
+      _playAudio(
+        UrlSource(attachment.url!),
+        attachment.duration!,
+        fallbackSource: hasLocalFile ? DeviceFileSource(localPath) : null,
+      );
+    } else if (hasLocalFile) {
+      _playAudio(DeviceFileSource(localPath), attachment.duration!);
     }
   }
 
-  void _playAudio(Source source, int duration) async {
+  void _playAudio(
+    Source source,
+    int duration, {
+    Source? fallbackSource,
+  }) async {
     if (isPlaying == false) {
       return;
     }
@@ -129,6 +150,13 @@ class ChatKitMessageAudioState extends State<ChatKitMessageAudioItem>
       } else {
         isPlaying = false;
       }
+    }, onError: (Object error, StackTrace stackTrace) {
+      if (fallbackSource != null) {
+        isPlaying = true;
+        _playAudio(fallbackSource, duration);
+        return;
+      }
+      Error.throwWithStackTrace(error, stackTrace);
     });
   }
 

@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/base/base_state.dart';
 import 'package:netease_common_ui/widgets/no_network_tip.dart';
+import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit/im_kit_config_center.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
 import 'package:nim_conversationkit_ui/widgets/conversation_list.dart';
@@ -13,6 +15,7 @@ import 'package:nim_conversationkit_ui/widgets/conversation_pop_menu_button.dart
 import 'package:provider/provider.dart';
 
 import '../l10n/S.dart';
+import '../view_model/conversation_group_view_model.dart';
 import '../view_model/conversation_view_model.dart';
 
 class ConversationPage extends StatefulWidget {
@@ -49,6 +52,9 @@ class _ConversationPageState extends BaseState<ConversationPage> {
 
   @override
   Widget build(BuildContext context) {
+    final enableCloudConversation =
+        IMKitClient.isEnableCloudConversation() == true;
+    final enableConversationGroup = IMKitConfigCenter.enableConversationGroup;
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: _titleBarConfig.showTitleBar
@@ -99,27 +105,42 @@ class _ConversationPageState extends BaseState<ConversationPage> {
               ],
             )
           : null,
-      body: ChangeNotifierProvider(
+      body: ChangeNotifierProvider<ConversationViewModel>(
         create: (context) => ConversationViewModel(
           widget.onUnreadCountChanged,
           uiConfig.itemConfig.conversationComparator,
         ),
         builder: (context, child) {
-          return Column(
-            children: [
-              if (widget.topWidget != null) widget.topWidget!,
-              if (!hasNetWork) NoNetWorkTip(),
-              Expanded(
-                child: ConversationList(
-                  config: uiConfig.itemConfig,
-                  onUnreadCountChanged: widget.onUnreadCountChanged,
-                  selectedConversationId: widget.selectedConversationId,
-                ),
-              ),
-            ],
+          if (!enableCloudConversation || !enableConversationGroup) {
+            return _buildConversationBody();
+          }
+          return ChangeNotifierProvider<ConversationGroupViewModel>(
+            create: (context) => ConversationGroupViewModel(
+              conversationViewModel: context.read<ConversationViewModel>(),
+              context: context,
+            ),
+            builder: (context, child) {
+              return _buildConversationBody(showGroupEntry: true);
+            },
           );
         },
       ),
+    );
+  }
+
+  Widget _buildConversationBody({bool showGroupEntry = false}) {
+    return Column(
+      children: [
+        if (widget.topWidget != null) widget.topWidget!,
+        if (!hasNetWork) NoNetWorkTip(),
+        Expanded(
+          child: ConversationList(
+            config: uiConfig.itemConfig,
+            onUnreadCountChanged: widget.onUnreadCountChanged,
+            selectedConversationId: widget.selectedConversationId,
+          ),
+        ),
+      ],
     );
   }
 }

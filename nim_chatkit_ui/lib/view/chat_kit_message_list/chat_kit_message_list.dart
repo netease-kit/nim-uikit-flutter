@@ -12,6 +12,7 @@ import 'package:netease_common/netease_common.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/neListView/size_cache_widget.dart';
+import 'package:nim_chatkit/extension.dart';
 import 'package:nim_chatkit/message/message_helper.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit/router/imkit_router.dart';
@@ -52,6 +53,9 @@ class ChatKitMessageList extends StatefulWidget {
 
   final int? anchorDate;
 
+  /// Whether replies to the current topic root should be hidden.
+  final bool hideThreadRootReply;
+
   ChatKitMessageList({
     Key? key,
     required this.scrollController,
@@ -65,6 +69,7 @@ class ChatKitMessageList extends StatefulWidget {
     this.onMessageItemClick,
     this.onAvatarLongPress,
     this.onMessageItemLongClick,
+    this.hideThreadRootReply = false,
   }) : super(key: key);
 
   @override
@@ -141,20 +146,23 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
   }
 
   _scrollToMessageByRefer(NIMMessageRefer messageRefer) async {
-    var index = context.read<ChatViewModel>().messageList.indexWhere(
-          (element) =>
-              element.nimMessage.messageClientId ==
-              messageRefer.messageClientId,
-        );
+    final viewModel = context.read<ChatViewModel>();
+    var index = viewModel.messageList.indexWhere(
+      (element) =>
+          element.nimMessage.messageClientId == messageRefer.messageClientId,
+    );
     if (index >= 0) {
       _scrollToIndex(index);
     } else {
-      var anchor = (await ChatMessageRepo.getMessageByRefer(messageRefer)).data;
+      var anchor = (await viewModel.getMessageByRefer(messageRefer)).data;
 
+      if (!mounted) {
+        return;
+      }
       if (anchor != null) {
         setState(() {
           findAnchor = anchor;
-          context.read<ChatViewModel>().showNewMessage = false;
+          viewModel.showNewMessage = false;
           _showScrollToBottom = true;
         });
         _findAnchorRemote(anchor);
@@ -209,35 +217,43 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
   }
 
   _scrollToAnchor(NIMMessage anchor) {
-    var list = context.read<ChatViewModel>().messageList;
+    final viewModel = context.read<ChatViewModel>();
+    // Wait for the anchor-centered fetch to finish. Other ViewModel updates
+    // (team info, contact state, etc.) can rebuild this widget while loading;
+    // scrolling the temporary anchor-only list would clear findAnchor too
+    // early and skip the final positioning pass.
+    if (viewModel.isLoading) {
+      return;
+    }
+    var list = viewModel.messageList;
     if (list.isEmpty) {
       _logI('scrollToAnchor: messageList is empty');
       return;
     }
     int index = list.indexWhere(
-      (element) =>
-          element.nimMessage.messageClientId == anchor.messageClientId!,
+      (element) => element.nimMessage.isSameMessage(anchor),
     );
     if (index >= 0) {
-      // in range
+      // Update the pivot during this build so CustomScrollView lays out with
+      // the final center before scrollToIndex reads its coordinates. Changing
+      // the center and scrolling in the same post-frame callback can leave the
+      // controller at an offset outside the new extents and show a blank list.
+      findAnchor = null;
+      _pivotMessageIndex = null;
+      _pivotMessageId = index < list.length - 1
+          ? list[index].nimMessage.messageClientId
+          : list.first.nimMessage.messageClientId;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) {
           return;
         }
-        findAnchor = null;
-        if (index < list.length - 1) {
-          setState(() {
-            _pivotMessageId = list[index].nimMessage.messageClientId;
-          });
-        }
-
         _scrollToIndex(index);
       });
     } else {
       _logI(
         'scrollToAnchor: not found in ${list.length} items, _findAnchorRemote -->> ',
       );
-      if (!context.read<ChatViewModel>().isLoading) {
+      if (!viewModel.isLoading) {
         _findAnchorRemote(anchor);
       }
     }
@@ -422,6 +438,26 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
     return true;
   }
 
+  bool _onMessageTranslate(ChatMessage message) {
+    var customActions = widget.popMenuAction;
+    if (customActions?.onMessageTranslate != null &&
+        customActions!.onMessageTranslate!(message)) {
+      return true;
+    }
+    context.read<ChatViewModel>().translateMessage(message);
+    return true;
+  }
+
+  bool _onMessageVoiceToText(ChatMessage message) {
+    var customActions = widget.popMenuAction;
+    if (customActions?.onMessageVoiceToText != null &&
+        customActions!.onMessageVoiceToText!(message)) {
+      return true;
+    }
+    context.read<ChatViewModel>().voiceToTextMessage(message);
+    return true;
+  }
+
   bool _onMessagePin(ChatMessage message, bool isCancel) {
     var customActions = widget.popMenuAction;
     if (customActions?.onMessagePin != null &&
@@ -548,6 +584,8 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
     actions.onMessageReply = _onMessageReply;
     actions.onMessageCollect = _onMessageCollect;
     actions.onMessageForward = _onMessageForward;
+    actions.onMessageTranslate = _onMessageTranslate;
+    actions.onMessageVoiceToText = _onMessageVoiceToText;
     actions.onMessagePin = _onMessagePin;
     actions.onMessageMultiSelect = _onMessageMultiSelect;
     actions.onMessageDelete = _onMessageDelete;
@@ -559,12 +597,14 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
   @override
   void didPushNext() {
     isInCurrentPage = false;
+    context.read<ChatViewModel>().setChatRouteVisible(false);
     super.didPushNext();
   }
 
   @override
   void didPopNext() {
     if (mounted) {
+      context.read<ChatViewModel>().setChatRouteVisible(true);
       setState(() {
         isInCurrentPage = true;
       });
@@ -578,6 +618,9 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
     findAnchor = widget.anchor;
     findAnchorDate = widget.anchorDate;
     Future.delayed(Duration.zero, () {
+      if (!mounted) {
+        return;
+      }
       IMKitRouter.instance.routeObserver.subscribe(
         this,
         ModalRoute.of(context)!,
@@ -589,6 +632,7 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
   @override
   void dispose() {
     _scrollToBottomGuardTimer?.cancel();
+    IMKitRouter.instance.routeObserver.unsubscribe(this);
     super.dispose();
   }
 
@@ -714,12 +758,24 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
       } else if (widget.scrollController.offset <=
               widget.scrollController.position.minScrollExtent + threshold &&
           _showScrollToBottom) {
-        setState(() {
-          if (!context.read<ChatViewModel>().hasMoreNewerMessages) {
-            context.read<ChatViewModel>().showNewMessage = true;
-            _showScrollToBottom = false;
+        final vm = context.read<ChatViewModel>();
+        if (!vm.hasMoreNewerMessages) {
+          if (vm.newMessages.isNotEmpty) {
+            final isAtLatestMessage = widget.scrollController.offset <=
+                widget.scrollController.position.minScrollExtent + 1;
+            if (!isAtLatestMessage) {
+              return;
+            }
+            // 手动滑到最新消息端：把缓存的 newMessages 插入列表并清空，
+            // 否则新消息不显示，且提示（依赖 newMessages.isNotEmpty）不消失。
+            vm.srollToNewMessage(scrollToEnd: false);
+          } else {
+            setState(() {
+              vm.showNewMessage = true;
+              _showScrollToBottom = false;
+            });
           }
-        });
+        }
       }
     });
     context.read<ChatViewModel>().scrollToEnd = _scrollToBottom;
@@ -749,6 +805,7 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
         onTapAvatar: widget.onTapAvatar,
         onAvatarLongPress: widget.onAvatarLongPress,
         chatUIConfig: widget.chatUIConfig,
+        hideThreadRootReply: widget.hideThreadRootReply,
         teamInfo: widget.teamInfo,
         onMessageItemClick: widget.onMessageItemClick,
         onMessageItemLongClick: widget.onMessageItemLongClick,

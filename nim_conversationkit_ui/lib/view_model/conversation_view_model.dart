@@ -10,6 +10,7 @@ import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/im_kit_config_center.dart';
+import 'package:nim_chatkit/manager/ai_robot_manager.dart';
 import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit/manager/subscription_manager.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
@@ -36,6 +37,10 @@ class ConversationViewModel extends ChangeNotifier {
   List<NIMAIUser> get topAIUserList => _topAIUserList;
 
   ValueChanged<int>? onUnreadCountChanged;
+
+  bool _refreshingUnreadCount = false;
+  bool _pendingUnreadCountRefresh = false;
+  bool _disposed = false;
 
   final int pageLimit = 50;
   int _offset = 0; //分页加载
@@ -72,15 +77,29 @@ class ConversationViewModel extends ChangeNotifier {
     Alog.i(tag: 'ConversationKit', moduleName: modelName, content: content);
   }
 
-  doUnreadCallback() {
-    ConversationRepo.getMsgUnreadCount().then((value) {
-      _logI('doUnreadCallback $value');
-      if (value.isSuccess &&
-          value.data != null &&
-          onUnreadCountChanged != null) {
-        onUnreadCountChanged!(value.data!);
-      }
-    });
+  Future<void> doUnreadCallback() async {
+    if (_refreshingUnreadCount) {
+      _pendingUnreadCountRefresh = true;
+      return;
+    }
+    _refreshingUnreadCount = true;
+    try {
+      do {
+        _pendingUnreadCountRefresh = false;
+        final value = await ConversationRepo.getMsgUnreadCount();
+        if (_disposed) {
+          return;
+        }
+        _logI('doUnreadCallback $value');
+        if (value.isSuccess &&
+            value.data != null &&
+            onUnreadCountChanged != null) {
+          onUnreadCountChanged!(value.data!);
+        }
+      } while (_pendingUnreadCountRefresh);
+    } finally {
+      _refreshingUnreadCount = false;
+    }
   }
 
   /// 补充会话信息，会话列表中的个人信息和群组信息都在这里填充
@@ -105,12 +124,14 @@ class ConversationViewModel extends ChangeNotifier {
 
     //先拉去一遍，解决会话列表在二级页面，不能监听同步数据的case
     queryConversationList();
+    doUnreadCallback();
 
     // 会话列表同步完成（仅保证列表完整性，会话具体信息如 name 需等待其他同步回调）
     subscriptions.add(
-      ConversationRepo.onSyncFinished().listen((event) {
+      ConversationRepo.onSyncFinished().listen((event) async {
         _logI('conversationService onSyncFinished');
-        queryConversationList();
+        await queryConversationList();
+        await doUnreadCallback();
       }),
     );
 
@@ -155,6 +176,14 @@ class ConversationViewModel extends ChangeNotifier {
           }),
         );
       }
+    }
+
+    if (IMKitClient.enableRobot) {
+      subscriptions.add(
+        AIRobotManager.instance.robotChanged?.listen((_) {
+          notifyListeners();
+        }),
+      );
     }
 
     subscriptions.add(
@@ -205,7 +234,7 @@ class ConversationViewModel extends ChangeNotifier {
           return;
         }
         ConversationInfo conversationInfo = ConversationInfo(event);
-        if (event.type == NIMConversationType.team &&
+        if (_isGroupConversationType(event.type) &&
             IMKitClient.account() != null) {
           conversationInfo.haveBeenAit = await AitServer.instance
               .isAitConversation(event.conversationId, IMKitClient.account()!);
@@ -290,6 +319,14 @@ class ConversationViewModel extends ChangeNotifier {
         }),
       );
     }
+
+    if (IMKitClient.enableRobot) {
+      subscriptions.add(
+        AIRobotManager.instance.robotChanged.listen((_) {
+          notifyListeners();
+        }),
+      );
+    }
   }
 
   int _searchComparatorIndex(ConversationInfo data) {
@@ -337,7 +374,8 @@ class ConversationViewModel extends ChangeNotifier {
     if (!ChatKitUtils.isDesktopOrWeb) return;
     final currentSession = NIMChatCache.instance.currentChatSession;
     if (currentSession != null &&
-        currentSession.conversationId == conversationInfo.getConversationId()) {
+        currentSession.conversationId == conversationInfo.getConversationId() &&
+        (conversationInfo.conversation.unreadCount ?? 0) > 0) {
       conversationInfo.conversation.unreadCount = 0;
       ConversationRepo.clearSessionUnreadCount(
           conversationInfo.getConversationId());
@@ -354,7 +392,7 @@ class ConversationViewModel extends ChangeNotifier {
       (element) => element.isSame(conversationInfo),
     );
     if (index > -1) {
-      if (conversationInfo.getConversationType() == NIMConversationType.team) {
+      if (_isGroupConversationType(conversationInfo.getConversationType())) {
         bool haveBeenAit = _conversationList[index].haveBeenAit;
         if ((conversationInfo.conversation.unreadCount ?? 0) <= 0) {
           AitServer.instance.clearAitMessage(
@@ -386,7 +424,7 @@ class ConversationViewModel extends ChangeNotifier {
       (element) => element.isSame(conversationInfo),
     );
     if (index > -1) {
-      if (conversationInfo.getConversationType() == NIMConversationType.team) {
+      if (_isGroupConversationType(conversationInfo.getConversationType())) {
         bool haveBeenAit = _conversationList[index].haveBeenAit;
         if ((conversationInfo.conversation.unreadCount ?? 0) <= 0) {
           AitServer.instance.clearAitMessage(
@@ -440,7 +478,12 @@ class ConversationViewModel extends ChangeNotifier {
     }
   }
 
-  void queryConversationList() async {
+  bool _isGroupConversationType(NIMConversationType type) {
+    return type == NIMConversationType.team ||
+        type == NIMConversationType.superTeam;
+  }
+
+  Future<void> queryConversationList() async {
     _logI('queryConversationList start');
 
     if (_isLoading) {
@@ -697,6 +740,8 @@ class ConversationViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
+    _pendingUnreadCountRefresh = false;
     _logI('dispose');
     for (var element in subscriptions) {
       element?.cancel();

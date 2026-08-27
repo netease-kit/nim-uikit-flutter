@@ -6,8 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
+import 'package:nim_chatkit/manager/ai_robot_manager.dart';
 import 'package:nim_chatkit/utils/toast_utils.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:provider/provider.dart';
@@ -32,6 +34,33 @@ class ContactKitUserAIBotListPage extends StatefulWidget {
 
 class _ContactKitUserAIBotListPageState
     extends State<ContactKitUserAIBotListPage> {
+  final UserAIBotListViewModel _viewModel = UserAIBotListViewModel();
+  bool _isCheckingNetwork = true;
+  bool _hasNetwork = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkNetworkAndLoad();
+  }
+
+  Future<void> _checkNetworkAndLoad() async {
+    final hasNetwork = await haveConnectivity();
+    if (!mounted) {
+      return;
+    }
+    if (hasNetwork) {
+      _viewModel.init();
+    } else {
+      // The manager only returns cache belonging to the current login account.
+      _viewModel.showCachedBots(AIRobotManager.instance.getAllRobotList());
+    }
+    setState(() {
+      _hasNetwork = hasNetwork;
+      _isCheckingNetwork = false;
+    });
+  }
+
   Future<void> _openCreate(UserAIBotListViewModel viewModel) async {
     if (viewModel.bots.length >= kMaxUserAIBotCount) {
       ChatUIToast.show(S.of(context).contactRobotLimitToast);
@@ -142,8 +171,11 @@ class _ContactKitUserAIBotListPageState
   }
 
   Widget _buildBody(UserAIBotListViewModel viewModel) {
-    if (viewModel.isLoading) {
+    if (_isCheckingNetwork || viewModel.isLoading) {
       return const Center(child: CircularProgressIndicator());
+    }
+    if (!_hasNetwork && viewModel.bots.isEmpty) {
+      return const SizedBox.shrink();
     }
     if (viewModel.bots.isEmpty) {
       return _buildEmpty(viewModel);
@@ -171,7 +203,7 @@ class _ContactKitUserAIBotListPageState
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => UserAIBotListViewModel()..init(),
+      create: (_) => _viewModel,
       builder: (context, child) {
         final viewModel = context.watch<UserAIBotListViewModel>();
         final actions = [

@@ -238,4 +238,7 @@ class DemoKitClientLocalizationsZh extends DemoKitClientLocalizations {
 
   @override
   String get labelNo => '否';
+
+  @override
+  String get messageTranslationSetting => '翻译';
 }

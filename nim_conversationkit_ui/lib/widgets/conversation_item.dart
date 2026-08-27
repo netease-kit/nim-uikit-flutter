@@ -12,6 +12,7 @@ import 'package:netease_common_ui/widgets/unread_message.dart';
 import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/im_kit_config_center.dart';
+import 'package:nim_chatkit/manager/ai_robot_manager.dart';
 import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit/message/message_helper.dart';
 import 'package:nim_chatkit/model/custom_type_constant.dart';
@@ -146,6 +147,13 @@ class ConversationItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     String? avatar = conversationInfo.getAvatar();
+    final localizations = S.of(context);
+    final useChineseDateFormat = localizations.localeName.startsWith('zh');
+    final formattedTime = conversationInfo.getFormatTime(
+      currentYearDateFormat: localizations.conversationTimeCurrentYearFormat,
+      otherYearDateFormat: localizations.conversationTimeOtherYearFormat,
+    );
+    final timeColumnWidth = useChineseDateFormat ? 100.0 : 70.0;
     // 桌面端背景色由外层 AnimatedContainer 控制，Item 内部设为透明
     final bgColor = ChatKitUtils.isDesktopOrWeb
         ? Colors.transparent
@@ -181,6 +189,9 @@ class ConversationItem extends StatelessWidget {
                       conversationInfo.conversation.type ==
                           NIMConversationType.p2p &&
                       !AIUserManager.instance.isAIUser(
+                        conversationInfo.targetId,
+                      ) &&
+                      !AIRobotManager.instance.isRobot(
                         conversationInfo.targetId,
                       ))
                     Positioned(
@@ -222,6 +233,20 @@ class ConversationItem extends StatelessWidget {
                 count: conversationInfo.conversation.unreadCount ?? 0,
               ),
             ),
+          if (conversationInfo.isMute() &&
+              (conversationInfo.conversation.unreadCount ?? 0) > 0)
+            Positioned(
+              top: 12,
+              left: 32,
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Color(0xfff24957),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
           Positioned(
             left: 54,
             top: 10,
@@ -230,16 +255,40 @@ class ConversationItem extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.only(right: 70),
-                  child: Text(
-                    conversationInfo.getName(),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    style: TextStyle(
-                      fontSize: config.itemTitleSize,
-                      color: config.itemTitleColor,
-                    ),
-                  ),
+                  padding: EdgeInsets.only(right: timeColumnWidth),
+                  child: conversationInfo.isRobot()
+                      ? Row(
+                          children: [
+                            Flexible(
+                              fit: FlexFit.loose,
+                              child: Text(
+                                conversationInfo.getName(),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                                style: TextStyle(
+                                  fontSize: config.itemTitleSize,
+                                  color: config.itemTitleColor,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            SvgPicture.asset(
+                              'images/ic_ai_session.svg',
+                              width: 22,
+                              height: 18,
+                              package: kPackage,
+                            ),
+                          ],
+                        )
+                      : Text(
+                          conversationInfo.getName(),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          style: TextStyle(
+                            fontSize: config.itemTitleSize,
+                            color: config.itemTitleColor,
+                          ),
+                        ),
                 ),
                 Text.rich(
                   TextSpan(
@@ -279,11 +328,15 @@ class ConversationItem extends StatelessWidget {
           Positioned(
             right: 0,
             top: 17,
-            child: Text(
-              conversationInfo.getFormatTime(),
-              style: TextStyle(
-                fontSize: config.itemDateSize,
-                color: config.itemDateColor,
+            child: SizedBox(
+              width: timeColumnWidth,
+              child: Text(
+                formattedTime,
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  fontSize: config.itemDateSize,
+                  color: config.itemDateColor,
+                ),
               ),
             ),
           ),

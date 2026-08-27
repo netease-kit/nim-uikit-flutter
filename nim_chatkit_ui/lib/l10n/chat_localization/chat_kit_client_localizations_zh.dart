@@ -105,6 +105,9 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
   String get chatMessageActionForward => '转发';
 
   @override
+  String get messageTranslationHide => '隐藏';
+
+  @override
   String get chatMessageActionPin => '标记';
 
   @override
@@ -215,7 +218,19 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
   String get botSubsessionDeleteConfirm => '确认删除当前子会话吗？';
 
   @override
-  String get botSubsessionDeleteFailed => '删除失败';
+  String get botSubsessionDeleteFailed => '删除失败请重试';
+
+  @override
+  String get botSubsessionLoadFailed => '子会话加载失败';
+
+  @override
+  String get botSubsessionRetry => '重试';
+
+  @override
+  String get botSubsessionEmpty => '暂无子会话';
+
+  @override
+  String get botSubsessionSearchEmpty => '未找到相关子会话';
 
   @override
   String get chatSetting => '聊天设置';
@@ -1023,4 +1038,94 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
 
   @override
   String get chatSearchLocateMessage => '定位到原始消息';
+
+  @override
+  String get chatMessageActionTranslate => '翻译';
+
+  @override
+  String get messageTranslationSettingTitle => '翻译';
+
+  @override
+  String get messageTranslationTarget => '将文字翻译为';
+
+  @override
+  String get messageTranslationTargetDesc => '设置消息翻译的目标语言';
+
+  @override
+  String get messageTranslationAutoTranslate => '自动翻译聊天中收到的消息';
+
+  @override
+  String get messageTranslationAutoTranslateDesc => '开启后自动翻译收到的消息。';
+
+  @override
+  String get messageTranslationLanguageTitle => '将文字翻译为';
+
+  @override
+  String get messageTranslationSave => '保存';
+
+  @override
+  String get messageTranslationTranslating => '翻译中...';
+
+  @override
+  String get messageTranslationTranslatedLabel => '译文';
+
+  @override
+  String get messageTranslationFailedRetry => '翻译失败，点击重试';
+
+  @override
+  String get chatMessageActionVoiceToText => '转文字';
+
+  @override
+  String get chatMessageVoiceToTextConverting => '转写中...';
+
+  @override
+  String get chatMessageVoiceToTextFailed => '转文字失败';
+
+  @override
+  String get chatMessageVoiceToTextEmpty => '未识别到文字';
+
+  @override
+  String get translationLangZhChs => '简体中文';
+
+  @override
+  String get translationLangZhCht => '繁体中文';
+
+  @override
+  String get translationLangAr => '阿拉伯语';
+
+  @override
+  String get translationLangDe => '德语';
+
+  @override
+  String get translationLangEn => '英语';
+
+  @override
+  String get translationLangEs => '西班牙语';
+
+  @override
+  String get translationLangFr => '法语';
+
+  @override
+  String get translationLangId => '印度尼西亚语';
+
+  @override
+  String get translationLangIt => '意大利语';
+
+  @override
+  String get translationLangJa => '日语';
+
+  @override
+  String get translationLangKo => '韩语';
+
+  @override
+  String get translationLangPt => '葡萄牙语';
+
+  @override
+  String get translationLangRu => '俄语';
+
+  @override
+  String get translationLangTh => '泰语';
+
+  @override
+  String get translationLangVi => '越南语';
 }

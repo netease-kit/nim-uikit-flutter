@@ -42,5 +42,50 @@
   "chatMessageBriefVideoCall": "[Video Call]",
   "chatMessageBriefAudioCall": "[Voice Call]",
   "muteTitle": "Mute",
-  "cancelMuteTitle": "Unmute"
+  "cancelMuteTitle": "Unmute",
+  "closeTitle": "Close",
+  "saveTitle": "Save",
+  "conversationGroupTitle": "Conversation Groups",
+  "conversationGroupAll": "All",
+  "conversationGroupAitMe": "@Me",
+  "conversationGroupUnread": "Unread",
+  "conversationGroupVisible": "Visible Groups",
+  "conversationGroupHidden": "Hidden Groups",
+  "conversationGroupCreate": "New Group",
+  "conversationGroupSetting": "Group Settings",
+  "conversationGroupName": "Group Name",
+  "conversationGroupNameHint": "Enter group name",
+  "conversationGroupConversationList": "Conversation List",
+  "conversationGroupConversationCount": "Conversations ({count})",
+  "@conversationGroupConversationCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "conversationGroupAddConversation": "Add Conversation",
+  "conversationGroupSearchHint": "Search conversations",
+  "conversationGroupOperationFailed": "Operation failed",
+  "conversationGroupLimit": "Conversation group limit reached",
+  "conversationGroupPartialAddFailed": "Some conversations failed to add",
+  "conversationGroupConversationNotExist": "Conversation does not exist",
+  "conversationGroupConversationCountLimit": "Conversation count in the group exceeded the limit",
+  "conversationGroupDeleteConfirmTitle": "Delete Group",
+  "conversationGroupDeleteConfirmContent": "Only the group relation will be deleted. Conversations remain.",
+  "conversationGroupConversationLimit": "Conversation limit reached",
+  "conversationGroupJoinedLimit": "This conversation has reached the group limit",
+  "conversationTimeCurrentYearFormat": "MM-dd",
+  "conversationTimeOtherYearFormat": "yyyy-MM-dd",
+  "conversationGroupAddTitle": "Add Conversation({selected}/{max})",
+  "@conversationGroupAddTitle": {
+    "placeholders": {
+      "selected": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  }
 }

@@ -73,7 +73,7 @@
   "customMessage": "[Custom Message]",
    "localConversation": "Local Conversation",
     "settingAndResetTips": "The setting succeeds and takes effect after the restart",
-    "swindleTips": "For test only. Beware of money transfer, lottery winnings & strange call scams.",
+    "swindleTips": "For Yunxin IM product demo use only. Do not trust messages involving money transfers or winning prizes. Do not call unknown numbers. Beware of scams.",
     "aiStreamMode": "AI Stream Mode",
   "language": "Language",
   "languageChinese": "中文",
@@ -87,5 +87,6 @@
   "textSafetyNotice": "Text Safety Notice",
   "enableCloudMessageSearch": "Search Message From Cloud",
   "labelYes": "Yes",
-  "labelNo": "No"
+  "labelNo": "No",
+  "messageTranslationSetting": "Translate"
 }

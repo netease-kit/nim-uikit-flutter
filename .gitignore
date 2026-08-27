@@ -3,3 +3,6 @@
 *.ipr
 *.iws
 .idea/
+/im_demo/ios/build/ios/
+/im_demo/ohos/
+/im_demo/macos/build/

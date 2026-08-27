@@ -6,6 +6,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:netease_common_ui/utils/text_search.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
+import 'package:nim_chatkit/manager/ai_robot_manager.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
 import 'package:nim_chatkit/model/recent_forward.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
@@ -104,15 +105,7 @@ class ChatForwardViewModel extends ChangeNotifier {
     conversationList = conversationResult?.conversationList ?? [];
 
     conversationShowList = conversationList
-        .where(
-          (conversation) =>
-              filterSessions?.contains(
-                ChatKitUtils.getConversationTargetId(
-                  conversation.conversationId,
-                ),
-              ) !=
-              true,
-        )
+        .where(_isVisibleConversation)
         .map(
           (conversation) => SearchResult<NIMConversation>(data: conversation),
         )
@@ -127,6 +120,14 @@ class ChatForwardViewModel extends ChangeNotifier {
 
   void _init() async {
     _loadData();
+  }
+
+  bool _isVisibleConversation(NIMConversation conversation) {
+    final targetId = ChatKitUtils.getConversationTargetId(
+      conversation.conversationId,
+    );
+    return filterSessions?.contains(targetId) != true &&
+        !AIRobotManager.instance.isRobot(targetId);
   }
 
   int? getConversationCount(String conversationId) {
@@ -188,15 +189,7 @@ class ChatForwardViewModel extends ChangeNotifier {
   void searchConversationByKeyword(String? keyword) {
     if (keyword?.isNotEmpty != true) {
       conversationShowList = conversationList
-          .where(
-            (conversation) =>
-                filterSessions?.contains(
-                  ChatKitUtils.getConversationTargetId(
-                    conversation.conversationId,
-                  ),
-                ) !=
-                true,
-          )
+          .where(_isVisibleConversation)
           .map(
             (conversation) => SearchResult<NIMConversation>(data: conversation),
           )
@@ -206,6 +199,9 @@ class ChatForwardViewModel extends ChangeNotifier {
     }
     conversationShowList.clear();
     for (NIMConversation conversation in conversationList) {
+      if (!_isVisibleConversation(conversation)) {
+        continue;
+      }
       final res = TextSearcher.search(
         conversation.name ??
             ChatKitUtils.getConversationTargetId(conversation.conversationId),

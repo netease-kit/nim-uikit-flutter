@@ -163,7 +163,7 @@ class ContactKitClientLocalizationsZh extends ContactKitClientLocalizations {
   String get contactSave => '保存';
 
   @override
-  String get contactHaveSendApply => '已发送申请';
+  String get contactHaveSendApply => '好友申请已发送';
 
   @override
   String get systemVerifyMessageEmpty => '暂无验证消息';
@@ -300,6 +300,9 @@ class ContactKitClientLocalizationsZh extends ContactKitClientLocalizations {
   String get contactRobotDeleteConfirmContent => '删除后，正在使用的机器人将断开连接，需要重新配置';
 
   @override
+  String get contactRobotDeleteConfirmAction => '删除';
+
+  @override
   String get contactRobotBind => '绑定机器人';
 
   @override
@@ -312,7 +315,7 @@ class ContactKitClientLocalizationsZh extends ContactKitClientLocalizations {
   String get contactRobotBindSelectHint => '请选择要绑定的机器人：';
 
   @override
-  String get contactRobotBindExistingHint => '或选择已有机器人：';
+  String get contactRobotBindExistingHint => '选择已有机器人：';
 
   @override
   String get contactRobotBindConfirmTitle => '确认绑定该账号？';

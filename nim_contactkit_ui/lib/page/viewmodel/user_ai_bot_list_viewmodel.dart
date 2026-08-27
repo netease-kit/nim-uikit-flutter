@@ -65,6 +65,17 @@ class UserAIBotListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void showCachedBots(List<V2NIMUserAIBot> cachedBots) {
+    bots
+      ..clear()
+      ..addAll(cachedBots);
+    sortUserAIBotsByCreateTimeDesc(bots);
+    hasMore = false;
+    nextToken = null;
+    error = null;
+    notifyListeners();
+  }
+
   void upsertBot(V2NIMUserAIBot bot) {
     final index = bots.indexWhere((item) => item.accid == bot.accid);
     if (index >= 0) {

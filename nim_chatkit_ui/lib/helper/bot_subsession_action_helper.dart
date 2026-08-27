@@ -67,6 +67,7 @@ class BotSubsessionActionHelper {
         await _deleteTopic(
           context: context,
           onDelete: onDelete,
+          checkNetwork: checkNetwork,
         );
         break;
       case null:
@@ -128,6 +129,7 @@ class BotSubsessionActionHelper {
         await _deleteTopic(
           context: context,
           onDelete: onDelete,
+          checkNetwork: checkNetwork,
         );
         break;
       case null:
@@ -201,6 +203,7 @@ class BotSubsessionActionHelper {
   static Future<void> _deleteTopic({
     required BuildContext context,
     required Future<NIMResult<void>> Function() onDelete,
+    bool Function()? checkNetwork,
   }) async {
     final confirmed = await showCupertinoDialog<bool>(
       context: context,
@@ -229,10 +232,13 @@ class BotSubsessionActionHelper {
     if (confirmed != true || !context.mounted) {
       return;
     }
+    if (checkNetwork?.call() == false) {
+      return;
+    }
     final result = await onDelete();
     if (!result.isSuccess) {
       ChatUIToast.show(
-        result.errorDetails ?? S.of(context).botSubsessionDeleteFailed,
+        S.of(context).botSubsessionDeleteFailed,
         context: context,
       );
     }

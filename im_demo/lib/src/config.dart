@@ -105,13 +105,9 @@ class NIMSDKOptionsConfig {
     final config = await ConfigRepo.getStatusBarNotificationConfig();
     if (config == null) {
       return NIMStatusBarNotificationConfig(
-        notificationEntranceClassName:
-            'com.netease.yunxin.app.flutter.im.MainActivity',
         notificationExtraType: NIMNotificationExtraType.jsonArrStr,
       );
     } else {
-      config.notificationEntranceClassName =
-          'com.netease.yunxin.app.flutter.im.MainActivity';
       config.notificationExtraType = NIMNotificationExtraType.jsonArrStr;
       return config;
     }

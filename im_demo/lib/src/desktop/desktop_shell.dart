@@ -69,6 +69,8 @@ class _DesktopShellState extends State<DesktopShell> {
   int _chatUnreadCount = 0;
   int _contactUnreadCount = 0;
   int _teamActionsUnreadCount = 0;
+  bool _refreshingChatUnreadCount = false;
+  bool _pendingChatUnreadCountRefresh = false;
 
   final List<StreamSubscription> _subscriptions = [];
 
@@ -98,13 +100,7 @@ class _DesktopShellState extends State<DesktopShell> {
 
   void _initUnread() {
     // 初始化时读取一次存量未读数
-    ConversationRepo.getMsgUnreadCount().then((value) {
-      if (value.isSuccess && value.data != null) {
-        setState(() {
-          _chatUnreadCount = value.data!;
-        });
-      }
-    });
+    _refreshChatUnreadCount();
 
     // 主动 fetch 一次好友申请未读数，保证初始红点正确
     ContactRepo.getAddApplicationUnreadCount();
@@ -112,13 +108,16 @@ class _DesktopShellState extends State<DesktopShell> {
     // 主动 fetch 一次群操作未读数，保证初始红点正确
     TeamRepo.getTeamActionsUnreadCount();
 
-    // 订阅 SDK 全局未读数变化，保证在非会话 tab 时红点也能实时更新
+    // 总未读变化仅作为刷新信号，红点使用忽略免打扰的过滤计数。
     // （ConversationPage.onUnreadCountChanged 只在会话 tab 可见时有效）
     _subscriptions.add(
-      ConversationRepo.onTotalUnreadCountChanged().listen((count) {
-        setState(() {
-          _chatUnreadCount = count;
-        });
+      ConversationRepo.onTotalUnreadCountChanged().listen((_) {
+        _refreshChatUnreadCount();
+      }),
+    );
+    _subscriptions.add(
+      ConversationRepo.onConversationChanged().listen((_) {
+        _refreshChatUnreadCount();
       }),
     );
 
@@ -160,8 +159,33 @@ class _DesktopShellState extends State<DesktopShell> {
     );
   }
 
+  Future<void> _refreshChatUnreadCount() async {
+    if (_refreshingChatUnreadCount) {
+      _pendingChatUnreadCountRefresh = true;
+      return;
+    }
+    _refreshingChatUnreadCount = true;
+    try {
+      do {
+        _pendingChatUnreadCountRefresh = false;
+        final result = await ConversationRepo.getMsgUnreadCount();
+        if (!mounted) {
+          return;
+        }
+        if (result.isSuccess && result.data != null) {
+          setState(() {
+            _chatUnreadCount = result.data!;
+          });
+        }
+      } while (_pendingChatUnreadCountRefresh);
+    } finally {
+      _refreshingChatUnreadCount = false;
+    }
+  }
+
   @override
   void dispose() {
+    _pendingChatUnreadCountRefresh = false;
     clearDesktopChatNavigator();
     _controller.removeListener(_onNavChanged);
     for (var sub in _subscriptions) {

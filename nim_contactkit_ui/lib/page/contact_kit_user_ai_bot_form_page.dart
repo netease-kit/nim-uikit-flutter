@@ -2,10 +2,11 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
-import 'package:netease_common_ui/ui/photo.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_common_ui/widgets/update_text_info_page.dart';
@@ -62,14 +63,15 @@ class _ContactKitUserAIBotFormPageState
   }
 
   Future<void> _pickAvatar(UserAIBotFormViewModel viewModel) async {
-    final path = await pickImageForPlatform(
-      context,
-      mobilePhotoSelector: (ctx) => showPhotoSelector(ctx),
-    );
-    if (path == null || !mounted || !await _haveConnectivityForSubmit()) {
+    final selection = await pickAvatarImageForPlatform(context);
+    if (selection == null || !mounted || !await _haveConnectivityForSubmit()) {
       return;
     }
-    final result = await viewModel.uploadAvatar(path);
+    final uploadPath = await normalizeImageForUpload(
+      selection.path,
+      isCamera: selection.isCamera,
+    );
+    final result = await viewModel.uploadAvatar(uploadPath);
     if (!mounted) return;
     if (result.isSuccess && result.data != null) {
       setState(() {
@@ -96,6 +98,11 @@ class _ContactKitUserAIBotFormPageState
     if (!mounted) return;
     if (result.isSuccess && result.data != null) {
       Navigator.pop(context, result.data);
+    } else if (result.code == 189305) {
+      ChatUIToast.show(
+        S.of(context).contactRobotLimitToast,
+        context: context,
+      );
     } else {
       ChatUIToast.show(result.errorDetails ?? '', context: context);
     }
@@ -128,6 +135,9 @@ class _ContactKitUserAIBotFormPageState
             maxLength: 15,
             maxLines: 1,
             privilege: true,
+            networkToastGravity: defaultTargetPlatform == TargetPlatform.iOS
+                ? ToastGravity.TOP
+                : null,
             onSave: saveName,
             sureStr: S.of(context).contactSave,
           ),

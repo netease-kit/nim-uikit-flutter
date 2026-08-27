@@ -198,7 +198,7 @@ class DemoKitClientLocalizationsEn extends DemoKitClientLocalizations {
 
   @override
   String get swindleTips =>
-      'For test only. Beware of money transfer, lottery winnings & strange call scams.';
+      'For Yunxin IM product demo use only. Do not trust messages involving money transfers or winning prizes. Do not call unknown numbers. Beware of scams.';
 
   @override
   String get aiStreamMode => 'AI Stream Mode';
@@ -241,4 +241,7 @@ class DemoKitClientLocalizationsEn extends DemoKitClientLocalizations {
 
   @override
   String get labelNo => 'No';
+
+  @override
+  String get messageTranslationSetting => 'Translate';
 }

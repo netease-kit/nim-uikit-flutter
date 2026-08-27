@@ -12,6 +12,7 @@ import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/repo/config_repo.dart';
 import 'package:nim_chatkit/utils/toast_utils.dart';
+import 'package:nim_chatkit_ui/view/page/message_translation_setting_page.dart';
 
 import '../../../l10n/S.dart';
 
@@ -193,6 +194,20 @@ class _MineSettingPageState extends State<MineSettingPage> {
                         );
                       },
                     ),
+                    if (IMKitClient.enableMessageTranslation)
+                      CommonListTile(
+                        title: S.of(context).messageTranslationSetting,
+                        trailingType: TrailingType.arrow,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const MessageTranslationSettingPage(),
+                            ),
+                          );
+                        },
+                      ),
                     // Visibility(
                     //   visible: false,
                     //   child: CommonListTile(

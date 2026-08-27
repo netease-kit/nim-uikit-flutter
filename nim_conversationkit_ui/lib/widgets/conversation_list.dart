@@ -11,14 +11,18 @@ import 'package:netease_common_ui/base/base_state.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
+import 'package:nim_chatkit/im_kit_config_center.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
+import 'package:nim_conversationkit_ui/widgets/conversation_group_bar.dart';
+import 'package:nim_conversationkit_ui/widgets/conversation_group_desktop_panel.dart';
 import 'package:nim_conversationkit_ui/widgets/conversation_item.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/S.dart';
 import '../model/conversation_info.dart';
+import '../view_model/conversation_group_view_model.dart';
 import '../view_model/conversation_view_model.dart';
 
 class ConversationList extends StatefulWidget {
@@ -40,32 +44,49 @@ class ConversationList extends StatefulWidget {
 }
 
 class _ConversationListState extends BaseState<ConversationList> {
-  final ScrollController _scrollController = ScrollController();
+  // 会话列表每次打开都从顶部开始，避免恢复旧的 PageStorage 滚动位置。
+  final ScrollController _scrollController =
+      ScrollController(keepScrollOffset: false);
   // 顶部AI数字人列表高度
   final double conversationTopListHeight = 84;
   final double conversationTopItemHeight = 75;
+  final double conversationGroupBarHeight = 48;
 
   /// 桌面端当前选中的会话 ID（用于选中高亮）
   String? _desktopSelectedConversationId;
 
   /// 桌面端当前 hover 的会话 ID
   String? _desktopHoveredConversationId;
+
+  /// 桌面端分组操作面板是否展开
+  bool _desktopGroupPanelExpanded = false;
+
+  bool? _lastShowGroupBar;
+
+  static const String _desktopGroupPanelTapRegion =
+      'conversation-group-desktop-panel';
   // 滚动监听
   void _scrollListener() {
     if (_scrollController.position.pixels >
         _scrollController.position.maxScrollExtent - 20) {
-      context.read<ConversationViewModel>().queryConversationNextList();
+      final groupViewModel = _maybeReadGroupViewModel();
+      if (groupViewModel != null) {
+        groupViewModel.loadMoreForSelectedGroup();
+      } else {
+        context.read<ConversationViewModel>().queryConversationNextList();
+      }
     }
   }
 
   Timer? _scrollEndTimer;
 
   List<String> _getVisibleP2PUser() {
+    final groupViewModel = _maybeReadGroupViewModel();
     List<ConversationInfo> conversationList =
-        context.read<ConversationViewModel>().conversationList;
+        groupViewModel?.displayConversations ??
+            context.read<ConversationViewModel>().conversationList;
     List<NIMAIUser> aiUserList =
         context.read<ConversationViewModel>().topAIUserList;
-
     List<String> visibleP2PUser = [];
 
     if (!_scrollController.hasClients) {
@@ -75,13 +96,26 @@ class _ConversationListState extends BaseState<ConversationList> {
     double scrollOffset = _scrollController.offset;
     double viewportHeight = _scrollController.position.viewportDimension;
 
+    final showGroupBar = groupViewModel != null &&
+        !ChatKitUtils.isDesktopOrWeb &&
+        groupViewModel.visibleGroups.isNotEmpty;
+
+    // 移动端数字人列表位于滚动区内，会话项从其之后开始；
+    // 桌面端数字人列表固定在滚动区外，不参与偏移计算。
+    final isDesktop = ChatKitUtils.isDesktopOrWeb;
+    final topListHeight =
+        !isDesktop && aiUserList.isNotEmpty ? conversationTopListHeight : 0;
+
     // 计算可见区域
     double visibleStart = scrollOffset;
+    if (showGroupBar && scrollOffset >= topListHeight) {
+      visibleStart += conversationGroupBarHeight;
+    }
     double visibleEnd = scrollOffset + viewportHeight;
 
-    // AI用户列表的偏移量
+    // 会话项位于数字人列表和吸顶分组栏之后。
     double currentOffset =
-        aiUserList.isNotEmpty ? conversationTopListHeight : 0;
+        topListHeight + (showGroupBar ? conversationGroupBarHeight : 0);
 
     for (int i = 0; i < conversationList.length; i++) {
       ConversationInfo conversation = conversationList[i];
@@ -109,6 +143,12 @@ class _ConversationListState extends BaseState<ConversationList> {
     super.initState();
     _desktopSelectedConversationId = widget.selectedConversationId;
     _scrollController.addListener(_scrollListener);
+    // 首帧后强制从顶部开始，兜底任何历史 offset 恢复路径。
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _scrollController.hasClients) {
+        _scrollController.jumpTo(0);
+      }
+    });
   }
 
   @override
@@ -131,87 +171,247 @@ class _ConversationListState extends BaseState<ConversationList> {
   @override
   void dispose() {
     _scrollEndTimer?.cancel();
+    _scrollController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final groupViewModel = _maybeWatchGroupViewModel();
     List<ConversationInfo> conversationList =
-        context.watch<ConversationViewModel>().conversationList;
+        groupViewModel?.displayConversations ??
+            context.watch<ConversationViewModel>().conversationList;
     List<NIMAIUser> aiUserList =
         context.watch<ConversationViewModel>().topAIUserList;
-    var indexPos = aiUserList.length > 0 ? 1 : 0;
+    final showAIUserList = aiUserList.isNotEmpty;
+    final showGroupBar = groupViewModel != null &&
+        !ChatKitUtils.isDesktopOrWeb &&
+        groupViewModel.visibleGroups.isNotEmpty;
+    final showDesktopGroupBar = groupViewModel != null &&
+        ChatKitUtils.isDesktopOrWeb &&
+        groupViewModel.visibleGroups.isNotEmpty;
+    if (showGroupBar && _lastShowGroupBar != true) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _scrollToTop();
+        }
+      });
+    }
+    _lastShowGroupBar = showGroupBar;
+    if (showDesktopGroupBar) {
+      return _buildDesktopConversationLayout(
+        conversationList: conversationList,
+        aiUserList: aiUserList,
+      );
+    }
+    return _buildConversationScroll(
+      conversationList: conversationList,
+      aiUserList: aiUserList,
+      showAIUserList: showAIUserList,
+      showGroupBar: showGroupBar,
+    );
+  }
+
+  Widget _buildDesktopConversationLayout({
+    required List<ConversationInfo> conversationList,
+    required List<NIMAIUser> aiUserList,
+  }) {
+    final showAIUserList = aiUserList.isNotEmpty;
     return Stack(
       children: [
-        SlidableAutoCloseBehavior(
-          child: NotificationListener<ScrollNotification>(
-            onNotification: (ScrollNotification notification) {
-              // 处理不同类型的滚动通知
-              if (notification is ScrollStartNotification ||
-                  notification is ScrollUpdateNotification) {
-                // 滚动开始或滚动中，取消之前的定时器
-                _scrollEndTimer?.cancel();
-              } else if (notification is ScrollEndNotification) {
-                // 滚动结束，设置定时器，延迟1秒后执行操作
-                _scrollEndTimer = Timer(
-                  const Duration(milliseconds: 100),
-                  _subscribeUserStatus,
-                );
-              }
-              return false; // 不阻止通知继续传递
-            },
-            child: ListView.builder(
-              itemCount: conversationList.length + indexPos,
-              // itemExtent: conversationItemHeight,
-              itemExtentBuilder: (index, options) {
-                if (index == 0 && aiUserList.isNotEmpty) {
-                  return conversationTopListHeight;
-                }
-                return conversationItemHeight;
-              },
-              controller: _scrollController,
-              itemBuilder: (context, index) {
-                if (index == 0 && aiUserList.isNotEmpty) {
-                  return _buildHorizontalGrid(aiUserList);
-                } else {
-                  return _buildConversationListItem(
-                    conversationList,
-                    index - indexPos,
-                  );
-                }
-              },
-            ),
+        Positioned.fill(
+          top: conversationGroupBarHeight,
+          child: _buildConversationScroll(
+            conversationList: conversationList,
+            aiUserList: aiUserList,
+            showAIUserList: showAIUserList,
+            showGroupBar: false,
           ),
         ),
-        if (conversationList.isEmpty) // 条件判断
-          Positioned.fill(
-            child: Container(
-              margin: EdgeInsets.only(top: 180), // 设置距离顶部的 margin
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  SizedBox(height: 0), // 这个 SizedBox 用于保持布局
-                  SvgPicture.asset(
-                    'images/ic_search_empty.svg',
-                    package: kPackage,
-                  ),
-                  Padding(
-                    padding: EdgeInsets.only(top: 18),
-                    child: Text(
-                      S.of(context).conversationEmpty,
-                      style: TextStyle(
-                        color: CommonColors.color_b3b7bc,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                  Expanded(child: Container(), flex: 1),
-                ],
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: conversationGroupBarHeight,
+          child: ConversationGroupBar(
+            isDesktop: true,
+            isPanelExpanded: _desktopGroupPanelExpanded,
+            onPanelToggle: _toggleDesktopGroupPanel,
+            onGroupSelected: _collapseDesktopGroupPanel,
+            panelTapRegionGroupId: _desktopGroupPanelTapRegion,
+            onPanelTapOutside: (_) => _collapseDesktopGroupPanel(),
+          ),
+        ),
+        if (_desktopGroupPanelExpanded)
+          Positioned(
+            top: 0,
+            left: 0,
+            bottom: 0,
+            width: 220,
+            child: TapRegion(
+              groupId: _desktopGroupPanelTapRegion,
+              child: ConversationGroupDesktopPanel(
+                onCollapse: _collapseDesktopGroupPanel,
               ),
             ),
           ),
       ],
     );
+  }
+
+  Widget _buildConversationScroll({
+    required List<ConversationInfo> conversationList,
+    required List<NIMAIUser> aiUserList,
+    required bool showAIUserList,
+    required bool showGroupBar,
+  }) {
+    final isDesktop = ChatKitUtils.isDesktopOrWeb;
+    // 桌面端：数字人列表固定在滚动区外顶部；
+    // 移动端：数字人列表作为普通 sliver 随内容滚动（不吸顶），仅分组栏吸顶。
+    final fixedTopWidgets = <Widget>[
+      if (isDesktop && showAIUserList) _buildHorizontalGrid(aiUserList),
+    ];
+    if (conversationList.isEmpty) {
+      return SlidableAutoCloseBehavior(
+        child: Column(
+          children: [
+            ...fixedTopWidgets,
+            if (!isDesktop && showAIUserList) _buildHorizontalGrid(aiUserList),
+            if (showGroupBar)
+              ConversationGroupBar(
+                onGroupSelected: _scrollToTop,
+              ),
+            Expanded(
+              child: _buildEmptyState(0),
+            ),
+          ],
+        ),
+      );
+    }
+    final scrollBody = NotificationListener<ScrollNotification>(
+      onNotification: (ScrollNotification notification) {
+        // 处理不同类型的滚动通知
+        if (notification is ScrollStartNotification ||
+            notification is ScrollUpdateNotification) {
+          _scrollEndTimer?.cancel();
+        } else if (notification is ScrollEndNotification) {
+          _scrollEndTimer = Timer(
+            const Duration(milliseconds: 100),
+            _subscribeUserStatus,
+          );
+        }
+        return false;
+      },
+      child: CustomScrollView(
+        controller: _scrollController,
+        slivers: [
+          // 数字人列表随内容滚动，不吸顶
+          if (!isDesktop && showAIUserList)
+            SliverToBoxAdapter(
+              child: _buildHorizontalGrid(aiUserList),
+            ),
+          if (showGroupBar)
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _ConversationGroupHeaderDelegate(
+                height: conversationGroupBarHeight,
+                child: ConversationGroupBar(
+                  onGroupSelected: _scrollToTop,
+                ),
+              ),
+            ),
+          SliverFixedExtentList(
+            itemExtent: conversationItemHeight,
+            delegate: SliverChildBuilderDelegate(
+              (context, index) => _buildConversationListItem(
+                conversationList,
+                index,
+              ),
+              childCount: conversationList.length,
+            ),
+          ),
+        ],
+      ),
+    );
+    return SlidableAutoCloseBehavior(
+      child: Column(
+        children: [
+          ...fixedTopWidgets,
+          Expanded(child: scrollBody),
+        ],
+      ),
+    );
+  }
+
+  void _scrollToTop() {
+    if (!_scrollController.hasClients || _scrollController.offset == 0) {
+      return;
+    }
+    _scrollController.jumpTo(0);
+  }
+
+  Widget _buildEmptyState(double topMargin) {
+    return Container(
+      margin: EdgeInsets.only(top: topMargin),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          SizedBox(height: 0),
+          SvgPicture.asset(
+            'images/ic_search_empty.svg',
+            package: kPackage,
+          ),
+          Padding(
+            padding: EdgeInsets.only(top: 18),
+            child: Text(
+              S.of(context).conversationEmpty,
+              style: TextStyle(
+                color: CommonColors.color_b3b7bc,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          Expanded(child: Container(), flex: 1),
+        ],
+      ),
+    );
+  }
+
+  void _toggleDesktopGroupPanel() {
+    setState(() {
+      _desktopGroupPanelExpanded = !_desktopGroupPanelExpanded;
+    });
+  }
+
+  void _collapseDesktopGroupPanel() {
+    if (!_desktopGroupPanelExpanded) {
+      return;
+    }
+    setState(() {
+      _desktopGroupPanelExpanded = false;
+    });
+  }
+
+  ConversationGroupViewModel? _maybeReadGroupViewModel() {
+    if (!IMKitConfigCenter.enableConversationGroup) {
+      return null;
+    }
+    try {
+      return context.read<ConversationGroupViewModel>();
+    } on ProviderNotFoundException {
+      return null;
+    }
+  }
+
+  ConversationGroupViewModel? _maybeWatchGroupViewModel() {
+    if (!IMKitConfigCenter.enableConversationGroup) {
+      return null;
+    }
+    try {
+      return context.watch<ConversationGroupViewModel>();
+    } on ProviderNotFoundException {
+      return null;
+    }
   }
 
   // 构建置顶AI数字人列表
@@ -586,5 +786,41 @@ class _ConversationListState extends BaseState<ConversationList> {
           break;
       }
     });
+  }
+}
+
+class _ConversationGroupHeaderDelegate extends SliverPersistentHeaderDelegate {
+  _ConversationGroupHeaderDelegate({
+    required this.height,
+    required this.child,
+  });
+
+  final double height;
+  final Widget child;
+
+  @override
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Material(
+      color: Colors.white,
+      elevation: overlapsContent ? 1 : 0,
+      child: SizedBox.expand(
+        child: child,
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _ConversationGroupHeaderDelegate oldDelegate) {
+    return oldDelegate.height != height || oldDelegate.child != child;
   }
 }

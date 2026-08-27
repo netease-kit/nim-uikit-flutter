@@ -601,6 +601,12 @@ abstract class ContactKitClientLocalizations {
   /// **'After deletion, connected robots will be disconnected and need to be reconfigured.'**
   String get contactRobotDeleteConfirmContent;
 
+  /// No description provided for @contactRobotDeleteConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get contactRobotDeleteConfirmAction;
+
   /// No description provided for @contactRobotBind.
   ///
   /// In en, this message translates to:

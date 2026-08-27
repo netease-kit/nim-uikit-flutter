@@ -599,6 +599,7 @@ class _BottomInputFieldState extends State<BottomInputField>
         requestType: requestType,
         shouldRevertGrid: false,
         maxAssets: maxAssets,
+        dragToSelect: false,
         limitedPermissionOverlayPredicate: (state) => false,
         filterOptions: FilterOptionGroup(
           imageOption: const FilterOption(needTitle: true),

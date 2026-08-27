@@ -4,10 +4,9 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart' as Intl;
 import 'package:netease_common_ui/ui/avatar.dart';
@@ -21,6 +20,7 @@ import 'package:nim_chatkit/extension.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit/message/message_helper.dart';
+import 'package:nim_chatkit/message/message_voice_to_text.dart';
 import 'package:nim_chatkit/message/message_reply_info.dart';
 import 'package:nim_chatkit/message/message_revoke_info.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
@@ -35,6 +35,7 @@ import 'package:nim_chatkit/utils/toast_utils.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_helper.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_user_helper.dart';
+import 'package:nim_chatkit_ui/helper/reply_message_display_helper.dart';
 import 'package:nim_chatkit_ui/l10n/S.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_audio_item.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_file_item.dart';
@@ -47,6 +48,7 @@ import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_desktop_context_menu.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_message_pop_menu.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
+import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_translation_pop_menu.dart';
 import 'package:nim_chatkit_ui/view/page/chat_message_ack_page.dart';
 import 'package:nim_chatkit_ui/view_model/chat_view_model.dart';
 import 'package:nim_core_v2/nim_core.dart';
@@ -99,6 +101,9 @@ class ChatKitMessageItem extends StatefulWidget {
 
   final bool showReadAck;
 
+  /// Whether to hide a reply when it points to the current topic root.
+  final bool hideThreadRootReply;
+
   final ChatUIConfig? chatUIConfig;
 
   ChatKitMessageItem({
@@ -107,6 +112,7 @@ class ChatKitMessageItem extends StatefulWidget {
     required this.lastMessage,
     this.messageBuilder,
     this.showReadAck = true,
+    this.hideThreadRootReply = false,
     this.onTapAvatar,
     this.popMenuAction,
     this.onTapFailedMessage,
@@ -164,8 +170,9 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
 
   ChatKitDesktopContextMenu? _desktopContextMenu;
 
-  bool get _isDesktopOrWeb =>
-      kIsWeb || (!kIsWeb && !Platform.isAndroid && !Platform.isIOS);
+  ChatKitTranslationPopMenu? _translationPopMenu;
+
+  bool get _isDesktopOrWeb => ChatKitUtils.isDesktopOrWeb;
 
   bool isTeam() {
     return widget.chatMessage.nimMessage.conversationType ==
@@ -290,6 +297,75 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
     _popMenu!.show();
   }
 
+  void _onTranslationLongPress(
+    BuildContext targetContext,
+    LongPressStartDetails details,
+    String translatedText,
+  ) {
+    _showTranslationPopMenu(
+      targetContext,
+      details.globalPosition,
+      translatedText,
+    );
+  }
+
+  void _onTranslationSecondaryTap(
+    BuildContext targetContext,
+    TapUpDetails details,
+    String translatedText,
+  ) {
+    _showTranslationPopMenu(
+      targetContext,
+      details.globalPosition,
+      translatedText,
+    );
+  }
+
+  void _showTranslationPopMenu(
+    BuildContext targetContext,
+    Offset globalPosition,
+    String translatedText,
+  ) {
+    _popMenu?.clean();
+    _popMenu = null;
+    _desktopContextMenu?.clean();
+    _desktopContextMenu = null;
+    _translationPopMenu?.clean();
+    _translationPopMenu = ChatKitTranslationPopMenu(
+      context: targetContext,
+      message: widget.chatMessage,
+      globalPosition: globalPosition,
+      onCopy: () {
+        Clipboard.setData(ClipboardData(text: translatedText));
+        ChatUIToast.show(S.of().chatMessageCopySuccess);
+      },
+      onForward: () {
+        final sessionName = context.read<ChatViewModel>().chatTitle;
+        ChatMessageHelper.showForwardSelector(
+          context,
+          (
+            conversationId, {
+            String? postScript,
+            bool? isLastUser,
+          }) {
+            context.read<ChatViewModel>().forwardTranslatedText(
+                  translatedText,
+                  conversationId,
+                  postScript: postScript,
+                );
+          },
+          sessionName: sessionName,
+        );
+      },
+      onHide: () {
+        context
+            .read<ChatViewModel>()
+            .hideMessageTranslation(widget.chatMessage);
+      },
+    );
+    _translationPopMenu!.show();
+  }
+
   bool _showReeditText(RevokedMessageInfo? revokedMessageInfo) {
     var message = widget.chatMessage;
     return isSelf() &&
@@ -367,9 +443,12 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
 
   NIMMessageRefer? _getReplyMessageRefer(ChatMessage message) {
     if (message.nimMessage.threadReply != null &&
-        message.nimMessage.threadReply?.messageClientId?.isNotEmpty == true &&
-        message.nimMessage.threadReply?.messageClientId !=
-            message.nimMessage.threadRoot?.messageClientId) {
+        shouldDisplayReplyMessage(
+          replyMessageClientId: message.nimMessage.threadReply?.messageClientId,
+          threadRootMessageClientId:
+              message.nimMessage.threadRoot?.messageClientId,
+          hideThreadRootReply: widget.hideThreadRootReply,
+        )) {
       return message.nimMessage.threadReply;
     }
     var remoteExtension = null;
@@ -398,15 +477,11 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
 
   bool _showReplyMessage(ChatMessage message) {
     final refer = _getReplyMessageRefer(message);
-    if (refer?.messageClientId?.isNotEmpty != true) {
-      return false;
-    }
-    final rootRefer = message.nimMessage.threadRoot;
-    if (rootRefer?.messageClientId?.isNotEmpty == true &&
-        refer?.messageClientId == rootRefer?.messageClientId) {
-      return false;
-    }
-    return true;
+    return shouldDisplayReplyMessage(
+      replyMessageClientId: refer?.messageClientId,
+      threadRootMessageClientId: message.nimMessage.threadRoot?.messageClientId,
+      hideThreadRootReply: widget.hideThreadRootReply,
+    );
   }
 
   Widget _buildMessageReply(ChatMessage message) {
@@ -443,12 +518,24 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
         return ChatKitMessageTextItem(
           message: message.nimMessage,
           chatUIConfig: widget.chatUIConfig,
+          translationState: context
+              .watch<ChatViewModel>()
+              .getMessageTranslationState(message.nimMessage),
+          isTranslating: context.watch<ChatViewModel>().isMessageTranslating(
+                message.nimMessage,
+              ),
+          onRetryTranslate: () {
+            context.read<ChatViewModel>().translateMessage(message);
+          },
+          onTranslationLongPress: _onTranslationLongPress,
+          onTranslationSecondaryTap:
+              _isDesktopOrWeb ? _onTranslationSecondaryTap : null,
         );
       case NIMMessageType.audio:
         if (messageItemBuilder?.audioMessageBuilder != null) {
           return messageItemBuilder!.audioMessageBuilder!(message.nimMessage);
         }
-        return ChatKitMessageAudioItem(message: message.nimMessage);
+        return _buildAudioMessage(message);
       case NIMMessageType.image:
         if (messageItemBuilder?.imageMessageBuilder != null) {
           return messageItemBuilder!.imageMessageBuilder!(message.nimMessage);
@@ -543,6 +630,66 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
         }
         return ChatKitMessageNonsupportItem();
     }
+  }
+
+  Widget _buildAudioMessage(ChatMessage message) {
+    final viewModel = context.watch<ChatViewModel>();
+    final voiceToTextState = viewModel.getVoiceToTextState(message.nimMessage);
+    final isConverting = viewModel.isVoiceToTextConverting(message.nimMessage);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment:
+          isSelf() ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        ChatKitMessageAudioItem(message: message.nimMessage),
+        if (isConverting || voiceToTextState?.voiceToText?.isValid == true)
+          _buildVoiceToTextContent(
+            voiceToTextState,
+            isConverting: isConverting,
+          ),
+      ],
+    );
+  }
+
+  Widget _buildVoiceToTextContent(
+    MessageVoiceToTextState? state, {
+    required bool isConverting,
+  }) {
+    final text = state?.voiceToText?.text.trim();
+    return Container(
+      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
+      constraints: const BoxConstraints(minWidth: 78),
+      child: isConverting
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 1.5,
+                    valueColor: AlwaysStoppedAnimation('#656A72'.toColor()),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  S.of(context).chatMessageVoiceToTextConverting,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: '#656A72'.toColor(),
+                  ),
+                ),
+              ],
+            )
+          : Text(
+              text ?? '',
+              style: TextStyle(
+                fontSize: 14,
+                color: '#333333'.toColor(),
+                height: 1.4,
+              ),
+            ),
+    );
   }
 
   ///过滤消息
@@ -838,6 +985,10 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
 
   Future<UserAvatarInfo>? _userInfoFuture;
 
+  Locale? _replyLocale;
+
+  bool _haveLoadedReply = false;
+
   void _loadReply() {
     _messageRefer = _getReplyMessageRefer(widget.chatMessage);
     if (_messageRefer?.messageClientId?.isNotEmpty == true) {
@@ -858,7 +1009,12 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _loadReply();
+    final locale = Localizations.maybeLocaleOf(context);
+    if (!_haveLoadedReply || _replyLocale != locale) {
+      _haveLoadedReply = true;
+      _replyLocale = locale;
+      _loadReply();
+    }
     _loadUserInfo();
   }
 
@@ -1008,6 +1164,8 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   void dispose() {
     _popMenu?.clean();
     _popMenu = null;
+    _translationPopMenu?.clean();
+    _translationPopMenu = null;
     _desktopContextMenu?.clean();
     _desktopContextMenu = null;
     for (var sub in subscriptions) {

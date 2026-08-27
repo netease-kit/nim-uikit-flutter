@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:netease_common_ui/extension.dart';
+import 'package:intl/intl.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/manager/ai_robot_manager.dart';
 import 'package:nim_chatkit/manager/ai_user_manager.dart';
@@ -67,13 +68,28 @@ class ConversationInfo {
     return conversation.lastMessage;
   }
 
-  String getFormatTime() {
-    // 使用空安全操作符来安全地访问嵌套属性
-    final formattedTime =
-        conversation.lastMessage?.messageRefer?.createTime?.formatDateTime();
+  String getFormatTime({
+    String? currentYearDateFormat,
+    String? otherYearDateFormat,
+  }) {
+    final createTime = conversation.lastMessage?.messageRefer?.createTime;
+    if (createTime == null) {
+      return '';
+    }
+    if (currentYearDateFormat == null || otherYearDateFormat == null) {
+      return createTime.formatDateTime();
+    }
 
-    // 如果 formattedTime 是非空的，返回它；否则返回空字符串
-    return formattedTime ?? '';
+    final dateTime = DateTime.fromMillisecondsSinceEpoch(createTime);
+    final now = DateTime.now();
+    if (dateTime.year == now.year &&
+        dateTime.month == now.month &&
+        dateTime.day == now.day) {
+      return DateFormat('HH:mm').format(dateTime);
+    }
+    final format =
+        dateTime.year == now.year ? currentYearDateFormat : otherYearDateFormat;
+    return DateFormat(format).format(dateTime);
   }
 
   NIMMessageAttachment? getLastAttachment() {

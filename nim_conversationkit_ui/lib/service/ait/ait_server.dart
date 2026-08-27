@@ -45,7 +45,7 @@ class AitServer {
     // 监听收到消息
     NimCore.instance.messageService.onReceiveMessages.listen((event) {
       for (var message in event) {
-        if (message.conversationType == NIMConversationType.team &&
+        if (_isGroupConversationType(message.conversationType) &&
                 message.conversationId != _currentConversationId
             // && e.status != NIMMessageStatus.read
             ) {
@@ -85,8 +85,9 @@ class AitServer {
       msgRevokeNotifications,
     ) {
       for (var messageNotify in msgRevokeNotifications) {
-        if (messageNotify.messageRefer?.conversationType ==
-            NIMConversationType.team) {
+        if (_isGroupConversationType(
+          messageNotify.messageRefer?.conversationType,
+        )) {
           var remoteExtension = null;
           if (messageNotify.serverExtension?.isNotEmpty == true) {
             remoteExtension = jsonDecode(messageNotify.serverExtension!);
@@ -157,6 +158,11 @@ class AitServer {
 
   Future<List<String>> getAllAitSession(String myId) async {
     return DatabaseHelper.instance.queryAllAitSession(myId);
+  }
+
+  bool _isGroupConversationType(NIMConversationType? type) {
+    return type == NIMConversationType.team ||
+        type == NIMConversationType.superTeam;
   }
 }
 
