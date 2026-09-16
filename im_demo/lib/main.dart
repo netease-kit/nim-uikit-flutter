@@ -28,6 +28,7 @@ import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_chatkit/utils/toast_utils.dart';
 import 'package:nim_chatkit_callkit/nim_chatkit_callkit.dart';
 // import 'package:nim_chatkit_location/chat_kit_location.dart';
+import 'package:nim_chatkit_sticker/nim_chatkit_sticker.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_contactkit_ui/contact_kit_client.dart';
 import 'package:nim_conversationkit_ui/conversation_kit_client.dart';
@@ -69,6 +70,7 @@ class _MainAppState extends State<MainApp> {
   ///init all plugin here
   void _initPlugins() {
     ChatKitClient.init();
+    StickerKitClient.init();
     TeamKitClient.init();
     ConversationKitClient.init();
     ContactKitClient.init();
@@ -175,6 +177,7 @@ class _MainAppState extends State<MainApp> {
         ConversationKitClient.delegate,
         ChatKitClient.delegate,
         ContactKitClient.delegate,
+        StickerKitClient.delegate,
         TeamKitClient.delegate,
         SearchKitClient.delegate,
         ChatKitCall.delegate,

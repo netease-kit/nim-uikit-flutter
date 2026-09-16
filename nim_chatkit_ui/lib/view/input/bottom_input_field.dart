@@ -28,15 +28,20 @@ import 'package:nim_chatkit/services/login/im_login_service.dart';
 import 'package:nim_chatkit/services/message/chat_message.dart';
 import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
 import 'package:nim_chatkit/utils/toast_utils.dart';
+import 'package:nim_chatkit_ui/helper/ait_member_search_helper.dart';
+import 'package:nim_chatkit_ui/helper/chat_image_send_helper.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_helper.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_user_helper.dart';
+import 'package:nim_chatkit_ui/helper/chat_video_send_helper.dart';
 import 'package:nim_chatkit_ui/view/ait/ait_manager.dart';
 import 'package:nim_chatkit_ui/view/ait/ait_model.dart';
 import 'package:nim_chatkit_ui/view/input/emoji/emoji.dart';
 import 'package:nim_chatkit_ui/view/input/emoji/emoji_text.dart';
 import 'package:nim_chatkit_ui/view/input/emoji_panel.dart';
+import 'package:nim_chatkit_ui/view/input/emoji_panel_extension.dart';
 import 'package:nim_chatkit_ui/view/input/ne_special_text_span_builder.dart';
 import 'package:nim_chatkit_ui/view/input/translate_panel.dart';
+import 'package:nim_chatkit_ui/widget/ait_member_highlight_text.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
@@ -194,14 +199,28 @@ class _BottomInputFieldState extends State<BottomInputField>
 
     final buttonPosition = buttonBox.localToGlobal(Offset.zero);
 
-    // 弹框尺寸：每行9个表情，每个40px，加上 padding
-    const double popupWidth = 9 * 44.0 + 32;
-    const double popupHeight = 380.0;
+    final mediaSize = MediaQuery.of(context).size;
+    // 每行9个表情，并约束到当前窗口安全区域。
+    final availableWidth = mediaSize.width > 16 ? mediaSize.width - 16 : 1.0;
+    final availableHeight = mediaSize.height > 16 ? mediaSize.height - 16 : 1.0;
+    final double popupWidth =
+        availableWidth < 9 * 44.0 + 32 ? availableWidth : 9 * 44.0 + 32;
+    final double popupHeight =
+        availableHeight < 380.0 ? availableHeight : 380.0;
 
     // 弹框位置：在按钮上方，水平居中对齐
     final double left =
         buttonPosition.dx + buttonBox.size.width / 2 - popupWidth / 2;
-    final double top = buttonPosition.dy - popupHeight - 8;
+    final preferredTop = buttonPosition.dy - popupHeight - 8;
+    final belowTop = buttonPosition.dy + buttonBox.size.height + 8;
+    final maxTop = mediaSize.height - popupHeight - 8;
+    final double top = maxTop <= 8
+        ? 8
+        : (preferredTop >= 8 ? preferredTop : belowTop)
+            .clamp(8.0, maxTop)
+            .toDouble();
+    final hasExtensions =
+        ChatKitClient.instance.emojiPanelExtensions.isNotEmpty;
 
     _desktopEmojiOverlay = OverlayEntry(
       builder: (context) {
@@ -219,7 +238,7 @@ class _BottomInputFieldState extends State<BottomInputField>
             Positioned(
               left: left.clamp(
                   8.0, MediaQuery.of(context).size.width - popupWidth - 8),
-              top: top.clamp(8.0, double.infinity),
+              top: top,
               child: Material(
                 elevation: 8,
                 borderRadius: BorderRadius.circular(12),
@@ -231,12 +250,18 @@ class _BottomInputFieldState extends State<BottomInputField>
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: _DesktopEmojiGrid(
-                    onEmojiSelected: (emoji) {
-                      _onDesktopEmojiSelected(emoji);
-                    },
-                    onEmojiDelete: _onDesktopEmojiDelete,
-                  ),
+                  child: hasExtensions
+                      ? EmojiPanel(
+                          displayMode: EmojiPanelDisplayMode.desktopOrWeb,
+                          onEmojiSelected: _onDesktopEmojiSelected,
+                          onEmojiDelete: _onDesktopEmojiDelete,
+                          onEmojiSendClick: _sendEmojiTextMessage,
+                          sendImage: _sendExtensionImage,
+                        )
+                      : _DesktopEmojiGrid(
+                          onEmojiSelected: _onDesktopEmojiSelected,
+                          onEmojiDelete: _onDesktopEmojiDelete,
+                        ),
                 ),
               ),
             ),
@@ -259,6 +284,46 @@ class _BottomInputFieldState extends State<BottomInputField>
       setState(() {
         _currentType = ActionConstants.none;
       });
+    }
+  }
+
+  Future<bool> _sendExtensionImage(ChatImageSendRequest request) async {
+    if (!request.isValid || !mounted || _isDisposing) {
+      return false;
+    }
+
+    try {
+      if (kIsWeb) {
+        _viewModel.sendImageMessage(
+          '',
+          request.fileName,
+          request.width,
+          request.height,
+          imageType: request.imageType,
+          fileBytes: request.bytes,
+        );
+        return true;
+      }
+
+      final path = await ChatImageSendHelper.materialize(request);
+      if (path == null || !mounted || _isDisposing) {
+        return false;
+      }
+      _viewModel.sendImageMessage(
+        path,
+        request.fileName,
+        request.width,
+        request.height,
+        imageType: request.imageType,
+      );
+      return true;
+    } catch (error) {
+      Alog.e(
+        tag: 'ChatKit',
+        moduleName: 'emoji panel image sender',
+        content: 'prepare extension image failed: $error',
+      );
+      return false;
     }
   }
 
@@ -634,12 +699,27 @@ class _BottomInputFieldState extends State<BottomInputField>
               );
               return;
             }
+            var videoSize = Size(
+              entity.width.toDouble(),
+              entity.height.toDouble(),
+            );
+            if (!ChatKitUtils.isDesktopOrWeb) {
+              final resolvedSize =
+                  await ChatVideoSendHelper.resolveAlbumVideoSize(
+                file,
+                fallbackSize: entity.orientatedSize,
+              );
+              if (!mounted) return;
+              if (resolvedSize != null) {
+                videoSize = resolvedSize;
+              }
+            }
             _viewModel.sendVideoMessage(
               file.path,
               entity.title,
               entity.duration * 1000,
-              entity.width,
-              entity.height,
+              videoSize.width.toInt(),
+              videoSize.height.toInt(),
             );
           }
         }
@@ -970,7 +1050,8 @@ class _BottomInputFieldState extends State<BottomInputField>
           );
           inputText = text;
         },
-        onEmojiSendClick: _sendTextMessage,
+        onEmojiSendClick: _sendEmojiTextMessage,
+        sendImage: _sendExtensionImage,
       );
     }
     return Container();
@@ -1146,7 +1227,11 @@ class _BottomInputFieldState extends State<BottomInputField>
     inputText = value;
   }
 
-  _sendTextMessage() {
+  void _sendEmojiTextMessage() {
+    _sendTextMessage(restoreInputFocus: false);
+  }
+
+  void _sendTextMessage({bool restoreInputFocus = true}) {
     final title = titleController.text.trim();
     var text = inputController.text.trim();
     if (_aitManager?.aitEnd(text) == true) {
@@ -1176,11 +1261,13 @@ class _BottomInputFieldState extends State<BottomInputField>
       setState(() {
         _isExpanded = false;
       });
-      //100ms 后重新Request focus，以此来弹出键盘
-      Future.delayed(Duration(milliseconds: 100)).then((value) {
-        _titleFocusNode.unfocus();
-        _focusNode.requestFocus();
-      });
+      if (restoreInputFocus) {
+        //100ms 后重新Request focus，以此来弹出键盘
+        Future.delayed(Duration(milliseconds: 100)).then((value) {
+          _titleFocusNode.unfocus();
+          _focusNode.requestFocus();
+        });
+      }
     } else {
       ChatUIToast.show(
         S.of(context).chatMessageNotSupportEmptyMessage,
@@ -1363,7 +1450,8 @@ class _BottomInputFieldState extends State<BottomInputField>
     if (!IMKitClient.enableAit) {
       return false;
     }
-    if (widget.conversationType == NIMConversationType.team) {
+    if (widget.conversationType == NIMConversationType.team ||
+        widget.conversationType == NIMConversationType.superTeam) {
       return true;
     }
     final accountId = ChatKitUtils.getConversationTargetId(
@@ -2207,11 +2295,69 @@ class _DesktopAitPopup extends StatefulWidget {
 
 class _DesktopAitPopupState extends State<_DesktopAitPopup> {
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+  String _query = '';
+  bool _loadingAllMembers = false;
+  bool _searchError = false;
+  int _searchGeneration = 0;
+
+  bool get _isSearching => _query.trim().isNotEmpty;
 
   @override
   void dispose() {
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
+  }
+
+  OutlineInputBorder _searchBorder() => const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(4)),
+        borderSide: BorderSide(color: Colors.transparent),
+      );
+
+  void _clearSearch() {
+    _searchController.clear();
+    _searchGeneration++;
+    setState(() {
+      _query = '';
+      _loadingAllMembers = false;
+      _searchError = false;
+    });
+  }
+
+  void _onSearchChanged(String value) {
+    setState(() => _query = value);
+    if (_query.trim().isEmpty || _loadingAllMembers) {
+      return;
+    }
+    final generation = ++_searchGeneration;
+    setState(() {
+      _loadingAllMembers = true;
+      _searchError = false;
+    });
+    unawaited(() async {
+      try {
+        await widget.aitManager.loadAllMembers();
+      } catch (_) {
+        if (mounted && generation == _searchGeneration) {
+          setState(() {
+            _loadingAllMembers = false;
+            _searchError = true;
+          });
+        }
+        return;
+      }
+      if (!mounted || generation != _searchGeneration) {
+        return;
+      }
+      setState(() => _loadingAllMembers = false);
+    }());
+  }
+
+  void _retrySearch() {
+    if (_query.trim().isNotEmpty) {
+      _onSearchChanged(_query);
+    }
   }
 
   @override
@@ -2239,21 +2385,40 @@ class _DesktopAitPopupState extends State<_DesktopAitPopup> {
             child: ValueListenableBuilder<List<AitBean>?>(
               valueListenable: widget.aitManager.aitMemberList,
               builder: (context, value, _) {
-                final members = (value ?? [])
+                final allMembers = (value ?? [])
                     .where(
                       (e) => e.getAccountId() != IMKitClient.account(),
                     )
                     .toList();
+                final members = _isSearching
+                    ? allMembers
+                        .where(
+                          (member) => matchesAitMemberFields(
+                            member.searchableFields,
+                            _query,
+                          ),
+                        )
+                        .toList()
+                    : allMembers;
 
                 // 计算实际高度：头部 + 成员列表（最多 maxHeight）
                 final bool showAll = !widget.aitManager.isP2P &&
+                    !_isSearching &&
                     NIMChatCache.instance.haveAitAllPrivilege();
+                final bool showSearch = !widget.aitManager.isP2P;
+                const double searchHeight = 58.0;
+                const double emptyHeight = 120.0;
                 final int itemCount = members.length + (showAll ? 1 : 0);
-                final double listHeight = (itemCount * widget.itemHeight).clamp(
+                final double fixedHeight =
+                    widget.headerHeight + (showSearch ? searchHeight : 0.0);
+                final double desiredListHeight = itemCount == 0
+                    ? emptyHeight
+                    : itemCount * widget.itemHeight;
+                final double listHeight = desiredListHeight.clamp(
                   0.0,
-                  widget.maxHeight - widget.headerHeight,
+                  widget.maxHeight - fixedHeight,
                 );
-                final double popupHeight = widget.headerHeight + listHeight;
+                final double popupHeight = fixedHeight + listHeight;
 
                 return SizedBox(
                   height: popupHeight,
@@ -2287,41 +2452,113 @@ class _DesktopAitPopupState extends State<_DesktopAitPopup> {
                         ),
                       ),
                       const Divider(height: 1, thickness: 1),
-                      // 成员列表
-                      Expanded(
-                        child: ListView(
-                          controller: _scrollController,
-                          padding: EdgeInsets.zero,
-                          children: [
-                            // @所有人（仅群聊）
-                            if (showAll)
-                              _DesktopAitItem(
-                                leading: SvgPicture.asset(
-                                  'images/ic_team_all.svg',
-                                  package: kPackage,
-                                  height: 36,
-                                  width: 36,
+                      if (showSearch)
+                        SizedBox(
+                          height: searchHeight,
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+                            child: TextField(
+                              controller: _searchController,
+                              onChanged: _onSearchChanged,
+                              textInputAction: TextInputAction.search,
+                              textAlignVertical: TextAlignVertical.center,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: const Color(0xFFF2F4F5),
+                                hintText:
+                                    S.of(context).chatMemberPickerSearchHint,
+                                hintStyle: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFFA6ADB6),
                                 ),
-                                title: S.of(context).chatTeamAitAll,
-                                onTap: () => widget.onSelected(
-                                  AitContactsModel.accountAll,
+                                prefixIcon: const Icon(
+                                  Icons.search,
+                                  size: 16,
+                                  color: Color(0xFFA6ADB6),
                                 ),
+                                prefixIconConstraints: const BoxConstraints(
+                                  minWidth: 36,
+                                  minHeight: 36,
+                                ),
+                                suffixIcon: _isSearching
+                                    ? IconButton(
+                                        onPressed: _clearSearch,
+                                        icon: const Icon(
+                                          Icons.clear,
+                                          size: 16,
+                                          color: Color(0xFFA6ADB6),
+                                        ),
+                                      )
+                                    : null,
+                                suffixIconConstraints: const BoxConstraints(
+                                  minWidth: 36,
+                                  minHeight: 36,
+                                ),
+                                contentPadding: EdgeInsets.zero,
+                                border: _searchBorder(),
+                                enabledBorder: _searchBorder(),
+                                focusedBorder: _searchBorder(),
                               ),
-                            // 成员列表
-                            ...members.map(
-                              (user) => _DesktopAitItem(
-                                leading: Avatar(
-                                  avatar: user.getAvatar(),
-                                  name: user.getAvatarName(),
-                                  height: 36,
-                                  width: 36,
-                                ),
-                                title: user.getName(),
-                                onTap: () => widget.onSelected(user),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF333333),
                               ),
                             ),
-                          ],
+                          ),
                         ),
+                      // 成员列表
+                      Expanded(
+                        child: itemCount == 0
+                            ? (_isSearching && _loadingAllMembers)
+                                ? const _DesktopAitLoadingState()
+                                : (_isSearching && _searchError)
+                                    ? _DesktopAitErrorState(
+                                        onRetry: _retrySearch,
+                                      )
+                                    : AitMemberEmptyState(
+                                        searching: _isSearching)
+                            : ListView(
+                                controller: _scrollController,
+                                padding: EdgeInsets.zero,
+                                children: [
+                                  // @所有人（仅群聊）
+                                  if (showAll)
+                                    _DesktopAitItem(
+                                      leading: SvgPicture.asset(
+                                        'images/ic_team_all.svg',
+                                        package: kPackage,
+                                        height: 36,
+                                        width: 36,
+                                      ),
+                                      title: S.of(context).chatTeamAitAll,
+                                      onTap: () => widget.onSelected(
+                                        AitContactsModel.accountAll,
+                                      ),
+                                    ),
+                                  // 成员列表
+                                  ...members.map((user) {
+                                    final fields = user.searchableFields;
+                                    final displayName = user.displayName;
+                                    final subtitles = findAitMemberSubtitles(
+                                      fields,
+                                      displayName,
+                                      _query,
+                                    );
+                                    return _DesktopAitItem(
+                                      leading: Avatar(
+                                        avatar: user.getAvatar(),
+                                        name: user.getAvatarName(),
+                                        height: 36,
+                                        width: 36,
+                                      ),
+                                      title: displayName,
+                                      subtitles: subtitles,
+                                      query: _query,
+                                      onTap: () => widget.onSelected(user),
+                                    );
+                                  }),
+                                ],
+                              ),
                       ),
                     ],
                   ),
@@ -2335,15 +2572,54 @@ class _DesktopAitPopupState extends State<_DesktopAitPopup> {
   }
 }
 
+class _DesktopAitLoadingState extends StatelessWidget {
+  const _DesktopAitLoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const CircularProgressIndicator(strokeWidth: 2),
+          const SizedBox(height: 8),
+          Text(S.of(context).chatMemberPickerSearching),
+        ],
+      ),
+    );
+  }
+}
+
+class _DesktopAitErrorState extends StatelessWidget {
+  final VoidCallback onRetry;
+
+  const _DesktopAitErrorState({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: IconButton(
+        tooltip: S.of(context).botSubsessionRetry,
+        onPressed: onRetry,
+        icon: const Icon(Icons.refresh_rounded),
+      ),
+    );
+  }
+}
+
 /// 桌面端 @ 列表单项（支持 hover 高亮）
 class _DesktopAitItem extends StatefulWidget {
   final Widget leading;
   final String title;
+  final List<String> subtitles;
+  final String query;
   final VoidCallback onTap;
 
   const _DesktopAitItem({
     required this.leading,
     required this.title,
+    this.subtitles = const [],
+    this.query = '',
     required this.onTap,
   });
 
@@ -2372,14 +2648,29 @@ class _DesktopAitItemState extends State<_DesktopAitItem> {
               widget.leading,
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  widget.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF333333),
-                  ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AitMemberHighlightText(
+                      displayName: widget.title,
+                      query: widget.query,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF333333),
+                      ),
+                    ),
+                    ...widget.subtitles.map(
+                      (subtitle) => AitMemberHighlightText(
+                        displayName: subtitle,
+                        query: widget.query,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF858A92),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

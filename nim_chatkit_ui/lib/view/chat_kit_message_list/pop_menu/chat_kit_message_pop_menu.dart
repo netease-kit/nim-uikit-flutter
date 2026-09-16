@@ -2,12 +2,23 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:nim_chatkit/im_kit_config_center.dart';
+import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit/services/message/chat_message.dart';
+import 'package:nim_chatkit/utils/toast_utils.dart';
+import 'package:nim_chatkit_ui/helper/message_reaction_helper.dart';
+import 'package:nim_chatkit_ui/helper/message_popup_coordinator.dart';
+import 'package:nim_chatkit_ui/l10n/S.dart';
+import 'package:nim_chatkit_ui/view/chat_kit_message_list/reaction/message_reaction_picker.dart';
+import 'package:nim_chatkit_ui/view/chat_kit_message_list/reaction/message_reaction_quick_bar.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
 import 'package:provider/provider.dart';
+import 'package:yunxin_alog/yunxin_alog.dart';
 
 import '../../../chat_kit_client.dart';
 import '../../../view_model/chat_view_model.dart';
@@ -37,65 +48,20 @@ class ChatKitMessagePopMenu {
     this.chatUIConfig,
     this.globalPosition,
   }) {
-    double arrowTipDistance = 2;
-    TooltipDirection popupDirection = _getPopupDirection(context);
-
-    //重设arrowTipDistance
-    var resetDistance = globalPosition == null;
-
-    final box = context.findRenderObject() as RenderBox?;
-    bool isTargetHeadVisible = true;
-    if (box != null && globalPosition == null) {
-      final position = box.localToGlobal(Offset.zero);
-      final topPadding = MediaQuery.of(context).padding.top + kToolbarHeight;
-      if (position.dy - topPadding < 240) {
-        popupDirection = TooltipDirection.down;
-      }
-      final size = box.size;
-      // 检查是否在可滚动容器内
-      final scrollable = Scrollable.maybeOf(context);
-      if (scrollable != null) {
-        final scrollPosition = scrollable.position;
-        final scrollOffset = scrollPosition.pixels;
-        final viewportHeight = scrollPosition.viewportDimension;
-        final viewportBottom = scrollOffset + viewportHeight;
-
-        // 获取 Widget 在滚动容器内的相对位置
-        final scrollableRenderBox =
-            scrollable.context.findRenderObject() as RenderBox;
-        final localOffset = box.localToGlobal(
-          Offset.zero,
-          ancestor: scrollableRenderBox,
-        );
-        final widgetScrollTop = scrollOffset + localOffset.dy;
-        final widgetScrollBottom = widgetScrollTop + size.height;
-
-        // 判断可见性
-        // 增加判断：只有当 viewportHeight 接近屏幕高度时（说明不是 shrinkWrap 导致的短列表），才执行这个逻辑
-        // 或者当 viewportHeight 足够大时
-        if (viewportHeight > MediaQuery.of(context).size.height * 0.8) {
-          if (popupDirection == TooltipDirection.down &&
-              (widgetScrollBottom + 30) > viewportBottom) {
-            resetDistance = false;
-            arrowTipDistance = (context.size!.height / 2).roundToDouble() -
-                ((widgetScrollBottom + 200) - viewportBottom);
-            if (arrowTipDistance < 0) {
-              popupDirection = TooltipDirection.up;
-              arrowTipDistance = 0 - arrowTipDistance;
-            }
-            isTargetHeadVisible = false;
-          }
-        }
-      }
-    }
-    if (resetDistance) {
-      arrowTipDistance = (context.size!.height / 2).roundToDouble() + 10;
-    }
+    final estimatedPopupHeight = _estimatedCollapsedPopupHeight(context);
+    final placement = _getPopupPlacement(context, estimatedPopupHeight);
 
     _tooltip = SuperTooltip(
-      popupDirection: popupDirection,
+      onClose: () => MessagePopupCoordinator.release(this),
+      onTapOutside: (position) => MessagePopupCoordinator.openReactionAt(
+        position,
+        Overlay.of(context),
+      ),
+      tooltipContainerKey:
+          const ValueKey<String>('chat-message-pop-menu-surface'),
+      popupDirection: placement.direction,
       minimumOutSidePadding: 0,
-      arrowTipDistance: arrowTipDistance,
+      arrowTipDistance: 2,
       arrowBaseWidth: 10.0,
       arrowLength: 10.0,
       right: ChatKitMenuHelper.isSelf(message.nimMessage) ? 60 : null,
@@ -105,28 +71,88 @@ class ChatKitMessagePopMenu {
       shadowColor: Colors.black26,
       hasShadow: true,
       borderWidth: 1.0,
-      isTargetHeadVisible: isTargetHeadVisible,
+      contentPadding: IMKitConfigCenter.enableMessageReaction &&
+              MessageReactionHelper.isSupported(message)
+          ? EdgeInsets.zero
+          : null,
       showCloseButton: ShowCloseButton.none,
+      showArrow: !placement.centered,
+      centerVerticallyOnTarget: placement.centered,
       touchThroughAreaShape: ClipAreaShape.rectangle,
-      targetGlobalPosition: globalPosition,
+      targetGlobalPosition: placement.anchor,
       content: _getTooltipAction(context, chatUIConfig, message),
     );
   }
 
-  TooltipDirection _getPopupDirection(BuildContext context) {
-    final position = globalPosition;
-    if (position == null) {
-      return TooltipDirection.up;
+  double _estimatedCollapsedPopupHeight(BuildContext context) {
+    final reactionEnabled = IMKitConfigCenter.enableMessageReaction &&
+        MessageReactionHelper.isSupported(message);
+    final viewModel = context.read<ChatViewModel>();
+    final actionCount = ChatKitMenuHelper.buildMenuItems(
+      context,
+      message,
+      chatUIConfig,
+      isVoiceFromSpeaker,
+      viewModel.getVoiceToTextState(message.nimMessage)?.voiceToText?.isValid ==
+          true,
+    ).length;
+    final columnCount = reactionEnabled ? 5 : 4;
+    final rowCount = actionCount == 0 ? 0 : (actionCount / columnCount).ceil();
+    final actionHeight = rowCount * 44.0 + math.max(0, rowCount - 1) * 12.0;
+    final contentPadding = reactionEnabled ? 32.0 : 12.0;
+    final reactionSectionHeight = reactionEnabled ? 48.0 : 0.0;
+    const tooltipInsetsAndArrow = 32.0;
+    return contentPadding +
+        reactionSectionHeight +
+        actionHeight +
+        tooltipInsetsAndArrow;
+  }
+
+  _MessagePopupPlacement _getPopupPlacement(
+    BuildContext context,
+    double popupHeight,
+  ) {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) {
+      return _MessagePopupPlacement(
+        direction: TooltipDirection.up,
+        anchor: globalPosition,
+      );
     }
+    final origin = box.localToGlobal(Offset.zero);
     final mediaQuery = MediaQuery.of(context);
-    final top = mediaQuery.padding.top + kToolbarHeight;
-    final bottom = mediaQuery.size.height - mediaQuery.padding.bottom;
-    final spaceAbove = position.dy - top;
-    final spaceBelow = bottom - position.dy;
-    if (spaceAbove < 120 && spaceBelow > spaceAbove) {
-      return TooltipDirection.down;
+    final safeTop = mediaQuery.padding.top + kToolbarHeight;
+    final safeBottom = mediaQuery.size.height - mediaQuery.padding.bottom;
+    final targetRect = origin & box.size;
+    final anchorX = (globalPosition?.dx ?? targetRect.center.dx)
+        .clamp(targetRect.left, targetRect.right)
+        .toDouble();
+    final spaceAbove = targetRect.top - safeTop;
+    final spaceBelow = safeBottom - targetRect.bottom;
+    const verticalClearance = 8.0;
+    final requiredSpace = popupHeight + verticalClearance;
+    if (spaceAbove >= requiredSpace) {
+      return _MessagePopupPlacement(
+        direction: TooltipDirection.up,
+        anchor: Offset(anchorX, targetRect.top),
+      );
     }
-    return TooltipDirection.up;
+    if (spaceBelow >= requiredSpace) {
+      return _MessagePopupPlacement(
+        direction: TooltipDirection.down,
+        anchor: Offset(anchorX, targetRect.bottom),
+      );
+    }
+    final visibleTop = math.max(targetRect.top, safeTop);
+    final visibleBottom = math.min(targetRect.bottom, safeBottom);
+    final centerY = visibleTop <= visibleBottom
+        ? (visibleTop + visibleBottom) / 2
+        : targetRect.center.dy.clamp(safeTop, safeBottom).toDouble();
+    return _MessagePopupPlacement(
+      direction: TooltipDirection.up,
+      anchor: Offset(anchorX, centerY),
+      centered: true,
+    );
   }
 
   Widget _getTooltipAction(
@@ -134,75 +160,66 @@ class ChatKitMessagePopMenu {
     ChatUIConfig? config,
     ChatMessage message,
   ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 260),
-        child: Wrap(
-          direction: Axis.horizontal,
-          alignment: WrapAlignment.start,
-          // crossAxisAlignment: crossAxisAlignment.st,
-          spacing: 4,
-          runSpacing: 24,
-          children: [..._buildLongPressTipItem(context, config, message)],
-        ),
-      ),
+    final viewModel = context.read<ChatViewModel>();
+    final reactionEnabled = IMKitConfigCenter.enableMessageReaction &&
+        MessageReactionHelper.isSupported(message);
+    Alog.i(
+      tag: 'ChatKit',
+      moduleName: 'MessageReactionPopMenu',
+      content: 'long press reaction check: enabled=$reactionEnabled, '
+          'messageServerId=${message.nimMessage.messageServerId}, '
+          'messageClientId=${message.nimMessage.messageClientId}, '
+          'messageType=${message.nimMessage.messageType}, '
+          'isSelf=${message.nimMessage.isSelf}, '
+          'sendingState=${message.nimMessage.sendingState}, '
+          'statusErrorCode=${message.nimMessage.messageStatus?.errorCode}, '
+          'isRevoke=${message.isRevoke}',
     );
-  }
-
-  _buildLongPressTipItem(
-    BuildContext context,
-    ChatUIConfig? config,
-    ChatMessage message,
-  ) {
-    final firstRowList = ChatKitMenuHelper.buildMenuItems(
-      context,
-      message,
-      config,
-      isVoiceFromSpeaker,
-      context
-              .read<ChatViewModel>()
+    return _MobileMenuContent(
+      message: message,
+      config: config,
+      isVoiceFromSpeaker: isVoiceFromSpeaker,
+      hasValidVoiceToText: viewModel
               .getVoiceToTextState(message.nimMessage)
               ?.voiceToText
               ?.isValid ==
           true,
+      reactionEnabled: reactionEnabled,
+      selectedReactionIndexes: viewModel
+          .getMessageReactionState(message.nimMessage)
+          .summaries
+          .values
+          .where((summary) => summary.contains(viewModel.currentAccountId))
+          .map((summary) => summary.index)
+          .toSet(),
+      onReactionSelected: _onReactionSelected,
+      onActionSelected: (actionId) {
+        _tooltip?.close();
+        ChatKitMenuHelper.handleAction(
+          message,
+          actionId,
+          popMenuAction,
+          isVoiceFromSpeaker,
+        );
+      },
     );
-    return firstRowList
-        .map(
-          (item) => Material(
-            child: itemInkWell(
-              onTap: () {
-                _tooltip?.close();
-                ChatKitMenuHelper.handleAction(
-                  message,
-                  item['id']!,
-                  popMenuAction,
-                  isVoiceFromSpeaker,
-                );
-              },
-              child: Column(
-                children: [
-                  SvgPicture.asset(
-                    item["icon"]!,
-                    package: kPackage,
-                    width: 18,
-                    height: 18,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    item["label"]!,
-                    style: TextStyle(
-                      decoration: TextDecoration.none,
-                      fontSize: 14,
-                      color: '#333333'.toColor(),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        )
-        .toList();
+  }
+
+  void _onReactionSelected(int index) {
+    final viewModel = context.read<ChatViewModel>();
+    final errorText = S.of(context).chatMessageReactionFailed;
+    final limitErrorText = S.of(context).chatMessageReactionLimit;
+    _tooltip?.close();
+    viewModel.toggleMessageReaction(message, index).then((result) {
+      if (!result.isSuccess &&
+          result.code != ChatViewModel.messageReactionNetworkUnavailableCode) {
+        ChatUIToast.show(
+          result.code == ChatMessageRepo.errorQuickCommentLimited
+              ? limitErrorText
+              : errorText,
+        );
+      }
+    });
   }
 
   void close() {
@@ -216,6 +233,7 @@ class ChatKitMessagePopMenu {
   }
 
   void show() {
+    MessagePopupCoordinator.activate(this, close);
     _tooltip?.show(context);
   }
 
@@ -229,6 +247,205 @@ class ChatKitMessagePopMenu {
           child: child,
         ),
       ),
+    );
+  }
+}
+
+class _MessagePopupPlacement {
+  const _MessagePopupPlacement({
+    required this.direction,
+    required this.anchor,
+    this.centered = false,
+  });
+
+  final TooltipDirection direction;
+  final Offset? anchor;
+  final bool centered;
+}
+
+class _MobileMenuContent extends StatefulWidget {
+  const _MobileMenuContent({
+    required this.message,
+    required this.config,
+    required this.isVoiceFromSpeaker,
+    required this.hasValidVoiceToText,
+    required this.reactionEnabled,
+    required this.selectedReactionIndexes,
+    required this.onReactionSelected,
+    required this.onActionSelected,
+  });
+
+  final ChatMessage message;
+  final ChatUIConfig? config;
+  final bool isVoiceFromSpeaker;
+  final bool hasValidVoiceToText;
+  final bool reactionEnabled;
+  final Set<int> selectedReactionIndexes;
+  final ValueChanged<int> onReactionSelected;
+  final ValueChanged<String> onActionSelected;
+
+  @override
+  State<_MobileMenuContent> createState() => _MobileMenuContentState();
+}
+
+class _MobileMenuContentState extends State<_MobileMenuContent> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final actions = _orderedActions(
+      ChatKitMenuHelper.buildMenuItems(
+        context,
+        widget.message,
+        widget.config,
+        widget.isVoiceFromSpeaker,
+        widget.hasValidVoiceToText,
+      ),
+    );
+    final maxPickerHeight =
+        MessageReactionPicker.heightFor(MediaQuery.of(context));
+    Alog.i(
+      tag: 'ChatKit',
+      moduleName: 'MessageReactionPopMenu',
+      content: 'mobile menu build: reactionEnabled=${widget.reactionEnabled}, '
+          'actionCount=${actions.length}',
+    );
+    final availableMenuWidth =
+        math.max(0.0, MediaQuery.sizeOf(context).width - 16);
+    final menuWidth = math.min(
+      _expanded
+          ? MessageReactionPicker.width
+          : widget.reactionEnabled
+              ? MessageReactionPicker.width
+              : 276.0,
+      availableMenuWidth,
+    );
+    return Container(
+      width: menuWidth,
+      padding: _expanded
+          ? EdgeInsets.zero
+          : widget.reactionEnabled
+              ? const EdgeInsets.symmetric(horizontal: 12, vertical: 16)
+              : const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      constraints: BoxConstraints(
+        maxWidth: menuWidth,
+        maxHeight: MediaQuery.sizeOf(context).height * 0.72,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (widget.reactionEnabled) ...[
+              if (_expanded)
+                SizedBox(
+                  height: maxPickerHeight,
+                  child: MessageReactionPicker(
+                    mode: MessageReactionPickerMode.quickBarExpanded,
+                    showSurface: false,
+                    selectedIndexes: widget.selectedReactionIndexes,
+                    emojiBuilder: widget.config?.messageReactionEmojiBuilder,
+                    onCollapse: () => setState(() => _expanded = false),
+                    onSelected: widget.onReactionSelected,
+                  ),
+                )
+              else
+                MessageReactionQuickBar(
+                  popupStyle: true,
+                  emojiBuilder: widget.config?.messageReactionEmojiBuilder,
+                  onExpand: () => setState(() => _expanded = true),
+                  onSelected: widget.onReactionSelected,
+                ),
+              if (!_expanded)
+                const Divider(height: 18, color: Color(0xFFE6E8EB)),
+            ],
+            if (!_expanded) _buildActionGrid(actions),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Map<String, String>> _orderedActions(
+    List<Map<String, String>> actions,
+  ) {
+    if (!widget.reactionEnabled) {
+      return actions;
+    }
+    const preferredOrder = <String>[
+      ChatKitMenuHelper.copyMessageId,
+      ChatKitMenuHelper.forwardMessageId,
+      ChatKitMenuHelper.replyMessageId,
+      ChatKitMenuHelper.revokeMessageId,
+      ChatKitMenuHelper.deleteMessageId,
+    ];
+    final remaining = <String, Map<String, String>>{
+      for (final action in actions) action['id']!: action,
+    };
+    final ordered = <Map<String, String>>[];
+    for (final id in preferredOrder) {
+      final action = remaining.remove(id);
+      if (action != null) {
+        ordered.add(action);
+      }
+    }
+    ordered.addAll(remaining.values);
+    return ordered;
+  }
+
+  Widget _buildActionGrid(List<Map<String, String>> actions) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const enabledItemWidth = 40.0;
+        final rowItemCount = math.min(actions.length, 5);
+        final spacing = widget.reactionEnabled && rowItemCount > 1
+            ? math.max(
+                0.0,
+                (constraints.maxWidth - enabledItemWidth * rowItemCount) /
+                    (rowItemCount - 1),
+              )
+            : 4.0;
+        return Wrap(
+          direction: Axis.horizontal,
+          alignment: WrapAlignment.start,
+          spacing: spacing,
+          runSpacing: widget.reactionEnabled ? 12 : 24,
+          children: actions
+              .map(
+                (item) => Material(
+                  color: Colors.white,
+                  child: SizedBox(
+                    key: ValueKey<String>(
+                      'chat-message-action-${item['id']}',
+                    ),
+                    width: widget.reactionEnabled ? enabledItemWidth : 60,
+                    child: InkWell(
+                      onTap: () => widget.onActionSelected(item['id']!),
+                      child: Column(
+                        children: [
+                          SvgPicture.asset(
+                            item['icon']!,
+                            package: kPackage,
+                            width: 18,
+                            height: 18,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            item['label']!,
+                            style: TextStyle(
+                              decoration: TextDecoration.none,
+                              fontSize: 14,
+                              color: '#333333'.toColor(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
+        );
+      },
     );
   }
 }

@@ -1549,6 +1549,18 @@ abstract class ChatKitClientLocalizations {
   /// **'No Member'**
   String get chatMemberPickerEmpty;
 
+  /// No description provided for @chatMemberPickerSearchEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching members'**
+  String get chatMemberPickerSearchEmpty;
+
+  /// No description provided for @chatMemberPickerSearching.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching...'**
+  String get chatMemberPickerSearching;
+
   /// No description provided for @chatMemberRoleOwner.
   ///
   /// In en, this message translates to:
@@ -1792,7 +1804,7 @@ abstract class ChatKitClientLocalizations {
   /// No description provided for @chatNewMessage.
   ///
   /// In en, this message translates to:
-  /// **'{number}new message'**
+  /// **'{number} new messages'**
   String chatNewMessage(String number);
 
   /// No description provided for @chatMessageCollectedLimit.
@@ -2124,6 +2136,54 @@ abstract class ChatKitClientLocalizations {
   /// In en, this message translates to:
   /// **'Vietnamese'**
   String get translationLangVi;
+
+  /// No description provided for @chatBackToLastReadPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to last read position'**
+  String get chatBackToLastReadPosition;
+
+  /// No description provided for @chatMessageReactionAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add reaction'**
+  String get chatMessageReactionAdd;
+
+  /// No description provided for @chatMessageReactionExpand.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all reactions'**
+  String get chatMessageReactionExpand;
+
+  /// No description provided for @chatMessageReactionCollapse.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse reactions'**
+  String get chatMessageReactionCollapse;
+
+  /// No description provided for @chatMessageReactionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update reaction'**
+  String get chatMessageReactionFailed;
+
+  /// No description provided for @chatMessageReactionLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Reaction limit reached'**
+  String get chatMessageReactionLimit;
+
+  /// No description provided for @chatMessageReactionEmoji.
+  ///
+  /// In en, this message translates to:
+  /// **'Reaction {index}'**
+  String chatMessageReactionEmoji(int index);
+
+  /// No description provided for @chatMessageReactionCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Reaction {index}, {count} people'**
+  String chatMessageReactionCount(int index, int count);
 }
 
 class _ChatKitClientLocalizationsDelegate

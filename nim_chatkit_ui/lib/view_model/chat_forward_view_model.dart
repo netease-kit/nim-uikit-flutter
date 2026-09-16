@@ -9,6 +9,7 @@ import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/manager/ai_robot_manager.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
 import 'package:nim_chatkit/model/recent_forward.dart';
+import 'package:nim_chatkit/model/user_search_models.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit/repo/contact_repo.dart';
 import 'package:nim_chatkit/repo/conversation_repo.dart';
@@ -154,14 +155,26 @@ class ChatForwardViewModel extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    contactShowList.clear();
-    for (ContactInfo contact in contactList) {
-      final res = TextSearcher.search(contact.getName(), keyword!);
-      if (res != null &&
-          filterSessions?.contains(contact.user.accountId) != true) {
-        contactShowList.add(SearchResult(data: contact, searchInfo: res));
-      }
-    }
+    contactShowList = UserSearchService.search<ContactInfo>(
+      values: contactList.where(
+        (contact) => filterSessions?.contains(contact.user.accountId) != true,
+      ),
+      fieldsOf: UserSearchService.contactFields,
+      accountIdOf: (contact) => contact.user.accountId ?? '',
+      query: keyword!,
+      fieldOrder: UserSearchService.contactFieldOrder,
+    ).map((match) {
+      final line = match.lines.firstWhere(
+        (item) => item.matches.isNotEmpty,
+        orElse: () => match.lines.first,
+      );
+      final range = line.matches.isNotEmpty ? line.matches.first : null;
+      return SearchResult<ContactInfo>(
+        data: match.value,
+        searchInfo:
+            range == null ? null : RecordHitInfo(range.start, range.end),
+      );
+    }).toList();
     notifyListeners();
   }
 

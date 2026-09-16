@@ -71,7 +71,7 @@ class _ChatSettingPageState extends State<ChatSettingPage> {
             children: [
               Avatar(
                 avatar: widget.contactInfo.user.avatar,
-                name: widget.contactInfo.getName(),
+                name: widget.contactInfo.getName(needAlias: false),
                 bgCode: AvatarColor.avatarColor(content: accountId),
                 fontSize: 16,
                 height: 42,

@@ -8,12 +8,15 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nim_chatkit/service_locator.dart';
 import 'package:nim_chatkit/message/message_translation.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_text_item.dart';
 import 'package:nim_core_v2/nim_core.dart';
 
 void main() {
   const robotId = 'robot-account';
+
+  setUpAll(setupLocator);
 
   testWidgets('robot message displays translated content', (tester) async {
     final message = NIMMessage(

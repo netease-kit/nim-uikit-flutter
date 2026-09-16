@@ -2,7 +2,7 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
-import 'dart:ui';
+import 'dart:math' as math;
 
 import 'package:extended_text_field/extended_text_field.dart';
 import 'package:flutter/cupertino.dart';
@@ -22,25 +22,21 @@ class EmojiText extends SpecialText {
     final String key = toString();
 
     if (EmojiUtil.instance.emojiMap.containsKey(key)) {
-      double size = 18;
-
-      if (textStyle?.fontSize != null) {
-        size = textStyle!.fontSize! * 1.15;
-      }
+      final size = math.min(textStyle?.fontSize ?? 16, 16).toDouble();
 
       return EmojiSpan(
         Image.asset(
           EmojiUtil.instance.emojiMap[key]!.source,
           package: kPackage,
-          height: 16,
-          width: 16,
+          height: size,
+          width: size,
         ),
         actualText: key,
         imageWidth: size,
         imageHeight: size,
         start: start!,
         //fit: BoxFit.fill,
-        margin: const EdgeInsets.all(2),
+        margin: const EdgeInsets.symmetric(horizontal: 1),
       );
     }
 

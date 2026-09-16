@@ -831,6 +831,7 @@ class _ChatHistoryMessagePageState extends BaseState<ChatHistoryMessagePage> {
       ),
       child: TextField(
         controller: _searchController,
+        onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
         textInputAction: TextInputAction.search,
         decoration: InputDecoration(
           border: InputBorder.none,

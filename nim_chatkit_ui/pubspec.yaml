@@ -1,6 +1,6 @@
 name: nim_chatkit_ui
 description: Chat UI base on ChatKit.
-version: 10.9.5
+version: 10.9.60
 homepage: https://github.com/netease-kit/nim-uikit-flutter
 
 environment:
@@ -17,7 +17,7 @@ dependencies:
     sdk: flutter
 
   netease_common_ui:
-    ">=10.9.5 <10.9.10"
+    ">=10.9.60 <10.9.70"
 #    path: ../../common/netease_common_ui
 
 
@@ -25,7 +25,7 @@ dependencies:
     ">=1.3.1 <1.4.0"
 #    path: ../../netease_corekit/netease_corekit
   nim_chatkit:
-    ">=10.9.5  <10.10.0"
+    ">=10.9.60  <10.9.70"
 #    path: ../nim_chatkit
   netease_plugin_core_kit:
     ^10.1.0
@@ -36,7 +36,7 @@ dependencies:
 #    path: ../../common/common
 
   nim_core_v2:
-    ">=10.9.90 <10.10.0"
+    ">=10.9.91 <10.10.0"
 #    path: ../../nim_core_v2/nim_core_v2
 
   scroll_to_index: ^3.0.1
@@ -48,7 +48,7 @@ dependencies:
   video_player: ^2.10.0
   video_player_win: ^3.2.2
   media_kit: ^1.1.11
-  media_kit_video: ^1.2.5
+  media_kit_video: ^2.0.1
   media_kit_libs_macos_video: ^1.1.4
   media_kit_libs_windows_video: ^1.0.10
   photo_view: ^0.14.0
@@ -80,11 +80,13 @@ dependencies:
   permission_handler: ^11.0.1
   universal_html: ^2.2.4
 
-dependency_overrides:
-  netease_common_ui:
-    path: ../../common/netease_common_ui
-  nim_chatkit:
-    path: ../nim_chatkit
+#dependency_overrides:
+#  netease_common_ui:
+#    path: ../../common/netease_common_ui
+#  nim_chatkit:
+#    path: ../nim_chatkit
+#  nim_core_v2:
+#    path: ../../nim_core_v2/nim_core_v2
 
 
 dev_dependencies:
@@ -104,6 +106,7 @@ flutter:
   assets:
    - images/
    - emoji/default/
+   - reaction_emoji/
    - lottie/
   #
   # For details regarding assets in packages, see

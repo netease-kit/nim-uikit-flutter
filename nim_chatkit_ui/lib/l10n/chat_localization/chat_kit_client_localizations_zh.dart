@@ -832,6 +832,12 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
   String get chatMemberPickerEmpty => '暂无成员';
 
   @override
+  String get chatMemberPickerSearchEmpty => '未找到匹配的成员';
+
+  @override
+  String get chatMemberPickerSearching => '检索中...';
+
+  @override
   String get chatMemberRoleOwner => '群主';
 
   @override
@@ -1128,4 +1134,32 @@ class ChatKitClientLocalizationsZh extends ChatKitClientLocalizations {
 
   @override
   String get translationLangVi => '越南语';
+
+  @override
+  String get chatBackToLastReadPosition => '回到上次阅读位置';
+
+  @override
+  String get chatMessageReactionAdd => '添加表情回复';
+
+  @override
+  String get chatMessageReactionExpand => '展开全部表情';
+
+  @override
+  String get chatMessageReactionCollapse => '收起表情面板';
+
+  @override
+  String get chatMessageReactionFailed => '表情回复操作失败';
+
+  @override
+  String get chatMessageReactionLimit => '表情回复数量已达上限';
+
+  @override
+  String chatMessageReactionEmoji(int index) {
+    return '表情回复 $index';
+  }
+
+  @override
+  String chatMessageReactionCount(int index, int count) {
+    return '表情回复 $index，$count 人';
+  }
 }

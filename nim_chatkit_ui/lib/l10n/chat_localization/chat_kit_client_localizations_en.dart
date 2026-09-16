@@ -851,6 +851,12 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
   String get chatMemberPickerEmpty => 'No Member';
 
   @override
+  String get chatMemberPickerSearchEmpty => 'No matching members';
+
+  @override
+  String get chatMemberPickerSearching => 'Searching...';
+
+  @override
   String get chatMemberRoleOwner => 'Owner';
 
   @override
@@ -978,7 +984,7 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
 
   @override
   String chatNewMessage(String number) {
-    return '${number}new message';
+    return '$number new messages';
   }
 
   @override
@@ -1151,4 +1157,32 @@ class ChatKitClientLocalizationsEn extends ChatKitClientLocalizations {
 
   @override
   String get translationLangVi => 'Vietnamese';
+
+  @override
+  String get chatBackToLastReadPosition => 'Back to last read position';
+
+  @override
+  String get chatMessageReactionAdd => 'Add reaction';
+
+  @override
+  String get chatMessageReactionExpand => 'Show all reactions';
+
+  @override
+  String get chatMessageReactionCollapse => 'Collapse reactions';
+
+  @override
+  String get chatMessageReactionFailed => 'Failed to update reaction';
+
+  @override
+  String get chatMessageReactionLimit => 'Reaction limit reached';
+
+  @override
+  String chatMessageReactionEmoji(int index) {
+    return 'Reaction $index';
+  }
+
+  @override
+  String chatMessageReactionCount(int index, int count) {
+    return 'Reaction $index, $count people';
+  }
 }

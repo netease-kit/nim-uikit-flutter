@@ -1,0 +1,1234 @@
+{
+  "configVersion": 2,
+  "packages": [
+    {
+      "name": "alog_macos",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/alog_macos-1.0.12",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
+    },
+    {
+      "name": "alog_windows",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/alog_windows-1.0.12",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
+    },
+    {
+      "name": "archive",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/archive-4.2.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
+      "name": "args",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/args-2.7.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.3"
+    },
+    {
+      "name": "async",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/async-2.13.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "audioplayers",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/audioplayers-6.6.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "audioplayers_android",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/audioplayers_android-5.2.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "audioplayers_darwin",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/audioplayers_darwin-6.4.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "audioplayers_linux",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/audioplayers_linux-4.2.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "audioplayers_platform_interface",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/audioplayers_platform_interface-7.1.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "audioplayers_web",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/audioplayers_web-5.2.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "audioplayers_windows",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/audioplayers_windows-4.3.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "boolean_selector",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/boolean_selector-2.1.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.1"
+    },
+    {
+      "name": "cached_network_image",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/cached_network_image-3.4.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
+      "name": "cached_network_image_platform_interface",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/cached_network_image_platform_interface-4.1.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
+      "name": "cached_network_image_web",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/cached_network_image_web-1.3.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
+      "name": "characters",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/characters-1.4.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "charcode",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/charcode-1.4.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
+      "name": "clock",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/clock-1.1.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "collection",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/collection-1.19.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "connectivity_plus",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/connectivity_plus-6.1.5",
+      "packageUri": "lib/",
+      "languageVersion": "3.2"
+    },
+    {
+      "name": "connectivity_plus_platform_interface",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/connectivity_plus_platform_interface-2.1.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.18"
+    },
+    {
+      "name": "cross_file",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/cross_file-0.3.5+2",
+      "packageUri": "lib/",
+      "languageVersion": "3.8"
+    },
+    {
+      "name": "crypto",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/crypto-3.0.7",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "csslib",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/csslib-1.0.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.1"
+    },
+    {
+      "name": "dbus",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/dbus-0.7.15",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
+    },
+    {
+      "name": "device_info_plus",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/device_info_plus-10.1.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.3"
+    },
+    {
+      "name": "device_info_plus_platform_interface",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/device_info_plus_platform_interface-7.0.3",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "dio",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/dio-5.11.1",
+      "packageUri": "lib/",
+      "languageVersion": "2.18"
+    },
+    {
+      "name": "dio_web_adapter",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/dio_web_adapter-2.2.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.3"
+    },
+    {
+      "name": "extended_image",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/extended_image-10.1.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "extended_image_library",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/extended_image_library-5.0.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "extended_text_field",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/extended_text_field-16.0.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.5"
+    },
+    {
+      "name": "extended_text_library",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/extended_text_library-12.0.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
+      "name": "fake_async",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/fake_async-1.3.3",
+      "packageUri": "lib/",
+      "languageVersion": "3.3"
+    },
+    {
+      "name": "ffi",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/ffi-2.2.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "file",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/file-7.0.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
+      "name": "file_picker",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/file_picker-10.3.10",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "file_selector_linux",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/file_selector_linux-0.9.4",
+      "packageUri": "lib/",
+      "languageVersion": "3.8"
+    },
+    {
+      "name": "file_selector_macos",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/file_selector_macos-0.9.4+4",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "file_selector_platform_interface",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/file_selector_platform_interface-2.7.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "file_selector_windows",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/file_selector_windows-0.9.3+5",
+      "packageUri": "lib/",
+      "languageVersion": "3.8"
+    },
+    {
+      "name": "fixnum",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/fixnum-1.1.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.1"
+    },
+    {
+      "name": "flutter",
+      "rootUri": "file:///Users/houchengdong/flutter/flutter/packages/flutter",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "flutter_cache_manager",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/flutter_cache_manager-3.4.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.8"
+    },
+    {
+      "name": "flutter_image_compress",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/flutter_image_compress-2.5.1",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "flutter_image_compress_common",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/flutter_image_compress_common-1.1.1",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "flutter_image_compress_macos",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/flutter_image_compress_macos-1.1.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "flutter_image_compress_ohos",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/flutter_image_compress_ohos-0.0.3+1",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "flutter_image_compress_platform_interface",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/flutter_image_compress_platform_interface-1.1.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "flutter_image_compress_web",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/flutter_image_compress_web-0.1.5+1",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "flutter_lints",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/flutter_lints-1.0.4",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "flutter_localizations",
+      "rootUri": "file:///Users/houchengdong/flutter/flutter/packages/flutter_localizations",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "flutter_markdown",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/flutter_markdown-0.7.7+1",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "flutter_plugin_android_lifecycle",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.31",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "flutter_screenutil",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/flutter_screenutil-5.9.3",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
+    },
+    {
+      "name": "flutter_slidable",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/flutter_slidable-3.1.2",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
+    },
+    {
+      "name": "flutter_sound",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/flutter_sound-9.30.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "flutter_sound_platform_interface",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/flutter_sound_platform_interface-9.30.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.3"
+    },
+    {
+      "name": "flutter_sound_web",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/flutter_sound_web-9.30.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.3"
+    },
+    {
+      "name": "flutter_svg",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/flutter_svg-2.2.3",
+      "packageUri": "lib/",
+      "languageVersion": "3.8"
+    },
+    {
+      "name": "flutter_test",
+      "rootUri": "file:///Users/houchengdong/flutter/flutter/packages/flutter_test",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "flutter_web_plugins",
+      "rootUri": "file:///Users/houchengdong/flutter/flutter/packages/flutter_web_plugins",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "fluttertoast",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/fluttertoast-8.2.14",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "get_it",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/get_it-7.7.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
+      "name": "go_router",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/go_router-14.8.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "hawk_meta",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/hawk_meta-0.0.1",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "html",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/html-0.15.7",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "http",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/http-1.6.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "http_client_helper",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/http_client_helper-3.0.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "http_parser",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/http_parser-4.1.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "image",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/image-4.9.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
+      "name": "image_gallery_saver_plus",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/image_gallery_saver_plus-4.0.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.5"
+    },
+    {
+      "name": "image_picker",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/image_picker-1.2.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "image_picker_android",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/image_picker_android-0.8.13+1",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "image_picker_for_web",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/image_picker_for_web-3.1.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.8"
+    },
+    {
+      "name": "image_picker_ios",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/image_picker_ios-0.8.13",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "image_picker_linux",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/image_picker_linux-0.2.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "image_picker_macos",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/image_picker_macos-0.2.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "image_picker_platform_interface",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/image_picker_platform_interface-2.11.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "image_picker_windows",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/image_picker_windows-0.2.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "intl",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/intl-0.20.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.3"
+    },
+    {
+      "name": "js",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/js-0.7.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "json_annotation",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/json_annotation-4.9.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
+      "name": "leak_tracker",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/leak_tracker-10.0.9",
+      "packageUri": "lib/",
+      "languageVersion": "3.2"
+    },
+    {
+      "name": "leak_tracker_flutter_testing",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/leak_tracker_flutter_testing-3.0.9",
+      "packageUri": "lib/",
+      "languageVersion": "3.2"
+    },
+    {
+      "name": "leak_tracker_testing",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/leak_tracker_testing-3.0.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.2"
+    },
+    {
+      "name": "lints",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/lints-1.0.1",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "logger",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/logger-2.7.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
+    },
+    {
+      "name": "logging",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/logging-1.3.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "lottie",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/lottie-3.3.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "lpinyin",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/lpinyin-2.0.3",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "markdown",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/markdown-7.3.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.2"
+    },
+    {
+      "name": "matcher",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/matcher-0.12.17",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "material_color_utilities",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/material_color_utilities-0.11.1",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
+    },
+    {
+      "name": "media_kit",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/media_kit-1.2.6",
+      "packageUri": "lib/",
+      "languageVersion": "3.1"
+    },
+    {
+      "name": "media_kit_libs_macos_video",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/media_kit_libs_macos_video-1.1.4",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
+    },
+    {
+      "name": "media_kit_libs_windows_video",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/media_kit_libs_windows_video-1.0.11",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
+    },
+    {
+      "name": "media_kit_video",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/media_kit_video-2.0.1",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
+    },
+    {
+      "name": "meta",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/meta-1.16.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "mime",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/mime-2.1.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.2"
+    },
+    {
+      "name": "nested",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/nested-1.0.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "netease_common",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/netease_common-2.1.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
+    },
+    {
+      "name": "netease_common_ui",
+      "rootUri": "../../../common/netease_common_ui",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
+    },
+    {
+      "name": "netease_corekit",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/netease_corekit-1.3.1",
+      "packageUri": "lib/",
+      "languageVersion": "2.16"
+    },
+    {
+      "name": "netease_plugin_core_kit",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/netease_plugin_core_kit-10.1.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
+      "name": "nim_chatkit",
+      "rootUri": "../../nim_chatkit",
+      "packageUri": "lib/",
+      "languageVersion": "2.16"
+    },
+    {
+      "name": "nim_chatkit_ui",
+      "rootUri": "../../nim_chatkit_ui",
+      "packageUri": "lib/",
+      "languageVersion": "2.16"
+    },
+    {
+      "name": "nim_core_v2",
+      "rootUri": "../../../nim_core_v2/nim_core_v2",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
+    },
+    {
+      "name": "nim_core_v2_macos",
+      "rootUri": "../../../nim_core_v2/nim_core_v2_macos",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
+    },
+    {
+      "name": "nim_core_v2_platform_interface",
+      "rootUri": "../../../nim_core_v2/nim_core_v2_platform_interface",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
+    },
+    {
+      "name": "nim_core_v2_web",
+      "rootUri": "../../../nim_core_v2/nim_core_v2_web",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "nim_core_v2_windows",
+      "rootUri": "../../../nim_core_v2/nim_core_v2_windows",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
+    },
+    {
+      "name": "nm",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/nm-0.5.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "octo_image",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/octo_image-2.1.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
+      "name": "open_filex",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/open_filex-4.7.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
+    },
+    {
+      "name": "package_info_plus",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/package_info_plus-9.0.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.3"
+    },
+    {
+      "name": "package_info_plus_platform_interface",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/package_info_plus_platform_interface-3.2.1",
+      "packageUri": "lib/",
+      "languageVersion": "2.18"
+    },
+    {
+      "name": "path",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/path-1.9.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "path_parsing",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/path_parsing-1.1.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.3"
+    },
+    {
+      "name": "path_provider",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/path_provider-2.1.5",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "path_provider_android",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/path_provider_android-2.2.19",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "path_provider_foundation",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/path_provider_foundation-2.4.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "path_provider_linux",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/path_provider_linux-2.2.1",
+      "packageUri": "lib/",
+      "languageVersion": "2.19"
+    },
+    {
+      "name": "path_provider_platform_interface",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/path_provider_platform_interface-2.1.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
+      "name": "path_provider_windows",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/path_provider_windows-2.3.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.2"
+    },
+    {
+      "name": "permission_handler",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/permission_handler-11.4.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.5"
+    },
+    {
+      "name": "permission_handler_android",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/permission_handler_android-12.1.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.5"
+    },
+    {
+      "name": "permission_handler_apple",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/permission_handler_apple-9.6.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "permission_handler_html",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/permission_handler_html-0.1.4+1",
+      "packageUri": "lib/",
+      "languageVersion": "3.5"
+    },
+    {
+      "name": "permission_handler_platform_interface",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/permission_handler_platform_interface-4.4.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "permission_handler_windows",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/permission_handler_windows-0.2.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "petitparser",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/petitparser-7.0.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.8"
+    },
+    {
+      "name": "photo_manager",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/photo_manager-3.12.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.13"
+    },
+    {
+      "name": "photo_manager_image_provider",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/photo_manager_image_provider-2.2.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.13"
+    },
+    {
+      "name": "photo_view",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/photo_view-0.14.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "platform",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/platform-3.1.6",
+      "packageUri": "lib/",
+      "languageVersion": "3.2"
+    },
+    {
+      "name": "plugin_platform_interface",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/plugin_platform_interface-2.1.8",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
+      "name": "posix",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/posix-6.5.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
+      "name": "provider",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/provider-6.1.5+1",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "rxdart",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/rxdart-0.28.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "safe_local_storage",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/safe_local_storage-2.0.6",
+      "packageUri": "lib/",
+      "languageVersion": "2.16"
+    },
+    {
+      "name": "scroll_to_index",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/scroll_to_index-3.0.1",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "shared_preferences",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/shared_preferences-2.5.3",
+      "packageUri": "lib/",
+      "languageVersion": "3.5"
+    },
+    {
+      "name": "shared_preferences_android",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/shared_preferences_android-2.4.13",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "shared_preferences_foundation",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/shared_preferences_foundation-2.5.4",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "shared_preferences_linux",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/shared_preferences_linux-2.4.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.3"
+    },
+    {
+      "name": "shared_preferences_platform_interface",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/shared_preferences_platform_interface-2.4.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.2"
+    },
+    {
+      "name": "shared_preferences_web",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/shared_preferences_web-2.4.3",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "shared_preferences_windows",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/shared_preferences_windows-2.4.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.3"
+    },
+    {
+      "name": "sky_engine",
+      "rootUri": "file:///Users/houchengdong/flutter/flutter/bin/cache/pkg/sky_engine",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "source_span",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/source_span-1.10.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.1"
+    },
+    {
+      "name": "sqflite",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/sqflite-2.4.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "sqflite_android",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/sqflite_android-2.4.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "sqflite_common",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/sqflite_common-2.5.6",
+      "packageUri": "lib/",
+      "languageVersion": "3.8"
+    },
+    {
+      "name": "sqflite_darwin",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/sqflite_darwin-2.4.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "sqflite_platform_interface",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/sqflite_platform_interface-2.4.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.5"
+    },
+    {
+      "name": "stack_trace",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/stack_trace-1.12.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "stream_channel",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/stream_channel-2.1.4",
+      "packageUri": "lib/",
+      "languageVersion": "3.3"
+    },
+    {
+      "name": "string_scanner",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/string_scanner-1.4.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.1"
+    },
+    {
+      "name": "synchronized",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/synchronized-3.4.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.8"
+    },
+    {
+      "name": "term_glyph",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/term_glyph-1.2.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.1"
+    },
+    {
+      "name": "test_api",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/test_api-0.7.4",
+      "packageUri": "lib/",
+      "languageVersion": "3.5"
+    },
+    {
+      "name": "typed_data",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/typed_data-1.4.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.5"
+    },
+    {
+      "name": "universal_html",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/universal_html-2.3.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "universal_io",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/universal_io-2.3.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "universal_platform",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/universal_platform-1.1.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "uri_parser",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/uri_parser-3.0.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
+      "name": "url_launcher",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/url_launcher-6.3.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "url_launcher_android",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/url_launcher_android-6.3.20",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "url_launcher_ios",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/url_launcher_ios-6.3.4",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "url_launcher_linux",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/url_launcher_linux-3.2.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.8"
+    },
+    {
+      "name": "url_launcher_macos",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/url_launcher_macos-3.2.3",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "url_launcher_platform_interface",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/url_launcher_platform_interface-2.3.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.1"
+    },
+    {
+      "name": "url_launcher_web",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/url_launcher_web-2.4.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "url_launcher_windows",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/url_launcher_windows-3.1.5",
+      "packageUri": "lib/",
+      "languageVersion": "3.8"
+    },
+    {
+      "name": "uuid",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/uuid-4.6.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
+      "name": "vector_graphics",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/vector_graphics-1.1.19",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "vector_graphics_codec",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/vector_graphics_codec-1.1.13",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "vector_graphics_compiler",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/vector_graphics_compiler-1.1.19",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "vector_math",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/vector_math-2.1.4",
+      "packageUri": "lib/",
+      "languageVersion": "2.14"
+    },
+    {
+      "name": "video_player",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/video_player-2.10.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "video_player_android",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/video_player_android-2.8.15",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "video_player_avfoundation",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/video_player_avfoundation-2.8.4",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "video_player_platform_interface",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/video_player_platform_interface-6.6.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "video_player_web",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/video_player_web-2.4.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "video_player_win",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/video_player_win-3.2.2",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
+    },
+    {
+      "name": "visibility_detector",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/visibility_detector-0.4.0+2",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "vm_service",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/vm_service-15.0.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.3"
+    },
+    {
+      "name": "wakelock_plus",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/wakelock_plus-1.4.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "wakelock_plus_platform_interface",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/wakelock_plus_platform_interface-1.3.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "web",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/web-1.1.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "webview_flutter",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/webview_flutter-4.13.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.8"
+    },
+    {
+      "name": "webview_flutter_android",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/webview_flutter_android-4.10.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
+      "name": "webview_flutter_platform_interface",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/webview_flutter_platform_interface-2.14.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "webview_flutter_wkwebview",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/webview_flutter_wkwebview-3.23.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "wechat_picker_library",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/wechat_picker_library-1.0.7",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "win32",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/win32-5.15.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.8"
+    },
+    {
+      "name": "win32_registry",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/win32_registry-1.1.5",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "xdg_directories",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/xdg_directories-1.1.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.3"
+    },
+    {
+      "name": "xml",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/xml-6.6.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.8"
+    },
+    {
+      "name": "yaml",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/yaml-3.1.4",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "yunxin_alog",
+      "rootUri": "file:///Users/houchengdong/Pub/hosted/pub.dev/yunxin_alog-2.0.10",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
+    },
+    {
+      "name": "nim_chatkit_sticker",
+      "rootUri": "../",
+      "packageUri": "lib/",
+      "languageVersion": "2.16"
+    }
+  ],
+  "generator": "pub",
+  "generatorVersion": "3.8.0",
+  "flutterRoot": "file:///Users/houchengdong/flutter/flutter",
+  "flutterVersion": "3.32.0",
+  "pubCache": "file:///Users/houchengdong/Pub"
+}

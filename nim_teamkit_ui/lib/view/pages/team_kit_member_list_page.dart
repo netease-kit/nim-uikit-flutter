@@ -12,10 +12,12 @@ import 'package:netease_common_ui/widgets/radio_button.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit/model/team_models.dart';
+import 'package:nim_chatkit/model/user_search_models.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_chatkit/service_locator.dart';
 import 'package:nim_chatkit/services/login/im_login_service.dart';
 import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
+import 'package:nim_chatkit_ui/widget/ait_member_highlight_text.dart';
 import 'package:nim_chatkit/utils/toast_utils.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:nim_teamkit_ui/team_kit_client.dart';
@@ -105,13 +107,14 @@ class TeamKitMemberListPageState extends BaseState<TeamKitMemberListPage> {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (context) {
-        var viewModel = TeamSettingViewModel();
+        var viewModel = TeamSettingViewModel(configuredTeamId: widget.tId);
         viewModel.requestTeamMembers(widget.tId);
         viewModel.addTeamSubscribe();
         return viewModel;
       },
       builder: (context, child) {
-        var memberList = context.watch<TeamSettingViewModel>().filterList;
+        final viewModel = context.watch<TeamSettingViewModel>();
+        var memberList = viewModel.filterList;
         if (!widget.showOwnerAndManager) {
           memberList = memberList
               ?.where(
@@ -213,87 +216,113 @@ class TeamKitMemberListPageState extends BaseState<TeamKitMemberListPage> {
               ),
           ],
           body: Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(20, 20, 12, 20),
             color: Colors.white,
             child: Column(
               children: [
-                TextField(
-                  controller: _queryTextController,
-                  onChanged: (text) {
-                    _onFilterChange(text, context);
-                  },
-                  decoration: InputDecoration(
-                    fillColor: '#F2F4F5'.toColor(),
-                    filled: true,
-                    isCollapsed: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 15,
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: TextField(
+                    controller: _queryTextController,
+                    onChanged: (text) {
+                      _onFilterChange(text, context);
+                    },
+                    onTapOutside: (_) =>
+                        FocusManager.instance.primaryFocus?.unfocus(),
+                    decoration: InputDecoration(
+                      fillColor: '#F2F4F5'.toColor(),
+                      filled: true,
+                      isCollapsed: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 15,
+                      ),
+                      border: _border(),
+                      enabledBorder: _border(),
+                      focusedBorder: _border(),
+                      suffixIcon: ValueListenableBuilder(
+                        valueListenable: _queryTextController,
+                        builder: (cnt, TextEditingValue value, child) {
+                          if (value.text.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+                          return IconButton(
+                            onPressed: () {
+                              _queryTextController.clear();
+                              _onFilterChange("", context);
+                            },
+                            icon: Icon(
+                              Icons.clear,
+                              color: '#A6ADB6'.toColor(),
+                            ),
+                          );
+                        },
+                      ),
+                      hintText: S.of(context).teamSearchMember,
+                      hintStyle: TextStyle(
+                        fontSize: 14,
+                        color: '#A6ADB6'.toColor(),
+                      ),
+                      prefixIcon: const Icon(Icons.search),
                     ),
-                    border: _border(),
-                    enabledBorder: _border(),
-                    focusedBorder: _border(),
-                    suffixIcon: ValueListenableBuilder(
-                      valueListenable: _queryTextController,
-                      builder: (cnt, TextEditingValue value, child) {
-                        if (value.text.isEmpty) {
-                          return const SizedBox.shrink();
-                        }
-                        return IconButton(
-                          onPressed: () {
-                            _queryTextController.clear();
-                            _onFilterChange("", context);
-                          },
-                          icon: Icon(Icons.clear, color: '#A6ADB6'.toColor()),
-                        );
-                      },
-                    ),
-                    hintText: S.of(context).teamSearchMember,
-                    hintStyle: TextStyle(
-                      fontSize: 14,
-                      color: '#A6ADB6'.toColor(),
-                    ),
-                    prefixIcon: const Icon(Icons.search),
                   ),
                 ),
-                memberList?.isNotEmpty == true
-                    ? Expanded(
-                        child: ListView.builder(
-                          controller: _scrollController,
-                          itemCount: memberList?.length ?? 0,
-                          itemBuilder: (context, index) {
-                            var user = memberList?[index];
-                            return TeamMemberListItem(
-                              teamMember: user!,
-                              isGroupTeam: widget.isGroupTeam,
-                              isMultiSelectModel: widget.isMultiSelectModel,
-                              singleSelect: widget.singleSelect,
-                              showRemoveButton: widget.showRemoveButton,
-                              showRole: widget.showRole,
-                              maxSelectMemberCount: widget.maxSelectMemberCount,
-                            );
-                          },
+                viewModel.isFilterLoading
+                    ? const Expanded(
+                        child: Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         ),
                       )
-                    : Column(
-                        children: [
-                          SizedBox(height: 170),
-                          SvgPicture.asset(
-                            'images/ic_member_empty.svg',
-                            package: kPackage,
-                          ),
-                          Padding(
-                            padding: EdgeInsets.only(top: 18),
-                            child: Text(
-                              S.of(context).teamMemberEmpty,
-                              style: TextStyle(
-                                color: CommonColors.color_b3b7bc,
-                                fontSize: 14,
+                    : viewModel.isFilterError
+                        ? Expanded(
+                            child: Center(
+                              child: IconButton(
+                                onPressed: viewModel.retryFilter,
+                                icon: const Icon(Icons.refresh_rounded),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
+                          )
+                        : memberList?.isNotEmpty == true
+                            ? Expanded(
+                                child: ListView.builder(
+                                  controller: _scrollController,
+                                  itemCount: memberList?.length ?? 0,
+                                  itemBuilder: (context, index) {
+                                    var user = memberList?[index];
+                                    return TeamMemberListItem(
+                                      teamMember: user!,
+                                      isGroupTeam: widget.isGroupTeam,
+                                      isMultiSelectModel:
+                                          widget.isMultiSelectModel,
+                                      singleSelect: widget.singleSelect,
+                                      showRemoveButton: widget.showRemoveButton,
+                                      showRole: widget.showRole,
+                                      maxSelectMemberCount:
+                                          widget.maxSelectMemberCount,
+                                      searchQuery: viewModel.searchKey,
+                                    );
+                                  },
+                                ),
+                              )
+                            : Column(
+                                children: [
+                                  SizedBox(height: 170),
+                                  SvgPicture.asset(
+                                    'images/ic_member_empty.svg',
+                                    package: kPackage,
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsets.only(top: 18),
+                                    child: Text(
+                                      S.of(context).teamMemberEmpty,
+                                      style: TextStyle(
+                                        color: CommonColors.color_b3b7bc,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
               ],
             ),
           ),
@@ -317,6 +346,7 @@ class TeamMemberListItem extends StatefulWidget {
   final int? maxSelectMemberCount;
 
   final bool showRole;
+  final String searchQuery;
 
   const TeamMemberListItem({
     Key? key,
@@ -327,6 +357,7 @@ class TeamMemberListItem extends StatefulWidget {
     this.maxSelectMemberCount,
     this.showRole = true,
     this.isMultiSelectModel = false,
+    this.searchQuery = '',
   }) : super(key: key);
 
   @override
@@ -390,6 +421,23 @@ class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
   Widget build(BuildContext context) {
     final viewModel = context.watch<TeamSettingViewModel>();
     final isSelected = viewModel.isSelected(widget.teamMember);
+    final searchResult = widget.searchQuery.trim().isEmpty
+        ? null
+        : UserSearchService.search<UserInfoWithTeam>(
+            values: [widget.teamMember],
+            fieldsOf: UserSearchService.teamMemberFields,
+            accountIdOf: (member) => member.teamInfo.accountId,
+            query: widget.searchQuery,
+          );
+    final displayLines = searchResult?.isNotEmpty == true
+        ? searchResult!.first.lines
+        : <SearchDisplayLine>[
+            SearchDisplayLine(
+              text: widget.teamMember.getName(),
+              field: UserSearchField.name,
+              isPrimary: true,
+            ),
+          ];
     bool disabled = false;
     if (widget.isMultiSelectModel && widget.maxSelectMemberCount != null) {
       if (widget.maxSelectMemberCount != 1 &&
@@ -398,6 +446,14 @@ class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
         disabled = true;
       }
     }
+    final memberRole = widget.teamMember.teamInfo.memberRole;
+    final showRoleTag = !widget.isGroupTeam &&
+        widget.showRole &&
+        (memberRole == NIMTeamMemberRole.memberRoleOwner ||
+            memberRole == NIMTeamMemberRole.memberRoleManager);
+    final showMemberRemoveButton = !widget.isMultiSelectModel &&
+        !widget.singleSelect &&
+        _showRemoveButton(widget.teamMember);
     return InkWell(
       onTap: () {
         if (disabled) return;
@@ -459,17 +515,25 @@ class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
             ),
             const Padding(padding: EdgeInsets.symmetric(horizontal: 7)),
             Expanded(
-              child: Text(
-                widget.teamMember.getName(),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 16, color: '#333333'.toColor()),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: displayLines
+                    .map(
+                      (line) => AitMemberHighlightText(
+                        displayName: line.text,
+                        query: widget.searchQuery,
+                        style: TextStyle(
+                          fontSize: line.isPrimary ? 16 : 12,
+                          color: line.isPrimary
+                              ? '#333333'.toColor()
+                              : '#858A92'.toColor(),
+                        ),
+                      ),
+                    )
+                    .toList(),
               ),
             ),
-            if (!widget.isGroupTeam &&
-                widget.showRole &&
-                widget.teamMember.teamInfo.memberRole ==
-                    NIMTeamMemberRole.memberRoleOwner)
+            if (showRoleTag)
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
@@ -481,32 +545,13 @@ class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  S.of(context).teamOwner,
+                  memberRole == NIMTeamMemberRole.memberRoleOwner
+                      ? S.of(context).teamOwner
+                      : S.of(context).teamManager,
                   style: TextStyle(fontSize: 12, color: '#656A72'.toColor()),
                 ),
               ),
-            if (!widget.isGroupTeam &&
-                widget.showRole &&
-                widget.teamMember.teamInfo.memberRole ==
-                    NIMTeamMemberRole.memberRoleManager)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 2,
-                ),
-                decoration: BoxDecoration(
-                  color: '#F7F7F7'.toColor(),
-                  border: Border.all(color: '#D6D8DB'.toColor(), width: 1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  S.of(context).teamManager,
-                  style: TextStyle(fontSize: 12, color: '#656A72'.toColor()),
-                ),
-              ),
-            if (!widget.isMultiSelectModel &&
-                !widget.singleSelect &&
-                _showRemoveButton(widget.teamMember))
+            if (showMemberRemoveButton)
               TextButton(
                 onPressed: () {
                   _showRemoveConfirmDialog(
@@ -534,8 +579,9 @@ class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
               ),
             if (!widget.isMultiSelectModel &&
                 !widget.singleSelect &&
-                !_showRemoveButton(widget.teamMember))
-              Container(width: 70),
+                !showMemberRemoveButton &&
+                !showRoleTag)
+              const SizedBox(width: 70),
           ],
         ),
       ),

@@ -632,7 +632,7 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
   Widget _buildTeamContent(BuildContext context) {
     return ChangeNotifierProvider(
       create: (context) {
-        var vm = TeamSettingViewModel();
+        var vm = TeamSettingViewModel(configuredTeamId: widget.teamId);
         vm.requestTeamData(widget.teamId);
         vm.requestTeamMembers(widget.teamId);
         vm.addTeamSubscribe();

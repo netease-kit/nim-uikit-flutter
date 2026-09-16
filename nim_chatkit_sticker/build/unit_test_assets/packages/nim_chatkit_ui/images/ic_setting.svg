@@ -1,0 +1,9 @@
+<!-- Copyright (c) 2022 NetEase, Inc. All rights reserved. -->
+<!-- Use of this source code is governed by a MIT license that can be -->
+<!-- found in the LICENSE file. -->
+
+<svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+<circle cx="6.5" cy="12.5" r="1.5" fill="#333333"/>
+<circle cx="13.5" cy="12.5" r="1.5" fill="#333333"/>
+<circle cx="20.5" cy="12.5" r="1.5" fill="#333333"/>
+</svg>

@@ -79,15 +79,17 @@ class _ConversationListState extends BaseState<ConversationList> {
   }
 
   Timer? _scrollEndTimer;
+  Timer? _visibleUserInfoTimer;
+  bool _visibleRefreshScheduled = false;
 
-  List<String> _getVisibleP2PUser() {
+  List<ConversationInfo> _getVisibleP2PConversations() {
     final groupViewModel = _maybeReadGroupViewModel();
     List<ConversationInfo> conversationList =
         groupViewModel?.displayConversations ??
             context.read<ConversationViewModel>().conversationList;
     List<NIMAIUser> aiUserList =
         context.read<ConversationViewModel>().topAIUserList;
-    List<String> visibleP2PUser = [];
+    List<ConversationInfo> visibleP2PUser = [];
 
     if (!_scrollController.hasClients) {
       return visibleP2PUser;
@@ -129,7 +131,7 @@ class _ConversationListState extends BaseState<ConversationList> {
 
       if (conversation.conversation.type == NIMConversationType.p2p &&
           isVisible) {
-        visibleP2PUser.add(conversation.targetId);
+        visibleP2PUser.add(conversation);
       }
 
       currentOffset += conversationItemHeight;
@@ -164,19 +166,51 @@ class _ConversationListState extends BaseState<ConversationList> {
   }
 
   void _subscribeUserStatus() {
-    List<String> users = _getVisibleP2PUser();
+    List<String> users =
+        _getVisibleP2PConversations().map((e) => e.targetId).toList();
     context.read<ConversationViewModel>().subscribeUserStatusByIds(users);
+  }
+
+  void _scheduleVisibleUserInfoRefresh() {
+    if (_visibleRefreshScheduled) return;
+    _visibleRefreshScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _visibleRefreshScheduled = false;
+      if (!mounted ||
+          !_scrollController.hasClients ||
+          _scrollController.position.isScrollingNotifier.value) {
+        return;
+      }
+      _visibleUserInfoTimer?.cancel();
+      _visibleUserInfoTimer = Timer(
+        const Duration(milliseconds: 100),
+        _refreshVisibleUserInfo,
+      );
+    });
+  }
+
+  void _refreshVisibleUserInfo() {
+    if (!mounted ||
+        !_scrollController.hasClients ||
+        _scrollController.position.isScrollingNotifier.value) {
+      return;
+    }
+    context.read<ConversationViewModel>().refreshVisibleUserInfo(
+          _getVisibleP2PConversations(),
+        );
   }
 
   @override
   void dispose() {
     _scrollEndTimer?.cancel();
+    _visibleUserInfoTimer?.cancel();
     _scrollController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    _scheduleVisibleUserInfoRefresh();
     final groupViewModel = _maybeWatchGroupViewModel();
     List<ConversationInfo> conversationList =
         groupViewModel?.displayConversations ??
@@ -282,7 +316,7 @@ class _ConversationListState extends BaseState<ConversationList> {
                 onGroupSelected: _scrollToTop,
               ),
             Expanded(
-              child: _buildEmptyState(0),
+              child: _buildEmptyState(100),
             ),
           ],
         ),
@@ -290,14 +324,25 @@ class _ConversationListState extends BaseState<ConversationList> {
     }
     final scrollBody = NotificationListener<ScrollNotification>(
       onNotification: (ScrollNotification notification) {
+        if (notification.depth != 0 ||
+            notification.metrics.axis != Axis.vertical) {
+          return false;
+        }
         // 处理不同类型的滚动通知
         if (notification is ScrollStartNotification ||
             notification is ScrollUpdateNotification) {
           _scrollEndTimer?.cancel();
+          _visibleUserInfoTimer?.cancel();
         } else if (notification is ScrollEndNotification) {
+          _scrollEndTimer?.cancel();
           _scrollEndTimer = Timer(
             const Duration(milliseconds: 100),
             _subscribeUserStatus,
+          );
+          _visibleUserInfoTimer?.cancel();
+          _visibleUserInfoTimer = Timer(
+            const Duration(milliseconds: 100),
+            _refreshVisibleUserInfo,
           );
         }
         return false;
