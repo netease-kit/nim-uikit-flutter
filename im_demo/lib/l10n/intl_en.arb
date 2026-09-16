@@ -88,5 +88,6 @@
   "enableCloudMessageSearch": "Search Message From Cloud",
   "labelYes": "Yes",
   "labelNo": "No",
-  "messageTranslationSetting": "Translate"
+  "messageTranslationSetting": "Translate",
+  "messageReactionSetting": "Message reactions"
 }

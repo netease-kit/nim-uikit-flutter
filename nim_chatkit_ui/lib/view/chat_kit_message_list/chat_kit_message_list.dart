@@ -12,6 +12,7 @@ import 'package:netease_common/netease_common.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/neListView/size_cache_widget.dart';
+import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/extension.dart';
 import 'package:nim_chatkit/message/message_helper.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
@@ -27,7 +28,10 @@ import 'package:scroll_to_index/scroll_to_index.dart';
 
 import '../../chat_kit_client.dart';
 import '../../helper/chat_message_helper.dart';
+import '../../model/history_read_position_tracker.dart';
+import '../../model/history_read_position_viewport.dart';
 import '../../view_model/chat_view_model.dart';
+import 'history_read_position_entry.dart';
 import 'item/chat_kit_message_item.dart';
 
 class ChatKitMessageList extends StatefulWidget {
@@ -85,10 +89,14 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
   //是否在当前页面
   bool isInCurrentPage = true;
 
+  bool _wasAtLatestMessageBeforePush = false;
+
   bool _showScrollToBottom = false;
 
   final GlobalKey _firstItemKey = GlobalKey();
+  final GlobalKey _messageViewportKey = GlobalKey();
   double _firstItemHeight = 0;
+  bool _historyPositionEvaluationScheduled = false;
 
   final Key _centerKey = GlobalKey();
   String? _pivotMessageId;
@@ -171,6 +179,7 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
   }
 
   _scrollToMessageByTime(int anchorDate) {
+    if (context.read<ChatViewModel>().isLoading || _scrollingToAnchor) return;
     var list = context.read<ChatViewModel>().messageList;
     var newAnchorDate = context.read<ChatViewModel>().findAnchorDate;
     if (list.isEmpty) {
@@ -185,25 +194,19 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
       return e.nimMessage.createTime! <= anchorDate;
     });
     if (index >= 0) {
-      // in range
+      // Update the pivot during this build so CustomScrollView lays out with
+      // the final center before scrollToIndex reads its coordinates.
+      findAnchorDate = null;
+      _pivotMessageIndex = null;
+      _pivotMessageId = index < list.length - 1
+          ? list[index].nimMessage.messageClientId
+          : list.first.nimMessage.messageClientId;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) {
           return;
         }
-        // 先清除 State 和 ViewModel 的锚点，防止下次 build 再次触发滚动（死循环）
-        findAnchorDate = null;
+        // Clear the ViewModel anchor before scrolling to avoid another pass.
         context.read<ChatViewModel>().clearFindAnchorDate();
-        // 始终把 pivot 设在 anchor 本身。
-        // 与 _scrollToAnchor 的行为对齐：当 anchor 是列表末尾（最老的那条）
-        // 时，不要再把 pivot 切回 list[0]，否则 setState 触发的 rebuild 会
-        // 让 CustomScrollView 的 center sliver 布局发生翻转（min/max 互换），
-        // 而在同一帧先行发起的 scrollToIndex 已基于旧布局计算了动画目标，
-        // 动画落点在新布局里变成"最新消息在屏底"的位置，导致定位失败。
-        if (index < list.length - 1) {
-          setState(() {
-            _pivotMessageId = list[index].nimMessage.messageClientId;
-          });
-        }
         _scrollToIndex(index);
       });
     } else {
@@ -260,11 +263,12 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
   }
 
   //滚动到具体的index
-  _scrollToIndex(int index) {
-    final msgLen = context.read<ChatViewModel>().messageList.length;
+  Future<bool> _scrollToIndex(int index) async {
     if (!mounted) {
-      return;
+      return false;
     }
+    final vm = context.read<ChatViewModel>();
+    final msgLen = vm.messageList.length;
     // 如果键盘弹出则滚动到begin,否则滚动到middle
     var bottom = MediaQuery.of(context).viewInsets.bottom;
     var position =
@@ -280,21 +284,44 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
     // 不会误判为"用户滑到底部"而触发 asc 拉取（导致定位失败）。
     _scrollingToAnchor = true;
     final scrollDuration = const Duration(milliseconds: 500);
-    widget.scrollController
-        .scrollToIndex(
-      index,
-      preferPosition: position,
-      duration: scrollDuration,
-    )
-        .whenComplete(() {
+    try {
+      await widget.scrollController.scrollToIndex(
+        index,
+        preferPosition: position,
+        duration: scrollDuration,
+      );
       // 保留一点安全余量，等待动画稳定后再放行，避免 scroll_to_index 内
       // 部偶发的额外 jump / 位置修正再次触发监听。
-      Future.delayed(scrollDuration + const Duration(milliseconds: 200), () {
-        if (!mounted) return;
-        _scrollingToAnchor = false;
-        _refreshScrollToBottomVisibility();
-      });
-    });
+      await Future<void>.delayed(
+        scrollDuration + const Duration(milliseconds: 200),
+      );
+      if (!mounted) return false;
+      _scrollingToAnchor = false;
+      final targetMessage = index >= 0 && index < vm.messageList.length
+          ? vm.messageList[index].nimMessage
+          : null;
+      if (targetMessage != null &&
+          vm.historyReadPositionState == HistoryReadPositionState.locating &&
+          vm.isHistoryReadPositionTarget(targetMessage)) {
+        vm.completeHistoryReadPositionLocation(success: true);
+      }
+      _refreshScrollToBottomVisibility();
+      _scheduleHistoryPositionEvaluation();
+      return true;
+    } catch (_) {
+      _scrollingToAnchor = false;
+      if (mounted &&
+          vm.historyReadPositionState == HistoryReadPositionState.locating) {
+        final targetMessage = index >= 0 && index < vm.messageList.length
+            ? vm.messageList[index].nimMessage
+            : null;
+        if (targetMessage != null &&
+            vm.isHistoryReadPositionTarget(targetMessage)) {
+          vm.completeHistoryReadPositionLocation(success: false);
+        }
+      }
+      return false;
+    }
   }
 
   bool _computeShouldShowScrollToBottom(ChatViewModel vm) {
@@ -326,6 +353,111 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
         }
         _showScrollToBottom = shouldShow;
       });
+    }
+  }
+
+  void _scheduleHistoryPositionEvaluation() {
+    if (_historyPositionEvaluationScheduled || !mounted) return;
+    _historyPositionEvaluationScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _historyPositionEvaluationScheduled = false;
+      if (!mounted) return;
+      if (ModalRoute.of(context)?.isCurrent == false) return;
+      final vm = context.read<ChatViewModel>();
+      final state = vm.historyReadPositionState;
+      if (state != HistoryReadPositionState.evaluating &&
+          state != HistoryReadPositionState.ready) {
+        return;
+      }
+      if (vm.isLoading ||
+          findAnchor != null ||
+          findAnchorDate != null ||
+          vm.findAnchorDate != null ||
+          _scrollingToAnchor) {
+        return;
+      }
+      final viewport =
+          _messageViewportKey.currentContext?.findRenderObject() as RenderBox?;
+      if (viewport == null || !viewport.hasSize) return;
+      final viewportRect = viewport.localToGlobal(Offset.zero) & viewport.size;
+      final visibleMessageRects = <int, Rect>{};
+      for (final entry in widget.scrollController.tagMap.entries) {
+        final index = entry.key;
+        if (index < 0 || index >= vm.messageList.length) continue;
+        final box = entry.value.context.findRenderObject() as RenderBox?;
+        if (box == null || !box.hasSize) continue;
+        final rect = box.localToGlobal(Offset.zero) & box.size;
+        visibleMessageRects[index] = rect;
+      }
+      final topIndex = findTopVisibleHistoryMessageIndex(
+        viewportRect,
+        visibleMessageRects,
+      );
+      if (topIndex != null) {
+        final createTime = vm.messageList[topIndex].nimMessage.createTime;
+        if (createTime != null && createTime > 0) {
+          vm.evaluateHistoryReadPositionTop(
+            createTime,
+            hasReachedHistoryStart: isHistoryStartVisible(
+              viewportRect,
+              visibleMessageRects[vm.messageList.length - 1],
+              hasMoreOlderMessages: vm.hasMoreForwardMessages,
+            ),
+          );
+        }
+      }
+    });
+  }
+
+  Future<void> _locateHistoryReadPosition(ChatViewModel viewModel) async {
+    final loadedTarget = viewModel.beginLoadedHistoryReadPositionLocation();
+    if (loadedTarget != null) {
+      await _scrollToHistoryReadPositionTarget(viewModel, loadedTarget);
+      return;
+    }
+
+    final result = await viewModel.beginHistoryReadPositionLocation();
+    final target = result?.data;
+    if (!mounted || target == null) return;
+
+    final loaded = await viewModel.loadHistoryReadPositionAnchor(target);
+    if (!mounted) return;
+    if (!loaded) {
+      viewModel.completeHistoryReadPositionLocation(success: false);
+      return;
+    }
+
+    await _scrollToHistoryReadPositionTarget(viewModel, target);
+  }
+
+  Future<void> _scrollToHistoryReadPositionTarget(
+    ChatViewModel viewModel,
+    NIMMessage target,
+  ) async {
+    final index = viewModel.messageList.indexWhere(
+      (message) => message.nimMessage.isSameMessage(target),
+    );
+    if (index < 0) {
+      viewModel.completeHistoryReadPositionLocation(success: false);
+      return;
+    }
+    setState(() {
+      findAnchor = null;
+      findAnchorDate = null;
+      _pivotMessageIndex = null;
+      _pivotMessageId = viewModel.messageList[index].nimMessage.messageClientId;
+    });
+    viewModel.finishHistoryReadPositionLoading();
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
+    final success = await _scrollToIndex(index);
+    if (!success && mounted) {
+      viewModel.completeHistoryReadPositionLocation(success: false);
+    } else if (success && mounted) {
+      // _scrollToIndex also completes the state when it can match a stable
+      // message ID. Complete here as the authoritative fallback for legacy
+      // messages that do not carry a usable server/client ID.
+      viewModel.completeHistoryReadPositionLocation(success: true);
     }
   }
 
@@ -596,17 +728,42 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
 
   @override
   void didPushNext() {
+    final viewModel = context.read<ChatViewModel>();
+    _wasAtLatestMessageBeforePush = !viewModel.hasMoreNewerMessages &&
+        viewModel.newMessages.isEmpty &&
+        findAnchor == null &&
+        findAnchorDate == null &&
+        viewModel.findAnchorDate == null &&
+        (!widget.scrollController.hasClients ||
+            widget.scrollController.offset <=
+                widget.scrollController.position.minScrollExtent + 1);
     isInCurrentPage = false;
-    context.read<ChatViewModel>().setChatRouteVisible(false);
+    viewModel.setChatRouteVisible(false);
     super.didPushNext();
   }
 
   @override
   void didPopNext() {
     if (mounted) {
-      context.read<ChatViewModel>().setChatRouteVisible(true);
+      final viewModel = context.read<ChatViewModel>();
+      viewModel.setChatRouteVisible(true);
+      final shouldMergePendingMessages = _wasAtLatestMessageBeforePush &&
+          !viewModel.hasMoreNewerMessages &&
+          findAnchor == null &&
+          findAnchorDate == null &&
+          viewModel.findAnchorDate == null &&
+          viewModel.newMessages.isNotEmpty;
+      if (shouldMergePendingMessages) {
+        viewModel.srollToNewMessage();
+      }
+      _wasAtLatestMessageBeforePush = false;
       setState(() {
         isInCurrentPage = true;
+        if (shouldMergePendingMessages) {
+          _showScrollToBottom = false;
+        } else if (viewModel.newMessages.isNotEmpty) {
+          _showScrollToBottom = true;
+        }
       });
     }
     super.didPopNext();
@@ -686,6 +843,7 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
 
   _initScrollController() {
     widget.scrollController.addListener(() {
+      _scheduleHistoryPositionEvaluation();
       // 滚动时关闭桌面端右键菜单
       ChatKitDesktopContextMenu.currentInstance?.close();
 
@@ -910,6 +1068,7 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
             }
           }
           _refreshScrollToBottomVisibility();
+          _scheduleHistoryPositionEvaluation();
         });
 
         ///message list
@@ -918,6 +1077,7 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
             alignment: Alignment.center,
             children: [
               Align(
+                key: _messageViewportKey,
                 alignment: Alignment.topCenter,
                 child: SizeCacheWidget(
                   child: NotificationListener<ScrollNotification>(
@@ -985,12 +1145,32 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
                   ),
                 ),
               ),
+              if (shouldShowHistoryReadPositionEntry(
+                state: chatViewModel.historyReadPositionState,
+                count: chatViewModel.historyReadPositionCount ?? 0,
+                isMultiSelected: chatViewModel.isMultiSelected,
+              ))
+                Positioned(
+                  top: ChatKitUtils.isDesktopOrWeb ? 16 : 20,
+                  right: ChatKitUtils.isDesktopOrWeb ? 16 : 20,
+                  child: HistoryReadPositionEntry(
+                    label: S.of(context).chatNewMessage(
+                          chatViewModel.historyReadPositionDisplayCount,
+                        ),
+                    locating: chatViewModel.historyReadPositionState ==
+                        HistoryReadPositionState.locating,
+                    loading: chatViewModel.historyReadPositionLoading,
+                    isDesktopOrWeb: ChatKitUtils.isDesktopOrWeb,
+                    onTap: () => _locateHistoryReadPosition(chatViewModel),
+                  ),
+                ),
               if (_showScrollToBottom &&
                   context.read<ChatViewModel>().isMultiSelected != true)
                 Positioned(
                   bottom: 20,
                   right: chatViewModel.newMessages.isEmpty ? 20 : 0,
                   child: GestureDetector(
+                    key: const Key('chat-new-message-entry'),
                     onTap: () {
                       // 1. 清理来自历史搜索定位的锚点 / pivot 缓存。这里不调用
                       //    setState，避免触发一次 "中间空列表 + shrinkWrap 切换"

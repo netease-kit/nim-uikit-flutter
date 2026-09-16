@@ -593,6 +593,8 @@
   "chatQuickSearchTeamMember": "群成员",
   "chatMemberPickerSearchHint": "搜索成员",
   "chatMemberPickerEmpty": "暂无成员",
+  "chatMemberPickerSearchEmpty": "未找到匹配的成员",
+  "chatMemberPickerSearching": "检索中...",
   "chatMemberRoleOwner": "群主",
   "chatMemberRoleManager": "管理员",
   "chatQuickSearchPicture": "图片",
@@ -726,5 +728,30 @@
   "translationLangPt": "葡萄牙语",
   "translationLangRu": "俄语",
   "translationLangTh": "泰语",
-  "translationLangVi": "越南语"
+  "translationLangVi": "越南语",
+  "chatBackToLastReadPosition": "回到上次阅读位置",
+  "chatMessageReactionAdd": "添加表情回复",
+  "chatMessageReactionExpand": "展开全部表情",
+  "chatMessageReactionCollapse": "收起表情面板",
+  "chatMessageReactionFailed": "表情回复操作失败",
+  "chatMessageReactionLimit": "表情回复数量已达上限",
+  "chatMessageReactionEmoji": "表情回复 {index}",
+  "@chatMessageReactionEmoji": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "chatMessageReactionCount": "表情回复 {index}，{count} 人",
+  "@chatMessageReactionCount": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

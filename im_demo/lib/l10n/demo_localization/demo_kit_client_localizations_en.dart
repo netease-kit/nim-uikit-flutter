@@ -244,4 +244,7 @@ class DemoKitClientLocalizationsEn extends DemoKitClientLocalizations {
 
   @override
   String get messageTranslationSetting => 'Translate';
+
+  @override
+  String get messageReactionSetting => 'Message reactions';
 }

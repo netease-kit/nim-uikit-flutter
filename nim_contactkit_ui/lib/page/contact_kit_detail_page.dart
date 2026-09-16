@@ -155,7 +155,7 @@ class _ContactKitDetailPageState extends State<ContactKitDetailPage> {
             width: 65,
             fontSize: 22,
             avatar: contact.user.avatar,
-            name: contact.getName(),
+            name: contact.getName(needAlias: false),
             bgCode: AvatarColor.avatarColor(content: contact.user.accountId),
           ),
         ),

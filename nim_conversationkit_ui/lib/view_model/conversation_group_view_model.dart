@@ -50,6 +50,7 @@ class ConversationGroupViewModel extends ChangeNotifier {
 
   final List<StreamSubscription?> _subscriptions = [];
   final Map<String, _GroupConversationPage> _customPages = {};
+  final _GroupConversationPage _unreadPage = _GroupConversationPage();
   final Map<String, int> _customGroupUnreadCounts = {};
   final Set<String> _subscribedUnreadGroupIds = {};
   final Set<String> _refreshingCustomGroupUnreadIds = {};
@@ -88,9 +89,7 @@ class ConversationGroupViewModel extends ChangeNotifier {
             .where(_isAitMeConversation)
             .toList();
       case ConversationGroupKind.unread:
-        return conversationViewModel.conversationList
-            .where(_isUnreadConversation)
-            .toList();
+        return _unreadPage.conversations;
       case ConversationGroupKind.custom:
         return _customPages[selected.id]?.conversations ?? [];
     }
@@ -137,6 +136,9 @@ class ConversationGroupViewModel extends ChangeNotifier {
         }
         if (groupId == null && ignoreMuted == true) {
           _unreadIgnoreMutedCount = unreadCount;
+          if (selectedGroup.kind == ConversationGroupKind.unread) {
+            _loadUnreadConversations(refresh: true);
+          }
           notifyListeners();
           return;
         }
@@ -208,6 +210,8 @@ class ConversationGroupViewModel extends ChangeNotifier {
     final selected = selectedGroup;
     if (selected.kind == ConversationGroupKind.custom) {
       _loadCustomConversations(selected.id, refresh: true);
+    } else if (selected.kind == ConversationGroupKind.unread) {
+      _loadUnreadConversations(refresh: true);
     } else {
       notifyListeners();
     }
@@ -332,6 +336,9 @@ class ConversationGroupViewModel extends ChangeNotifier {
     if (group.kind == ConversationGroupKind.custom &&
         (groupChanged || forceRefresh)) {
       await _loadCustomConversations(group.id, refresh: true);
+    } else if (group.kind == ConversationGroupKind.unread &&
+        (groupChanged || forceRefresh)) {
+      await _loadUnreadConversations(refresh: true);
     }
   }
 
@@ -374,6 +381,8 @@ class ConversationGroupViewModel extends ChangeNotifier {
     final selected = selectedGroup;
     if (selected.kind == ConversationGroupKind.custom) {
       await _loadCustomConversations(selected.id);
+    } else if (selected.kind == ConversationGroupKind.unread) {
+      await _loadUnreadConversations();
     } else {
       conversationViewModel.queryConversationNextList();
     }
@@ -624,6 +633,62 @@ class ConversationGroupViewModel extends ChangeNotifier {
         }
         page.finished = page.finished ||
             page.conversations.length >= maxGroupConversationCount;
+      }
+    } finally {
+      page.loading = false;
+      page.loadingCompleter = null;
+      notifyListeners();
+      loadingCompleter.complete();
+    }
+  }
+
+  Future<void> _loadUnreadConversations({bool refresh = false}) async {
+    final page = _unreadPage;
+    if (page.loading) {
+      final loadingCompleter = page.loadingCompleter;
+      if (loadingCompleter != null) {
+        await loadingCompleter.future;
+      }
+      if (refresh) {
+        await _loadUnreadConversations(refresh: true);
+      }
+      return;
+    }
+    if (!refresh && page.finished) {
+      return;
+    }
+    final loadingCompleter = Completer<void>();
+    page.loading = true;
+    page.loadingCompleter = loadingCompleter;
+    if (refresh) {
+      page.offset = 0;
+      page.finished = false;
+      page.conversations.clear();
+    }
+    try {
+      final result = await ConversationGroupRepo.getUnreadConversationList(
+        page.offset,
+        conversationViewModel.pageLimit,
+      );
+      if (result.isSuccess && result.data != null) {
+        page.offset = result.data!.offset;
+        page.finished = result.data!.finished;
+        final conversations = (conversationViewModel.convertConversationInfo(
+                  result.data!.conversationList,
+                ) ??
+                [])
+            .where(_isUnreadConversation)
+            .toList();
+        final conversationsWithAitState =
+            await _applyAitStateToCustomConversations(conversations);
+        final conversationIds = page.conversations
+            .map((conversation) => conversation.getConversationId())
+            .toSet();
+        for (final conversation in conversationsWithAitState) {
+          if (conversationIds.add(conversation.getConversationId())) {
+            page.conversations.add(conversation);
+          }
+        }
       }
     } finally {
       page.loading = false;

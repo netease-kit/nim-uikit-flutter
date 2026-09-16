@@ -148,12 +148,10 @@ class ConversationItem extends StatelessWidget {
   Widget build(BuildContext context) {
     String? avatar = conversationInfo.getAvatar();
     final localizations = S.of(context);
-    final useChineseDateFormat = localizations.localeName.startsWith('zh');
     final formattedTime = conversationInfo.getFormatTime(
       currentYearDateFormat: localizations.conversationTimeCurrentYearFormat,
       otherYearDateFormat: localizations.conversationTimeOtherYearFormat,
     );
-    final timeColumnWidth = useChineseDateFormat ? 100.0 : 70.0;
     // 桌面端背景色由外层 AnimatedContainer 控制，Item 内部设为透明
     final bgColor = ChatKitUtils.isDesktopOrWeb
         ? Colors.transparent
@@ -250,94 +248,97 @@ class ConversationItem extends StatelessWidget {
           Positioned(
             left: 54,
             top: 10,
-            right: 20,
+            right: 0,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: EdgeInsets.only(right: timeColumnWidth),
-                  child: conversationInfo.isRobot()
-                      ? Row(
-                          children: [
-                            Flexible(
-                              fit: FlexFit.loose,
-                              child: Text(
-                                conversationInfo.getName(),
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                                style: TextStyle(
-                                  fontSize: config.itemTitleSize,
-                                  color: config.itemTitleColor,
+                Row(
+                  children: [
+                    Expanded(
+                      child: conversationInfo.isRobot()
+                          ? Row(
+                              children: [
+                                Flexible(
+                                  fit: FlexFit.loose,
+                                  child: Text(
+                                    conversationInfo.getName(),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                    style: TextStyle(
+                                      fontSize: config.itemTitleSize,
+                                      color: config.itemTitleColor,
+                                    ),
+                                  ),
                                 ),
+                                const SizedBox(width: 6),
+                                SvgPicture.asset(
+                                  'images/ic_ai_session.svg',
+                                  width: 22,
+                                  height: 18,
+                                  package: kPackage,
+                                ),
+                              ],
+                            )
+                          : Text(
+                              conversationInfo.getName(),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                              style: TextStyle(
+                                fontSize: config.itemTitleSize,
+                                color: config.itemTitleColor,
                               ),
                             ),
-                            const SizedBox(width: 6),
-                            SvgPicture.asset(
-                              'images/ic_ai_session.svg',
-                              width: 22,
-                              height: 18,
-                              package: kPackage,
-                            ),
-                          ],
-                        )
-                      : Text(
-                          conversationInfo.getName(),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                          style: TextStyle(
-                            fontSize: config.itemTitleSize,
-                            color: config.itemTitleColor,
-                          ),
-                        ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      formattedTime,
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        fontSize: config.itemDateSize,
+                        color: config.itemDateColor,
+                      ),
+                    ),
+                  ],
                 ),
-                Text.rich(
-                  TextSpan(
-                    children: [
-                      if (conversationInfo.haveBeenAit &&
-                          (conversationInfo.conversation.unreadCount ?? 0) > 0)
-                        TextSpan(
-                          text: S.of(context).somebodyAitMe,
-                          style: TextStyle(
-                            fontSize: config.itemContentSize,
-                            color: config.itemAitTextColor,
+                Padding(
+                  padding: EdgeInsets.only(
+                    right: conversationInfo.isMute() ? 24 : 0,
+                  ),
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        if (conversationInfo.haveBeenAit &&
+                            (conversationInfo.conversation.unreadCount ?? 0) >
+                                0)
+                          TextSpan(
+                            text: S.of(context).somebodyAitMe,
+                            style: TextStyle(
+                              fontSize: config.itemContentSize,
+                              color: config.itemAitTextColor,
+                            ),
                           ),
-                        ),
-                      if (conversationInfo.isRobot())
+                        if (conversationInfo.isRobot())
+                          TextSpan(
+                            text: S.of(context).robotSubConversation,
+                            style: TextStyle(
+                              fontSize: config.itemContentSize,
+                              color: config.itemContentColor,
+                            ),
+                          ),
                         TextSpan(
-                          text: S.of(context).robotSubConversation,
+                          text: _getLastMessageContent(context),
                           style: TextStyle(
                             fontSize: config.itemContentSize,
                             color: config.itemContentColor,
                           ),
                         ),
-                      TextSpan(
-                        text: _getLastMessageContent(context),
-                        style: TextStyle(
-                          fontSize: config.itemContentSize,
-                          color: config.itemContentColor,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
                 ),
               ],
-            ),
-          ),
-          Positioned(
-            right: 0,
-            top: 17,
-            child: SizedBox(
-              width: timeColumnWidth,
-              child: Text(
-                formattedTime,
-                textAlign: TextAlign.right,
-                style: TextStyle(
-                  fontSize: config.itemDateSize,
-                  color: config.itemDateColor,
-                ),
-              ),
             ),
           ),
           if (conversationInfo.isMute())

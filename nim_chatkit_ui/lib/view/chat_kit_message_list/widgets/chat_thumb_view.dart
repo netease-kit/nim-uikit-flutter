@@ -3,9 +3,10 @@
 // found in the LICENSE file.
 
 import 'dart:io';
+import 'dart:math' as math;
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_chatkit_ui/helper/thumb_helper.dart';
 import 'package:nim_core_v2/nim_core.dart';
@@ -36,7 +37,7 @@ class ChatThumbView extends StatefulWidget {
 }
 
 class _ChatThumbViewState extends State<ChatThumbView> {
-  static const String gifType = 'gif';
+  static const double _maxThumbExtent = 222;
 
   _isSelf() {
     return widget.message.isSelf == true;
@@ -114,12 +115,21 @@ class _ChatThumbViewState extends State<ChatThumbView> {
   }
 
   Widget _localImage(String path) {
-    return Stack(
-      alignment: _isSelf()
-          ? AlignmentDirectional.topEnd
-          : AlignmentDirectional.topStart,
-      children: [getImage(Image.file(File(path), fit: BoxFit.fitWidth))],
+    return getImage(Image.file(File(path), fit: BoxFit.fitWidth));
+  }
+
+  Size? _getPictureDisplaySize() {
+    final attachment = widget.message.attachment;
+    if (attachment is! NIMMessageImageAttachment) return null;
+    final width = attachment.width?.toDouble() ?? 0;
+    final height = attachment.height?.toDouble() ?? 0;
+    if (width <= 0 || height <= 0) return null;
+
+    final scale = math.min(
+      1.0,
+      math.min(_maxThumbExtent / width, _maxThumbExtent / height),
     );
+    return Size(width * scale, height * scale);
   }
 
   Widget _imageBuilder() {
@@ -139,11 +149,15 @@ class _ChatThumbViewState extends State<ChatThumbView> {
   }
 
   Widget _imageBuilderForPicture() {
+    final url = _getUrlForImage();
+    if (!_isSelf() && url.isNotEmpty) {
+      return _networkImage(url);
+    }
+
     String path = _getPathForImage();
     if (_fileExistCheck(path)) {
       return _localImage(path);
     }
-    var url = _getUrlForImage();
     return _networkImage(url);
   }
 
@@ -204,8 +218,14 @@ class _ChatThumbViewState extends State<ChatThumbView> {
 
   @override
   Widget build(BuildContext context) {
+    final pictureSize = _getPictureDisplaySize();
     return Container(
-      constraints: BoxConstraints(maxWidth: 222, maxHeight: 222),
+      width: widget.width?.toDouble() ?? pictureSize?.width,
+      height: widget.height?.toDouble() ?? pictureSize?.height,
+      constraints: const BoxConstraints(
+        maxWidth: _maxThumbExtent,
+        maxHeight: _maxThumbExtent,
+      ),
       child: _imageBuilder(),
     );
   }

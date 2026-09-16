@@ -18,6 +18,7 @@ import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/extension.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit/im_kit_config_center.dart';
 import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit/message/message_helper.dart';
 import 'package:nim_chatkit/message/message_voice_to_text.dart';
@@ -35,6 +36,7 @@ import 'package:nim_chatkit/utils/toast_utils.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_helper.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_user_helper.dart';
+import 'package:nim_chatkit_ui/helper/message_reaction_helper.dart';
 import 'package:nim_chatkit_ui/helper/reply_message_display_helper.dart';
 import 'package:nim_chatkit_ui/l10n/S.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_audio_item.dart';
@@ -49,6 +51,7 @@ import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_desk
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_message_pop_menu.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_translation_pop_menu.dart';
+import 'package:nim_chatkit_ui/view/chat_kit_message_list/reaction/message_reaction_bar.dart';
 import 'package:nim_chatkit_ui/view/page/chat_message_ack_page.dart';
 import 'package:nim_chatkit_ui/view_model/chat_view_model.dart';
 import 'package:nim_core_v2/nim_core.dart';
@@ -130,6 +133,8 @@ class ChatKitMessageItem extends StatefulWidget {
 
 class ChatKitMessageItemState extends State<ChatKitMessageItem> {
   int showTimeInterval = ChatKitClient.instance.chatUIConfig.showTimeInterval;
+
+  final GlobalKey _messageReactionTargetKey = GlobalKey();
 
   static const maxReceiptNum = 100;
 
@@ -295,6 +300,21 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
       globalPosition: details.globalPosition,
     );
     _popMenu!.show();
+  }
+
+  void _toggleReaction(ChatViewModel viewModel, int index) {
+    final errorText = S.of(context).chatMessageReactionFailed;
+    final limitErrorText = S.of(context).chatMessageReactionLimit;
+    viewModel.toggleMessageReaction(widget.chatMessage, index).then((result) {
+      if (!result.isSuccess &&
+          result.code != ChatViewModel.messageReactionNetworkUnavailableCode) {
+        ChatUIToast.show(
+          result.code == ChatMessageRepo.errorQuickCommentLimited
+              ? limitErrorText
+              : errorText,
+        );
+      }
+    });
   }
 
   void _onTranslationLongPress(
@@ -508,7 +528,7 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
     );
   }
 
-  Widget _buildMessage(ChatMessage message) {
+  Widget _buildMessage(ChatMessage message, {bool reactionInBubble = false}) {
     var messageItemBuilder = widget.messageBuilder;
     switch (message.nimMessage.messageType) {
       case NIMMessageType.text:
@@ -518,6 +538,7 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
         return ChatKitMessageTextItem(
           message: message.nimMessage,
           chatUIConfig: widget.chatUIConfig,
+          needPadding: !reactionInBubble,
           translationState: context
               .watch<ChatViewModel>()
               .getMessageTranslationState(message.nimMessage),
@@ -979,6 +1000,24 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
     }
   }
 
+  bool _shouldPadReactionHorizontally() {
+    return _getMessageItemConfig(
+      widget.chatMessage.nimMessage,
+    ).showMsgCommonBg;
+  }
+
+  bool _shouldShowReactionBar(ChatViewModel chatViewModel) {
+    if (!IMKitConfigCenter.enableMessageReaction ||
+        chatViewModel.isMultiSelected ||
+        !MessageReactionHelper.isSupported(widget.chatMessage)) {
+      return false;
+    }
+    return chatViewModel
+        .getMessageReactionState(widget.chatMessage.nimMessage)
+        .summaries
+        .isNotEmpty;
+  }
+
   Future<String>? _replyFuture;
 
   NIMMessageRefer? _messageRefer;
@@ -1334,6 +1373,7 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
                                               ),
                                             Flexible(
                                               child: Container(
+                                                key: _messageReactionTargetKey,
                                                 margin: EdgeInsets.only(
                                                   left: isSelf() ? 8 : 0,
                                                 ),
@@ -1345,85 +1385,158 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
                                                         .isMultiSelected,
                                                   ),
                                                 ),
-                                                child: Builder(
-                                                  builder: (context) {
-                                                    return GestureDetector(
-                                                      child: IgnorePointer(
-                                                        ignoring: chatViewModel
-                                                            .isMultiSelected,
-                                                        child: widget
-                                                                .chatMessage
-                                                                .isRevoke
-                                                            ? _buildRevokedMessage(
-                                                                widget
-                                                                    .chatMessage,
-                                                              )
-                                                            : Column(
-                                                                crossAxisAlignment:
-                                                                    CrossAxisAlignment
-                                                                        .start,
-                                                                children: [
-                                                                  if (_showReplyMessage(
+                                                child: Column(
+                                                  crossAxisAlignment: isSelf()
+                                                      ? CrossAxisAlignment.end
+                                                      : CrossAxisAlignment
+                                                          .start,
+                                                  children: [
+                                                    Builder(
+                                                      builder: (context) {
+                                                        final showReactionBar =
+                                                            _shouldShowReactionBar(
+                                                          chatViewModel,
+                                                        );
+                                                        final messageContent =
+                                                            widget.chatMessage
+                                                                    .isRevoke
+                                                                ? _buildRevokedMessage(
                                                                     widget
                                                                         .chatMessage,
-                                                                  ))
-                                                                    _buildMessageReply(
-                                                                      widget
-                                                                          .chatMessage,
-                                                                    ),
-                                                                  _buildMessage(
-                                                                    widget
-                                                                        .chatMessage,
-                                                                  ),
-                                                                ],
-                                                              ),
-                                                      ),
-                                                      onTap:
-                                                          widget.onMessageItemClick !=
-                                                                  null
-                                                              ? () {
-                                                                  widget
-                                                                      .onMessageItemClick
-                                                                      ?.call(
-                                                                    widget
-                                                                        .chatMessage,
+                                                                  )
+                                                                : Column(
+                                                                    crossAxisAlignment:
+                                                                        CrossAxisAlignment
+                                                                            .start,
+                                                                    children: [
+                                                                      if (_showReplyMessage(
+                                                                        widget
+                                                                            .chatMessage,
+                                                                      ))
+                                                                        _buildMessageReply(
+                                                                          widget
+                                                                              .chatMessage,
+                                                                        ),
+                                                                      if (showReactionBar &&
+                                                                          widget.chatMessage.nimMessage.messageType ==
+                                                                              NIMMessageType.text)
+                                                                        Padding(
+                                                                          padding:
+                                                                              const EdgeInsets.only(
+                                                                            left:
+                                                                                16,
+                                                                            top:
+                                                                                12,
+                                                                            right:
+                                                                                16,
+                                                                          ),
+                                                                          child:
+                                                                              _buildMessage(
+                                                                            widget.chatMessage,
+                                                                            reactionInBubble:
+                                                                                true,
+                                                                          ),
+                                                                        )
+                                                                      else
+                                                                        _buildMessage(
+                                                                          widget
+                                                                              .chatMessage,
+                                                                        ),
+                                                                    ],
                                                                   );
-                                                                }
-                                                              : null,
-                                                      onSecondaryTapUp:
-                                                          _isDesktopOrWeb
-                                                              ? (details) {
-                                                                  _onSecondaryTap(
-                                                                    context,
-                                                                    details,
-                                                                  );
-                                                                }
-                                                              : null,
-                                                      onLongPressStart:
-                                                          (details) {
-                                                        //long press
-                                                        if (widget.chatUIConfig
-                                                                    ?.enableMessageLongPress ==
-                                                                true &&
-                                                            (widget.onMessageItemLongClick ==
-                                                                    null ||
-                                                                widget.onMessageItemLongClick!(
+                                                        return GestureDetector(
+                                                          child: IgnorePointer(
+                                                            ignoring: chatViewModel
+                                                                .isMultiSelected,
+                                                            child:
+                                                                messageContent,
+                                                          ),
+                                                          onTap:
+                                                              widget.onMessageItemClick !=
+                                                                      null
+                                                                  ? () {
                                                                       widget
-                                                                          .chatMessage,
-                                                                    ) !=
-                                                                    true)) {
-                                                          if (!widget
-                                                              .chatMessage
-                                                              .isRevoke) {
-                                                            _onLongPress(
-                                                              context,
-                                                              details,
-                                                            );
-                                                          }
-                                                        }
+                                                                          .onMessageItemClick
+                                                                          ?.call(
+                                                                        widget
+                                                                            .chatMessage,
+                                                                      );
+                                                                    }
+                                                                  : null,
+                                                          onSecondaryTapUp:
+                                                              _isDesktopOrWeb
+                                                                  ? (details) {
+                                                                      _onSecondaryTap(
+                                                                        context,
+                                                                        details,
+                                                                      );
+                                                                    }
+                                                                  : null,
+                                                          onLongPressStart:
+                                                              (details) {
+                                                            //long press
+                                                            if (widget.chatUIConfig
+                                                                        ?.enableMessageLongPress ==
+                                                                    true &&
+                                                                (widget.onMessageItemLongClick ==
+                                                                        null ||
+                                                                    widget.onMessageItemLongClick!(
+                                                                          widget
+                                                                              .chatMessage,
+                                                                        ) !=
+                                                                        true)) {
+                                                              if (!widget
+                                                                  .chatMessage
+                                                                  .isRevoke) {
+                                                                _onLongPress(
+                                                                  context,
+                                                                  details,
+                                                                );
+                                                              }
+                                                            }
+                                                          },
+                                                        );
                                                       },
-                                                    );
-                                                  },
+                                                    ),
+                                                    if (_shouldShowReactionBar(
+                                                      chatViewModel,
+                                                    ))
+                                                      Padding(
+                                                        padding:
+                                                            EdgeInsets.only(
+                                                          left:
+                                                              _shouldPadReactionHorizontally()
+                                                                  ? 16
+                                                                  : 0,
+                                                          right:
+                                                              _shouldPadReactionHorizontally()
+                                                                  ? 16
+                                                                  : 0,
+                                                          bottom: 12,
+                                                        ),
+                                                        child:
+                                                            MessageReactionBar(
+                                                          state: chatViewModel
+                                                              .getMessageReactionState(
+                                                            widget.chatMessage
+                                                                .nimMessage,
+                                                          ),
+                                                          currentAccountId:
+                                                              chatViewModel
+                                                                  .currentAccountId,
+                                                          emojiBuilder: widget
+                                                              .chatUIConfig
+                                                              ?.messageReactionEmojiBuilder,
+                                                          messageTargetKey:
+                                                              _messageReactionTargetKey,
+                                                          onSelected: (index) =>
+                                                              _toggleReaction(
+                                                            chatViewModel,
+                                                            index,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                  ],
                                                 ),
                                               ),
                                             ),

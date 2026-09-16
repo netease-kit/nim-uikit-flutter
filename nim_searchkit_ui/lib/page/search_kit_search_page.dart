@@ -7,6 +7,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
+import 'package:netease_common_ui/utils/search_highlight.dart';
 import 'package:netease_common_ui/widgets/search_page.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
@@ -67,7 +68,8 @@ class _SearchKitGlobalState extends State<SearchKitGlobalSearchPage> {
     }
 
     Widget _getContactWidget() {
-      ContactInfo contact = (currentItem as FriendSearchInfo).contact;
+      final contactInfo = currentItem as FriendSearchInfo;
+      ContactInfo contact = contactInfo.contact;
 
       String? _getHitName() {
         switch (currentItem.hitType) {
@@ -84,27 +86,17 @@ class _SearchKitGlobalState extends State<SearchKitGlobalSearchPage> {
 
       String _hitName = _getHitName()!;
       Widget _hitWidget(TextStyle textStyle, TextStyle hitStyle) {
-        return RichText(
+        final ranges = contactInfo.hitInfos.isNotEmpty
+            ? contactInfo.hitInfos
+            : <RecordHitInfo>[record];
+        return SearchHighlightText(
+          text: _hitName,
+          ranges: ranges
+              .map((range) => SearchHighlightRange(range.start, range.end))
+              .toList(),
+          style: textStyle,
+          highlightStyle: hitStyle,
           maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          text: TextSpan(
-            children: [
-              if (record.start > 0)
-                TextSpan(
-                  text: _hitName.substring(0, record.start),
-                  style: textStyle,
-                ),
-              TextSpan(
-                text: _hitName.substring(record.start, record.end),
-                style: hitStyle,
-              ),
-              if (record.end <= _hitName.length - 1)
-                TextSpan(
-                  text: _hitName.substring(record.end),
-                  style: textStyle,
-                ),
-            ],
-          ),
         );
       }
 
@@ -117,7 +109,7 @@ class _SearchKitGlobalState extends State<SearchKitGlobalSearchPage> {
           children: [
             Avatar(
               avatar: contact.user.avatar,
-              name: contact.getName(),
+              name: contact.getName(needAlias: false),
               width: 36,
               height: 36,
               bgCode: AvatarColor.avatarColor(content: contact.user.accountId),
@@ -125,7 +117,7 @@ class _SearchKitGlobalState extends State<SearchKitGlobalSearchPage> {
             Expanded(
               child: Container(
                 margin: const EdgeInsets.only(left: 12),
-                child: currentItem.hitType == HitType.account
+                child: _hitName != contact.getName()
                     ? Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -239,47 +231,52 @@ class _SearchKitGlobalState extends State<SearchKitGlobalSearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    return SearchPage(
-      key: widget.key,
-      title: S.of(context).searchSearch,
-      searchHint: S.of(context).searchSearchHit,
-      builder: (context, keyword) {
-        if (keyword.isEmpty) {
-          return Container();
-        } else {
-          return FutureBuilder<List<SearchInfo>>(
-            future: _search(keyword),
-            builder: (context, snapShot) {
-              List<SearchInfo> searchList = snapShot.data ?? List.empty();
-              if (searchList.isEmpty) {
-                return Column(
-                  children: [
-                    const SizedBox(height: 68),
-                    SvgPicture.asset(
-                      'images/ic_search_empty.svg',
-                      package: kPackage,
-                    ),
-                    const SizedBox(height: 18),
-                    Text(
-                      S.of(context).searchEmptyTips,
-                      style: TextStyle(color: Color(0xffb3b7bc), fontSize: 14),
-                    ),
-                  ],
-                );
-              } else {
-                return ListView.builder(
-                  itemCount: searchList.length,
-                  itemBuilder: (context, index) {
-                    SearchInfo currentItem = searchList[index];
-                    var lastItem = index > 0 ? searchList[index - 1] : null;
-                    return _buildItem(context, currentItem, lastItem);
-                  },
-                );
-              }
-            },
-          );
-        }
-      },
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: SearchPage(
+        key: widget.key,
+        title: S.of(context).searchSearch,
+        searchHint: S.of(context).searchSearchHit,
+        builder: (context, keyword) {
+          if (keyword.isEmpty) {
+            return Container();
+          } else {
+            return FutureBuilder<List<SearchInfo>>(
+              future: _search(keyword),
+              builder: (context, snapShot) {
+                List<SearchInfo> searchList = snapShot.data ?? List.empty();
+                if (searchList.isEmpty) {
+                  return Column(
+                    children: [
+                      const SizedBox(height: 68),
+                      SvgPicture.asset(
+                        'images/ic_search_empty.svg',
+                        package: kPackage,
+                      ),
+                      const SizedBox(height: 18),
+                      Text(
+                        S.of(context).searchEmptyTips,
+                        style:
+                            TextStyle(color: Color(0xffb3b7bc), fontSize: 14),
+                      ),
+                    ],
+                  );
+                } else {
+                  return ListView.builder(
+                    itemCount: searchList.length,
+                    itemBuilder: (context, index) {
+                      SearchInfo currentItem = searchList[index];
+                      var lastItem = index > 0 ? searchList[index - 1] : null;
+                      return _buildItem(context, currentItem, lastItem);
+                    },
+                  );
+                }
+              },
+            );
+          }
+        },
+      ),
     );
   }
 }

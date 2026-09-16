@@ -32,7 +32,7 @@ class TeamKitManagerListPage extends StatefulWidget {
   State<StatefulWidget> createState() => TeamKitManagerListPageState();
 }
 
-class TeamKitManagerListPageState extends State<TeamKitManagerListPage> {
+class TeamKitManagerListPageState extends BaseState<TeamKitManagerListPage> {
   @override
   void initState() {
     super.initState();
@@ -47,7 +47,7 @@ class TeamKitManagerListPageState extends State<TeamKitManagerListPage> {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (context) {
-        var viewModel = TeamSettingViewModel();
+        var viewModel = TeamSettingViewModel(configuredTeamId: widget.tId);
         viewModel.requestTeamMembers(widget.tId);
         viewModel.addTeamSubscribe();
         return viewModel;
@@ -96,10 +96,12 @@ class TeamKitManagerListPageState extends State<TeamKitManagerListPage> {
                       ),
                     ).then((value) {
                       if (value is List<String>) {
-                        context.read<TeamSettingViewModel>().addTeamManager(
-                              widget.tId,
-                              value,
-                            );
+                        if (checkNetwork()) {
+                          context.read<TeamSettingViewModel>().addTeamManager(
+                                widget.tId,
+                                value,
+                              );
+                        }
                       }
                     });
                   },

@@ -27,6 +27,7 @@ class _MineSettingPageState extends State<MineSettingPage> {
   bool audioPlayMode = false;
   bool friendDeleteMode = false;
   bool messageReadMode = false;
+  bool messageReactionMode = true;
   bool enableCloudConversation = false;
   bool enableAIStream = true;
   bool enableSafetyTips = true;
@@ -40,12 +41,15 @@ class _MineSettingPageState extends State<MineSettingPage> {
     int v = await ConfigRepo.getAudioPlayModel();
     audioPlayMode = v == ConfigRepo.audioPlayEarpiece;
     messageReadMode = await ConfigRepo.getShowReadStatus();
+    messageReactionMode = await IMKitClient.enableMessageReaction;
     enableCloudConversation = await IMKitClient.enableCloudConversation;
     enableAIStream = await IMKitClient.enableAIStream;
     enableSafetyTips = await IMKitClient.enableSafetyTips;
     enableCloudMessageSearch = await IMKitClient.enableCloudMessageSearch;
 
-    setState(() {});
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -78,6 +82,20 @@ class _MineSettingPageState extends State<MineSettingPage> {
           ConfigRepo.updateShowReadStatus(value);
           setState(() {
             messageReadMode = value;
+          });
+        },
+      ),
+      CommonListTile(
+        title: S.of(context).messageReactionSetting,
+        trailingType: TrailingType.onOff,
+        switchValue: messageReactionMode,
+        onSwitchChanged: (value) async {
+          await IMKitClient.setEnableMessageReaction(value);
+          if (!mounted) {
+            return;
+          }
+          setState(() {
+            messageReactionMode = value;
           });
         },
       ),

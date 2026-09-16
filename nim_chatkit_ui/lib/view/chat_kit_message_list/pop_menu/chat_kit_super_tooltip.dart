@@ -84,6 +84,12 @@ class SuperTooltip {
   /// the stroke width of the border
   final double borderWidth;
 
+  /// Handles an outside tap after the popup has been dismissed.
+  final ValueChanged<Offset>? onTapOutside;
+
+  /// Overrides the bubble shape's default padding around its content.
+  final EdgeInsetsGeometry? contentPadding;
+
   ///
   /// The corder radii of the border
   final double borderRadius;
@@ -153,12 +159,19 @@ class SuperTooltip {
   /// Uses a fixed global anchor point instead of the target widget bounds.
   final Offset? targetGlobalPosition;
 
+  /// Whether to draw the directional arrow.
+  final bool showArrow;
+
+  /// Centers the tooltip vertically on the target when neither end has room.
+  final bool centerVerticallyOnTarget;
+
   ///target 的上下两头，有一头空间可以展示弹框
   bool isTargetHeadVisible = true;
 
   Offset? _targetCenter;
   OverlayEntry? _backGroundOverlay;
   OverlayEntry? _ballonOverlay;
+  LocalHistoryEntry? _localHistoryEntry;
 
   SuperTooltip({
     this.tooltipContainerKey,
@@ -182,6 +195,8 @@ class SuperTooltip {
     this.shadowBlurRadius = 10.0,
     this.shadowSpreadRadius = 5.0,
     this.borderWidth = 2.0,
+    this.onTapOutside,
+    this.contentPadding,
     this.borderRadius = 10.0,
     this.borderColor = Colors.black,
     this.closeButtonIcon = Icons.close,
@@ -198,6 +213,8 @@ class SuperTooltip {
     this.dismissOnTapOutside = true,
     this.containsBackgroundOverlay = true,
     this.targetGlobalPosition,
+    this.showArrow = true,
+    this.centerVerticallyOnTarget = false,
     this.isTargetHeadVisible = true,
   })  : assert((maxWidth ?? double.infinity) >= (minWidth ?? 0.0)),
         assert((maxHeight ?? double.infinity) >= (minHeight ?? 0.0));
@@ -205,12 +222,27 @@ class SuperTooltip {
   ///
   /// Removes the Tooltip from the overlay
   void close() {
-    if (onClose != null) {
-      onClose!();
+    if (!isOpen) {
+      return;
     }
+    final historyEntry = _localHistoryEntry;
+    if (historyEntry != null) {
+      _localHistoryEntry = null;
+      historyEntry.remove();
+      return;
+    }
+    _removeOverlays();
+  }
 
-    _ballonOverlay!.remove();
+  void _removeOverlays() {
+    if (!isOpen) {
+      return;
+    }
+    onClose?.call();
+    _ballonOverlay?.remove();
     _backGroundOverlay?.remove();
+    _ballonOverlay = null;
+    _backGroundOverlay = null;
     isOpen = false;
   }
 
@@ -281,9 +313,10 @@ class SuperTooltip {
             opacity: opacity,
             duration: const Duration(milliseconds: 600),
             child: GestureDetector(
-              onTap: () {
+              onTapUp: (details) {
                 if (dismissOnTapOutside) {
                   close();
+                  onTapOutside?.call(details.globalPosition);
                 }
               },
               child: Container(
@@ -347,6 +380,7 @@ class SuperTooltip {
                 bottom: bottom,
                 left: left,
                 right: right,
+                centerVerticallyOnTarget: centerVerticallyOnTarget,
               ),
               child: Stack(
                 fit: StackFit.passthrough,
@@ -367,6 +401,20 @@ class SuperTooltip {
 
     Overlay.of(targetContext).insertAll(overlays);
     isOpen = true;
+    final route = ModalRoute.of(targetContext);
+    if (route != null) {
+      late final LocalHistoryEntry historyEntry;
+      historyEntry = LocalHistoryEntry(
+        onRemove: () {
+          if (identical(_localHistoryEntry, historyEntry)) {
+            _localHistoryEntry = null;
+          }
+          _removeOverlays();
+        },
+      );
+      _localHistoryEntry = historyEntry;
+      route.addLocalHistoryEntry(historyEntry);
+    }
   }
 
   Widget _buildPopUp() {
@@ -396,6 +444,8 @@ class SuperTooltip {
             top,
             right,
             bottom,
+            showArrow,
+            contentPadding,
           ),
         ),
         margin: _getBallonContainerMargin(),
@@ -481,6 +531,9 @@ class SuperTooltip {
   }
 
   EdgeInsets _getBallonContainerMargin() {
+    if (!showArrow) {
+      return EdgeInsets.zero;
+    }
     var top = (showCloseButton == ShowCloseButton.outside)
         ? closeButtonSize + 5
         : 0.0;
@@ -522,6 +575,7 @@ class _PopupBallonLayoutDelegate extends SingleChildLayoutDelegate {
   final double? _left;
   final double? _right;
   final double? _outSidePadding;
+  final bool _centerVerticallyOnTarget;
 
   _PopupBallonLayoutDelegate({
     TooltipDirection? popupDirection,
@@ -535,6 +589,7 @@ class _PopupBallonLayoutDelegate extends SingleChildLayoutDelegate {
     double? bottom,
     double? left,
     double? right,
+    bool centerVerticallyOnTarget = false,
   })  : _targetCenter = targetCenter,
         _popupDirection = popupDirection,
         _minWidth = minWidth,
@@ -545,7 +600,8 @@ class _PopupBallonLayoutDelegate extends SingleChildLayoutDelegate {
         _bottom = bottom,
         _left = left,
         _right = right,
-        _outSidePadding = outSidePadding;
+        _outSidePadding = outSidePadding,
+        _centerVerticallyOnTarget = centerVerticallyOnTarget;
 
   @override
   Offset getPositionForChild(Size size, Size childSize) {
@@ -597,6 +653,17 @@ class _PopupBallonLayoutDelegate extends SingleChildLayoutDelegate {
         );
       }
       return topmostYtoTarget;
+    }
+
+    if (_centerVerticallyOnTarget) {
+      final top = max(
+        _outSidePadding!,
+        min(
+          _targetCenter!.dy - childSize.height / 2,
+          size.height - _outSidePadding! - childSize.height,
+        ),
+      );
+      return Offset(calcLeftMostXtoTarget()!, top);
     }
 
     switch (_popupDirection) {
@@ -661,6 +728,21 @@ class _PopupBallonLayoutDelegate extends SingleChildLayoutDelegate {
           calcMaxHeight = constraints.maxHeight - 2 * _outSidePadding!;
         }
       }
+    }
+
+    if (_centerVerticallyOnTarget) {
+      calcMinMaxWidth();
+      calcMaxHeight = min(
+        _maxHeight ?? constraints.maxHeight,
+        constraints.maxHeight - 2 * _outSidePadding!,
+      );
+      return BoxConstraints(
+        minWidth: calcMinWidth > calcMaxWidth ? calcMaxWidth : calcMinWidth,
+        maxWidth: calcMaxWidth,
+        minHeight:
+            calcMinHeight > calcMaxHeight ? calcMaxHeight : calcMinHeight,
+        maxHeight: calcMaxHeight,
+      );
     }
 
     switch (_popupDirection) {
@@ -741,6 +823,7 @@ class _PopupBallonLayoutDelegate extends SingleChildLayoutDelegate {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class _BubbleShape extends ShapeBorder {
+  final EdgeInsetsGeometry? contentPadding;
   final Offset? targetCenter;
   final double arrowBaseWidth;
   final double arrowTipDistance;
@@ -749,6 +832,7 @@ class _BubbleShape extends ShapeBorder {
   final double borderWidth;
   final double? left, top, right, bottom;
   final TooltipDirection popupDirection;
+  final bool showArrow;
 
   _BubbleShape(
     this.popupDirection,
@@ -762,10 +846,13 @@ class _BubbleShape extends ShapeBorder {
     this.top,
     this.right,
     this.bottom,
+    this.showArrow,
+    this.contentPadding,
   );
 
   @override
-  EdgeInsetsGeometry get dimensions => new EdgeInsets.all(10.0);
+  EdgeInsetsGeometry get dimensions =>
+      contentPadding ?? const EdgeInsets.all(10);
 
   @override
   Path getInnerPath(Rect rect, {TextDirection? textDirection}) {
@@ -776,6 +863,12 @@ class _BubbleShape extends ShapeBorder {
 
   @override
   Path getOuterPath(Rect rect, {TextDirection? textDirection}) {
+    if (!showArrow) {
+      return Path()
+        ..addRRect(
+          RRect.fromRectAndRadius(rect, Radius.circular(borderRadius)),
+        );
+    }
     //
     late double topLeftRadius,
         topRightRadius,
@@ -1080,6 +1173,8 @@ class _BubbleShape extends ShapeBorder {
       top,
       right,
       bottom,
+      showArrow,
+      contentPadding,
     );
   }
 }

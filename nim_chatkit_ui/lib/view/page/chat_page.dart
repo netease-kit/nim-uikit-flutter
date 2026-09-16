@@ -15,10 +15,12 @@ import 'package:netease_common_ui/widgets/no_network_tip.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/im_kit_config_center.dart';
+import 'package:nim_chatkit/manager/ai_robot_manager.dart';
 import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit/message/merge_message.dart';
 import 'package:nim_chatkit/model/contact_info.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
+import 'package:nim_chatkit/router/chat_anchor_route_registry.dart';
 import 'package:nim_chatkit/router/imkit_router.dart';
 import 'package:nim_chatkit/router/imkit_router_factory.dart';
 import 'package:nim_chatkit/service_locator.dart';
@@ -35,11 +37,13 @@ import 'package:nim_chatkit_ui/view_model/chat_view_model.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:provider/provider.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../chat_kit_client.dart';
 import '../../helper/chat_message_helper.dart';
 import '../../l10n/S.dart';
 import '../../media/audio_player.dart';
+import '../../model/history_read_position_tracker.dart';
 import '../history/chat_history_message_page.dart';
 import '../input/bottom_input_field.dart';
 import 'chat_pin_page.dart';
@@ -89,7 +93,34 @@ class ChatPage extends StatefulWidget {
 
 class ChatPageState extends BaseState<ChatPage> with RouteAware {
   late AutoScrollController autoController;
+  late final Future<NIMResult<int>> _conversationEntryFuture;
+  ChatViewModel? _chatViewModel;
+  VoidCallback? _unregisterAnchorRoute;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _unregisterAnchorRoute?.call();
+    _unregisterAnchorRoute = null;
+    final route = ModalRoute.of(context);
+    if (!ChatKitUtils.isDesktopOrWeb && route != null) {
+      _unregisterAnchorRoute = ChatAnchorRouteRegistry.register(
+        route: route,
+        conversationId: widget.conversationId,
+        conversationType: widget.conversationType,
+        onLocate: (message, date) {
+          if (message != null) {
+            _chatViewModel?.loadMessageWithAnchor(message);
+          } else if (date != null) {
+            _chatViewModel?.loadMessageWithAnchorDate(date);
+          }
+        },
+      );
+    }
+  }
+
   final GlobalKey<dynamic> _inputField = GlobalKey();
+  final Key _visibilityKey = UniqueKey();
 
   //合并转发限制的消息数
   static const int mergedMessageLimit = 100;
@@ -148,6 +179,33 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
     );
   }
 
+  void _ensureCurrentChatSession() {
+    if (!mounted) return;
+    final route = ModalRoute.of(context);
+    if (route != null && !route.isCurrent) return;
+    if (NIMChatCache.instance.currentChatSession?.conversationId ==
+            widget.conversationId &&
+        NIMChatCache.instance.currentChatSession?.conversationType ==
+            widget.conversationType) {
+      return;
+    }
+    _setChattingAccount();
+  }
+
+  bool get _supportsHistoryReadPosition {
+    if (widget.conversationType == NIMConversationType.team) {
+      return supportsHistoryReadPositionConversation(widget.conversationType);
+    }
+    if (widget.conversationType != NIMConversationType.p2p) return false;
+    final targetId =
+        ChatKitUtils.getConversationTargetId(widget.conversationId);
+    return supportsHistoryReadPositionConversation(
+      widget.conversationType,
+      isAiUser: AIUserManager.instance.isAIUser(targetId),
+      isRobot: AIRobotManager.instance.isRobot(targetId),
+    );
+  }
+
   Future<String> getSessionId(String conversationId) async {
     return (await NimCore.instance.conversationIdUtil.conversationTargetId(
       conversationId,
@@ -190,7 +248,13 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
         }
       });
     }
-    _setChattingAccount();
+    _conversationEntryFuture = ChatMessageRepo.enterChattingAccount(
+      null,
+      widget.conversationType,
+      widget.conversationId,
+      enableHistoryReadPosition: _supportsHistoryReadPosition &&
+          IMKitConfigCenter.enableLastReadPosition,
+    );
     Future.delayed(Duration.zero, () {
       IMKitRouter.instance.routeObserver.subscribe(
         this,
@@ -285,6 +349,7 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
 
   @override
   void dispose() {
+    _unregisterAnchorRoute?.call();
     _typingTimer?.cancel();
     ChatAudioPlayer.instance.release();
     _teamDismissSub?.cancel();
@@ -295,12 +360,7 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
 
   @override
   void didPopNext() {
-    if (NIMChatCache.instance.currentChatSession?.conversationId !=
-            widget.conversationId ||
-        NIMChatCache.instance.currentChatSession?.conversationType !=
-            widget.conversationType) {
-      _setChattingAccount();
-    }
+    _ensureCurrentChatSession();
     super.didPopNext();
   }
 
@@ -512,154 +572,157 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
 
   @override
   Widget build(BuildContext context) {
-    if (NIMChatCache.instance.currentChatSession?.conversationId !=
-            widget.conversationId ||
-        NIMChatCache.instance.currentChatSession?.conversationType !=
-            widget.conversationType) {
-      _setChattingAccount();
-    }
-
-    return ChangeNotifierProvider(
-      create: (context) => ChatViewModel(
-        widget.conversationId,
-        widget.conversationType,
-        anchorMessage: widget.anchor,
-        findAnchorDate: widget.anchorDate,
-        chatUIConfig: chatUIConfig,
-      ),
-      builder: (context, wg) {
-        String title;
-        String? subTitle;
-        String inputHint = context.watch<ChatViewModel>().chatTitle;
-        bool? isOnline = context.watch<ChatViewModel>().contactInfo?.isOnline;
-        if (context.watch<ChatViewModel>().isTyping) {
-          _setTyping(context);
-          title = S.of(context).chatIsTyping;
-        } else if (IMKitConfigCenter.enableOnlineStatus &&
-            widget.conversationType == NIMConversationType.p2p &&
-            !AIUserManager.instance.isAIUser(
-              ChatKitUtils.getConversationTargetId(widget.conversationId),
-            )) {
-          title = inputHint;
-
-          subTitle = isOnline == true
-              ? S.of(context).chatUserOnline
-              : S.of(context).chatUserOffline;
-        } else {
-          title = inputHint;
+    return VisibilityDetector(
+      key: _visibilityKey,
+      onVisibilityChanged: (visibilityInfo) {
+        if (visibilityInfo.visibleFraction > 0) {
+          _ensureCurrentChatSession();
         }
-        bool haveSelectedMessage =
-            context.watch<ChatViewModel>().selectedMessages.isNotEmpty;
-
-        Widget? subTitleWidget = context.watch<ChatViewModel>().voiceFromSpeaker
-            ? null
-            : SvgPicture.asset(
-                "images/ic_ear.svg",
-                package: kPackage,
-                width: 18,
-                height: 18,
-              );
-
-        final chatViewModel = context.watch<ChatViewModel>();
-        // 检查群组有效性
-        if (widget.conversationType == NIMConversationType.team &&
-            chatViewModel.teamInfo != null &&
-            chatViewModel.teamInfo!.isValidTeam == false &&
-            !hasShowTeamDismissDialog) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _showTeamDismissDialog();
-          });
-          hasShowTeamDismissDialog = true;
-        }
-        final bool isDesktop = ChatKitUtils.isDesktopOrWeb;
-        return PopScope(
-          child: isDesktop
-              ? Scaffold(
-                  backgroundColor: Colors.white,
-                  body: Column(
-                    children: [
-                      _buildDesktopHeader(
-                        context,
-                        title,
-                        subTitle,
-                        subTitleWidget,
-                      ),
-                      Expanded(
-                        child: Stack(
-                          children: [
-                            // 底层：聊天内容区域 + 侧边栏
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildChatBody(
-                                    context,
-                                    inputHint,
-                                    haveSelectedMessage,
-                                  ),
-                                ),
-                                _buildDesktopSidebar(context),
-                              ],
-                            ),
-                            // 覆盖层：右侧面板（浮动在聊天区域上方，不挤占空间）
-                            if (_activePanel != _ActivePanel.none)
-                              Positioned.fill(
-                                child: GestureDetector(
-                                  behavior: HitTestBehavior.translucent,
-                                  onTap: _closeActivePanel,
-                                  child: Row(
-                                    children: [
-                                      // 左侧透明区域可点击关闭面板
-                                      Expanded(
-                                          child: Container(
-                                              color: Colors.transparent)),
-                                      // 右侧面板本体（357px）
-                                      GestureDetector(
-                                        onTap: () {}, // 阻止点击穿透到关闭手势
-                                        child: AnimatedContainer(
-                                          duration:
-                                              const Duration(milliseconds: 200),
-                                          curve: Curves.easeOut,
-                                          width: 357.0,
-                                          child:
-                                              _buildActivePanelContent(context),
-                                        ),
-                                      ),
-                                      // 侧边栏宽度占位（防止面板遮挡侧边栏按钮）
-                                      const SizedBox(width: 52),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : TransparentScaffold(
-                  backgroundColor: Colors.white,
-                  centerTitle: true,
-                  title: title,
-                  subTitle: subTitle,
-                  subTitleWidget: subTitleWidget,
-                  elevation: 0,
-                  actions: [
-                    _buildMobileAction(context),
-                  ],
-                  body: _buildChatBody(
-                    context,
-                    inputHint,
-                    haveSelectedMessage,
-                  ),
-                ),
-          canPop: context.watch<ChatViewModel>().isMultiSelected != true,
-          onPopInvokedWithResult: (bool didPop, result) async {
-            if (context.read<ChatViewModel>().isMultiSelected) {
-              context.read<ChatViewModel>().isMultiSelected = false;
-            }
-          },
-        );
       },
+      child: ChangeNotifierProvider(
+        create: (context) => _chatViewModel = ChatViewModel(
+          widget.conversationId,
+          widget.conversationType,
+          anchorMessage: widget.anchor,
+          findAnchorDate: widget.anchorDate,
+          chatUIConfig: chatUIConfig,
+          conversationEntryFuture: _conversationEntryFuture,
+        ),
+        builder: (context, wg) {
+          String title;
+          String? subTitle;
+          String inputHint = context.watch<ChatViewModel>().chatTitle;
+          bool? isOnline = context.watch<ChatViewModel>().contactInfo?.isOnline;
+          if (context.watch<ChatViewModel>().isTyping) {
+            _setTyping(context);
+            title = S.of(context).chatIsTyping;
+          } else if (IMKitConfigCenter.enableOnlineStatus &&
+              widget.conversationType == NIMConversationType.p2p &&
+              !AIUserManager.instance.isAIUser(
+                ChatKitUtils.getConversationTargetId(widget.conversationId),
+              )) {
+            title = inputHint;
+
+            subTitle = isOnline == true
+                ? S.of(context).chatUserOnline
+                : S.of(context).chatUserOffline;
+          } else {
+            title = inputHint;
+          }
+          bool haveSelectedMessage =
+              context.watch<ChatViewModel>().selectedMessages.isNotEmpty;
+
+          Widget? subTitleWidget =
+              context.watch<ChatViewModel>().voiceFromSpeaker
+                  ? null
+                  : SvgPicture.asset(
+                      "images/ic_ear.svg",
+                      package: kPackage,
+                      width: 18,
+                      height: 18,
+                    );
+
+          final chatViewModel = context.watch<ChatViewModel>();
+          // 检查群组有效性
+          if (widget.conversationType == NIMConversationType.team &&
+              chatViewModel.teamInfo != null &&
+              chatViewModel.teamInfo!.isValidTeam == false &&
+              !hasShowTeamDismissDialog) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _showTeamDismissDialog();
+            });
+            hasShowTeamDismissDialog = true;
+          }
+          final bool isDesktop = ChatKitUtils.isDesktopOrWeb;
+          return PopScope(
+            child: isDesktop
+                ? Scaffold(
+                    backgroundColor: Colors.white,
+                    body: Column(
+                      children: [
+                        _buildDesktopHeader(
+                          context,
+                          title,
+                          subTitle,
+                          subTitleWidget,
+                        ),
+                        Expanded(
+                          child: Stack(
+                            children: [
+                              // 底层：聊天内容区域 + 侧边栏
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildChatBody(
+                                      context,
+                                      inputHint,
+                                      haveSelectedMessage,
+                                    ),
+                                  ),
+                                  _buildDesktopSidebar(context),
+                                ],
+                              ),
+                              // 覆盖层：右侧面板（浮动在聊天区域上方，不挤占空间）
+                              if (_activePanel != _ActivePanel.none)
+                                Positioned.fill(
+                                  child: GestureDetector(
+                                    behavior: HitTestBehavior.translucent,
+                                    onTap: _closeActivePanel,
+                                    child: Row(
+                                      children: [
+                                        // 左侧透明区域可点击关闭面板
+                                        Expanded(
+                                            child: Container(
+                                                color: Colors.transparent)),
+                                        // 右侧面板本体（357px）
+                                        GestureDetector(
+                                          onTap: () {}, // 阻止点击穿透到关闭手势
+                                          child: AnimatedContainer(
+                                            duration: const Duration(
+                                                milliseconds: 200),
+                                            curve: Curves.easeOut,
+                                            width: 357.0,
+                                            child: _buildActivePanelContent(
+                                                context),
+                                          ),
+                                        ),
+                                        // 侧边栏宽度占位（防止面板遮挡侧边栏按钮）
+                                        const SizedBox(width: 52),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : TransparentScaffold(
+                    backgroundColor: Colors.white,
+                    centerTitle: true,
+                    title: title,
+                    subTitle: subTitle,
+                    subTitleWidget: subTitleWidget,
+                    elevation: 0,
+                    actions: [
+                      _buildMobileAction(context),
+                    ],
+                    body: _buildChatBody(
+                      context,
+                      inputHint,
+                      haveSelectedMessage,
+                    ),
+                  ),
+            canPop: context.watch<ChatViewModel>().isMultiSelected != true,
+            onPopInvokedWithResult: (bool didPop, result) async {
+              if (context.read<ChatViewModel>().isMultiSelected) {
+                context.read<ChatViewModel>().isMultiSelected = false;
+              }
+            },
+          );
+        },
+      ),
     );
   }
 
