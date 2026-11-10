@@ -88,5 +88,6 @@
   "enableCloudMessageSearch": "云端消息搜索",
   "labelYes": "是",
   "labelNo": "否",
-  "messageTranslationSetting": "翻译"
+  "messageTranslationSetting": "翻译",
+  "messageReactionSetting": "消息表情快捷回复"
 }

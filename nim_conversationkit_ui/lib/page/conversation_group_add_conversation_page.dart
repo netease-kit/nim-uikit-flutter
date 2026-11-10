@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:netease_common_ui/base/base_state.dart';
+import 'package:netease_common_ui/duo/duo_page_chrome.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/text_search.dart';
@@ -92,9 +93,9 @@ class _ConversationGroupAddConversationPageState
     _initialConversationIds
       ..clear()
       ..addAll(
-        widget.model.displayConversations.map(
-          (conversation) => conversation.getConversationId(),
-        ),
+        widget.model.conversationsForGroup(widget.group).map(
+              (conversation) => conversation.getConversationId(),
+            ),
       );
     _selectedConversationIds..clear();
     _loading = false;
@@ -208,11 +209,17 @@ class _ConversationGroupAddConversationPageState
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: _submit,
-            child: Text(
-              S.of(context).sureTitle,
-              style: const TextStyle(color: CommonColors.color_337eff),
+          DuoCountBadge(
+            count: _selectedConversationIds.length,
+            badgeColor: CommonColors.color_337eff,
+            // 标题已经展示“已选择数量/上限”，工具栏按钮不再重复展示数量。
+            showDuoBadge: false,
+            child: TextButton(
+              onPressed: _submit,
+              child: Text(
+                S.of(context).sureTitle,
+                style: const TextStyle(color: CommonColors.color_337eff),
+              ),
             ),
           ),
         ],
@@ -454,9 +461,9 @@ class _ConversationGroupAddConversationPageState
     _initialConversationIds
       ..clear()
       ..addAll(
-        widget.model.displayConversations.map(
-          (conversation) => conversation.getConversationId(),
-        ),
+        widget.model.conversationsForGroup(widget.group).map(
+              (conversation) => conversation.getConversationId(),
+            ),
       );
     if (clearSelection) {
       _selectedConversationIds.clear();

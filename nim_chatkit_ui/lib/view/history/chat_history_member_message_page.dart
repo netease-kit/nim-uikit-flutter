@@ -293,57 +293,56 @@ class ChatHistoryMemberMessagePageState
               final timeStr = message.createTime != null
                   ? getFormatTime(message.createTime!.toInt(), context)
                   : '';
-              return Row(
+              return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 发送者头像 32×32
-                  Avatar(
-                    avatar: userInfo?.avatar,
-                    name: userInfo?.avatarName,
-                    height: 32,
-                    width: 32,
-                    radius: 16,
-                    bgCode: AvatarColor.avatarColor(content: widget.sendId),
+                  Align(
+                    alignment: Alignment.center,
+                    child: Text(
+                      timeStr,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFFB3B7BC),
+                      ),
+                    ),
                   ),
-                  const SizedBox(width: 12),
-                  // 中间：昵称 + 消息摘要
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                  const SizedBox(height: 8),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Avatar(
+                        avatar: userInfo?.avatar,
+                        name: userInfo?.avatarName,
+                        height: 32,
+                        width: 32,
+                        radius: 16,
+                        bgCode: AvatarColor.avatarColor(content: widget.sendId),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: Text(
-                                userInfo?.name ?? '',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: CommonColors.color_333333,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                            Text(
+                              userInfo?.name ?? '',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: CommonColors.color_333333,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
-                            // 发送时间（右对齐）
-                            Text(
-                              timeStr,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF999999),
-                              ),
+                            const SizedBox(height: 4),
+                            buildHistoryMessage(
+                              context,
+                              message,
+                              teamInfo: widget.teamInfo,
                             ),
                           ],
                         ),
-                        const SizedBox(height: 4),
-                        // 消息内容摘要（点击后定位到消息）
-                        buildHistoryMessage(
-                          context,
-                          message,
-                          teamInfo: widget.teamInfo,
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ],
               );

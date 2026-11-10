@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:netease_common_ui/base/base_state.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
@@ -831,6 +832,7 @@ class _ChatHistoryMessagePageState extends BaseState<ChatHistoryMessagePage> {
       ),
       child: TextField(
         controller: _searchController,
+        onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
         textInputAction: TextInputAction.search,
         decoration: InputDecoration(
           border: InputBorder.none,
@@ -1064,7 +1066,7 @@ class _ChatHistoryMessagePageState extends BaseState<ChatHistoryMessagePage> {
                 );
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
+                  DuoPageRoute(
                     builder: (context) => ChatHistoryMemberMessagePage(
                       conversationId: widget.conversationId,
                       sendId: selectedUser.first,
@@ -1084,7 +1086,7 @@ class _ChatHistoryMessagePageState extends BaseState<ChatHistoryMessagePage> {
         'onTap': () {
           Navigator.push(
             context,
-            MaterialPageRoute(
+            DuoPageRoute(
               builder: (context) => ChatHistoryImageMessagePage(
                 conversationId: widget.conversationId,
                 conversationType: widget.conversationType,
@@ -1100,7 +1102,7 @@ class _ChatHistoryMessagePageState extends BaseState<ChatHistoryMessagePage> {
           // jump to video search page
           Navigator.push(
             context,
-            MaterialPageRoute(
+            DuoPageRoute(
               builder: (context) => ChatHistoryVideoMessagePage(
                 conversationId: widget.conversationId,
                 conversationType: widget.conversationType,
@@ -1117,7 +1119,7 @@ class _ChatHistoryMessagePageState extends BaseState<ChatHistoryMessagePage> {
             // 桌面/Web 端：在内嵌 Navigator 中推入桌面日期选择器页面
             Navigator.push(
               context,
-              MaterialPageRoute(
+              DuoPageRoute(
                 builder: (context) => ChatHistoryDesktopDatePickerPage(
                   conversationId: widget.conversationId,
                   conversationType: widget.conversationType,
@@ -1127,7 +1129,7 @@ class _ChatHistoryMessagePageState extends BaseState<ChatHistoryMessagePage> {
           } else {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => DatePickerPage()),
+              DuoPageRoute(builder: (context) => DatePickerPage()),
             ).then((select) {
               if (select is int) {
                 goToChatAndKeepHome(
@@ -1148,7 +1150,7 @@ class _ChatHistoryMessagePageState extends BaseState<ChatHistoryMessagePage> {
           // jump to file search page
           Navigator.push(
             context,
-            MaterialPageRoute(
+            DuoPageRoute(
               builder: (context) => ChatHistoryFileMessagePage(
                 conversationId: widget.conversationId,
                 conversationType: widget.conversationType,

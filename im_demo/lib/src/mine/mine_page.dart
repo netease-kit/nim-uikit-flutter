@@ -9,9 +9,11 @@ import 'package:flutter_svg/svg.dart';
 import 'package:im_demo/l10n/S.dart';
 import 'package:im_demo/src/mine/about.dart';
 import 'package:im_demo/src/mine/setting/mine_setting.dart';
+import 'package:netease_common_ui/duo/duo_drawer_navigation.dart';
+import 'package:netease_common_ui/duo/duo_shell_controller.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
-import 'package:nim_chatkit/router/imkit_router_factory.dart';
+import 'package:nim_chatkit/router/imkit_router_constants.dart';
 import 'package:nim_chatkit/service_locator.dart';
 import 'package:nim_chatkit/services/login/im_login_service.dart';
 import 'package:nim_core_v2/nim_core.dart';
@@ -73,16 +75,25 @@ class _MinePageState extends State<MinePage> {
 
   @override
   Widget build(BuildContext context) {
-    Widget arrow = SvgPicture.asset(
-      'assets/ic_right_arrow.svg',
-      height: 16,
-      width: 16,
-    );
+    final shell = DuoShellController.instance;
+    final bool isDuoFolded = shell.enabled && !shell.dual;
+    // 头像区和下方列表的箭头必须共用同一个右内边距，否则两处箭头会错位。
+    // 折叠单屏的页面内容已经由首页壳层限制在右侧工具栏左侧（宽度 = 窗口 - 工具栏），
+    // 这里使用列表常规的贴边留白（16）让箭头紧贴右侧工具栏；不能再额外加一个工具栏
+    // 宽度，否则会二次内缩、在右侧留下过大空白。
+    // 普通 iPhone、Android、桌面/Web 继续使用 36，保持原有布局。
+    final double arrowRightInset = isDuoFolded ? 16 : 36;
+
+    Widget buildArrow() => SvgPicture.asset(
+          'assets/ic_right_arrow.svg',
+          height: 16,
+          width: 16,
+        );
 
     var nick = _loginService.userInfo?.name?.trim().isNotEmpty == true
         ? _loginService.userInfo?.name?.trim()
         : null;
-    return Container(
+    final Widget page = Material(
       color: Colors.white,
       child: Column(
         children: [
@@ -91,7 +102,10 @@ class _MinePageState extends State<MinePage> {
           ),
           InkWell(
             onTap: () {
-              gotoMineInfoPage(context).then((value) {
+              pushDuoDrawerNamed(
+                context,
+                RouterConstants.PATH_MINE_INFO_PAGE,
+              ).then((value) {
                 setState(() {});
               });
             },
@@ -141,8 +155,8 @@ class _MinePageState extends State<MinePage> {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.only(right: 36.0),
-                    child: arrow,
+                    padding: EdgeInsets.only(right: arrowRightInset),
+                    child: buildArrow(),
                   )
                 ],
               ),
@@ -155,39 +169,67 @@ class _MinePageState extends State<MinePage> {
           ),
           ...ListTile.divideTiles(context: context, tiles: [
             ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+              contentPadding: EdgeInsets.only(
+                left: 20,
+                right: arrowRightInset,
+              ),
               leading: SvgPicture.asset('assets/ic_collect.svg'),
               title: Text(S.of(context).mineCollect),
-              trailing: arrow,
+              trailing: buildArrow(),
               onTap: () {
-                goToCollectionListPage(context);
+                pushDuoDrawerNamed(
+                  context,
+                  RouterConstants.PATH_CHAT_COLLECTION_LIST_PAGE,
+                );
               },
             ),
             ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+              contentPadding: EdgeInsets.only(
+                left: 20,
+                right: arrowRightInset,
+              ),
               leading: SvgPicture.asset('assets/ic_about.svg'),
               title: Text(S.of(context).mineAbout),
-              trailing: arrow,
+              trailing: buildArrow(),
               onTap: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => const AboutPage()));
+                pushDuoDrawerPage(
+                  context,
+                  (context) => const AboutPage(),
+                  routeKey: 'mine.about',
+                );
               },
             ),
             ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+              contentPadding: EdgeInsets.only(
+                left: 20,
+                right: arrowRightInset,
+              ),
               leading: SvgPicture.asset('assets/ic_user_setting.svg'),
               title: Text(S.of(context).mineSetting),
-              trailing: arrow,
+              trailing: buildArrow(),
               onTap: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const MineSettingPage()));
+                pushDuoDrawerPage(
+                  context,
+                  (context) => const MineSettingPage(),
+                  routeKey: 'mine.setting',
+                );
               },
             ),
           ]).toList(),
         ],
       ),
+    );
+    // Duo 折叠/双屏下，首页/路由已经为右侧工具栏预留了宽度，但系统上报的右侧
+    // 安全区（内屏摄像头/状态栏）比工具栏更宽。ListTile 内置的 SafeArea 会再按
+    // 安全区内缩一次，让列表箭头整体左移、与头像箭头错位。
+    // 这里仅在 Duo 路径去掉右侧安全区；普通 iPhone、Android、桌面/Web 行为不变。
+    if (!shell.enabled) {
+      return page;
+    }
+    return MediaQuery.removePadding(
+      context: context,
+      removeRight: true,
+      child: page,
     );
   }
 }

@@ -3,6 +3,8 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/widgets/duo_scaffold.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
@@ -66,7 +68,7 @@ class _ContactKitUserAIBotBindingPageState
       ChatUIToast.show(S.of(context).contactRobotBindingSuccess);
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
+        DuoPageRoute(
           builder: (_) => ContactKitUserAIBotProfilePage(bot: result.data!),
         ),
       );
@@ -85,7 +87,7 @@ class _ContactKitUserAIBotBindingPageState
     }
     final bot = await Navigator.push<V2NIMUserAIBot>(
       context,
-      MaterialPageRoute(
+      DuoPageRoute(
         builder: (_) => const ContactKitUserAIBotFormPage(),
       ),
     );
@@ -184,7 +186,7 @@ class _ContactKitUserAIBotBindingPageState
         final viewModel = context.watch<UserAIBotBindingViewModel>();
         final body = _buildBody(viewModel);
         if (ChatKitUtils.isDesktopOrWeb) {
-          return Scaffold(
+          return DuoScaffold(
             backgroundColor: const Color(0xFFEFF1F4),
             appBar: AppBar(
               automaticallyImplyLeading: false,

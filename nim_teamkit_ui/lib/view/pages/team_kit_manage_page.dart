@@ -7,6 +7,7 @@ import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
 import 'package:netease_common_ui/ui/background.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
@@ -379,7 +380,7 @@ class _TeamKitManagerPageState extends State<TeamKitManagerPage> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
+                        DuoPageRoute(
                           builder: (context) =>
                               TeamKitManagerListPage(tId: widget.team.teamId),
                         ),

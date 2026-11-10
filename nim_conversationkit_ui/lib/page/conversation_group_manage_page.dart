@@ -8,6 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/base/base_state.dart';
+import 'package:netease_common_ui/duo/duo_dialog.dart';
+import 'package:netease_common_ui/duo/duo_dialog_chrome.dart';
+import 'package:netease_common_ui/duo/duo_shell_controller.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
@@ -30,7 +33,7 @@ class ConversationGroupManagePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<ConversationGroupViewModel>.value(
+    final page = ChangeNotifierProvider<ConversationGroupViewModel>.value(
       value: model,
       child: TransparentScaffold(
         title: S.of(context).conversationGroupTitle,
@@ -79,14 +82,31 @@ class ConversationGroupManagePage extends StatelessWidget {
         ),
       ),
     );
+    // Duo 折叠/双屏下，路由已经为右侧工具栏预留了宽度，但系统上报的右侧
+    // 安全区（内屏摄像头/状态栏）比工具栏更宽。页面里的 AppBar 和 SafeArea
+    // 会再按安全区内缩一次，导致列表、标题栏右侧空出一条空白。
+    // 这里仅在 Duo 路径去掉右侧安全区，让内容贴齐内容区右边缘；
+    // 普通 iPhone、Android、桌面端行为保持不变。
+    if (!DuoShellController.instance.enabled) {
+      return page;
+    }
+    return MediaQuery.removePadding(
+      context: context,
+      removeRight: true,
+      child: page,
+    );
   }
 
   void _showCreateDialog(BuildContext context) {
-    showModalBottomSheet(
+    showDuoModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) => _CreateGroupSheet(model: model),
+      builder: (sheetContext) {
+        // Duo 弹框路由已经按可见内容区（折叠单屏扣除右侧工具栏）布局，
+        // 标题行和输入框不会被工具栏遮挡，这里不再额外让位。
+        return _CreateGroupSheet(model: model);
+      },
     );
   }
 }
@@ -113,10 +133,18 @@ class _CreateGroupSheetState extends BaseState<_CreateGroupSheet> {
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
     final keyboardHeight = mediaQuery.viewInsets.bottom;
-    final sheetHeight =
-        (mediaQuery.size.height - keyboardHeight - 82).clamp(300.0, 520.0);
+    // 折叠单屏高度较矮，键盘弹起后按 300 的最小高度会把弹框顶部顶出屏幕；
+    // Duo 上放宽最小高度，保证标题和输入框完整展示。其他设备保持原值。
+    final double minSheetHeight =
+        DuoShellController.instance.enabled ? 220.0 : 300.0;
+    final sheetHeight = (mediaQuery.size.height - keyboardHeight - 82).clamp(
+      minSheetHeight,
+      520.0,
+    );
     final canCreate = _controller.text.trim().isNotEmpty;
-    return AnimatedPadding(
+    // Duo 上弹框的取消/确定统一放到右侧工具栏，弹框内只保留标题和输入框。
+    final bool duo = DuoShellController.instance.enabled;
+    final Widget sheet = AnimatedPadding(
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeOut,
       padding: EdgeInsets.only(bottom: keyboardHeight),
@@ -136,44 +164,65 @@ class _CreateGroupSheetState extends BaseState<_CreateGroupSheet> {
               children: [
                 SizedBox(
                   height: 88,
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 96,
-                        child: TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          style: TextButton.styleFrom(
-                            foregroundColor: CommonColors.color_666666,
-                            textStyle: const TextStyle(fontSize: 16),
-                          ),
-                          child: Text(S.of(context).cancelTitle),
-                        ),
-                      ),
-                      Expanded(
-                        child: Center(
-                          child: Text(
-                            S.of(context).conversationGroupCreate,
-                            style: const TextStyle(
-                              color: CommonColors.color_333333,
-                              fontSize: 17,
-                              fontWeight: FontWeight.w600,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      // Duo 上取消/确定已经放到右侧工具栏，弹框内不再为按钮
+                      // 预留宽度；折叠/展开过渡帧里弹框可能被压到很窄，普通
+                      // 设备也按可用宽度收缩两侧占位，避免标题行溢出。
+                      final double sideWidth;
+                      if (duo) {
+                        sideWidth = 0;
+                      } else if (!constraints.maxWidth.isFinite ||
+                          constraints.maxWidth >= 192) {
+                        sideWidth = 96;
+                      } else {
+                        sideWidth = constraints.maxWidth * 0.28;
+                      }
+                      return Row(
+                        children: [
+                          if (sideWidth > 0)
+                            SizedBox(
+                              width: sideWidth,
+                              child: TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: CommonColors.color_666666,
+                                  textStyle: const TextStyle(fontSize: 16),
+                                ),
+                                child: Text(S.of(context).cancelTitle),
+                              ),
+                            ),
+                          Expanded(
+                            child: Center(
+                              child: Text(
+                                S.of(context).conversationGroupCreate,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: CommonColors.color_333333,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                      SizedBox(
-                        width: 96,
-                        child: TextButton(
-                          onPressed: canCreate ? _createGroup : null,
-                          style: TextButton.styleFrom(
-                            foregroundColor: CommonColors.color_337eff,
-                            disabledForegroundColor: CommonColors.color_cccccc,
-                            textStyle: const TextStyle(fontSize: 16),
-                          ),
-                          child: Text(S.of(context).sureTitle),
-                        ),
-                      ),
-                    ],
+                          if (sideWidth > 0)
+                            SizedBox(
+                              width: sideWidth,
+                              child: TextButton(
+                                onPressed: canCreate ? _createGroup : null,
+                                style: TextButton.styleFrom(
+                                  foregroundColor: CommonColors.color_337eff,
+                                  disabledForegroundColor:
+                                      CommonColors.color_cccccc,
+                                  textStyle: const TextStyle(fontSize: 16),
+                                ),
+                                child: Text(S.of(context).sureTitle),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
                   ),
                 ),
                 Padding(
@@ -188,6 +237,36 @@ class _CreateGroupSheetState extends BaseState<_CreateGroupSheet> {
           ),
         ),
       ),
+    );
+    if (!duo) {
+      return sheet;
+    }
+    return DuoDialogChrome(
+      // Duo 工具栏上是“取消/确定”，不是返回按钮；外层 Padding 避免
+      // normalizeDuoLeading 把 TextButton 统一替换成返回图标。
+      leading: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: TextButton(
+          onPressed: () => Navigator.of(context).maybePop(),
+          style: TextButton.styleFrom(
+            foregroundColor: CommonColors.color_666666,
+            textStyle: const TextStyle(fontSize: 16),
+          ),
+          child: Text(S.of(context).cancelTitle),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: canCreate ? _createGroup : null,
+          style: TextButton.styleFrom(
+            foregroundColor: CommonColors.color_337eff,
+            disabledForegroundColor: CommonColors.color_cccccc,
+            textStyle: const TextStyle(fontSize: 16),
+          ),
+          child: Text(S.of(context).sureTitle),
+        ),
+      ],
+      child: sheet,
     );
   }
 

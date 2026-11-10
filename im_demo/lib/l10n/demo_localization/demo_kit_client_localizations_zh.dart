@@ -241,4 +241,7 @@ class DemoKitClientLocalizationsZh extends DemoKitClientLocalizations {
 
   @override
   String get messageTranslationSetting => '翻译';
+
+  @override
+  String get messageReactionSetting => '消息表情快捷回复';
 }

@@ -8,13 +8,15 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, protected;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, protected, visibleForTesting;
 import 'package:flutter/widgets.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:nim_chatkit/chatkit_client_repo.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/extension.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
+import 'package:nim_chatkit/im_kit_config_center.dart';
 import 'package:nim_chatkit/location.dart';
 import 'package:nim_chatkit/manager/ai_user_manager.dart';
 import 'package:nim_chatkit/manager/subscription_manager.dart';
@@ -34,18 +36,40 @@ import 'package:nim_chatkit/utils/toast_utils.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_helper.dart';
 import 'package:nim_chatkit_ui/helper/merge_message_helper.dart';
 import 'package:nim_chatkit_ui/model/chat_message_antispam_result.dart';
+import 'package:nim_chatkit_ui/model/message_reaction.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:universal_html/html.dart' as html;
 import 'package:uuid/uuid.dart';
 
 import '../chat_kit_client.dart';
 import '../helper/chat_message_user_helper.dart';
+import '../helper/message_reaction_helper.dart';
 import '../l10n/S.dart';
 import '../media/audio_player.dart';
+import '../model/history_read_position_tracker.dart';
 import '../view/chat_kit_message_list/pop_menu/chat_kit_menu_helper.dart';
+
+typedef QuickCommentListLoader
+    = Future<NIMResult<Map<String, List<NIMMessageQuickComment>?>>> Function(
+  List<NIMMessage> messages,
+);
+typedef QuickCommentAdder = Future<NIMResult<void>> Function(
+  NIMMessage message,
+  int index,
+);
+typedef QuickCommentRemover = Future<NIMResult<void>> Function(
+  NIMMessageRefer messageRefer,
+  int index,
+);
+typedef MessageListConnectivityChecker = Future<bool> Function();
+typedef MessageReactionConnectivityChecker = Future<bool> Function();
 
 class ChatViewModel extends ChangeNotifier {
   static const String logTag = 'ChatViewModel';
+  static const int _quickCommentBatchSize = 20;
+
+  /// 表情快捷回复因网络不可用而未执行。
+  static const int messageReactionNetworkUnavailableCode = -10001;
 
   static final Map<String, List<NIMMessage>> _routePendingNewMessages = {};
 
@@ -141,6 +165,33 @@ class ChatViewModel extends ChangeNotifier {
 
   bool showNewMessage = true;
 
+  /// 页面生命周期内冻结的最早未读消息状态和数量。
+  final HistoryReadPositionTracker historyReadPositionTracker =
+      HistoryReadPositionTracker();
+  int? historyReadPositionCount;
+  bool historyReadPositionCountTruncated = false;
+  String? _historyReadPositionTargetId;
+  int _historyReadPositionLifecycleVersion = 0;
+  bool _historyReadPositionLoading = false;
+
+  HistoryReadPositionState get historyReadPositionState =>
+      historyReadPositionTracker.state;
+
+  bool get historyReadPositionLoading => _historyReadPositionLoading;
+
+  bool get showHistoryReadPosition =>
+      (historyReadPositionState == HistoryReadPositionState.ready ||
+          historyReadPositionState == HistoryReadPositionState.locating) &&
+      (historyReadPositionCount ?? 0) > 0;
+
+  String get historyReadPositionDisplayCount {
+    if (historyReadPositionCountTruncated ||
+        (historyReadPositionCount ?? 0) >= 100) {
+      return '99+';
+    }
+    return '${historyReadPositionCount ?? 0}';
+  }
+
   bool _isChatRouteVisible = true;
 
   @protected
@@ -210,15 +261,46 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   @protected
-  void prepareForAnchorLoading() {
+  void prepareForAnchorLoading({NIMMessage? visibleThrough}) {
     showNewMessage = false;
+    if (visibleThrough != null) {
+      newMessages.removeWhere(
+        (message) => _isMessageCoveredByAnchor(
+          message.nimMessage,
+          visibleThrough,
+        ),
+      );
+    }
     final pending = _routePendingNewMessages.remove(
       routePendingNewMessageKey,
     );
     if (pending?.isNotEmpty != true) {
       return;
     }
-    unawaited(_restoreRoutePendingNewMessages(pending!));
+    final messagesToRestore = visibleThrough == null
+        ? pending!
+        : pending!
+            .where(
+              (message) => !_isMessageCoveredByAnchor(message, visibleThrough),
+            )
+            .toList();
+    if (messagesToRestore.isNotEmpty) {
+      unawaited(_restoreRoutePendingNewMessages(messagesToRestore));
+    }
+  }
+
+  bool _isMessageCoveredByAnchor(
+    NIMMessage message,
+    NIMMessage anchor,
+  ) {
+    if (_isSameNIMMessage(message, anchor)) {
+      return true;
+    }
+    final messageCreateTime = message.createTime;
+    final anchorCreateTime = anchor.createTime;
+    return messageCreateTime != null &&
+        anchorCreateTime != null &&
+        messageCreateTime <= anchorCreateTime;
   }
 
   Future<void> _restoreRoutePendingNewMessages(
@@ -231,6 +313,7 @@ class ChatViewModel extends ChangeNotifier {
     for (final message in messages) {
       _upsertPendingNewMessage(message);
     }
+    unawaited(ensureQuickCommentsLoaded(messages));
     checkAutoTranslateMessages(messages);
     notifyListeners();
   }
@@ -294,6 +377,21 @@ class ChatViewModel extends ChangeNotifier {
 
   ChatUIConfig? chatUIConfig;
 
+  /// Future created when the chat page enters the conversation.
+  ///
+  /// The page owns this future so rebuilds do not restart the entry flow. It
+  /// remains optional for existing callers that create a ChatViewModel
+  /// directly.
+  final Future<NIMResult<int>>? conversationEntryFuture;
+
+  final QuickCommentListLoader? _quickCommentListLoader;
+  final QuickCommentAdder? _quickCommentAdder;
+  final QuickCommentRemover? _quickCommentRemover;
+  final MessageListConnectivityChecker? _messageListConnectivityChecker;
+  final MessageReactionConnectivityChecker? _messageReactionConnectivityChecker;
+  final String? Function()? _currentAccountIdProvider;
+  final bool _runtimeInitialized;
+
   ChatViewModel(
     this.conversationId,
     this.conversationType, {
@@ -301,12 +399,204 @@ class ChatViewModel extends ChangeNotifier {
     NIMMessage? anchorMessage,
     this.findAnchorDate,
     this.chatUIConfig,
+    this.conversationEntryFuture,
+    QuickCommentListLoader? quickCommentListLoader,
+    QuickCommentAdder? quickCommentAdder,
+    QuickCommentRemover? quickCommentRemover,
+    MessageListConnectivityChecker? messageListConnectivityChecker,
+    MessageReactionConnectivityChecker? messageReactionConnectivityChecker,
+    String? Function()? currentAccountIdProvider,
+    @visibleForTesting bool initializeRuntime = true,
+  })  : _quickCommentListLoader = quickCommentListLoader,
+        _quickCommentAdder = quickCommentAdder,
+        _quickCommentRemover = quickCommentRemover,
+        _messageListConnectivityChecker = messageListConnectivityChecker,
+        _messageReactionConnectivityChecker =
+            messageReactionConnectivityChecker,
+        _currentAccountIdProvider = currentAccountIdProvider,
+        _runtimeInitialized = initializeRuntime {
+    if (initializeRuntime) {
+      _setNIMMessageListener();
+      initData(anchorMessage: anchorMessage);
+      //初始化语音播放器
+      ChatAudioPlayer.instance.initAudioPlayer();
+      showWarningTips = chatUIConfig?.warningWidgetBuilder != null;
+      unawaited(_initHistoryReadPosition());
+    }
+  }
+
+  Future<void> _initHistoryReadPosition() async {
+    final lifecycleVersion = _historyReadPositionLifecycleVersion;
+    if (!IMKitConfigCenter.enableLastReadPosition ||
+        conversationEntryFuture == null) {
+      historyReadPositionTracker.initialize(null);
+      historyReadPositionCount = null;
+      historyReadPositionCountTruncated = false;
+      return;
+    }
+    late final NIMResult<int> entry;
+    try {
+      entry = await conversationEntryFuture!;
+    } catch (_) {
+      historyReadPositionTracker.initialize(null);
+      historyReadPositionCount = null;
+      historyReadPositionCountTruncated = false;
+      return;
+    }
+    if (!_isHistoryReadPositionLifecycleActive(lifecycleVersion)) return;
+    if (!entry.isSuccess || entry.data == null || entry.data! < 0) {
+      historyReadPositionTracker.initialize(null);
+      historyReadPositionCount = null;
+      historyReadPositionCountTruncated = false;
+      return;
+    }
+    historyReadPositionTracker.initialize(entry.data);
+    final count = await ChatMessageRepo.getLocalUnreadMessageCount(
+      conversationId,
+      entry.data!,
+    );
+    if (!_isHistoryReadPositionLifecycleActive(lifecycleVersion)) return;
+    if (!count.isSuccess || count.data == null || count.data!.count <= 0) {
+      historyReadPositionTracker.initialize(null);
+      historyReadPositionCount = 0;
+      historyReadPositionCountTruncated = false;
+      return;
+    }
+    historyReadPositionCount = count.data!.count;
+    historyReadPositionCountTruncated = count.data!.truncated;
+    notifyListeners();
+  }
+
+  /// 在消息列表稳定后上报顶部真实消息，用于决定入口是否可见。
+  void evaluateHistoryReadPositionTop(
+    int createTime, {
+    bool hasReachedHistoryStart = false,
   }) {
-    _setNIMMessageListener();
-    initData(anchorMessage: anchorMessage);
-    //初始化语音播放器
-    ChatAudioPlayer.instance.initAudioPlayer();
-    showWarningTips = chatUIConfig?.warningWidgetBuilder != null;
+    if (_isDisposed) return;
+    final changed = historyReadPositionTracker.evaluateTopMessage(
+      createTime,
+      hasReachedHistoryStart: hasReachedHistoryStart,
+    );
+    if (changed) {
+      notifyListeners();
+    }
+  }
+
+  /// 开始查询最早未读消息，调用方负责完成实际滚动。
+  Future<NIMResult<NIMMessage>?> beginHistoryReadPositionLocation() async {
+    if (_isDisposed || !historyReadPositionTracker.beginLocation()) {
+      return null;
+    }
+    final lifecycleVersion = _historyReadPositionLifecycleVersion;
+    _historyReadPositionTargetId = null;
+    _historyReadPositionLoading = true;
+    notifyListeners();
+    final readTime = historyReadPositionTracker.lastReadTime;
+    if (readTime == null) {
+      completeHistoryReadPositionLocation(success: false);
+      return null;
+    }
+    final strictMode = await _getMessageListStrictMode();
+    if (!_isHistoryReadPositionLifecycleActive(lifecycleVersion)) return null;
+    final result = await ChatMessageRepo.getFirstMessageAfterReadTime(
+      conversationId,
+      readTime,
+      enableStrictMode: strictMode,
+    );
+    if (!_isHistoryReadPositionLifecycleActive(lifecycleVersion)) return result;
+    if (!result.isSuccess || result.data == null) {
+      completeHistoryReadPositionLocation(success: false);
+    } else {
+      _historyReadPositionTargetId = _historyReadPositionMessageId(
+        result.data!,
+      );
+    }
+    return result;
+  }
+
+  /// Starts a location using the current page when it covers the unread edge.
+  ///
+  /// This path does not show loading because it performs no message query.
+  NIMMessage? beginLoadedHistoryReadPositionLocation() {
+    if (_isDisposed ||
+        historyReadPositionState != HistoryReadPositionState.ready) {
+      return null;
+    }
+    final readTime = historyReadPositionTracker.lastReadTime;
+    if (readTime == null) return null;
+
+    final candidates = _messageList
+        .map((message) => message.nimMessage)
+        .where(
+          (message) => ChatMessageRepo.isValidHistoryReadPositionTarget(
+            message,
+            conversationId,
+            readTime,
+          ),
+        )
+        .toList();
+    if (candidates.isEmpty) return null;
+
+    final count = historyReadPositionCount;
+    final coversUnreadByCount = !historyReadPositionCountTruncated &&
+        count != null &&
+        count > 0 &&
+        candidates.length >= count;
+    final coversReadBoundary = !hasMoreForwardMessages ||
+        _messageList.any(
+          (message) => (message.nimMessage.createTime ?? 0) <= readTime,
+        );
+    if (!coversUnreadByCount && !coversReadBoundary) return null;
+
+    candidates.sort(
+      (a, b) => (a.createTime ?? 0).compareTo(b.createTime ?? 0),
+    );
+    final target = candidates.first;
+    if (!historyReadPositionTracker.beginLocation()) return null;
+    _historyReadPositionTargetId = _historyReadPositionMessageId(target);
+    _historyReadPositionLoading = false;
+    notifyListeners();
+    return target;
+  }
+
+  /// Stops the progress indicator once the target is ready for scrolling.
+  void finishHistoryReadPositionLoading() {
+    if (_isDisposed || !_historyReadPositionLoading) return;
+    _historyReadPositionLoading = false;
+    notifyListeners();
+  }
+
+  bool _isHistoryReadPositionLifecycleActive(int lifecycleVersion) {
+    return !_isDisposed &&
+        lifecycleVersion == _historyReadPositionLifecycleVersion;
+  }
+
+  bool isHistoryReadPositionTarget(NIMMessage message) {
+    final targetId = _historyReadPositionTargetId;
+    if (targetId == null || targetId.isEmpty) return false;
+    return _historyReadPositionMessageId(message) == targetId;
+  }
+
+  String? _historyReadPositionMessageId(NIMMessage message) {
+    final serverId = message.messageServerId;
+    if (serverId != null && serverId.isNotEmpty && serverId != '-1') {
+      return serverId;
+    }
+    return message.messageClientId;
+  }
+
+  void completeHistoryReadPositionLocation({required bool success}) {
+    if (_isDisposed) return;
+    final loadingChanged = _historyReadPositionLoading;
+    _historyReadPositionLoading = false;
+    if (historyReadPositionTracker.completeLocation(success: success)) {
+      if (!success) {
+        _historyReadPositionTargetId = null;
+      }
+      notifyListeners();
+    } else if (loadingChanged) {
+      notifyListeners();
+    }
   }
 
   bool voiceFromSpeaker = false;
@@ -418,6 +708,7 @@ class ChatViewModel extends ChangeNotifier {
           .toList();
       _messageList.insertAll(0, insertedMessages);
       newMessages.clear();
+      unawaited(ensureQuickCommentsLoaded(insertedMessages));
       checkAutoTranslateMessages(insertedMessages);
     }
     clearRoutePendingNewMessages();
@@ -449,6 +740,511 @@ class ChatViewModel extends ChangeNotifier {
 
   List<ChatMessage> get messageList => _messageList.toList();
 
+  String? get currentAccountId =>
+      _currentAccountIdProvider?.call() ?? IMKitClient.account();
+
+  final Map<String, MessageReactionState> _messageReactionStates = {};
+  final Map<String, bool> _reactionConfirmedSelections = {};
+  final Map<String, int?> _reactionConfirmedCreateTimes = {};
+  final Map<String, bool> _reactionDesiredSelections = {};
+  final Set<String> _runningReactionOperations = {};
+  final Map<String, Map<int, Map<String, bool>>> _reactionOverrides = {};
+  final Map<String, List<Completer<NIMResult<void>>>>
+      _reactionOperationCompleters = {};
+  int _reactionLifecycleVersion = 0;
+
+  ///获取指定消息的表情快捷回复状态
+  MessageReactionState getMessageReactionState(NIMMessage message) {
+    final identity = MessageReactionHelper.messageIdentity(message);
+    return identity == null
+        ? MessageReactionState.empty
+        : _messageReactionStates[identity] ?? MessageReactionState.empty;
+  }
+
+  ///批量加载消息表情快捷回复，已加载和加载中的消息不会重复请求
+  Future<void> ensureQuickCommentsLoaded(
+    Iterable<ChatMessage> messages,
+  ) async {
+    if (!IMKitConfigCenter.enableMessageReaction || _isDisposed) {
+      return;
+    }
+    final candidates = <String, ChatMessage>{};
+    for (final message in messages) {
+      if (!MessageReactionHelper.isSupported(message)) {
+        continue;
+      }
+      final identity =
+          MessageReactionHelper.messageIdentity(message.nimMessage);
+      if (identity == null) {
+        continue;
+      }
+      final state = _messageReactionStates[identity];
+      if (state?.loaded == true || state?.loading == true) {
+        continue;
+      }
+      candidates[identity] = message;
+    }
+    if (candidates.isEmpty) {
+      return;
+    }
+
+    final requestVersions = <String, int>{};
+    for (final identity in candidates.keys) {
+      final current =
+          _messageReactionStates[identity] ?? MessageReactionState.empty;
+      final version = current.version + 1;
+      requestVersions[identity] = version;
+      _messageReactionStates[identity] = current.copyWith(
+        loading: true,
+        version: version,
+      );
+    }
+    notifyListeners();
+
+    final lifecycleVersion = _reactionLifecycleVersion;
+    NIMResult<Map<String, List<NIMMessageQuickComment>?>>? failedResult;
+    final quickComments = <String, List<NIMMessageQuickComment>?>{};
+    try {
+      final candidateMessages =
+          candidates.values.map((message) => message.nimMessage).toList();
+      for (var offset = 0;
+          offset < candidateMessages.length;
+          offset += _quickCommentBatchSize) {
+        final end = min(
+          offset + _quickCommentBatchSize,
+          candidateMessages.length,
+        );
+        final batch = candidateMessages.sublist(offset, end);
+        final batchResult = await (_quickCommentListLoader?.call(batch) ??
+            ChatMessageRepo.getQuickCommentList(batch));
+        if (!batchResult.isSuccess) {
+          failedResult = batchResult;
+          break;
+        }
+        quickComments.addAll(
+          batchResult.data ?? const <String, List<NIMMessageQuickComment>?>{},
+        );
+      }
+    } catch (error) {
+      if (_isDisposed || lifecycleVersion != _reactionLifecycleVersion) {
+        return;
+      }
+      for (final entry in requestVersions.entries) {
+        final current = _messageReactionStates[entry.key];
+        if (current?.version == entry.value) {
+          _messageReactionStates[entry.key] = current!.copyWith(
+            loading: false,
+          );
+        }
+      }
+      _logI('getQuickCommentList threw: $error');
+      notifyListeners();
+      return;
+    }
+    if (_isDisposed || lifecycleVersion != _reactionLifecycleVersion) {
+      return;
+    }
+    if (failedResult != null) {
+      for (final entry in requestVersions.entries) {
+        final current = _messageReactionStates[entry.key];
+        if (current?.version == entry.value) {
+          _messageReactionStates[entry.key] = current!.copyWith(
+            loading: false,
+          );
+        }
+      }
+      _logI(
+        'getQuickCommentList failed, code=${failedResult.code}, error=${failedResult.errorDetails}',
+      );
+      notifyListeners();
+      return;
+    }
+
+    final candidateIdentitiesBySdkKey = <String, String>{};
+    for (final entry in candidates.entries) {
+      final message = entry.value.nimMessage;
+      final clientId = message.messageClientId;
+      if (clientId?.isNotEmpty == true) {
+        candidateIdentitiesBySdkKey[clientId!] = entry.key;
+      }
+      final serverId = message.messageServerId;
+      if (serverId?.isNotEmpty == true && serverId != '-1') {
+        candidateIdentitiesBySdkKey[serverId!] = entry.key;
+      }
+    }
+
+    final grouped = <String, Map<int, Map<String, int>>>{};
+    for (final resultEntry in quickComments.entries) {
+      final sdkKeyIdentity = candidateIdentitiesBySdkKey[resultEntry.key];
+      for (final comment
+          in resultEntry.value ?? const <NIMMessageQuickComment>[]) {
+        final refer = comment.messageRefer;
+        final referIdentity =
+            refer == null ? null : MessageReactionHelper.messageIdentity(refer);
+        final identity =
+            referIdentity != null && candidates.containsKey(referIdentity)
+                ? referIdentity
+                : sdkKeyIdentity;
+        final index = comment.index;
+        final operatorId = comment.operatorId;
+        if (identity == null ||
+            !candidates.containsKey(identity) ||
+            index == null ||
+            !MessageReactionConfig.supportedIndexes.contains(index) ||
+            operatorId?.isNotEmpty != true) {
+          continue;
+        }
+        final times = grouped
+            .putIfAbsent(identity, () => <int, Map<String, int>>{})
+            .putIfAbsent(index, () => <String, int>{});
+        final time = comment.createTime ?? 0;
+        final previous = times[operatorId];
+        if (previous == null ||
+            previous <= 0 ||
+            (time > 0 && time < previous)) {
+          times[operatorId!] = time;
+        }
+      }
+    }
+    for (final entry in candidates.entries) {
+      final current = _messageReactionStates[entry.key];
+      if (current == null) {
+        continue;
+      }
+      final summaries = <int, MessageReactionSummary>{};
+      for (final summary in grouped[entry.key]?.entries ??
+          const <MapEntry<int, Map<String, int>>>[]) {
+        summaries[summary.key] = MessageReactionSummary(
+          index: summary.key,
+          operatorIds: summary.value.keys,
+          operatorCreateTimes: summary.value,
+        );
+      }
+      for (final overrideEntry in _reactionOverrides[entry.key]?.entries ??
+          const <MapEntry<int, Map<String, bool>>>[]) {
+        final oldSummary = summaries[overrideEntry.key];
+        final operators = Set<String>.from(
+          oldSummary?.operatorIds ?? const <String>{},
+        );
+        final times = Map<String, int>.from(
+          oldSummary?.operatorCreateTimes ?? const <String, int>{},
+        );
+        for (final operatorOverride in overrideEntry.value.entries) {
+          operatorOverride.value
+              ? operators.add(operatorOverride.key)
+              : operators.remove(operatorOverride.key);
+          if (operatorOverride.value) {
+            final time = current.summaries[overrideEntry.key]
+                ?.operatorCreateTimes[operatorOverride.key];
+            if (time != null) times[operatorOverride.key] = time;
+          }
+        }
+        if (operators.isEmpty) {
+          summaries.remove(overrideEntry.key);
+        } else {
+          summaries[overrideEntry.key] = MessageReactionSummary(
+            index: overrideEntry.key,
+            operatorIds: operators,
+            operatorCreateTimes: times,
+            pending: current.summaries[overrideEntry.key]?.pending ?? false,
+          );
+        }
+      }
+      _messageReactionStates[entry.key] = MessageReactionState(
+        summaries: summaries,
+        loaded: true,
+        version: current.version + 1,
+      );
+    }
+    notifyListeners();
+  }
+
+  ///切换当前账号对消息的指定表情快捷回复
+  Future<NIMResult<void>> toggleMessageReaction(
+    ChatMessage message,
+    int index,
+  ) async {
+    final identity = MessageReactionHelper.messageIdentity(message.nimMessage);
+    final accountId = currentAccountId;
+    if (!MessageReactionHelper.isSupported(message) ||
+        identity == null ||
+        accountId?.isNotEmpty != true ||
+        !MessageReactionConfig.supportedIndexes.contains(index)) {
+      return NIMResult<void>.failure(
+        message: 'message reaction is not supported',
+      );
+    }
+    final hasConnectivity =
+        await (_messageReactionConnectivityChecker?.call() ??
+            haveConnectivity());
+    if (!hasConnectivity) {
+      return NIMResult<void>.failure(
+        code: messageReactionNetworkUnavailableCode,
+        message: 'network unavailable',
+      );
+    }
+    if (_isDisposed) {
+      return NIMResult<void>.failure(message: 'chat page disposed');
+    }
+    final operationKey = '$identity:$index';
+    final state =
+        _messageReactionStates[identity] ?? MessageReactionState.empty;
+    final currentSelected = state.summaries[index]?.contains(accountId) == true;
+    _reactionConfirmedSelections.putIfAbsent(
+      operationKey,
+      () => currentSelected,
+    );
+    _reactionConfirmedCreateTimes.putIfAbsent(
+      operationKey,
+      () => state.summaries[index]?.operatorCreateTimes[accountId],
+    );
+    _reactionDesiredSelections[operationKey] = !currentSelected;
+    _setSelfReactionSelection(
+      identity,
+      index,
+      accountId!,
+      !currentSelected,
+      pending: true,
+      createTime: DateTime.now().millisecondsSinceEpoch,
+    );
+    notifyListeners();
+
+    final completer = Completer<NIMResult<void>>();
+    _reactionOperationCompleters
+        .putIfAbsent(operationKey, () => <Completer<NIMResult<void>>>[])
+        .add(completer);
+    if (_runningReactionOperations.add(operationKey)) {
+      unawaited(_runReactionOperation(
+        operationKey,
+        identity,
+        index,
+        message.nimMessage,
+        accountId,
+      ));
+    }
+    return completer.future;
+  }
+
+  Future<void> _runReactionOperation(
+    String operationKey,
+    String identity,
+    int index,
+    NIMMessage message,
+    String accountId,
+  ) async {
+    NIMResult<void> finalResult = NIMResult<void>.success();
+    while (!_isDisposed &&
+        _reactionDesiredSelections[operationKey] !=
+            _reactionConfirmedSelections[operationKey]) {
+      final desired = _reactionDesiredSelections[operationKey]!;
+      final requestedCreateTime = _messageReactionStates[identity]
+          ?.summaries[index]
+          ?.operatorCreateTimes[accountId];
+      late final NIMResult<void> result;
+      try {
+        result = desired
+            ? await (_quickCommentAdder?.call(message, index) ??
+                ChatMessageRepo.addQuickComment(message, index))
+            : await (_quickCommentRemover?.call(message, index) ??
+                ChatMessageRepo.removeQuickComment(message, index));
+      } catch (error) {
+        result = NIMResult<void>.failure(message: error.toString());
+      }
+      if (_isDisposed) {
+        return;
+      }
+      if (!result.isSuccess) {
+        finalResult = result;
+        final confirmed =
+            _reactionConfirmedSelections[operationKey] ?? !desired;
+        _reactionDesiredSelections[operationKey] = confirmed;
+        _setSelfReactionSelection(
+          identity,
+          index,
+          accountId,
+          confirmed,
+          pending: false,
+          createTime: _reactionConfirmedCreateTimes[operationKey],
+        );
+        _logI(
+          'update quick comment failed, code=${result.code}, error=${result.errorDetails}',
+        );
+        break;
+      }
+      _reactionConfirmedSelections[operationKey] = desired;
+      _reactionConfirmedCreateTimes[operationKey] = desired
+          ? (_reactionConfirmedCreateTimes[operationKey] ?? requestedCreateTime)
+          : null;
+    }
+    if (!_isDisposed) {
+      final selected = _reactionConfirmedSelections[operationKey] ?? false;
+      _setSelfReactionSelection(
+        identity,
+        index,
+        accountId,
+        selected,
+        pending: false,
+        createTime: _reactionConfirmedCreateTimes[operationKey],
+      );
+      notifyListeners();
+    }
+    _runningReactionOperations.remove(operationKey);
+    _reactionConfirmedSelections.remove(operationKey);
+    _reactionConfirmedCreateTimes.remove(operationKey);
+    _reactionDesiredSelections.remove(operationKey);
+    final completers = _reactionOperationCompleters.remove(operationKey);
+    for (final completer
+        in completers ?? const <Completer<NIMResult<void>>>[]) {
+      if (!completer.isCompleted) {
+        completer.complete(finalResult);
+      }
+    }
+  }
+
+  void _setSelfReactionSelection(
+    String identity,
+    int index,
+    String accountId,
+    bool selected, {
+    required bool pending,
+    required int? createTime,
+  }) {
+    _recordReactionOverride(identity, index, accountId, selected);
+    final current =
+        _messageReactionStates[identity] ?? MessageReactionState.empty;
+    final summaries = Map<int, MessageReactionSummary>.from(current.summaries);
+    final operators = Set<String>.from(
+      summaries[index]?.operatorIds ?? const <String>{},
+    );
+    final times = Map<String, int>.from(
+      summaries[index]?.operatorCreateTimes ?? const <String, int>{},
+    );
+    if (selected && createTime != null) {
+      times[accountId] = createTime;
+    } else {
+      times.remove(accountId);
+    }
+    selected ? operators.add(accountId) : operators.remove(accountId);
+    if (operators.isEmpty) {
+      summaries.remove(index);
+    } else {
+      summaries[index] = MessageReactionSummary(
+        index: index,
+        operatorIds: operators,
+        operatorCreateTimes: times,
+        pending: pending,
+      );
+    }
+    _messageReactionStates[identity] = current.copyWith(
+      summaries: summaries,
+      version: current.version + 1,
+    );
+  }
+
+  void _recordReactionOverride(
+    String identity,
+    int index,
+    String operatorId,
+    bool selected,
+  ) {
+    _reactionOverrides
+        .putIfAbsent(identity, () => <int, Map<String, bool>>{})
+        .putIfAbsent(index, () => <String, bool>{})[operatorId] = selected;
+  }
+
+  void _handleQuickCommentNotification(
+    NIMMessageQuickCommentNotification notification,
+  ) {
+    if (!IMKitConfigCenter.enableMessageReaction) {
+      return;
+    }
+    final comment = notification.quickComment;
+    final refer = comment?.messageRefer;
+    if (comment == null ||
+        refer == null ||
+        refer.conversationId != conversationId ||
+        !shouldHandleMessageRefer(refer)) {
+      return;
+    }
+    final target =
+        <ChatMessage>[..._messageList, ...newMessages].firstWhereOrNull(
+      (message) => MessageReactionHelper.refersToSameMessage(
+        message.nimMessage,
+        refer,
+      ),
+    );
+    if (target == null) {
+      return;
+    }
+    final identity = MessageReactionHelper.messageIdentity(target.nimMessage);
+    final index = comment.index;
+    final operatorId = comment.operatorId;
+    if (identity == null ||
+        index == null ||
+        !MessageReactionConfig.supportedIndexes.contains(index) ||
+        operatorId?.isNotEmpty != true) {
+      return;
+    }
+    final current =
+        _messageReactionStates[identity] ?? MessageReactionState.empty;
+    final summaries = Map<int, MessageReactionSummary>.from(current.summaries);
+    final oldSummary = summaries[index];
+    final operators = Set<String>.from(
+      oldSummary?.operatorIds ?? const <String>{},
+    );
+    final times = Map<String, int>.from(
+      oldSummary?.operatorCreateTimes ?? const <String, int>{},
+    );
+    if (notification.operationType == NIMMessageQuickCommentType.add) {
+      operators.add(operatorId!);
+      if ((comment.createTime ?? 0) > 0) {
+        times[operatorId] = comment.createTime!;
+        final operationKey = '$identity:$index';
+        if (operatorId == currentAccountId &&
+            _reactionConfirmedCreateTimes.containsKey(operationKey)) {
+          _reactionConfirmedCreateTimes[operationKey] = comment.createTime;
+        }
+      }
+      _recordReactionOverride(identity, index, operatorId, true);
+    } else if (notification.operationType ==
+        NIMMessageQuickCommentType.remove) {
+      operators.remove(operatorId);
+      _recordReactionOverride(identity, index, operatorId!, false);
+    } else {
+      return;
+    }
+    if (operators.isEmpty) {
+      summaries.remove(index);
+    } else {
+      summaries[index] = MessageReactionSummary(
+        index: index,
+        operatorIds: operators,
+        operatorCreateTimes: times,
+        pending: oldSummary?.pending ?? false,
+      );
+    }
+    _messageReactionStates[identity] = current.copyWith(
+      summaries: summaries,
+      version: current.version + 1,
+    );
+    notifyListeners();
+  }
+
+  @visibleForTesting
+  void handleQuickCommentNotificationForTest(
+    NIMMessageQuickCommentNotification notification,
+  ) {
+    _handleQuickCommentNotification(notification);
+  }
+
+  void _removeReactionState(NIMMessageRefer message) {
+    final identity = MessageReactionHelper.messageIdentity(message);
+    if (identity != null) {
+      _messageReactionStates.remove(identity);
+      _reactionOverrides.remove(identity);
+    }
+  }
+
   final Set<String> _translatingMessageIds = {};
 
   final Map<String, MessageTranslationState> _messageTranslationStates = {};
@@ -476,6 +1272,7 @@ class ChatViewModel extends ChangeNotifier {
 
   set messageList(List<ChatMessage> value) {
     _messageList = value;
+    unawaited(ensureQuickCommentsLoaded(value));
     notifyListeners();
   }
 
@@ -559,6 +1356,14 @@ class ChatViewModel extends ChangeNotifier {
     if (initListener) return;
     initListener = true;
     _logI('message init listener');
+    if (IMKitConfigCenter.enableMessageReaction) {
+      subscriptions.add(
+        NimCore.instance.messageService.onMessageQuickCommentNotification
+            .listen(
+          _handleQuickCommentNotification,
+        ),
+      );
+    }
     //new message
     subscriptions.add(
       NimCore.instance.messageService.onReceiveMessages.listen((event) async {
@@ -587,6 +1392,7 @@ class ChatViewModel extends ChangeNotifier {
             for (final message in res) {
               _upsertPendingNewMessage(message);
             }
+            unawaited(ensureQuickCommentsLoaded(res));
             checkAutoTranslateMessages(res);
             notifyListeners();
             return;
@@ -662,6 +1468,10 @@ class ChatViewModel extends ChangeNotifier {
               _selectedMessages.removeWhere(
                 (e) => e.messageClientId == msg.messageRefer?.messageClientId,
               );
+              final refer = msg.messageRefer;
+              if (refer != null) {
+                _removeReactionState(refer);
+              }
             }
           }
           if (_messageList.length < _autoFetchMessageSize &&
@@ -840,6 +1650,7 @@ class ChatViewModel extends ChangeNotifier {
     );
     if (indexShowMessages >= 0) {
       _messageList[indexShowMessages] = message;
+      unawaited(ensureQuickCommentsLoaded(<ChatMessage>[message]));
       notifyListeners();
       return;
     }
@@ -864,6 +1675,7 @@ class ChatViewModel extends ChangeNotifier {
         newMessages.insert(0, message);
       }
     }
+    unawaited(ensureQuickCommentsLoaded(<ChatMessage>[message]));
   }
 
   void _onMessageRevokedNotify(
@@ -873,6 +1685,10 @@ class ChatViewModel extends ChangeNotifier {
     if (notification.revokeAccountId == IMKitClient.account() &&
         revokeMessageId == notification.messageRefer?.messageClientId) {
       return;
+    }
+    final revokedRefer = notification.messageRefer;
+    if (revokedRefer != null) {
+      _removeReactionState(revokedRefer);
     }
     final localMessage =
         await ChatKitClientRepo.instance.onMessageRevokedNotify(
@@ -979,6 +1795,7 @@ class ChatViewModel extends ChangeNotifier {
       );
     }
     if (_isDisposed) return;
+    unawaited(ensureQuickCommentsLoaded(messages));
     notifyListeners();
     checkAutoTranslateMessages(messages);
   }
@@ -1428,19 +2245,33 @@ class ChatViewModel extends ChangeNotifier {
     // Historical navigation positions the list away from the latest message.
     // Keep later messages in the pending list so the user gets the new-message
     // prompt instead of being scrolled away from the selected message.
+    prepareForAnchorLoading(visibleThrough: anchor);
+    hasMoreForwardMessages = true;
+    hasMoreNewerMessages = true;
+    // 历史记录返回原聊天页时，各端都需要触发动态定位。
+    findAnchorDate = anchor.createTime?.toInt();
+    unawaited(_fetchMessageListBothDirect(anchor));
+  }
+
+  /// 为历史阅读位置入口加载目标消息，并返回目标是否可以进入列表。
+  ///
+  /// 旧的路由锚点调用仍可使用 [loadMessageWithAnchor] 并忽略完成结果。
+  Future<bool> loadHistoryReadPositionAnchor(NIMMessage anchor) async {
+    if (_messageList.any(
+      (message) => message.nimMessage.isSameMessage(anchor),
+    )) {
+      return true;
+    }
     prepareForAnchorLoading();
     hasMoreForwardMessages = true;
     hasMoreNewerMessages = true;
-    if (ChatKitUtils.isDesktopOrWeb) {
-      // 设置锚点时间，触发消息列表的 _scrollToMessageByTime 定位
-      findAnchorDate = anchor.createTime?.toInt();
-    }
-    _fetchMessageListBothDirect(anchor);
+    return _fetchMessageListBothDirect(anchor);
   }
 
   void loadMessageWithAnchorDate(int date) async {
     _logI('initFetch -->> anchor date:$date');
     prepareForAnchorLoading();
+    findAnchorDate = date;
     hasMoreForwardMessages = true;
     hasMoreNewerMessages = true;
     _fetchMessageListBothDirectByAnchorDate(date);
@@ -1454,6 +2285,16 @@ class ChatViewModel extends ChangeNotifier {
     }
   }
 
+  Future<bool> _getMessageListStrictMode() async {
+    try {
+      return await (_messageListConnectivityChecker?.call() ??
+          haveConnectivity(showToast: false));
+    } catch (error) {
+      _logI('check connectivity before fetching messages failed: $error');
+      return false;
+    }
+  }
+
   void _fetchMessageListBothDirectByAnchorDate(int anchorDate) async {
     _logI('_fetchMessageListBothDirectByAnchorDate');
 
@@ -1461,11 +2302,12 @@ class ChatViewModel extends ChangeNotifier {
 
     bool haveClean = false;
 
-    NIMMessageListOption optionNewer = NIMMessageListOption(
+    final optionNewer = NIMMessageListOption(
       conversationId: conversationId,
       limit: (messageLimit / 2).toInt(),
       direction: NIMQueryDirection.asc,
       beginTime: anchorDate,
+      strictMode: await _getMessageListStrictMode(),
     );
     final newerMsgs = await ChatMessageRepo.getMessageListEx(
       optionNewer,
@@ -1485,11 +2327,12 @@ class ChatViewModel extends ChangeNotifier {
       }
     }
 
-    NIMMessageListOption optionOlder = NIMMessageListOption(
+    final optionOlder = NIMMessageListOption(
       conversationId: conversationId,
       limit: (messageLimit / 2).toInt(),
       direction: NIMQueryDirection.desc,
       endTime: anchorDate,
+      strictMode: await _getMessageListStrictMode(),
     );
     final olderMsgs = await ChatMessageRepo.getMessageListEx(
       optionOlder,
@@ -1516,11 +2359,12 @@ class ChatViewModel extends ChangeNotifier {
         _messageList.last.nimMessage.createTime! > anchorDate) {
       this.findAnchorDate = _messageList.last.nimMessage.createTime!;
     }
+    unawaited(ensureQuickCommentsLoaded(_messageList));
     notifyListeners();
     checkAutoTranslateMessages();
   }
 
-  _fetchMessageListBothDirect(NIMMessage anchor) async {
+  Future<bool> _fetchMessageListBothDirect(NIMMessage anchor) async {
     _logI('fetchMessageListBothDirect');
 
     isLoading = true;
@@ -1546,11 +2390,11 @@ class ChatViewModel extends ChangeNotifier {
       }());
     }
 
-    NIMMessageListOption optionNewer = NIMMessageListOption(
+    final optionNewer = NIMMessageListOption(
       conversationId: conversationId,
       limit: (messageLimit / 2).toInt(),
       direction: NIMQueryDirection.asc,
-      strictMode: true,
+      strictMode: await _getMessageListStrictMode(),
       anchorMessage: anchor,
     );
     final newerMsgs = await ChatMessageRepo.getMessageList(
@@ -1558,6 +2402,7 @@ class ChatViewModel extends ChangeNotifier {
       enablePin: IMKitClient.enablePin,
       addUserInfo: true,
     );
+    if (_isDisposed) return false;
 
     if (newerMsgs.isSuccess) {
       hasMoreNewerMessages =
@@ -1579,11 +2424,11 @@ class ChatViewModel extends ChangeNotifier {
       );
     }
 
-    NIMMessageListOption optionOlder = NIMMessageListOption(
+    final optionOlder = NIMMessageListOption(
       conversationId: conversationId,
       limit: (messageLimit / 2).toInt(),
       direction: NIMQueryDirection.desc,
-      strictMode: true,
+      strictMode: await _getMessageListStrictMode(),
       anchorMessage: anchor,
     );
     final olderMsgs = await ChatMessageRepo.getMessageList(
@@ -1591,6 +2436,7 @@ class ChatViewModel extends ChangeNotifier {
       enablePin: IMKitClient.enablePin,
       addUserInfo: true,
     );
+    if (_isDisposed) return false;
     if (olderMsgs.isSuccess) {
       hasMoreForwardMessages =
           (olderMsgs.data?.length ?? 0) >= (messageLimit / 2).toInt();
@@ -1608,8 +2454,10 @@ class ChatViewModel extends ChangeNotifier {
       (a, b) => (b.nimMessage.createTime ?? 0) - (a.nimMessage.createTime ?? 0),
     );
 
+    unawaited(ensureQuickCommentsLoaded(_messageList));
     notifyListeners();
     checkAutoTranslateMessages();
+    return newerMsgs.isSuccess || olderMsgs.isSuccess;
   }
 
   fetchMoreMessage(NIMQueryDirection direction) {
@@ -1620,13 +2468,13 @@ class ChatViewModel extends ChangeNotifier {
     );
   }
 
-  _fetchMoreMessage({
+  Future<void> _fetchMoreMessage({
     NIMMessage? anchor,
     required int limit,
     NIMQueryDirection direction = NIMQueryDirection.desc,
     bool init = false,
     bool scrollToBottomAfterFetch = false,
-  }) {
+  }) async {
     _logI(
       '_fetchMoreMessage anchor ${anchor?.text}, time = ${anchor?.createTime!}, direction = $direction',
     );
@@ -1636,10 +2484,10 @@ class ChatViewModel extends ChangeNotifier {
     }
 
     isLoading = true;
-    NIMMessageListOption option = NIMMessageListOption(
+    final option = NIMMessageListOption(
       conversationId: conversationId,
-      limit: limit ?? messageLimit,
-      strictMode: true,
+      limit: limit,
+      strictMode: await _getMessageListStrictMode(),
       direction: direction,
       anchorMessage: anchor,
     );
@@ -1850,7 +2698,9 @@ class ChatViewModel extends ChangeNotifier {
         ? (await MessageCreator.createCustomMessage(title!, customJson))
         : (await MessageCreator.createTextMessage(text));
     if (msgBuildResult.isSuccess && msgBuildResult.data != null) {
-      if (conversationType == NIMConversationType.team && pushList != null) {
+      if ((conversationType == NIMConversationType.team ||
+              conversationType == NIMConversationType.superTeam) &&
+          pushList != null) {
         pushConfig = NIMMessagePushConfig(
           pushContent: title ?? text,
           forcePush: true,
@@ -2296,6 +3146,9 @@ class ChatViewModel extends ChangeNotifier {
           (a, b) => b.nimMessage.createTime! - a.nimMessage.createTime!,
         );
       }
+      unawaited(
+        ensureQuickCommentsLoaded(<ChatMessage>[_messageList[pos]]),
+      );
       notifyListeners();
       return true;
     }
@@ -2662,6 +3515,7 @@ class ChatViewModel extends ChangeNotifier {
 
   void _onMessageDeleted(ChatMessage message) {
     _messageList.remove(message);
+    _removeReactionState(message.nimMessage);
     notifyListeners();
   }
 
@@ -2683,6 +3537,7 @@ class ChatViewModel extends ChangeNotifier {
   }
 
   void _onMessageRevoked(ChatMessage revokedMsg) async {
+    _removeReactionState(revokedMsg.nimMessage);
     final localMessage = await ChatKitClientRepo.instance.onMessageRevoked(
       revokedMsg,
       S.of().chatMessageHaveBeenRevoked,
@@ -2710,6 +3565,7 @@ class ChatViewModel extends ChangeNotifier {
       ChatMessage revokedMsg, NIMMessage replacementMsg) {
     int pos = _messageList.indexOf(revokedMsg);
     if (pos >= 0) {
+      _removeReactionState(revokedMsg.nimMessage);
       _messageList[pos] = ChatMessage(replacementMsg);
       _selectedMessages.removeWhere(
         (element) =>
@@ -2757,16 +3613,35 @@ class ChatViewModel extends ChangeNotifier {
     Alog.d(tag: 'ChatKit', moduleName: '$logTag $_sessionId', content: content);
   }
 
-  @override
   bool _isDisposed = false;
 
   @override
   void dispose() {
     _isDisposed = true;
+    _reactionLifecycleVersion++;
+    _messageReactionStates.clear();
+    for (final completers in _reactionOperationCompleters.values) {
+      for (final completer in completers) {
+        if (!completer.isCompleted) {
+          completer.complete(
+            NIMResult<void>.failure(message: 'chat page disposed'),
+          );
+        }
+      }
+    }
+    _reactionOperationCompleters.clear();
+    _runningReactionOperations.clear();
+    _reactionConfirmedSelections.clear();
+    _reactionConfirmedCreateTimes.clear();
+    _reactionDesiredSelections.clear();
+    _reactionOverrides.clear();
+    _historyReadPositionLifecycleVersion++;
     for (var sub in subscriptions) {
       sub.cancel();
     }
-    ChatAudioPlayer.instance.release();
+    if (_runtimeInitialized) {
+      ChatAudioPlayer.instance.release();
+    }
     super.dispose();
   }
 }

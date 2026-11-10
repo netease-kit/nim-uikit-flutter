@@ -5,6 +5,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_helper.dart';
@@ -155,7 +156,7 @@ class ChatKitMessageMultiLineState extends State<ChatKitMessageMultiLineItem> {
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
+            DuoPageRoute(
               builder: (context) {
                 return ChatKitMessageDetailTextPage(
                   title: widget.title,

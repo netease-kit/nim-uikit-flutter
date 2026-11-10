@@ -594,6 +594,8 @@
   "chatQuickSearchTeamMember": "Team Member",
   "chatMemberPickerSearchHint": "Search Member",
   "chatMemberPickerEmpty": "No Member",
+  "chatMemberPickerSearchEmpty": "No matching members",
+  "chatMemberPickerSearching": "Searching...",
   "chatMemberRoleOwner": "Owner",
   "chatMemberRoleManager": "Admin",
   "chatQuickSearchPicture": "Picture",
@@ -658,7 +660,7 @@
       }
     }
   },
-  "chatNewMessage": "{number}new message",
+  "chatNewMessage": "{number} new messages",
   "@chatNewMessage": {
     "placeholders": {
       "number": {
@@ -727,5 +729,30 @@
   "translationLangPt": "Portuguese",
   "translationLangRu": "Russian",
   "translationLangTh": "Thai",
-  "translationLangVi": "Vietnamese"
+  "translationLangVi": "Vietnamese",
+  "chatBackToLastReadPosition": "Back to last read position",
+  "chatMessageReactionAdd": "Add reaction",
+  "chatMessageReactionExpand": "Show all reactions",
+  "chatMessageReactionCollapse": "Collapse reactions",
+  "chatMessageReactionFailed": "Failed to update reaction",
+  "chatMessageReactionLimit": "Reaction limit reached",
+  "chatMessageReactionEmoji": "Reaction {index}",
+  "@chatMessageReactionEmoji": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "chatMessageReactionCount": "Reaction {index}, {count} people",
+  "@chatMessageReactionCount": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

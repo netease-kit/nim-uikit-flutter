@@ -3,6 +3,8 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
+import 'package:netease_common_ui/duo/duo_shell_controller.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
 import 'package:netease_common_ui/base/base_state.dart';
@@ -45,12 +47,24 @@ class BotSubsessionListPage extends StatefulWidget {
 class _BotSubsessionListPageState extends BaseState<BotSubsessionListPage> {
   final TextEditingController _searchController = TextEditingController();
   late BotSubsessionListViewModel _viewModel;
+  bool _duoSelectionRegistered = false;
   // bool _handledFallback = false;
 
   @override
   void initState() {
     super.initState();
     _viewModel = BotSubsessionListViewModel(widget.conversationId);
+    // StatefulElement 正在挂载期间不能通知 DuoShellController 的监听者，
+    // 否则会触发 “setState() or markNeedsBuild() called during build”。
+    // 延迟到当前帧完成后再同步左侧会话选中状态。
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final shell = DuoShellController.instance;
+      if (shell.enabled && shell.dual && !_duoSelectionRegistered) {
+        _duoSelectionRegistered = true;
+        shell.pushSelectedConversation(widget.conversationId);
+      }
+    });
   }
 
   @override
@@ -81,6 +95,11 @@ class _BotSubsessionListPageState extends BaseState<BotSubsessionListPage> {
 
   @override
   void dispose() {
+    final shell = DuoShellController.instance;
+    if (_duoSelectionRegistered) {
+      _duoSelectionRegistered = false;
+      shell.popSelectedConversation(widget.conversationId);
+    }
     if (ChatKitUtils.isDesktopOrWeb) {
       _discardHiddenDraft(widget.selectedTopicContext, notify: false);
     }
@@ -346,7 +365,7 @@ class _BotSubsessionListPageState extends BaseState<BotSubsessionListPage> {
     }
     Navigator.push(
       context,
-      MaterialPageRoute(
+      DuoPageRoute(
         builder: (context) => page,
       ),
     );

@@ -5,11 +5,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/duo/duo_shell_controller.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/im_kit_config_center.dart';
 import 'package:nim_chatkit/repo/conversation_group_repo.dart';
 import 'package:nim_chatkit/repo/conversation_repo.dart';
+import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
 import 'package:nim_core_v2/nim_core.dart';
 
 import '../l10n/S.dart';
@@ -50,6 +52,7 @@ class ConversationGroupViewModel extends ChangeNotifier {
 
   final List<StreamSubscription?> _subscriptions = [];
   final Map<String, _GroupConversationPage> _customPages = {};
+  final _GroupConversationPage _unreadPage = _GroupConversationPage();
   final Map<String, int> _customGroupUnreadCounts = {};
   final Set<String> _subscribedUnreadGroupIds = {};
   final Set<String> _refreshingCustomGroupUnreadIds = {};
@@ -78,9 +81,17 @@ class ConversationGroupViewModel extends ChangeNotifier {
 
   bool get saving => _saving;
 
-  List<ConversationInfo> get displayConversations {
-    final selected = selectedGroup;
-    switch (selected.kind) {
+  List<ConversationInfo> get displayConversations =>
+      conversationsForGroup(selectedGroup);
+
+  /// 指定分组下的会话列表。
+  ///
+  /// 只读取分组自己的会话缓存，不会改变当前选中的分组，供分组设置页等
+  /// 非切换场景使用（例如 Duo 右侧打开分组设置不应影响左侧会话列表）。
+  List<ConversationInfo> conversationsForGroup(
+    ConversationGroupUiModel group,
+  ) {
+    switch (group.kind) {
       case ConversationGroupKind.all:
         return conversationViewModel.conversationList;
       case ConversationGroupKind.aitMe:
@@ -88,11 +99,9 @@ class ConversationGroupViewModel extends ChangeNotifier {
             .where(_isAitMeConversation)
             .toList();
       case ConversationGroupKind.unread:
-        return conversationViewModel.conversationList
-            .where(_isUnreadConversation)
-            .toList();
+        return _unreadPage.conversations;
       case ConversationGroupKind.custom:
-        return _customPages[selected.id]?.conversations ?? [];
+        return _customPages[group.id]?.conversations ?? [];
     }
   }
 
@@ -137,6 +146,9 @@ class ConversationGroupViewModel extends ChangeNotifier {
         }
         if (groupId == null && ignoreMuted == true) {
           _unreadIgnoreMutedCount = unreadCount;
+          if (selectedGroup.kind == ConversationGroupKind.unread) {
+            _loadUnreadConversations(refresh: true);
+          }
           notifyListeners();
           return;
         }
@@ -205,9 +217,12 @@ class ConversationGroupViewModel extends ChangeNotifier {
 
   void _onConversationChanged() {
     _syncCustomConversationCache();
+    _syncUnreadConversationCache();
     final selected = selectedGroup;
     if (selected.kind == ConversationGroupKind.custom) {
       _loadCustomConversations(selected.id, refresh: true);
+    } else if (selected.kind == ConversationGroupKind.unread) {
+      _loadUnreadConversations(refresh: true);
     } else {
       notifyListeners();
     }
@@ -217,10 +232,7 @@ class ConversationGroupViewModel extends ChangeNotifier {
     if (_customPages.isEmpty) {
       return;
     }
-    final conversationMap = {
-      for (final conversation in conversationViewModel.conversationList)
-        conversation.getConversationId(): conversation
-    };
+    final conversationMap = _latestConversationMap();
     for (final page in _customPages.values) {
       for (var i = 0; i < page.conversations.length; i++) {
         final existing = page.conversations[i];
@@ -230,6 +242,87 @@ class ConversationGroupViewModel extends ChangeNotifier {
           page.conversations[i] = latest;
         }
       }
+    }
+  }
+
+  /// 用主会话列表中的最新对象替换未读分组缓存的会话。
+  ///
+  /// 会话变更回调会创建新的 [ConversationInfo] 对象，未读分组缓存必须同步
+  /// 替换，否则会继续展示旧的未读数和最后一条消息。
+  void _syncUnreadConversationCache() {
+    final conversations = _unreadPage.conversations;
+    if (conversations.isEmpty) {
+      return;
+    }
+    final conversationMap = _latestConversationMap();
+    for (var i = 0; i < conversations.length; i++) {
+      final existing = conversations[i];
+      final latest = conversationMap[existing.getConversationId()];
+      if (latest != null) {
+        latest.haveBeenAit = latest.haveBeenAit || existing.haveBeenAit;
+        conversations[i] = latest;
+      }
+    }
+  }
+
+  Map<String, ConversationInfo> _latestConversationMap() {
+    return {
+      for (final conversation in conversationViewModel.conversationList)
+        conversation.getConversationId(): conversation
+    };
+  }
+
+  /// 当前正在查看的会话 ID。已读状态可能还没同步到主会话列表，暂留时
+  /// 需要用它兜底，避免刚点开的会话立刻被移除。
+  String? get _openedConversationId {
+    final session = NIMChatCache.instance.currentChatSession;
+    if (session != null) {
+      return session.conversationId;
+    }
+    final shell = DuoShellController.instance;
+    if (shell.enabled && shell.dual) {
+      return shell.selectedConversationId;
+    }
+    return null;
+  }
+
+  /// 是否处于 iPhone Duo 展开双屏。
+  ///
+  /// 只有该形态下左侧会话列表会与右侧聊天页同时展示，才需要把已读会话
+  /// 暂留在未读分组中；折叠单屏和普通手机保持原有行为。
+  bool get _isDuoDual {
+    final shell = DuoShellController.instance;
+    return shell.enabled && shell.dual;
+  }
+
+  /// 把刷新前暂留的已读会话合并回未读列表。
+  ///
+  /// [retainedIndexes] 的 value 是会话在刷新前列表中的位置，合并时保持
+  /// 相对顺序，避免用户在右侧浏览消息时左侧列表跳动。
+  void _mergeRetainedUnreadConversations(Map<String, int> retainedIndexes) {
+    if (retainedIndexes.isEmpty) {
+      return;
+    }
+    final conversationMap = _latestConversationMap();
+    final conversationIds = _unreadPage.conversations
+        .map((conversation) => conversation.getConversationId())
+        .toSet();
+    final entries = retainedIndexes.entries.toList()
+      ..sort((a, b) => a.value.compareTo(b.value));
+    for (final entry in entries) {
+      final conversationId = entry.key;
+      if (conversationIds.contains(conversationId)) {
+        continue;
+      }
+      final conversation = conversationMap[conversationId];
+      if (conversation == null || conversation.isMute()) {
+        continue;
+      }
+      final int index = entry.value < _unreadPage.conversations.length
+          ? entry.value
+          : _unreadPage.conversations.length;
+      _unreadPage.conversations.insert(index, conversation);
+      conversationIds.add(conversationId);
     }
   }
 
@@ -332,17 +425,24 @@ class ConversationGroupViewModel extends ChangeNotifier {
     if (group.kind == ConversationGroupKind.custom &&
         (groupChanged || forceRefresh)) {
       await _loadCustomConversations(group.id, refresh: true);
+    } else if (group.kind == ConversationGroupKind.unread &&
+        (groupChanged || forceRefresh)) {
+      // 切换到未读分组时不再暂留已读会话，完成“切换分组 tab 后移除”。
+      await _loadUnreadConversations(refresh: true, retainRead: false);
     }
   }
 
-  /// Selects a custom group and loads all of its conversations into the cache.
+  /// 加载指定自定义分组的全部会话到缓存。
+  ///
+  /// 只刷新该分组自己的会话缓存，不切换当前选中的分组：分组设置页只需要
+  /// 读取该分组的会话，Duo 右侧进入设置页不应该改变左侧会话列表的选中项。
   Future<void> loadAllConversationsForGroup(
     ConversationGroupUiModel group,
   ) async {
     if (!group.isCustom) {
       return;
     }
-    await selectGroup(group, forceRefresh: true);
+    await _loadCustomConversations(group.id, refresh: true);
     while (true) {
       final page = _customPages[group.id];
       if (page == null ||
@@ -374,6 +474,8 @@ class ConversationGroupViewModel extends ChangeNotifier {
     final selected = selectedGroup;
     if (selected.kind == ConversationGroupKind.custom) {
       await _loadCustomConversations(selected.id);
+    } else if (selected.kind == ConversationGroupKind.unread) {
+      await _loadUnreadConversations();
     } else {
       conversationViewModel.queryConversationNextList();
     }
@@ -624,6 +726,91 @@ class ConversationGroupViewModel extends ChangeNotifier {
         }
         page.finished = page.finished ||
             page.conversations.length >= maxGroupConversationCount;
+      }
+    } finally {
+      page.loading = false;
+      page.loadingCompleter = null;
+      notifyListeners();
+      loadingCompleter.complete();
+    }
+  }
+
+  Future<void> _loadUnreadConversations({
+    bool refresh = false,
+    bool retainRead = true,
+  }) async {
+    final page = _unreadPage;
+    if (page.loading) {
+      final loadingCompleter = page.loadingCompleter;
+      if (loadingCompleter != null) {
+        await loadingCompleter.future;
+      }
+      if (refresh) {
+        await _loadUnreadConversations(
+          refresh: true,
+          retainRead: retainRead,
+        );
+      }
+      return;
+    }
+    if (!refresh && page.finished) {
+      return;
+    }
+    final loadingCompleter = Completer<void>();
+    page.loading = true;
+    page.loadingCompleter = loadingCompleter;
+    final retainedIndexes = <String, int>{};
+    if (refresh) {
+      // iPhone Duo 展开双屏且停留在未读分组时，用户查看会话产生的已读
+      // 状态不立即把会话移出列表，等切换分组 tab 刷新时再移除。
+      final selected = selectedGroup;
+      final bool shouldRetain = retainRead &&
+          selected.kind == ConversationGroupKind.unread &&
+          selected.visible &&
+          _isDuoDual;
+      if (shouldRetain) {
+        final conversationMap = _latestConversationMap();
+        final openedConversationId = _openedConversationId;
+        for (var index = 0; index < page.conversations.length; index++) {
+          final conversation = page.conversations[index];
+          final conversationId = conversation.getConversationId();
+          final latestConversation =
+              conversationMap[conversationId] ?? conversation;
+          if (conversationId == openedConversationId ||
+              !_isUnreadConversation(latestConversation)) {
+            retainedIndexes[conversationId] = index;
+          }
+        }
+      }
+      page.offset = 0;
+      page.finished = false;
+      page.conversations.clear();
+    }
+    try {
+      final result = await ConversationGroupRepo.getUnreadConversationList(
+        page.offset,
+        conversationViewModel.pageLimit,
+      );
+      if (result.isSuccess && result.data != null) {
+        page.offset = result.data!.offset;
+        page.finished = result.data!.finished;
+        final conversations = (conversationViewModel.convertConversationInfo(
+                  result.data!.conversationList,
+                ) ??
+                [])
+            .where(_isUnreadConversation)
+            .toList();
+        final conversationsWithAitState =
+            await _applyAitStateToCustomConversations(conversations);
+        final conversationIds = page.conversations
+            .map((conversation) => conversation.getConversationId())
+            .toSet();
+        for (final conversation in conversationsWithAitState) {
+          if (conversationIds.add(conversation.getConversationId())) {
+            page.conversations.add(conversation);
+          }
+        }
+        _mergeRetainedUnreadConversations(retainedIndexes);
       }
     } finally {
       page.loading = false;

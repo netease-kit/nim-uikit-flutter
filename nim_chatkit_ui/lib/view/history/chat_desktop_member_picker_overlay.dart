@@ -7,12 +7,14 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:nim_chatkit/model/team_models.dart';
+import 'package:nim_chatkit/model/user_search_models.dart';
+import 'package:nim_chatkit/repo/team_member_search_repository.dart';
 import 'package:nim_chatkit/service_locator.dart';
-import 'package:nim_chatkit/services/contact/contact_provider.dart';
 import 'package:nim_core_v2/nim_core.dart';
 
 import '../../chat_kit_client.dart';
 import '../../l10n/S.dart';
+import '../../widget/ait_member_highlight_text.dart';
 
 /// 桌面端群成员选择浮层组件
 ///
@@ -44,6 +46,7 @@ class _ChatDesktopMemberPickerOverlayState
   List<UserInfoWithTeam> _allMembers = [];
   List<UserInfoWithTeam> _filteredMembers = [];
   bool _isLoading = true;
+  bool _loadError = false;
 
   @override
   void initState() {
@@ -61,50 +64,49 @@ class _ChatDesktopMemberPickerOverlayState
   }
 
   Future<void> _loadMembers() async {
-    final option = NIMTeamMemberQueryOption(
-      roleQueryType: NIMTeamMemberRoleQueryType.memberRoleQueryTypeAll,
-    );
-    final result = await NimCore.instance.teamService
-        .getTeamMemberList(widget.teamId, NIMTeamType.typeNormal, option);
-    if (!mounted) return;
-
-    if (result.isSuccess && result.data != null) {
-      final members = result.data!.memberList ?? [];
-      final validMembers =
-          members.where((m) => m.accountId.isNotEmpty).toList();
-
-      // 拉取联系人信息（含好友备注 alias 与 userInfo），与 TeamKitMemberListPage 一致
-      final items = <UserInfoWithTeam>[];
-      for (final m in validMembers) {
-        final contact = await getIt<ContactProvider>().getContact(m.accountId);
-        items.add(UserInfoWithTeam(
-          contact?.user,
-          m,
-          alias: contact?.friend?.alias,
-        ));
-      }
-
+    try {
+      final items = await getIt<TeamMemberSearchRepository>().loadAll(
+        widget.teamId,
+        NIMTeamType.typeNormal,
+      );
+      if (!mounted) return;
+      setState(() {
+        _allMembers = items;
+        _filteredMembers = items;
+        _isLoading = false;
+        _loadError = false;
+      });
+    } catch (_) {
       if (mounted) {
         setState(() {
-          _allMembers = items;
-          _filteredMembers = items;
           _isLoading = false;
+          _loadError = true;
         });
       }
-    } else {
-      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _retryLoad() {
+    if (_isLoading) return;
+    setState(() {
+      _isLoading = true;
+      _loadError = false;
+    });
+    _loadMembers();
   }
 
   void _applyFilter(String text) {
     setState(() {
-      if (text.isEmpty) {
+      if (text.trim().isEmpty) {
         _filteredMembers = _allMembers;
       } else {
-        final lower = text.toLowerCase();
-        _filteredMembers = _allMembers
-            .where((m) => m.getName().toLowerCase().contains(lower))
-            .toList();
+        final matches = UserSearchService.search<UserInfoWithTeam>(
+          values: _allMembers,
+          fieldsOf: UserSearchService.teamMemberFields,
+          accountIdOf: (member) => member.teamInfo.accountId,
+          query: text,
+        );
+        _filteredMembers = matches.map((match) => match.value).toList();
       }
     });
   }
@@ -145,6 +147,8 @@ class _ChatDesktopMemberPickerOverlayState
                 padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
                 child: TextField(
                   controller: _searchController,
+                  onTapOutside: (_) =>
+                      FocusManager.instance.primaryFocus?.unfocus(),
                   decoration: InputDecoration(
                     fillColor: '#F2F4F5'.toColor(),
                     filled: true,
@@ -208,6 +212,16 @@ class _ChatDesktopMemberPickerOverlayState
   }
 
   Widget _buildEmptyState() {
+    if (_loadError) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 28),
+        child: IconButton(
+          tooltip: S.of(context).botSubsessionRetry,
+          onPressed: _retryLoad,
+          icon: const Icon(Icons.refresh_rounded),
+        ),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 28),
       child: Column(
@@ -251,10 +265,9 @@ class _ChatDesktopMemberPickerOverlayState
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(
-                name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              child: AitMemberHighlightText(
+                displayName: name,
+                query: _searchController.text,
                 style: const TextStyle(fontSize: 14, color: Color(0xFF333333)),
               ),
             ),

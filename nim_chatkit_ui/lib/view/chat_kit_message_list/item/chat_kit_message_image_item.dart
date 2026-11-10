@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit_ui/helper/desktop_dialog_helper.dart';
 import 'package:nim_chatkit_ui/media/picture.dart';
@@ -82,7 +83,7 @@ class ChatKitMessageImageState extends State<ChatKitMessageImageItem> {
         } else {
           Navigator.push(
             context,
-            MaterialPageRoute(
+            DuoPageRoute(
               builder: (context) => PictureViewer(
                 messages: messagesList,
                 showIndex: messagesList.indexOf(widget.message),

@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:netease_common_ui/duo/duo_drawer_navigation.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/im_kit_config_center.dart';
@@ -65,15 +66,14 @@ class _ContactKitContactState extends State<ContactKitContactPage> {
           width: 36,
         ),
         onTap: () {
-          Navigator.push(
+          pushDuoDrawerPage(
             context,
-            MaterialPageRoute(
-              builder: (context) {
-                return ContactKitSystemNotifyMessagePage(
-                  listConfig: uiConfig.contactListConfig,
-                );
-              },
-            ),
+            (context) {
+              return ContactKitSystemNotifyMessagePage(
+                listConfig: uiConfig.contactListConfig,
+              );
+            },
+            routeKey: 'contact.systemNotify',
           ).then((value) {
             context.read<ContactViewModel>().cleanSystemUnreadCount();
           });
@@ -89,15 +89,14 @@ class _ContactKitContactState extends State<ContactKitContactPage> {
           width: 36,
         ),
         onTap: () {
-          Navigator.push(
+          pushDuoDrawerPage(
             context,
-            MaterialPageRoute(
-              builder: (context) {
-                return ContactKitBlackListPage(
-                  listConfig: uiConfig.contactListConfig,
-                );
-              },
-            ),
+            (context) {
+              return ContactKitBlackListPage(
+                listConfig: uiConfig.contactListConfig,
+              );
+            },
+            routeKey: 'contact.blackList',
           );
         },
       ),
@@ -111,15 +110,14 @@ class _ContactKitContactState extends State<ContactKitContactPage> {
             width: 36,
           ),
           onTap: () {
-            Navigator.push(
+            pushDuoDrawerPage(
               context,
-              MaterialPageRoute(
-                builder: (context) {
-                  return ContactKitTeamListPage(
-                    listConfig: uiConfig.contactListConfig,
-                  );
-                },
-              ),
+              (context) {
+                return ContactKitTeamListPage(
+                  listConfig: uiConfig.contactListConfig,
+                );
+              },
+              routeKey: 'contact.teamList',
             );
           },
         ),
@@ -133,15 +131,14 @@ class _ContactKitContactState extends State<ContactKitContactPage> {
             width: 36,
           ),
           onTap: () {
-            Navigator.push(
+            pushDuoDrawerPage(
               context,
-              MaterialPageRoute(
-                builder: (context) {
-                  return ContactKitUserAIBotListPage(
-                    listConfig: uiConfig.contactListConfig,
-                  );
-                },
-              ),
+              (context) {
+                return ContactKitUserAIBotListPage(
+                  listConfig: uiConfig.contactListConfig,
+                );
+              },
+              routeKey: 'contact.robotList',
             );
           },
         ),
@@ -155,15 +152,14 @@ class _ContactKitContactState extends State<ContactKitContactPage> {
             width: 36,
           ),
           onTap: () {
-            Navigator.push(
+            pushDuoDrawerPage(
               context,
-              MaterialPageRoute(
-                builder: (context) {
-                  return ContactKitAIUserListPage(
-                    listConfig: uiConfig.contactListConfig,
-                  );
-                },
-              ),
+              (context) {
+                return ContactKitAIUserListPage(
+                  listConfig: uiConfig.contactListConfig,
+                );
+              },
+              routeKey: 'contact.aiUserList',
             );
           },
         ),
@@ -172,12 +168,12 @@ class _ContactKitContactState extends State<ContactKitContactPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDesktop = ChatKitUtils.isDesktopOrWeb;
+    final bool isDesktopLikeLayout = ChatKitUtils.isDesktopLikeLayout;
 
     return ChangeNotifierProvider(
       create: (context) => ContactViewModel(),
       builder: (context, child) {
-        if (isDesktop && widget.onDesktopCategorySelect != null) {
+        if (isDesktopLikeLayout && widget.onDesktopCategorySelect != null) {
           // 桌面端：只显示分类菜单列表
           return _buildDesktopCategoryList(context);
         }

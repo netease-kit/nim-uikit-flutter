@@ -86,6 +86,9 @@ class ContactKitClientLocalizationsZh extends ContactKitClientLocalizations {
   String get contactUserSelector => '人员选择';
 
   @override
+  String get contactSure => '确定';
+
+  @override
   String contactSureWithCount(String count) {
     return '确定($count)';
   }

@@ -4,6 +4,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:netease_common_ui/duo/duo_dialog.dart';
+import 'package:netease_common_ui/duo/duo_page_chrome.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/text_search.dart';
@@ -110,9 +112,6 @@ class _ChatForwardPageState extends State<ChatForwardPage>
 
         var isMultiSelect = context.watch<ChatForwardViewModel>().isMultiSelect;
         var selectedList = context.watch<ChatForwardViewModel>().selectedList;
-        var selectedCount =
-            selectedList.isEmpty ? '' : '(${selectedList.length})';
-
         return TransparentScaffold(
           title: S.of(context).forwardSelect,
           appbarLeadingIcon: Text(
@@ -120,23 +119,46 @@ class _ChatForwardPageState extends State<ChatForwardPage>
             style: TextStyle(color: Colors.black, fontSize: 16),
           ),
           actions: [
-            TextButton(
-              onPressed: () {
-                if (isMultiSelect && _model.selectedList.isNotEmpty) {
-                  Navigator.pop(context, _model.selectedList);
-                } else if (!isMultiSelect) {
-                  context.read<ChatForwardViewModel>().setMultiSelect(true);
-                }
-              },
-              child: Text(
-                isMultiSelect
-                    ? '${S.of(context).messageSure}$selectedCount'
-                    : S.of(context).multiSelect,
-                style: TextStyle(
-                  color: (isMultiSelect && _model.selectedList.isEmpty)
-                      ? CommonColors.color_999999
-                      : CommonColors.color_333333,
-                  fontSize: 16,
+            DuoCountBadge(
+              count: selectedList.length,
+              child: TextButton(
+                onPressed: () {
+                  if (isMultiSelect && _model.selectedList.isNotEmpty) {
+                    Navigator.pop(context, _model.selectedList);
+                  } else if (!isMultiSelect) {
+                    context.read<ChatForwardViewModel>().setMultiSelect(true);
+                  }
+                },
+                child: Text(
+                  isMultiSelect
+                      ? '${S.of(context).messageSure}${selectedList.isEmpty ? '' : '(${selectedList.length})'}'
+                      : S.of(context).multiSelect,
+                  style: TextStyle(
+                    color: (isMultiSelect && _model.selectedList.isEmpty)
+                        ? CommonColors.color_999999
+                        : CommonColors.color_333333,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              duoChild: TextButton(
+                onPressed: () {
+                  if (isMultiSelect && _model.selectedList.isNotEmpty) {
+                    Navigator.pop(context, _model.selectedList);
+                  } else if (!isMultiSelect) {
+                    context.read<ChatForwardViewModel>().setMultiSelect(true);
+                  }
+                },
+                child: Text(
+                  isMultiSelect
+                      ? S.of(context).messageSure
+                      : S.of(context).multiSelect,
+                  style: TextStyle(
+                    color: (isMultiSelect && _model.selectedList.isEmpty)
+                        ? CommonColors.color_999999
+                        : CommonColors.color_333333,
+                    fontSize: 16,
+                  ),
                 ),
               ),
             ),
@@ -300,6 +322,7 @@ class _ChatForwardPageState extends State<ChatForwardPage>
 
   // Task 9.1-9.2: 展示已选弹框 — 桌面/Web 用 Dialog，移动端用 BottomSheet
   void _showSelectedBottomSheet(ChatForwardViewModel outerModel) {
+    final bool isDesktopOrWeb = ChatKitUtils.isDesktopOrWeb;
     // 共享内容构建器（BottomSheet 和 Dialog 共用同一内容树）
     Widget buildContent(BuildContext ctx) {
       return ChangeNotifierProvider.value(
@@ -309,9 +332,13 @@ class _ChatForwardPageState extends State<ChatForwardPage>
             final items = model.selectedList;
             return Column(
               children: [
+                // 移动端已选弹窗是可下拉/点击遮罩关闭的临时浮层，
+                // 不需要额外的返回按钮，返回语义由所在页面承担；
+                // 桌面/Web 的 Dialog 保持原有返回按钮。
                 _buildSheetHeader(
                   title: '已选',
-                  onBack: () => Navigator.of(context).pop(),
+                  onBack:
+                      isDesktopOrWeb ? () => Navigator.of(context).pop() : null,
                 ),
                 const Divider(height: 1),
                 Expanded(
@@ -347,7 +374,7 @@ class _ChatForwardPageState extends State<ChatForwardPage>
         ),
       );
     } else {
-      showModalBottomSheet(
+      showDuoModalBottomSheet(
         context: context,
         isScrollControlled: true,
         shape: const RoundedRectangleBorder(
@@ -364,9 +391,12 @@ class _ChatForwardPageState extends State<ChatForwardPage>
     }
   }
 
+  /// 构建已选弹窗头部。
+  ///
+  /// [onBack] 为空时不展示返回按钮（移动端弹窗），仅展示标题。
   Widget _buildSheetHeader({
     required String title,
-    required VoidCallback onBack,
+    VoidCallback? onBack,
   }) {
     const double h = 48;
     return Container(
@@ -377,14 +407,15 @@ class _ChatForwardPageState extends State<ChatForwardPage>
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_rounded),
-              onPressed: onBack,
-              splashRadius: 20,
+          if (onBack != null)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_rounded),
+                onPressed: onBack,
+                splashRadius: 20,
+              ),
             ),
-          ),
           Center(
             child: Text(
               title,
@@ -398,10 +429,11 @@ class _ChatForwardPageState extends State<ChatForwardPage>
             ),
           ),
           // 右侧占位，确保标题视觉居中（与左侧 IconButton 宽度对齐）
-          const Align(
-            alignment: Alignment.centerRight,
-            child: SizedBox(width: 48, height: h),
-          ),
+          if (onBack != null)
+            const Align(
+              alignment: Alignment.centerRight,
+              child: SizedBox(width: 48, height: h),
+            ),
         ],
       ),
     );

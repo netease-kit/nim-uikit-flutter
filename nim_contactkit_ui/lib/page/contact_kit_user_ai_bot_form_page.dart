@@ -5,6 +5,8 @@
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/widgets/duo_scaffold.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
@@ -128,7 +130,7 @@ class _ContactKitUserAIBotFormPageState
     } else {
       await Navigator.push(
         context,
-        MaterialPageRoute(
+        DuoPageRoute(
           builder: (_) => UpdateTextInfoPage(
             title: S.of(context).contactRobotName,
             content: _nameController.text,
@@ -325,7 +327,9 @@ class _ContactKitUserAIBotFormPageState
     );
   }
 
-  PreferredSizeWidget? _buildMobileAppBar() {
+  PreferredSizeWidget? _buildMobileAppBar(
+    UserAIBotFormViewModel viewModel,
+  ) {
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -346,8 +350,13 @@ class _ContactKitUserAIBotFormPageState
         ),
       ),
       actions: [
-        Consumer<UserAIBotFormViewModel>(
-          builder: (context, viewModel, _) {
+        // DuoScaffold 会把 AppBar actions 注册到右侧工具栏；工具栏
+        // 在 Duo 外壳中重建时不一定仍位于当前页面的 Provider 子树内。
+        // 直接监听已创建的 ViewModel，避免 Consumer 使用脱离 Provider
+        // 作用域的 BuildContext 触发 ProviderNotFoundException。
+        ListenableBuilder(
+          listenable: viewModel,
+          builder: (context, _) {
             return TextButton(
               onPressed:
                   viewModel.isSubmitting ? null : () => _submit(viewModel),
@@ -382,15 +391,15 @@ class _ContactKitUserAIBotFormPageState
       builder: (context, child) {
         final viewModel = context.watch<UserAIBotFormViewModel>();
         if (ChatKitUtils.isDesktopOrWeb) {
-          return Scaffold(
+          return DuoScaffold(
             backgroundColor: const Color(0xFFEFF1F4),
-            appBar: _buildMobileAppBar(),
+            appBar: _buildMobileAppBar(viewModel),
             body: _buildBody(viewModel),
           );
         }
-        return Scaffold(
+        return DuoScaffold(
           backgroundColor: const Color(0xFFEFF1F4),
-          appBar: _buildMobileAppBar(),
+          appBar: _buildMobileAppBar(viewModel),
           body: _buildBody(viewModel),
         );
       },

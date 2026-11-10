@@ -342,6 +342,9 @@ class _UserInfoPageState extends State<UserInfoPage> {
     }
     return TransparentScaffold(
       title: title.isEmpty ? S.of(context).userInfoTitle : title,
+      // Duo 双屏首层抽屉默认不展示返回按钮；进入昵称/性别等编辑子页面后，
+      // 需要把返回按钮重新注册到右侧工具栏，才能取消编辑并回到个人信息页。
+      showDuoLeading: editType != EditType.none,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios_rounded, size: 26),
         onPressed: () {

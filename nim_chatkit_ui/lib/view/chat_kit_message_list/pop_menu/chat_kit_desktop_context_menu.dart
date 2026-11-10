@@ -2,9 +2,18 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:nim_chatkit/im_kit_config_center.dart';
+import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit/services/message/chat_message.dart';
+import 'package:nim_chatkit/utils/toast_utils.dart';
+import 'package:nim_chatkit_ui/helper/message_reaction_helper.dart';
+import 'package:nim_chatkit_ui/l10n/S.dart';
+import 'package:nim_chatkit_ui/view/chat_kit_message_list/reaction/message_reaction_picker.dart';
+import 'package:nim_chatkit_ui/view/chat_kit_message_list/reaction/message_reaction_quick_bar.dart';
 import 'package:provider/provider.dart';
 
 import '../../../chat_kit_client.dart';
@@ -60,21 +69,40 @@ class ChatKitDesktopContextMenu {
           true,
     );
 
-    if (menuItems.isEmpty) return;
+    final viewModel = context.read<ChatViewModel>();
+    final reactionEnabled = IMKitConfigCenter.enableMessageReaction &&
+        MessageReactionHelper.isSupported(message);
+    final selectedReactionIndexes = viewModel
+        .getMessageReactionState(message.nimMessage)
+        .summaries
+        .values
+        .where((summary) => summary.contains(viewModel.currentAccountId))
+        .map((summary) => summary.index)
+        .toSet();
+
+    if (menuItems.isEmpty && !reactionEnabled) return;
 
     // 计算菜单尺寸
-    const double menuWidth = 122.0;
+    final screenSize = MediaQuery.of(context).size;
+    final double menuWidth = math.min(
+      reactionEnabled ? 336.0 : 122.0,
+      math.max(0.0, screenSize.width - 16),
+    );
+    if (menuWidth <= 0) return;
     const double itemHeight = 32.0; // 菜单项高度
     const double itemGap = 16.0;
     const double padding = 16.0;
     const double borderWidth = 1.0;
-    final double menuHeight = padding * 2 +
+    final double actionHeight = padding * 2 +
         borderWidth * 2 +
         menuItems.length * itemHeight +
-        (menuItems.length - 1) * itemGap;
+        (menuItems.isEmpty ? 0 : menuItems.length - 1) * itemGap;
+    final double menuHeight = math.min(
+      reactionEnabled ? screenSize.height * 0.72 : actionHeight,
+      math.max(0.0, screenSize.height - 16),
+    );
 
     // 计算菜单位置（边界检测）
-    final screenSize = MediaQuery.of(context).size;
     double left = globalPosition.dx;
     double top = globalPosition.dy;
 
@@ -109,6 +137,27 @@ class ChatKitDesktopContextMenu {
           color: Colors.transparent,
           child: _MenuContent(
             menuItems: menuItems,
+            reactionEnabled: reactionEnabled,
+            selectedReactionIndexes: selectedReactionIndexes,
+            emojiBuilder: chatUIConfig?.messageReactionEmojiBuilder,
+            width: menuWidth,
+            maxHeight: screenSize.height * 0.72,
+            onReactionTap: (index) {
+              final errorText = S.of(context).chatMessageReactionFailed;
+              final limitErrorText = S.of(context).chatMessageReactionLimit;
+              close();
+              viewModel.toggleMessageReaction(message, index).then((result) {
+                if (!result.isSuccess &&
+                    result.code !=
+                        ChatViewModel.messageReactionNetworkUnavailableCode) {
+                  ChatUIToast.show(
+                    result.code == ChatMessageRepo.errorQuickCommentLimited
+                        ? limitErrorText
+                        : errorText,
+                  );
+                }
+              });
+            },
             onItemTap: (actionId) {
               close();
               ChatKitMenuHelper.handleAction(
@@ -149,10 +198,22 @@ class ChatKitDesktopContextMenu {
 class _MenuContent extends StatefulWidget {
   final List<Map<String, String>> menuItems;
   final void Function(String actionId) onItemTap;
+  final bool reactionEnabled;
+  final Set<int> selectedReactionIndexes;
+  final MessageReactionEmojiBuilder? emojiBuilder;
+  final double width;
+  final double maxHeight;
+  final ValueChanged<int> onReactionTap;
 
   const _MenuContent({
     required this.menuItems,
     required this.onItemTap,
+    required this.reactionEnabled,
+    required this.selectedReactionIndexes,
+    required this.width,
+    required this.maxHeight,
+    required this.onReactionTap,
+    this.emojiBuilder,
   });
 
   @override
@@ -161,11 +222,13 @@ class _MenuContent extends StatefulWidget {
 
 class _MenuContentState extends State<_MenuContent> {
   int _hoveredIndex = -1;
+  bool _reactionExpanded = false;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 122,
+      width: widget.width,
+      constraints: BoxConstraints(maxHeight: widget.maxHeight),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -179,58 +242,86 @@ class _MenuContentState extends State<_MenuContent> {
           ),
         ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: List.generate(widget.menuItems.length, (index) {
-          final item = widget.menuItems[index];
-          final isHovered = _hoveredIndex == index;
-          return Padding(
-            padding: EdgeInsets.only(top: index == 0 ? 0 : 16),
-            child: MouseRegion(
-              cursor: SystemMouseCursors.click,
-              onEnter: (_) => setState(() => _hoveredIndex = index),
-              onExit: (_) => setState(() => _hoveredIndex = -1),
-              child: GestureDetector(
-                onTap: () => widget.onItemTap(item['id']!),
-                child: Container(
-                  width: 114,
-                  height: 32,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  decoration: BoxDecoration(
-                    color: isHovered
-                        ? const Color(0xFFECEEEF)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(4),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (widget.reactionEnabled) ...[
+              if (_reactionExpanded)
+                SizedBox(
+                  height: widget.maxHeight * 0.68,
+                  child: MessageReactionPicker(
+                    mode: MessageReactionPickerMode.quickBarExpanded,
+                    showSurface: false,
+                    selectedIndexes: widget.selectedReactionIndexes,
+                    emojiBuilder: widget.emojiBuilder,
+                    onCollapse: () => setState(() => _reactionExpanded = false),
+                    onSelected: widget.onReactionTap,
                   ),
-                  child: Row(
-                    children: [
-                      SvgPicture.asset(
-                        item['icon']!,
-                        package: kPackage,
-                        width: 14,
-                        height: 14,
-                        colorFilter: const ColorFilter.mode(
-                          Color(0xFF656A72),
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        item['label']!,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF333333),
-                          decoration: TextDecoration.none,
-                          fontWeight: FontWeight.normal,
-                        ),
-                      ),
-                    ],
+                )
+              else
+                MessageReactionQuickBar(
+                  selectedIndexes: widget.selectedReactionIndexes,
+                  emojiBuilder: widget.emojiBuilder,
+                  onExpand: () => setState(() => _reactionExpanded = true),
+                  onSelected: widget.onReactionTap,
+                ),
+              if (widget.menuItems.isNotEmpty)
+                const Divider(height: 16, color: Color(0xFFE6E8EB)),
+            ],
+            for (var index = 0; index < widget.menuItems.length; index++)
+              _buildMenuItem(index),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuItem(int index) {
+    final item = widget.menuItems[index];
+    final isHovered = _hoveredIndex == index;
+    return Padding(
+      padding: EdgeInsets.only(top: index == 0 ? 0 : 16),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _hoveredIndex = index),
+        onExit: (_) => setState(() => _hoveredIndex = -1),
+        child: GestureDetector(
+          onTap: () => widget.onItemTap(item['id']!),
+          child: Container(
+            width: double.infinity,
+            height: 32,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              color: isHovered ? const Color(0xFFECEEEF) : Colors.transparent,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Row(
+              children: [
+                SvgPicture.asset(
+                  item['icon']!,
+                  package: kPackage,
+                  width: 14,
+                  height: 14,
+                  colorFilter: const ColorFilter.mode(
+                    Color(0xFF656A72),
+                    BlendMode.srcIn,
                   ),
                 ),
-              ),
+                const SizedBox(width: 6),
+                Text(
+                  item['label']!,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF333333),
+                    decoration: TextDecoration.none,
+                    fontWeight: FontWeight.normal,
+                  ),
+                ),
+              ],
             ),
-          );
-        }),
+          ),
+        ),
       ),
     );
   }

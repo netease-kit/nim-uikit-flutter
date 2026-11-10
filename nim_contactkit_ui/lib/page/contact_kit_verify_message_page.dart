@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/widgets/duo_scaffold.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/base/base_state.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
@@ -114,8 +115,15 @@ class _SystemNotifyPageState
               builder: (context, snapShot) {
                 if (snapShot.data != null) {
                   messageMerged.user = snapShot.data?.fromUser;
+                  messageMerged.alias = snapShot.data?.alias;
                 }
                 var user = messageMerged.user;
+                // 好友备注优先，避免给好友设置备注后验证消息仍展示昵称。
+                final displayName = resolveValidationDisplayName(
+                  alias: snapShot.data?.alias ?? messageMerged.alias,
+                  name: user?.name,
+                  accountId: message.applicantAccountId,
+                );
                 return Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -150,9 +158,7 @@ class _SystemNotifyPageState
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              user?.name?.isNotEmpty == true
-                                  ? user!.name!
-                                  : message.applicantAccountId!,
+                              displayName,
                               style: nameTextStyle,
                               overflow: TextOverflow.ellipsis,
                               maxLines: 1,
@@ -345,8 +351,15 @@ class _SystemNotifyPageState
                 if (snapShot.data != null) {
                   messageMerged.user = snapShot.data?.fromUser;
                   messageMerged.team = snapShot.data?.team;
+                  messageMerged.alias = snapShot.data?.alias;
                 }
                 var user = messageMerged.user;
+                // 好友备注优先：好友发起的入群邀请、进群申请展示备注。
+                final displayName = resolveValidationDisplayName(
+                  alias: snapShot.data?.alias ?? messageMerged.alias,
+                  name: user?.name,
+                  accountId: message.operatorAccountId,
+                );
                 return Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -381,9 +394,7 @@ class _SystemNotifyPageState
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              user?.name?.isNotEmpty == true
-                                  ? user!.name!
-                                  : message.operatorAccountId!,
+                              displayName,
                               style: nameTextStyle,
                               overflow: TextOverflow.ellipsis,
                               maxLines: 1,
@@ -615,7 +626,7 @@ class _SystemNotifyPageState
         return DefaultTabController(
           length: 2,
           initialIndex: 0,
-          child: Scaffold(
+          child: DuoScaffold(
             backgroundColor: Colors.white,
             appBar: AppBar(
               automaticallyImplyLeading: !ChatKitUtils.isDesktopOrWeb,
@@ -636,26 +647,31 @@ class _SystemNotifyPageState
               elevation: 0.5,
               shadowColor: '#F5F8FC'.toColor(),
               actions: [
-                InkWell(
-                  onTap: () {
-                    if (_tabController.index == 0) {
-                      context
-                          .read<ValidationMessageViewModel>()
-                          .cleanUserApplicationMessage();
-                    } else {
-                      context
-                          .read<ValidationMessageViewModel>()
-                          .cleanTeamActionsMessage();
-                    }
-                  },
-                  child: Container(
-                    padding: EdgeInsets.only(right: 20),
-                    alignment: Alignment.center,
-                    child: Text(
-                      S.of(context).contactClean,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: '#666666'.toColor(),
+                // 右侧间距必须放在 InkWell 外层：Duo 右侧工具栏会把 actions
+                // 包进 45×45 的圆形按钮，并剥离外层 Padding 后居中内容。
+                // 若把 padding 放在 InkWell 内层，圆形按钮里的文字会被挤偏。
+                Padding(
+                  padding: const EdgeInsets.only(right: 20),
+                  child: InkWell(
+                    onTap: () {
+                      if (_tabController.index == 0) {
+                        context
+                            .read<ValidationMessageViewModel>()
+                            .cleanUserApplicationMessage();
+                      } else {
+                        context
+                            .read<ValidationMessageViewModel>()
+                            .cleanTeamActionsMessage();
+                      }
+                    },
+                    child: Container(
+                      alignment: Alignment.center,
+                      child: Text(
+                        S.of(context).contactClean,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: '#666666'.toColor(),
+                        ),
                       ),
                     ),
                   ),

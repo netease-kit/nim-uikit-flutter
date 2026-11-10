@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/widgets/duo_scaffold.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
@@ -98,15 +99,18 @@ class _BlackListPageState extends State<ContactKitBlackListPage> {
         return viewModel;
       },
       builder: (context, child) {
-        List<NIMUserInfo> users =
-            context.watch<BlackListViewModel>().blackListUsers.toList();
+        // 选择器返回时页面可能已经历 Duo 折叠/展开或路由切换，回调里不要再
+        // 通过 context 查找 Provider；提前拿到 ViewModel，避免异步返回后
+        // 访问已 deactivate 的 Element。
+        final viewModel = context.watch<BlackListViewModel>();
+        List<NIMUserInfo> users = viewModel.blackListUsers.toList();
 
         final bool isDesktop = ChatKitUtils.isDesktopOrWeb;
 
         // 桌面端：使用普通 Scaffold，无返回按钮
         // 移动端：使用 TransparentScaffold，自带返回按钮
         if (isDesktop) {
-          return Scaffold(
+          return DuoScaffold(
             backgroundColor: Colors.white,
             appBar: AppBar(
               automaticallyImplyLeading: false,
@@ -129,10 +133,11 @@ class _BlackListPageState extends State<ContactKitBlackListPage> {
                       context,
                       filter: users.map((e) => e.accountId!).toList(),
                     ).then((value) {
+                      if (!mounted) {
+                        return;
+                      }
                       if (value is List<String> && value.isNotEmpty) {
-                        context
-                            .read<BlackListViewModel>()
-                            .addUserListToBlackList(value);
+                        viewModel.addUserListToBlackList(value);
                       }
                     });
                   },
@@ -181,10 +186,11 @@ class _BlackListPageState extends State<ContactKitBlackListPage> {
                   context,
                   filter: users.map((e) => e.accountId!).toList(),
                 ).then((value) {
+                  if (!mounted) {
+                    return;
+                  }
                   if (value is List<String> && value.isNotEmpty) {
-                    context.read<BlackListViewModel>().addUserListToBlackList(
-                          value,
-                        );
+                    viewModel.addUserListToBlackList(value);
                   }
                 });
               },

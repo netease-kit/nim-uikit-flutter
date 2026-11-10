@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:lottie/lottie.dart';
+import 'package:netease_common_ui/duo/duo_dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:nim_chatkit/manager/ai_user_manager.dart';
@@ -91,7 +92,7 @@ class _TranslatePanelState extends State<TranslatePanel> {
   }
 
   void _showLanguageSelector() {
-    showModalBottomSheet(
+    showDuoModalBottomSheet(
       context: context,
       builder: (BuildContext context) {
         return SizedBox(

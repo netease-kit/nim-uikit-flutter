@@ -6,6 +6,7 @@ import 'package:azlistview_plus/azlistview_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:lpinyin/lpinyin.dart';
+import 'package:netease_common_ui/duo/duo_drawer_navigation.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/radio_button.dart';
@@ -330,15 +331,14 @@ class ContactListViewState extends State<ContactListView> {
       if (ChatKitUtils.isDesktopOrWeb) {
         _showDesktopContactDetail(context, contactInfo.user.accountId!);
       } else {
-        Navigator.push(
+        pushDuoDrawerPage(
           context,
-          MaterialPageRoute(
-            builder: (context) {
-              return ContactKitDetailPage(
-                accId: contactInfo.user.accountId!,
-              );
-            },
-          ),
+          (context) {
+            return ContactKitDetailPage(
+              accId: contactInfo.user.accountId!,
+            );
+          },
+          routeKey: 'contact.detail.${contactInfo.user.accountId}',
         );
       }
     }

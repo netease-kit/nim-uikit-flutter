@@ -552,6 +552,12 @@ abstract class DemoKitClientLocalizations {
   /// In en, this message translates to:
   /// **'Translate'**
   String get messageTranslationSetting;
+
+  /// No description provided for @messageReactionSetting.
+  ///
+  /// In en, this message translates to:
+  /// **'Message reactions'**
+  String get messageReactionSetting;
 }
 
 class _DemoKitClientLocalizationsDelegate

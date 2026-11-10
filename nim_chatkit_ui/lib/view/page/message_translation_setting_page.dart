@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
 import 'package:netease_common_ui/ui/background.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
@@ -53,7 +54,7 @@ class _MessageTranslationSettingPageState
         ? await showDesktopDialog<String>(context, languagePage)
         : await Navigator.push<String>(
             context,
-            MaterialPageRoute(
+            DuoPageRoute(
               builder: (context) => languagePage,
             ),
           );

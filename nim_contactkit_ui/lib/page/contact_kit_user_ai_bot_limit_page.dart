@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/widgets/duo_scaffold.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
 
@@ -55,7 +56,7 @@ class ContactKitUserAIBotLimitPage extends StatelessWidget {
       ),
     );
     if (ChatKitUtils.isDesktopOrWeb) {
-      return Scaffold(
+      return DuoScaffold(
         backgroundColor: const Color(0xFFEFF1F4),
         appBar: AppBar(
           automaticallyImplyLeading: false,

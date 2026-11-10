@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 // Copyright (c) 2022 NetEase, Inc. All rights reserved.
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
@@ -359,22 +361,29 @@ class MoreActionPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sw = MediaQuery.of(context).size.width;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ConstrainedBox(
         constraints: const BoxConstraints.expand(),
-        child: Wrap(
-          spacing: (sw - 56 * 4 - 16 * 2) / 3,
-          runSpacing: 16,
-          children: actions.map((action) {
-            return MoreItemAction(
-              action: action,
-              conversationId: conversationId,
-              conversationType: conversationType,
-              messageSender: messageSender,
+        // 间距必须按“更多面板实际可用宽度”计算：Duo 展开双屏时面板只占右侧
+        // 聊天区，用整窗宽度（含左侧会话列表和右侧工具栏）计算会把间距放大到
+        // 数百像素，导致每行只能放下两个入口、看起来像布局错乱。
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final double sw = constraints.maxWidth;
+            return Wrap(
+              spacing: math.max(0, (sw - 56 * 4) / 3),
+              runSpacing: 16,
+              children: actions.map((action) {
+                return MoreItemAction(
+                  action: action,
+                  conversationId: conversationId,
+                  conversationType: conversationType,
+                  messageSender: messageSender,
+                );
+              }).toList(),
             );
-          }).toList(),
+          },
         ),
       ),
     );

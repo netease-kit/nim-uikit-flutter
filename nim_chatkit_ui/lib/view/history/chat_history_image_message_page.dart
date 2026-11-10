@@ -5,6 +5,7 @@
 import 'dart:collection';
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
 import 'package:netease_common_ui/base/base_state.dart';
@@ -304,7 +305,7 @@ class ChatHistoryImageMessagePageState
           final messagesList = _historyMessages;
           Navigator.push(
             context,
-            MaterialPageRoute(
+            DuoPageRoute(
               builder: (context) => PictureViewer(
                 messages: messagesList,
                 showIndex: messagesList.indexOf(message),

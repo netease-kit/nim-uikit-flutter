@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/widgets/duo_scaffold.dart';
 import 'package:flutter/services.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
@@ -22,7 +23,7 @@ class ContactKitUserAIBotConfigPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final body = _UserAIBotConfigContent(config: config);
     if (ChatKitUtils.isDesktopOrWeb) {
-      return Scaffold(
+      return DuoScaffold(
         backgroundColor: const Color(0xFFEFF1F4),
         appBar: AppBar(
           automaticallyImplyLeading: false,

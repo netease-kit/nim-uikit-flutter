@@ -4,6 +4,8 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/duo/duo_page_chrome.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/background.dart';
@@ -118,7 +120,7 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
               );
               Navigator.push(
                 context,
-                MaterialPageRoute(
+                DuoPageRoute(
                   builder: (context) {
                     return TeamKitTeamInfoPage(
                       team: team,
@@ -169,7 +171,7 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
         GestureDetector(
           onTap: () {
             Navigator.of(context).push(
-              MaterialPageRoute(
+              DuoPageRoute(
                 builder: (context) => TeamKitMemberListPage(
                   tId: team.teamId,
                   isGroupTeam: getIt<TeamProvider>().isGroupTeam(team),
@@ -324,6 +326,7 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
 
   Widget _setting(BuildContext context, TeamWithMember teamMember) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: ListTile.divideTiles(
         context: context,
         tiles: [
@@ -338,7 +341,7 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
                   if (widget.isPanel && widget.pinPageBuilder != null) {
                     // 面板模式：使用 builder 在嵌套 Navigator 中直接 push
                     Navigator.of(context).push(
-                      MaterialPageRoute(
+                      DuoPageRoute(
                         builder: (_) => widget.pinPageBuilder!(
                           result.data!,
                           NIMConversationType.team,
@@ -369,7 +372,7 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
                   if (widget.isPanel && widget.historyPageBuilder != null) {
                     // 面板模式：使用 builder 在嵌套 Navigator 中直接 push
                     Navigator.of(context).push(
-                      MaterialPageRoute(
+                      DuoPageRoute(
                         builder: (_) => widget.historyPageBuilder!(
                           conversationId!,
                           NIMConversationType.team,
@@ -469,7 +472,7 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
 
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
+                  DuoPageRoute(
                     builder: (context) => UpdateTextInfoPage(
                       title: S.of(context).teamMyNicknameTitle,
                       content: teamNick,
@@ -497,6 +500,7 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
 
   Widget _teamManage(BuildContext context, TeamWithMember teamWithMember) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: ListTile.divideTiles(
         context: context,
         tiles: [
@@ -528,7 +532,7 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
+                  DuoPageRoute(
                     builder: (context) {
                       return TeamKitManagerPage(team: teamWithMember.team);
                     },
@@ -630,9 +634,9 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
   }
 
   Widget _buildTeamContent(BuildContext context) {
-    return ChangeNotifierProvider(
+    final content = ChangeNotifierProvider(
       create: (context) {
-        var vm = TeamSettingViewModel();
+        var vm = TeamSettingViewModel(configuredTeamId: widget.teamId);
         vm.requestTeamData(widget.teamId);
         vm.requestTeamMembers(widget.teamId);
         vm.addTeamSubscribe();
@@ -690,6 +694,19 @@ class _TeamSettingPageState extends State<TeamSettingPage> {
               )
             : const Center(child: CircularProgressIndicator());
       },
+    );
+    // Duo 右侧抽屉已经通过 DuoPageRoute 预留了工具栏宽度，而系统上报的
+    // 右侧安全区（内屏摄像头/状态栏）比工具栏更宽。ListTile 内部的
+    // SafeArea 会再内缩一次，导致设置项右侧箭头比上方群信息箭头更靠左。
+    // 仅在 Duo 抽屉内去掉水平安全区，其他端和单屏 iPhone 保持原样。
+    if (DuoPageChromeScope.maybeOf(context) == null) {
+      return content;
+    }
+    return MediaQuery.removePadding(
+      context: context,
+      removeLeft: true,
+      removeRight: true,
+      child: content,
     );
   }
 

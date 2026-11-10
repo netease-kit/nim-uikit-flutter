@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/extension.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
@@ -108,7 +109,7 @@ class _ChatHistoryMessageVideoState extends State<ChatHistoryVideoMessageItem> {
     ChatAudioPlayer.instance.stopAll();
     Navigator.push(
       context,
-      MaterialPageRoute(
+      DuoPageRoute(
         builder: (context) => VideoViewer(message: widget.message),
       ),
     );

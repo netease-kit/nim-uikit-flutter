@@ -196,7 +196,7 @@ class TeamKitClientLocalizationsZh extends TeamKitClientLocalizations {
   String get teamManageJoinNeedAccept => '入群邀请需同意';
 
   @override
-  String get teamManageJoinNeedAcceptDetail => '开启后，拉入入群， 需被邀请人同意后才可成功';
+  String get teamManageJoinNeedAcceptDetail => '开启后，拉人入群， 需被邀请人同意后才可成功';
 
   @override
   String get teamManageApplyNeedAccept => '入群审核';

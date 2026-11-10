@@ -41,6 +41,8 @@ class ConversationViewModel extends ChangeNotifier {
   bool _refreshingUnreadCount = false;
   bool _pendingUnreadCountRefresh = false;
   bool _disposed = false;
+  bool _refreshingVisibleUserInfo = false;
+  final Set<String> _requestedVisibleUserIds = {};
 
   final int pageLimit = 50;
   int _offset = 0; //分页加载
@@ -564,7 +566,6 @@ class ConversationViewModel extends ChangeNotifier {
       if (myId != null) {
         final aitSessionList = await AitServer.instance.getAllAitSession(myId);
         var resultList = convertConversationInfo(_resultData.conversationList)!;
-        List<String> userIdList = [];
         for (int index = resultList.length - 1; index >= 0; index--) {
           var element = resultList[index];
           if (IMKitConfigCenter.deleteTeamSessionWhenLeave &&
@@ -578,17 +579,11 @@ class ConversationViewModel extends ChangeNotifier {
                 element.haveBeenAit = true;
               }
             }
-            if (element.conversation.type == NIMConversationType.p2p &&
-                getIt<ContactProvider>().getContactInCache(element.targetId) ==
-                    null) {
-              userIdList.add(element.targetId);
-            }
           }
         }
         _conversationList.addAll(resultList);
         subscribeP2PUserStatus(resultList);
         notifyListeners();
-        fetchUserInfo(userIdList);
       }
       _isLoading = false;
     }
@@ -664,6 +659,56 @@ class ConversationViewModel extends ChangeNotifier {
     if (userIds != null && userIds.length > 0) {
       ContactRepo.getUserListFromCloud(userIds);
     }
+  }
+
+  /// 仅补拉可见的占位 P2P 会话资料，每个用户在本列表生命周期内请求一次。
+  Future<void> refreshVisibleUserInfo(
+    List<ConversationInfo> visibleConversations,
+  ) async {
+    if (_disposed || _refreshingVisibleUserInfo) return;
+    final userIds = visibleConversations
+        .where(_needsUserInfo)
+        .map((e) => e.targetId)
+        .where((id) => !_requestedVisibleUserIds.contains(id))
+        .toSet()
+        .toList();
+    if (userIds.isEmpty) return;
+
+    _refreshingVisibleUserInfo = true;
+    _requestedVisibleUserIds.addAll(userIds);
+    try {
+      final result = await ContactRepo.getUserList(userIds);
+      if (_disposed) return;
+      if (result.isSuccess && result.data != null) {
+        final users = {
+          for (final user in result.data!) user.accountId: user,
+        };
+        // 自定义分组可能持有独立的 ConversationInfo，也需要更新。
+        for (final info in {..._conversationList, ...visibleConversations}) {
+          final user = users[info.targetId];
+          if (user != null && _needsUserInfo(info)) {
+            if (user.name?.isNotEmpty == true) {
+              info.conversation.name = user.name;
+            }
+            info.conversation.avatar = user.avatar;
+          }
+        }
+      } else {
+        _logI('refreshVisibleUserInfo failed: ${result.code}');
+      }
+    } catch (error) {
+      _logI('refreshVisibleUserInfo failed: $error');
+    } finally {
+      _refreshingVisibleUserInfo = false;
+      // 触发下一帧可见项检查，处理请求期间发生的滚动或分组切换。
+      if (!_disposed) notifyListeners();
+    }
+  }
+
+  bool _needsUserInfo(ConversationInfo info) {
+    return info.conversation.type == NIMConversationType.p2p &&
+        info.conversation.name == info.targetId &&
+        info.conversation.avatar?.isNotEmpty != true;
   }
 
   ///删除会话

@@ -2,6 +2,7 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+import 'dart:collection';
 import 'dart:core';
 
 import 'package:flutter/material.dart';
@@ -20,6 +21,7 @@ import 'package:nim_chatkit/model/bot_subsession_models.dart';
 import 'l10n/S.dart';
 import 'view/chat_kit_message_list/item/chat_kit_message_item.dart';
 import 'view/input/actions.dart';
+import 'view/input/emoji_panel_extension.dart';
 import 'view/page/bot_subsession_list_page.dart';
 import 'view/page/chat_page.dart';
 import 'view/page/chat_search_page.dart';
@@ -41,6 +43,15 @@ const String kPackage = 'nim_chatkit_ui';
 ///title 可用于关键字搜索
 ///[messages] 被合并的消息
 typedef MergedMessageTitle = Future<String> Function(List<NIMMessage> messages);
+
+///消息表情快捷回复资源构建器
+///[index] SDK 快捷评论索引
+///[size] 资源最大边长
+typedef MessageReactionEmojiBuilder = Widget Function(
+  BuildContext context,
+  int index,
+  double size,
+);
 
 ///聊天页面客户自定义配置
 class ChatUIConfig {
@@ -159,6 +170,9 @@ class ChatUIConfig {
   /// [onClose] 关闭警告提示栏的回调
   Widget Function(VoidCallback onClose)? warningWidgetBuilder;
 
+  ///消息表情快捷回复资源构建器，不设置则使用 UIKit 默认资源
+  MessageReactionEmojiBuilder? messageReactionEmojiBuilder;
+
   ChatUIConfig({
     this.showTeamMessageStatus,
     this.receiveMessageBg,
@@ -193,6 +207,8 @@ class ChatUIConfig {
     this.onTeamDismissOrLeave,
     this.messageLinkColor,
     this.teamSettingPanelBuilder,
+    this.warningWidgetBuilder,
+    this.messageReactionEmojiBuilder,
   });
 }
 
@@ -271,6 +287,9 @@ class PopMenuConfig {
 class ChatKitClient {
   ChatUIConfig chatUIConfig = ChatUIConfig();
 
+  final LinkedHashMap<String, EmojiPanelExtension> _emojiPanelExtensions =
+      LinkedHashMap<String, EmojiPanelExtension>();
+
   ///消息发送之前的回调，可使用其添加扩展
   NIMMessageAction? messageAction;
 
@@ -283,6 +302,25 @@ class ChatKitClient {
   ChatKitClient._();
 
   static final ChatKitClient instance = ChatKitClient._();
+
+  /// Registers or replaces an optional emoji-panel extension.
+  ///
+  /// Replacing the same ID preserves its original display position.
+  void registerEmojiPanelExtension(EmojiPanelExtension extension) {
+    if (extension.id.isEmpty) {
+      return;
+    }
+    _emojiPanelExtensions[extension.id] = extension;
+  }
+
+  /// Removes a previously registered emoji-panel extension.
+  void unregisterEmojiPanelExtension(String extensionId) {
+    _emojiPanelExtensions.remove(extensionId);
+  }
+
+  /// Returns an immutable snapshot in registration order.
+  List<EmojiPanelExtension> get emojiPanelExtensions =>
+      List<EmojiPanelExtension>.unmodifiable(_emojiPanelExtensions.values);
 
   static get delegate {
     return S.delegate;

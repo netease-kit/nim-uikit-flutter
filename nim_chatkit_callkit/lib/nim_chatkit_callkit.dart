@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_callkit_ui/ne_callkit_ui.dart';
+import 'package:netease_common_ui/duo/duo_dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_corekit/report/xkit_report.dart';
 import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
@@ -178,7 +179,7 @@ class ChatKitCall {
       );
     }
 
-    return showModalBottomSheet<int>(
+    return showDuoModalBottomSheet<int>(
       context: context,
       backgroundColor: Colors.white,
       builder: (context) {

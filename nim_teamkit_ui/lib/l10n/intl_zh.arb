@@ -67,7 +67,7 @@
   "teamMemberEmpty": "暂无成员",
   "teamEnterManager": "进群管理",
   "teamManageJoinNeedAccept": "入群邀请需同意",
-  "teamManageJoinNeedAcceptDetail": "开启后，拉入入群， 需被邀请人同意后才可成功",
+  "teamManageJoinNeedAcceptDetail": "开启后，拉人入群， 需被邀请人同意后才可成功",
   "teamManageApplyNeedAccept": "入群审核",
   "teamManageApplyNeedAcceptDetail": "开启后，成员入群时需要群主或管理同意后才可加入",
   "teamId": "群号：{teamId}",

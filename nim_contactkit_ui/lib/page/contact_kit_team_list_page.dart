@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/widgets/duo_scaffold.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
@@ -97,7 +98,7 @@ class _TeamListPageState extends State<ContactKitTeamListPage> {
 
         // 桌面端：使用普通 Scaffold，无返回按钮
         if (ChatKitUtils.isDesktopOrWeb) {
-          return Scaffold(
+          return DuoScaffold(
             backgroundColor: Colors.white,
             appBar: AppBar(
               automaticallyImplyLeading: false,

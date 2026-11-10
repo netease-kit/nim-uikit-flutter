@@ -23,6 +23,7 @@ class DesktopSettingsDialog extends StatefulWidget {
 
 class _DesktopSettingsDialogState extends State<DesktopSettingsDialog> {
   bool _messageReadMode = false;
+  bool _messageReactionMode = true;
   bool _enableCloudConversation = false;
   bool _enableAIStream = true;
   bool _enableSafetyTips = true;
@@ -38,6 +39,7 @@ class _DesktopSettingsDialogState extends State<DesktopSettingsDialog> {
 
   Future<void> _loadSettings() async {
     final messageReadMode = await ConfigRepo.getShowReadStatus();
+    final messageReactionMode = await IMKitClient.enableMessageReaction;
     final enableCloudConversation = await IMKitClient.enableCloudConversation;
     final enableAIStream = await IMKitClient.enableAIStream;
     final enableSafetyTips = await IMKitClient.enableSafetyTips;
@@ -45,6 +47,7 @@ class _DesktopSettingsDialogState extends State<DesktopSettingsDialog> {
     if (mounted) {
       setState(() {
         _messageReadMode = messageReadMode;
+        _messageReactionMode = messageReactionMode;
         _enableCloudConversation = enableCloudConversation;
         _enableAIStream = enableAIStream;
         _enableSafetyTips = enableSafetyTips;
@@ -107,6 +110,18 @@ class _DesktopSettingsDialogState extends State<DesktopSettingsDialog> {
                       onChanged: (v) {
                         ConfigRepo.updateShowReadStatus(v);
                         setState(() => _messageReadMode = v);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    _buildDropdownRow(
+                      label: S.of(context).messageReactionSetting,
+                      value: _messageReactionMode,
+                      onChanged: (v) async {
+                        await IMKitClient.setEnableMessageReaction(v);
+                        if (!mounted) {
+                          return;
+                        }
+                        setState(() => _messageReactionMode = v);
                       },
                     ),
                     const SizedBox(height: 16),

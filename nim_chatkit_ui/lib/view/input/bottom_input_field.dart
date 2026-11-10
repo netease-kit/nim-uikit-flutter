@@ -19,6 +19,7 @@ import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/imagePicker/wechat_assets_picker.dart';
 import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
+import 'package:nim_chatkit/window_adaptation.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/manager/ai_robot_manager.dart';
 import 'package:nim_chatkit/manager/ai_user_manager.dart';
@@ -28,15 +29,22 @@ import 'package:nim_chatkit/services/login/im_login_service.dart';
 import 'package:nim_chatkit/services/message/chat_message.dart';
 import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
 import 'package:nim_chatkit/utils/toast_utils.dart';
+import 'package:nim_chatkit_ui/helper/ait_member_search_helper.dart';
+import 'package:nim_chatkit_ui/helper/chat_image_send_helper.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_helper.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_user_helper.dart';
+import 'package:nim_chatkit_ui/helper/chat_video_send_helper.dart';
+import 'package:netease_common_ui/duo/duo_shell_controller.dart';
+import 'package:nim_chatkit_ui/helper/duo_layout.dart';
 import 'package:nim_chatkit_ui/view/ait/ait_manager.dart';
 import 'package:nim_chatkit_ui/view/ait/ait_model.dart';
 import 'package:nim_chatkit_ui/view/input/emoji/emoji.dart';
 import 'package:nim_chatkit_ui/view/input/emoji/emoji_text.dart';
 import 'package:nim_chatkit_ui/view/input/emoji_panel.dart';
+import 'package:nim_chatkit_ui/view/input/emoji_panel_extension.dart';
 import 'package:nim_chatkit_ui/view/input/ne_special_text_span_builder.dart';
 import 'package:nim_chatkit_ui/view/input/translate_panel.dart';
+import 'package:nim_chatkit_ui/widget/ait_member_highlight_text.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
@@ -194,14 +202,28 @@ class _BottomInputFieldState extends State<BottomInputField>
 
     final buttonPosition = buttonBox.localToGlobal(Offset.zero);
 
-    // 弹框尺寸：每行9个表情，每个40px，加上 padding
-    const double popupWidth = 9 * 44.0 + 32;
-    const double popupHeight = 380.0;
+    final mediaSize = MediaQuery.of(context).size;
+    // 每行9个表情，并约束到当前窗口安全区域。
+    final availableWidth = mediaSize.width > 16 ? mediaSize.width - 16 : 1.0;
+    final availableHeight = mediaSize.height > 16 ? mediaSize.height - 16 : 1.0;
+    final double popupWidth =
+        availableWidth < 9 * 44.0 + 32 ? availableWidth : 9 * 44.0 + 32;
+    final double popupHeight =
+        availableHeight < 380.0 ? availableHeight : 380.0;
 
     // 弹框位置：在按钮上方，水平居中对齐
     final double left =
         buttonPosition.dx + buttonBox.size.width / 2 - popupWidth / 2;
-    final double top = buttonPosition.dy - popupHeight - 8;
+    final preferredTop = buttonPosition.dy - popupHeight - 8;
+    final belowTop = buttonPosition.dy + buttonBox.size.height + 8;
+    final maxTop = mediaSize.height - popupHeight - 8;
+    final double top = maxTop <= 8
+        ? 8
+        : (preferredTop >= 8 ? preferredTop : belowTop)
+            .clamp(8.0, maxTop)
+            .toDouble();
+    final hasExtensions =
+        ChatKitClient.instance.emojiPanelExtensions.isNotEmpty;
 
     _desktopEmojiOverlay = OverlayEntry(
       builder: (context) {
@@ -219,7 +241,7 @@ class _BottomInputFieldState extends State<BottomInputField>
             Positioned(
               left: left.clamp(
                   8.0, MediaQuery.of(context).size.width - popupWidth - 8),
-              top: top.clamp(8.0, double.infinity),
+              top: top,
               child: Material(
                 elevation: 8,
                 borderRadius: BorderRadius.circular(12),
@@ -231,12 +253,18 @@ class _BottomInputFieldState extends State<BottomInputField>
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: _DesktopEmojiGrid(
-                    onEmojiSelected: (emoji) {
-                      _onDesktopEmojiSelected(emoji);
-                    },
-                    onEmojiDelete: _onDesktopEmojiDelete,
-                  ),
+                  child: hasExtensions
+                      ? EmojiPanel(
+                          displayMode: EmojiPanelDisplayMode.desktopOrWeb,
+                          onEmojiSelected: _onDesktopEmojiSelected,
+                          onEmojiDelete: _onDesktopEmojiDelete,
+                          onEmojiSendClick: _sendEmojiTextMessage,
+                          sendImage: _sendExtensionImage,
+                        )
+                      : _DesktopEmojiGrid(
+                          onEmojiSelected: _onDesktopEmojiSelected,
+                          onEmojiDelete: _onDesktopEmojiDelete,
+                        ),
                 ),
               ),
             ),
@@ -259,6 +287,46 @@ class _BottomInputFieldState extends State<BottomInputField>
       setState(() {
         _currentType = ActionConstants.none;
       });
+    }
+  }
+
+  Future<bool> _sendExtensionImage(ChatImageSendRequest request) async {
+    if (!request.isValid || !mounted || _isDisposing) {
+      return false;
+    }
+
+    try {
+      if (kIsWeb) {
+        _viewModel.sendImageMessage(
+          '',
+          request.fileName,
+          request.width,
+          request.height,
+          imageType: request.imageType,
+          fileBytes: request.bytes,
+        );
+        return true;
+      }
+
+      final path = await ChatImageSendHelper.materialize(request);
+      if (path == null || !mounted || _isDisposing) {
+        return false;
+      }
+      _viewModel.sendImageMessage(
+        path,
+        request.fileName,
+        request.width,
+        request.height,
+        imageType: request.imageType,
+      );
+      return true;
+    } catch (error) {
+      Alog.e(
+        tag: 'ChatKit',
+        moduleName: 'emoji panel image sender',
+        content: 'prepare extension image failed: $error',
+      );
+      return false;
     }
   }
 
@@ -290,6 +358,12 @@ class _BottomInputFieldState extends State<BottomInputField>
 
     final containerPosition = containerBox.localToGlobal(Offset.zero);
     final containerWidth = containerBox.size.width;
+    // Duo 双屏时 @ 列表属于右侧聊天面板，不能沿用输入框自身的宽度：
+    // 输入框通常带有左右边距，弹框会因此比右侧聊天屏幕窄一截。
+    // 使用聊天面板边界让弹框铺满右侧内容区，同时不覆盖最右侧工具栏。
+    final duoPaneBounds = DuoLayout.chatPaneBounds(context);
+    final popupPosition = duoPaneBounds?.topLeft ?? containerPosition;
+    final popupWidth = duoPaneBounds?.width ?? containerWidth;
 
     const double maxHeight = 320.0;
     const double itemHeight = 56.0;
@@ -304,8 +378,8 @@ class _BottomInputFieldState extends State<BottomInputField>
       builder: (overlayContext) {
         return _DesktopAitPopup(
           aitManager: _aitManager!,
-          containerPosition: containerPosition,
-          containerWidth: containerWidth,
+          containerPosition: popupPosition,
+          containerWidth: popupWidth,
           screenHeight: screenHeight,
           maxHeight: maxHeight,
           itemHeight: itemHeight,
@@ -588,24 +662,54 @@ class _BottomInputFieldState extends State<BottomInputField>
     setState(() {});
   }
 
+  /// 打开相册选择页。
+  ///
+  /// 选择页是整窗路由，而 Duo 的右侧工具栏绘制在 Navigator 之上。选择页展示
+  /// 期间隐藏工具栏，避免它盖住底部的确认按钮；选择页内部会通过
+  /// [DuoShellController.reservedRightWidth] 为工具栏宽度预留网格右侧留白，
+  /// 所以右侧一列图片和勾选框仍能完整展示。选择页自带关闭按钮，返回路径
+  /// 不受影响。
+  Future<List<AssetEntity>?> _pickAssets(
+    BuildContext context,
+    RequestType requestType,
+    int maxAssets,
+  ) async {
+    final DuoShellController shell = DuoShellController.instance;
+    final bool hideDuoRail = shell.enabled && !shell.fullScreenActive;
+    if (hideDuoRail) {
+      shell.fullScreenPushed();
+    }
+    try {
+      return await AssetPicker.pickAssets(
+        context,
+        pickerConfig: AssetPickerConfig(
+          requestType: requestType,
+          shouldRevertGrid: false,
+          maxAssets: maxAssets,
+          dragToSelect: false,
+          limitedPermissionOverlayPredicate: (state) => false,
+          filterOptions: FilterOptionGroup(
+            imageOption: const FilterOption(needTitle: true),
+            videoOption: const FilterOption(needTitle: true),
+          ),
+        ),
+      );
+    } finally {
+      if (hideDuoRail) {
+        shell.fullScreenPopped();
+      }
+    }
+  }
+
   void showImagePicker(
     BuildContext context,
     RequestType requestType,
     int maxAssets,
   ) async {
-    final List<AssetEntity>? result = await AssetPicker.pickAssets(
+    final List<AssetEntity>? result = await _pickAssets(
       context,
-      pickerConfig: AssetPickerConfig(
-        requestType: requestType,
-        shouldRevertGrid: false,
-        maxAssets: maxAssets,
-        dragToSelect: false,
-        limitedPermissionOverlayPredicate: (state) => false,
-        filterOptions: FilterOptionGroup(
-          imageOption: const FilterOption(needTitle: true),
-          videoOption: const FilterOption(needTitle: true),
-        ),
-      ),
+      requestType,
+      maxAssets,
     );
     if (result != null) {
       for (var entity in result) {
@@ -634,12 +738,27 @@ class _BottomInputFieldState extends State<BottomInputField>
               );
               return;
             }
+            var videoSize = Size(
+              entity.width.toDouble(),
+              entity.height.toDouble(),
+            );
+            if (!ChatKitUtils.isDesktopOrWeb) {
+              final resolvedSize =
+                  await ChatVideoSendHelper.resolveAlbumVideoSize(
+                file,
+                fallbackSize: entity.orientatedSize,
+              );
+              if (!mounted) return;
+              if (resolvedSize != null) {
+                videoSize = resolvedSize;
+              }
+            }
             _viewModel.sendVideoMessage(
               file.path,
               entity.title,
               entity.duration * 1000,
-              entity.width,
-              entity.height,
+              videoSize.width.toInt(),
+              videoSize.height.toInt(),
             );
           }
         }
@@ -970,7 +1089,8 @@ class _BottomInputFieldState extends State<BottomInputField>
           );
           inputText = text;
         },
-        onEmojiSendClick: _sendTextMessage,
+        onEmojiSendClick: _sendEmojiTextMessage,
+        sendImage: _sendExtensionImage,
       );
     }
     return Container();
@@ -1146,7 +1266,11 @@ class _BottomInputFieldState extends State<BottomInputField>
     inputText = value;
   }
 
-  _sendTextMessage() {
+  void _sendEmojiTextMessage() {
+    _sendTextMessage(restoreInputFocus: false);
+  }
+
+  void _sendTextMessage({bool restoreInputFocus = true}) {
     final title = titleController.text.trim();
     var text = inputController.text.trim();
     if (_aitManager?.aitEnd(text) == true) {
@@ -1176,11 +1300,13 @@ class _BottomInputFieldState extends State<BottomInputField>
       setState(() {
         _isExpanded = false;
       });
-      //100ms 后重新Request focus，以此来弹出键盘
-      Future.delayed(Duration(milliseconds: 100)).then((value) {
-        _titleFocusNode.unfocus();
-        _focusNode.requestFocus();
-      });
+      if (restoreInputFocus) {
+        //100ms 后重新Request focus，以此来弹出键盘
+        Future.delayed(Duration(milliseconds: 100)).then((value) {
+          _titleFocusNode.unfocus();
+          _focusNode.requestFocus();
+        });
+      }
     } else {
       ChatUIToast.show(
         S.of(context).chatMessageNotSupportEmptyMessage,
@@ -1363,7 +1489,8 @@ class _BottomInputFieldState extends State<BottomInputField>
     if (!IMKitClient.enableAit) {
       return false;
     }
-    if (widget.conversationType == NIMConversationType.team) {
+    if (widget.conversationType == NIMConversationType.team ||
+        widget.conversationType == NIMConversationType.superTeam) {
       return true;
     }
     final accountId = ChatKitUtils.getConversationTargetId(
@@ -1605,11 +1732,24 @@ class _BottomInputFieldState extends State<BottomInputField>
   }
 
   /// 移动端输入框：保持原有行为
-  Widget _buildMobileInputField(String? hint, bool showTitle) {
+  Widget _buildMobileInputField(
+    String? hint,
+    bool showTitle, {
+    bool stretch = false,
+  }) {
+    // 多行展开态固定 8 行，键盘弹出后 8 行输入区 + 标题 + 发送栏会超过
+    // Duo 面板的剩余高度；Duo 键盘显示时收窄到 3 行（内容仍可内部滚动），
+    // 键盘收起后恢复完整展开高度。非 Duo 设备保持原来的 8 行行为。
+    final bool compactExpanded =
+        WindowAdaptationScope.maybeOf(context)?.isIPhoneDuoPath == true &&
+            View.of(context).viewInsets.bottom > 0;
     return Column(
+      crossAxisAlignment:
+          stretch ? CrossAxisAlignment.stretch : CrossAxisAlignment.center,
       children: [
         SingleChildScrollView(
           child: SizedBox(
+            width: double.infinity,
             height: showTitle ? null : 40,
             child: ExtendedTextField(
               controller: inputController,
@@ -1672,7 +1812,8 @@ class _BottomInputFieldState extends State<BottomInputField>
                 _handleAitText();
                 _translatePanel.currentState?.onInputTextChange();
               },
-              maxLines: _isExpanded ? 8 : (showTitle ? 2 : 1),
+              maxLines:
+                  _isExpanded ? (compactExpanded ? 3 : 8) : (showTitle ? 2 : 1),
               onEditingComplete: _sendTextMessage,
               enabled: !mute,
             ),
@@ -1722,9 +1863,19 @@ class _BottomInputFieldState extends State<BottomInputField>
       _titleFocusNode.unfocus();
     }
     final bool isDesktop = ChatKitUtils.isDesktopOrWeb;
+    final mediaQuery = MediaQuery.of(context);
+    final adaptation = WindowAdaptationScope.maybeOf(context);
+    final bool isDuoPath = adaptation?.isIPhoneDuoPath == true;
+    // Duo 上键盘已经由 Scaffold 让出空间；输入栏再保留底部安全区会把内容
+    // 顶出可视区域，键盘显示期间去掉底部安全区。
+    final bool isDuoKeyboard =
+        isDuoPath && View.of(context).viewInsets.bottom > 0;
+    // Duo 页面可能只占据窗口的一侧；使用父布局的最大约束，
+    // 不使用整块物理窗口宽度，避免折叠单屏/双屏时输入栏被居中或裁切。
+    final inputWidth = isDuoPath ? double.infinity : mediaQuery.size.width;
     return Container(
       key: _inputContainerKey,
-      width: MediaQuery.of(context).size.width,
+      width: inputWidth,
       color: !isDesktop ? const Color(0xffeff1f3) : null,
       margin: isDesktop
           ? const EdgeInsets.only(left: 10, right: 10, bottom: 8)
@@ -1736,9 +1887,19 @@ class _BottomInputFieldState extends State<BottomInputField>
             )
           : null,
       child: SafeArea(
-        // 桌面端不需要底部安全区域
-        bottom: !isDesktop,
+        // 桌面端不需要底部安全区域；Duo 键盘弹出时键盘已覆盖底部安全区。
+        bottom: !isDesktop && !isDuoKeyboard,
+        // Duo：聊天面板本身已由页面布局让出了右侧工具栏（DuoPageRoute 预留
+        // toolbarWidth），而系统上报的右侧安全区（内屏摄像头/状态栏）比工具栏
+        // 更宽，SafeArea 再内缩一次会让输入模块明显短于消息列表和顶部提示，
+        // 右侧留下一大片空白背景。Duo 路径只保留垂直安全区，让输入模块铺满
+        // 聊天面板；其他 iPhone 继续按原来的水平安全区处理，避免横屏刘海遮挡。
+        left: !isDuoPath,
+        right: !isDuoPath,
         child: Column(
+          crossAxisAlignment: isDuoPath
+              ? CrossAxisAlignment.stretch
+              : CrossAxisAlignment.center,
           children: [
             _isTranslating
                 ? AnimatedContainer(
@@ -1807,6 +1968,9 @@ class _BottomInputFieldState extends State<BottomInputField>
                 : Padding(
                     padding: const EdgeInsets.all(7.0),
                     child: Column(
+                      crossAxisAlignment: isDuoPath
+                          ? CrossAxisAlignment.stretch
+                          : CrossAxisAlignment.center,
                       children: [
                         if (showTitle && !mute)
                           TextField(
@@ -1874,18 +2038,27 @@ class _BottomInputFieldState extends State<BottomInputField>
                           ),
                         ChatKitUtils.isDesktopOrWeb
                             ? _buildDesktopInputField(hint, showTitle)
-                            : _buildMobileInputField(hint, showTitle),
+                            : _buildMobileInputField(
+                                hint,
+                                showTitle,
+                                stretch: isDuoPath,
+                              ),
                       ],
                     ),
                   ),
             if (_recording)
               SizedBox(
                 height: 47,
-                child: Text(
-                  S.of(context).chatMessageVoiceIn,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: CommonColors.color_999999,
+                // Duo 输入栏使用 stretch 布局，SizedBox 会占满宽度；这里显式
+                // 居中，避免录音提示文案在 Duo 上靠左。
+                child: Center(
+                  child: Text(
+                    S.of(context).chatMessageVoiceIn,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: CommonColors.color_999999,
+                    ),
                   ),
                 ),
               ),
@@ -1918,9 +2091,14 @@ class _BottomInputFieldState extends State<BottomInputField>
               ),
             if (!mute)
               AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                height: _getPanelHeight(),
-                child: _getPanel(),
+                // 键盘弹出瞬间表情/更多面板正在收起，若仍播放 300ms 动画，
+                // 面板和键盘会同时占用高度，Duo 上会把聊天主体顶到溢出。
+                // Duo 键盘显示时直接收起面板。
+                duration: isDuoKeyboard
+                    ? Duration.zero
+                    : const Duration(milliseconds: 300),
+                height: isDuoKeyboard ? 0 : _getPanelHeight(),
+                child: isDuoKeyboard ? const SizedBox.shrink() : _getPanel(),
               ),
           ],
         ),
@@ -2207,11 +2385,69 @@ class _DesktopAitPopup extends StatefulWidget {
 
 class _DesktopAitPopupState extends State<_DesktopAitPopup> {
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+  String _query = '';
+  bool _loadingAllMembers = false;
+  bool _searchError = false;
+  int _searchGeneration = 0;
+
+  bool get _isSearching => _query.trim().isNotEmpty;
 
   @override
   void dispose() {
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
+  }
+
+  OutlineInputBorder _searchBorder() => const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(4)),
+        borderSide: BorderSide(color: Colors.transparent),
+      );
+
+  void _clearSearch() {
+    _searchController.clear();
+    _searchGeneration++;
+    setState(() {
+      _query = '';
+      _loadingAllMembers = false;
+      _searchError = false;
+    });
+  }
+
+  void _onSearchChanged(String value) {
+    setState(() => _query = value);
+    if (_query.trim().isEmpty || _loadingAllMembers) {
+      return;
+    }
+    final generation = ++_searchGeneration;
+    setState(() {
+      _loadingAllMembers = true;
+      _searchError = false;
+    });
+    unawaited(() async {
+      try {
+        await widget.aitManager.loadAllMembers();
+      } catch (_) {
+        if (mounted && generation == _searchGeneration) {
+          setState(() {
+            _loadingAllMembers = false;
+            _searchError = true;
+          });
+        }
+        return;
+      }
+      if (!mounted || generation != _searchGeneration) {
+        return;
+      }
+      setState(() => _loadingAllMembers = false);
+    }());
+  }
+
+  void _retrySearch() {
+    if (_query.trim().isNotEmpty) {
+      _onSearchChanged(_query);
+    }
   }
 
   @override
@@ -2239,21 +2475,40 @@ class _DesktopAitPopupState extends State<_DesktopAitPopup> {
             child: ValueListenableBuilder<List<AitBean>?>(
               valueListenable: widget.aitManager.aitMemberList,
               builder: (context, value, _) {
-                final members = (value ?? [])
+                final allMembers = (value ?? [])
                     .where(
                       (e) => e.getAccountId() != IMKitClient.account(),
                     )
                     .toList();
+                final members = _isSearching
+                    ? allMembers
+                        .where(
+                          (member) => matchesAitMemberFields(
+                            member.searchableFields,
+                            _query,
+                          ),
+                        )
+                        .toList()
+                    : allMembers;
 
                 // 计算实际高度：头部 + 成员列表（最多 maxHeight）
                 final bool showAll = !widget.aitManager.isP2P &&
+                    !_isSearching &&
                     NIMChatCache.instance.haveAitAllPrivilege();
+                final bool showSearch = !widget.aitManager.isP2P;
+                const double searchHeight = 58.0;
+                const double emptyHeight = 120.0;
                 final int itemCount = members.length + (showAll ? 1 : 0);
-                final double listHeight = (itemCount * widget.itemHeight).clamp(
+                final double fixedHeight =
+                    widget.headerHeight + (showSearch ? searchHeight : 0.0);
+                final double desiredListHeight = itemCount == 0
+                    ? emptyHeight
+                    : itemCount * widget.itemHeight;
+                final double listHeight = desiredListHeight.clamp(
                   0.0,
-                  widget.maxHeight - widget.headerHeight,
+                  widget.maxHeight - fixedHeight,
                 );
-                final double popupHeight = widget.headerHeight + listHeight;
+                final double popupHeight = fixedHeight + listHeight;
 
                 return SizedBox(
                   height: popupHeight,
@@ -2287,41 +2542,113 @@ class _DesktopAitPopupState extends State<_DesktopAitPopup> {
                         ),
                       ),
                       const Divider(height: 1, thickness: 1),
-                      // 成员列表
-                      Expanded(
-                        child: ListView(
-                          controller: _scrollController,
-                          padding: EdgeInsets.zero,
-                          children: [
-                            // @所有人（仅群聊）
-                            if (showAll)
-                              _DesktopAitItem(
-                                leading: SvgPicture.asset(
-                                  'images/ic_team_all.svg',
-                                  package: kPackage,
-                                  height: 36,
-                                  width: 36,
+                      if (showSearch)
+                        SizedBox(
+                          height: searchHeight,
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+                            child: TextField(
+                              controller: _searchController,
+                              onChanged: _onSearchChanged,
+                              textInputAction: TextInputAction.search,
+                              textAlignVertical: TextAlignVertical.center,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: const Color(0xFFF2F4F5),
+                                hintText:
+                                    S.of(context).chatMemberPickerSearchHint,
+                                hintStyle: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFFA6ADB6),
                                 ),
-                                title: S.of(context).chatTeamAitAll,
-                                onTap: () => widget.onSelected(
-                                  AitContactsModel.accountAll,
+                                prefixIcon: const Icon(
+                                  Icons.search,
+                                  size: 16,
+                                  color: Color(0xFFA6ADB6),
                                 ),
+                                prefixIconConstraints: const BoxConstraints(
+                                  minWidth: 36,
+                                  minHeight: 36,
+                                ),
+                                suffixIcon: _isSearching
+                                    ? IconButton(
+                                        onPressed: _clearSearch,
+                                        icon: const Icon(
+                                          Icons.clear,
+                                          size: 16,
+                                          color: Color(0xFFA6ADB6),
+                                        ),
+                                      )
+                                    : null,
+                                suffixIconConstraints: const BoxConstraints(
+                                  minWidth: 36,
+                                  minHeight: 36,
+                                ),
+                                contentPadding: EdgeInsets.zero,
+                                border: _searchBorder(),
+                                enabledBorder: _searchBorder(),
+                                focusedBorder: _searchBorder(),
                               ),
-                            // 成员列表
-                            ...members.map(
-                              (user) => _DesktopAitItem(
-                                leading: Avatar(
-                                  avatar: user.getAvatar(),
-                                  name: user.getAvatarName(),
-                                  height: 36,
-                                  width: 36,
-                                ),
-                                title: user.getName(),
-                                onTap: () => widget.onSelected(user),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF333333),
                               ),
                             ),
-                          ],
+                          ),
                         ),
+                      // 成员列表
+                      Expanded(
+                        child: itemCount == 0
+                            ? (_isSearching && _loadingAllMembers)
+                                ? const _DesktopAitLoadingState()
+                                : (_isSearching && _searchError)
+                                    ? _DesktopAitErrorState(
+                                        onRetry: _retrySearch,
+                                      )
+                                    : AitMemberEmptyState(
+                                        searching: _isSearching)
+                            : ListView(
+                                controller: _scrollController,
+                                padding: EdgeInsets.zero,
+                                children: [
+                                  // @所有人（仅群聊）
+                                  if (showAll)
+                                    _DesktopAitItem(
+                                      leading: SvgPicture.asset(
+                                        'images/ic_team_all.svg',
+                                        package: kPackage,
+                                        height: 36,
+                                        width: 36,
+                                      ),
+                                      title: S.of(context).chatTeamAitAll,
+                                      onTap: () => widget.onSelected(
+                                        AitContactsModel.accountAll,
+                                      ),
+                                    ),
+                                  // 成员列表
+                                  ...members.map((user) {
+                                    final fields = user.searchableFields;
+                                    final displayName = user.displayName;
+                                    final subtitles = findAitMemberSubtitles(
+                                      fields,
+                                      displayName,
+                                      _query,
+                                    );
+                                    return _DesktopAitItem(
+                                      leading: Avatar(
+                                        avatar: user.getAvatar(),
+                                        name: user.getAvatarName(),
+                                        height: 36,
+                                        width: 36,
+                                      ),
+                                      title: displayName,
+                                      subtitles: subtitles,
+                                      query: _query,
+                                      onTap: () => widget.onSelected(user),
+                                    );
+                                  }),
+                                ],
+                              ),
                       ),
                     ],
                   ),
@@ -2335,15 +2662,54 @@ class _DesktopAitPopupState extends State<_DesktopAitPopup> {
   }
 }
 
+class _DesktopAitLoadingState extends StatelessWidget {
+  const _DesktopAitLoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const CircularProgressIndicator(strokeWidth: 2),
+          const SizedBox(height: 8),
+          Text(S.of(context).chatMemberPickerSearching),
+        ],
+      ),
+    );
+  }
+}
+
+class _DesktopAitErrorState extends StatelessWidget {
+  final VoidCallback onRetry;
+
+  const _DesktopAitErrorState({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: IconButton(
+        tooltip: S.of(context).botSubsessionRetry,
+        onPressed: onRetry,
+        icon: const Icon(Icons.refresh_rounded),
+      ),
+    );
+  }
+}
+
 /// 桌面端 @ 列表单项（支持 hover 高亮）
 class _DesktopAitItem extends StatefulWidget {
   final Widget leading;
   final String title;
+  final List<String> subtitles;
+  final String query;
   final VoidCallback onTap;
 
   const _DesktopAitItem({
     required this.leading,
     required this.title,
+    this.subtitles = const [],
+    this.query = '',
     required this.onTap,
   });
 
@@ -2372,14 +2738,29 @@ class _DesktopAitItemState extends State<_DesktopAitItem> {
               widget.leading,
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  widget.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF333333),
-                  ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AitMemberHighlightText(
+                      displayName: widget.title,
+                      query: widget.query,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF333333),
+                      ),
+                    ),
+                    ...widget.subtitles.map(
+                      (subtitle) => AitMemberHighlightText(
+                        displayName: subtitle,
+                        query: widget.query,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF858A92),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

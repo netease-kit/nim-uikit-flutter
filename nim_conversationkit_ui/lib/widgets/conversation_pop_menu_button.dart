@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/duo/duo_drawer_navigation.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
@@ -45,7 +46,7 @@ class ConversationPopMenuButton extends StatelessWidget {
       }
       return;
     }
-    await Navigator.pushNamed(context, path);
+    await pushDuoDrawerNamed(context, path);
   }
 
   Future<void> _onMenuSelected(BuildContext context, String value) async {
@@ -54,9 +55,10 @@ class ConversationPopMenuButton extends StatelessWidget {
         if (isDesktopMode) {
           await showDesktopDialog(context, const AddFriendPage());
         } else {
-          await Navigator.push(
+          await pushDuoDrawerPage(
             context,
-            MaterialPageRoute(builder: (_) => const AddFriendPage()),
+            (_) => const AddFriendPage(),
+            routeKey: keyAddFriend,
           );
         }
         break;
@@ -64,9 +66,10 @@ class ConversationPopMenuButton extends StatelessWidget {
         if (isDesktopMode) {
           await showDesktopDialog(context, const JoinTeamPage());
         } else {
-          await Navigator.push(
+          await pushDuoDrawerPage(
             context,
-            MaterialPageRoute(builder: (_) => const JoinTeamPage()),
+            (_) => const JoinTeamPage(),
+            routeKey: keyJoinTeam,
           );
         }
         break;

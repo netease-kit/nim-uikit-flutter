@@ -1,6 +1,6 @@
 name: nim_chatkit_callkit
 description: "A Flutter project for yunxin im chatkit"
-version: 10.9.5
+version: 10.9.70
 homepage: https://github.com/netease-kit/nim-uikit-flutter
 
 environment:
@@ -14,14 +14,15 @@ dependencies:
     sdk: flutter
 
   netease_common_ui:
-    ">=10.9.5 <10.9.10"
+    ">=10.9.70 <10.9.80"
 #    path: ../../common/netease_common_ui
   netease_corekit:
      ">=1.3.0 <1.4.0"
 #    path: ../../netease_corekit/netease_corekit
-  nim_chatkit: ^10.9.5
+  nim_chatkit:
+    ">=10.9.71 <10.9.80"
 #    path: ../nim_chatkit
-  nim_core_v2: ^10.9.90
+  nim_core_v2: ^10.10.0
 #    path: ../../nim_core_v2/nim_core_v2
 
   netease_plugin_core_kit:
@@ -35,8 +36,8 @@ dependencies:
   flutter_svg: ^2.0.7
   yunxin_alog: ^2.0.0
     #  呼叫组件
-  netease_callkit_ui: ^4.5.0+3
-  netease_callkit: ^4.5.0+3
+  netease_callkit_ui: ^4.8.8
+  netease_callkit: ^4.8.8
 
 dependency_overrides:
   flutter_sound_web: null

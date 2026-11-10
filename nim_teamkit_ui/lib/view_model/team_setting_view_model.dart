@@ -8,12 +8,18 @@ import 'package:flutter/material.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
 import 'package:nim_chatkit/model/team_models.dart';
 import 'package:nim_chatkit/repo/team_repo.dart';
+import 'package:nim_chatkit/repo/team_member_search_repository.dart';
+import 'package:nim_chatkit/model/user_search_models.dart';
 import 'package:nim_chatkit/service_locator.dart';
 import 'package:nim_chatkit/services/login/im_login_service.dart';
 import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
 import 'package:nim_core_v2/nim_core.dart';
 
 class TeamSettingViewModel extends ChangeNotifier {
+  final String? configuredTeamId;
+
+  TeamSettingViewModel({this.configuredTeamId});
+
   //当前用户在群里的身份
   TeamWithMember? teamWithMember;
   List<UserInfoWithTeam>? userInfoData;
@@ -36,6 +42,14 @@ class TeamSettingViewModel extends ChangeNotifier {
   String? myTeamNickName;
   //搜索关键字
   String? _searchKey;
+  String get searchKey => _searchKey ?? '';
+  int _searchGeneration = 0;
+  int _memberRequestGeneration = 0;
+  final Map<String, UserInfoWithTeam> _privilegedMembers = {};
+  final Set<String> _removedDuringSearch = {};
+  bool _disposed = false;
+  bool isFilterLoading = false;
+  bool isFilterError = false;
 
   List<StreamSubscription> _teamSub = List.empty(growable: true);
 
@@ -58,17 +72,78 @@ class TeamSettingViewModel extends ChangeNotifier {
     agreeMode =
         teamWithMember?.team.agreeMode == NIMTeamAgreeMode.agreeModeNoAuth;
     myTeamNickName = teamWithMember?.teamMember?.teamNick;
-    notifyListeners();
+    if (!_disposed) notifyListeners();
   }
 
-  void requestTeamMembers(String teamId) async {
+  void requestTeamMembers(String teamId) {
+    final effectiveTeamId = configuredTeamId ?? teamId;
+    final generation = ++_memberRequestGeneration;
     //先从缓存中获取
-    userInfoData = NIMChatCache.instance.teamMembers;
-    if (userInfoData?.isNotEmpty != true) {
-      NIMChatCache.instance.fetchTeamMember(teamId);
+    final cachedMembers = NIMChatCache.instance.teamMembers;
+    _updatePrivilegedMembers(cachedMembers);
+    userInfoData = _mergePrivilegedMembers(cachedMembers);
+    if (cachedMembers.isEmpty) {
+      NIMChatCache.instance.fetchTeamMember(effectiveTeamId);
     }
     filterList = userInfoData;
-    notifyListeners();
+    if (!_disposed) notifyListeners();
+    unawaited(_loadPrivilegedMembers(effectiveTeamId, generation));
+  }
+
+  Future<void> _loadPrivilegedMembers(String teamId, int generation) async {
+    try {
+      final firstMember =
+          userInfoData?.isNotEmpty == true ? userInfoData!.first : null;
+      final teamType = teamWithMember?.team.teamType ??
+          firstMember?.teamInfo.teamType ??
+          NIMTeamType.typeNormal;
+      final members = await getIt<TeamMemberSearchRepository>().loadAll(
+        teamId,
+        teamType,
+        roleQueryType: NIMTeamMemberRoleQueryType.memberRoleQueryTypeManager,
+      );
+      if (_disposed || generation != _memberRequestGeneration) return;
+      _privilegedMembers
+        ..clear()
+        ..addEntries(
+          members.map(
+            (member) => MapEntry(member.teamInfo.accountId, member),
+          ),
+        );
+      userInfoData = _mergePrivilegedMembers(
+        userInfoData ?? NIMChatCache.instance.teamMembers,
+      );
+      if (searchKey.isEmpty) {
+        filterList = userInfoData;
+      } else if (!isFilterLoading) {
+        _filterLocal(searchKey, _searchGeneration);
+      }
+      notifyListeners();
+    } catch (_) {
+      // Keep the normal paged member list usable if the role query fails.
+    }
+  }
+
+  void _updatePrivilegedMembers(Iterable<UserInfoWithTeam> members) {
+    for (final member in members) {
+      final accountId = member.teamInfo.accountId;
+      if (member.teamInfo.memberRole == NIMTeamMemberRole.memberRoleOwner ||
+          member.teamInfo.memberRole == NIMTeamMemberRole.memberRoleManager) {
+        _privilegedMembers[accountId] = member;
+      } else {
+        _privilegedMembers.remove(accountId);
+      }
+    }
+  }
+
+  List<UserInfoWithTeam> _mergePrivilegedMembers(
+    Iterable<UserInfoWithTeam> members,
+  ) {
+    final merged = <String, UserInfoWithTeam>{
+      for (final member in members) member.teamInfo.accountId: member,
+      ..._privilegedMembers,
+    };
+    return sortList(merged.values.toList()) ?? <UserInfoWithTeam>[];
   }
 
   void addTeamSubscribe() {
@@ -83,9 +158,38 @@ class TeamSettingViewModel extends ChangeNotifier {
 
     _teamSub.addAll([
       NIMChatCache.instance.teamMembersNotifier.listen((event) {
-        userInfoData = event;
-        //更新完毕后重新排序,可能有新成员加入
-        filterByText(_searchKey);
+        _updatePrivilegedMembers(event);
+        final mergedEvent = _mergePrivilegedMembers(event);
+        final accountIds =
+            mergedEvent.map((member) => member.teamInfo.accountId).toSet();
+        final removedAccountIds = userInfoData
+                ?.map((member) => member.teamInfo.accountId)
+                .where((accountId) => !accountIds.contains(accountId))
+                .toSet() ??
+            <String>{};
+        final teamId = configuredTeamId ??
+            teamWithMember?.team.teamId ??
+            (userInfoData?.isNotEmpty == true
+                ? userInfoData!.first.teamInfo.teamId
+                : event.isNotEmpty
+                    ? event.first.teamInfo.teamId
+                    : null);
+        if (teamId != null) {
+          getIt<TeamMemberSearchRepository>().invalidate(teamId);
+        }
+        userInfoData = mergedEvent;
+        if (searchKey.isNotEmpty && filterList != null && !isFilterLoading) {
+          // 普通成员缓存可能只加载了部分分页，保留其他分页中的搜索结果。
+          final members = {
+            for (final member in filterList!)
+              if (!removedAccountIds.contains(member.teamInfo.accountId))
+                member.teamInfo.accountId: member,
+            for (final member in mergedEvent) member.teamInfo.accountId: member,
+          };
+          _filterLocal(searchKey, _searchGeneration, members: members.values);
+        } else {
+          filterByText(_searchKey);
+        }
         //移除选择列表中不存在的成员
         if (selectedList.isNotEmpty) {
           var allMembers =
@@ -130,45 +234,120 @@ class TeamSettingViewModel extends ChangeNotifier {
     return TeamRepo.removeTeamManager(tid, NIMTeamType.typeNormal, [accId]);
   }
 
-  Future<NIMResult<void>> removeTeamMember(String tid, String accId) {
-    return TeamRepo.removeTeamMembers(tid, NIMTeamType.typeNormal, [accId]);
+  Future<NIMResult<void>> removeTeamMember(String tid, String accId) async {
+    final result =
+        await TeamRepo.removeTeamMembers(tid, NIMTeamType.typeNormal, [accId]);
+    if (result.isSuccess) {
+      _privilegedMembers.remove(accId);
+      getIt<TeamMemberSearchRepository>().invalidate(tid);
+      if (!_disposed) {
+        userInfoData = userInfoData
+            ?.where((member) => member.teamInfo.accountId != accId)
+            .toList();
+        selectedList
+            .removeWhere((member) => member.teamInfo.accountId == accId);
+        filterList = filterList
+            ?.where((member) => member.teamInfo.accountId != accId)
+            .toList();
+        if (isFilterLoading) _removedDuringSearch.add(accId);
+        notifyListeners();
+      }
+    }
+    return result;
   }
 
   void filterByText(String? filterStr) {
-    _searchKey = filterStr;
-    if (filterStr == null || filterStr.isEmpty) {
+    final query = filterStr?.trim() ?? '';
+    _searchKey = query;
+    final generation = ++_searchGeneration;
+    _removedDuringSearch.clear();
+    if (query.isEmpty) {
+      isFilterLoading = false;
+      isFilterError = false;
       //过滤关键字为空时显示所有成员
       filterList = userInfoData;
       notifyListeners();
       return;
     }
-    var filterResult = userInfoData?.where((member) {
-      if (member.getName().contains(filterStr)) {
-        member.searchPoint = member.getName().length;
-        return true;
-      }
-      return false;
-    }).toList();
-    filterResult?.sort((a, b) {
-      if (a.teamInfo.memberRole == NIMTeamMemberRole.memberRoleOwner) {
-        return -1;
-      } else if (b.teamInfo.memberRole == NIMTeamMemberRole.memberRoleOwner) {
-        return 1;
-      } else if (a.teamInfo.memberRole == NIMTeamMemberRole.memberRoleManager &&
-          b.teamInfo.memberRole != NIMTeamMemberRole.memberRoleManager) {
-        return -1;
-      } else if (a.teamInfo.memberRole != NIMTeamMemberRole.memberRoleManager &&
-          b.teamInfo.memberRole == NIMTeamMemberRole.memberRoleManager) {
-        return 1;
-      } else if (a.teamInfo.joinTime == 0) {
-        return 1;
-      } else if (b.teamInfo.joinTime == 0) {
-        return -1;
-      }
-      return a.teamInfo.joinTime - b.teamInfo.joinTime;
-    });
-    filterList = filterResult;
+    final firstMember =
+        userInfoData?.isNotEmpty == true ? userInfoData!.first : null;
+    final teamId = configuredTeamId ??
+        teamWithMember?.team.teamId ??
+        firstMember?.teamInfo.teamId;
+    if (teamId == null || teamId.isEmpty) {
+      _filterLocal(query, generation);
+      return;
+    }
+    final teamType = teamWithMember?.team.teamType ??
+        firstMember?.teamInfo.teamType ??
+        NIMTeamType.typeNormal;
+    isFilterLoading = true;
+    isFilterError = false;
+    filterList = null;
     notifyListeners();
+    unawaited(_filterMembers(teamId, teamType, query, generation));
+  }
+
+  Future<void> _filterMembers(
+    String teamId,
+    NIMTeamType teamType,
+    String query,
+    int generation,
+  ) async {
+    try {
+      final members = await getIt<TeamMemberSearchRepository>().loadAll(
+        teamId,
+        teamType,
+      );
+      if (_disposed || generation != _searchGeneration || _searchKey != query) {
+        return;
+      }
+      final matches = UserSearchService.search<UserInfoWithTeam>(
+        values: members.where(
+          (member) => !_removedDuringSearch.contains(member.teamInfo.accountId),
+        ),
+        fieldsOf: UserSearchService.teamMemberFields,
+        accountIdOf: (member) => member.teamInfo.accountId,
+        query: query,
+      );
+      filterList = matches.map((match) => match.value).toList();
+      isFilterLoading = false;
+      isFilterError = false;
+      notifyListeners();
+    } catch (_) {
+      if (_disposed || generation != _searchGeneration || _searchKey != query) {
+        return;
+      }
+      isFilterLoading = false;
+      isFilterError = true;
+      filterList = null;
+      notifyListeners();
+    }
+  }
+
+  void _filterLocal(
+    String query,
+    int generation, {
+    Iterable<UserInfoWithTeam>? members,
+  }) {
+    final values = UserSearchService.search<UserInfoWithTeam>(
+      values: members ?? userInfoData ?? const <UserInfoWithTeam>[],
+      fieldsOf: UserSearchService.teamMemberFields,
+      accountIdOf: (member) => member.teamInfo.accountId,
+      query: query,
+    );
+    if (_disposed || generation != _searchGeneration) return;
+    filterList = values.map((match) => match.value).toList();
+    isFilterLoading = false;
+    isFilterError = false;
+    notifyListeners();
+  }
+
+  /// Retries the latest full-member search after a loading failure.
+  void retryFilter() {
+    if (_searchKey?.isNotEmpty == true && !isFilterLoading) {
+      filterByText(_searchKey);
+    }
   }
 
   Future<void> muteTeam(String teamId, bool mute) async {
@@ -298,6 +477,7 @@ class TeamSettingViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     super.dispose();
     for (var sub in _teamSub) {
       sub.cancel();
