@@ -24,8 +24,19 @@ pluginManagement {
 
 plugins {
     id "dev.flutter.flutter-plugin-loader" version "1.0.0"
-    id "com.android.application" version "8.5.1" apply false
-    id "org.jetbrains.kotlin.android" version "2.1.21" apply false
+    id "com.android.application" version "8.13.1" apply false
+    id "org.jetbrains.kotlin.android" version "2.2.21" apply false
+}
+
+// Gradle 9 removed the legacy jcenter() repository helper. Inject a
+// per-project compatibility method before older Flutter plugins are evaluated.
+gradle.beforeProject { project ->
+    project.repositories.metaClass.jcenter = {
+        project.repositories.mavenCentral()
+    }
+    project.buildscript.repositories.metaClass.jcenter = {
+        project.buildscript.repositories.mavenCentral()
+    }
 }
 
 include ':app'

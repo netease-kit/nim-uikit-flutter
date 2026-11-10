@@ -78,7 +78,6 @@ dependencies:
   sqlite3_flutter_libs: ^0.5.0
 
 dependency_overrides:
-  sqflite_common_ffi: 2.3.6
   permission_handler: ^11.0.1
 #    path: ../../common/netease_common_ui
 #  nim_core_v2:

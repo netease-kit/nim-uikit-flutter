@@ -2,8 +2,9 @@
 // Use of this source code is governed by a MIT license that can be
 // found in the LICENSE file.
 
+// 会影响所有 Android 设备的编译配置；发布前请按项目的 Gradle/AGP 版本策略确认。
 buildscript {
-    ext.kotlin_version = '2.1.21'
+    ext.kotlin_version = '2.2.21'
     repositories {
         google()
         mavenCentral()
@@ -11,7 +12,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.5.1'
+        classpath 'com.android.tools.build:gradle:8.13.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath 'com.huawei.agconnect:agcp:1.6.5.300'
     }
@@ -55,8 +56,8 @@ subprojects {
         if (project.plugins.hasPlugin("com.android.application") ||
                 project.plugins.hasPlugin("com.android.library")) {
             project.android {
-                compileSdkVersion 35
-                buildToolsVersion "34.0.0"
+                compileSdkVersion 36
+                buildToolsVersion "36.0.0"
             }
         }
     }}
@@ -65,15 +66,15 @@ subprojects {
     afterEvaluate { project ->
         if (project.hasProperty("android")) {
             android {
-                compileSdkVersion 35
+                compileSdkVersion 36
                 compileOptions {
-                    sourceCompatibility JavaVersion.VERSION_1_8
-                    targetCompatibility JavaVersion.VERSION_1_8
+                    sourceCompatibility JavaVersion.VERSION_17
+                    targetCompatibility JavaVersion.VERSION_17
                 }
             }
         }
         project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-            kotlinOptions.jvmTarget = "1.8"
+            kotlinOptions.jvmTarget = "17"
         }
     }
 }
