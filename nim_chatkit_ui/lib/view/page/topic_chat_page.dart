@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/widgets/duo_scaffold.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/base/base_state.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
@@ -166,7 +167,7 @@ class _TopicChatPageState extends BaseState<TopicChatPage> with RouteAware {
               }
             },
             child: ChatKitUtils.isDesktopOrWeb
-                ? Scaffold(
+                ? DuoScaffold(
                     backgroundColor: Colors.white,
                     body: Column(
                       children: [
@@ -199,7 +200,7 @@ class _TopicChatPageState extends BaseState<TopicChatPage> with RouteAware {
     String inputHint,
     bool haveSelectedMessage,
   ) {
-    return Scaffold(
+    return DuoScaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,

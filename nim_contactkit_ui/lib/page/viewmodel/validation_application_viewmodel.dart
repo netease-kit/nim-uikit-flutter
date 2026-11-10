@@ -119,7 +119,8 @@ class ValidationMessageViewModel extends ChangeNotifier {
     sysMsg?.forEach((e) {
       if (e.status ==
               NIMFriendAddApplicationStatus.nimFriendAddApplicationStatusInit &&
-          (e.timestamp ?? 0) < lastTime) {
+          (e.updateTimestamp ?? 0) < lastTime) {
+        //因为Android 端的问题，使用updateTimestamp
         e.status =
             NIMFriendAddApplicationStatus.nimFriendAddApplicationStatusExpired;
       }
@@ -557,6 +558,9 @@ class ValidationFriendMessageMerged {
 
   NIMUserInfo? user;
 
+  /// 对方是好友时的好友备注，用于验证消息展示名。
+  String? alias;
+
   ValidationFriendMessageMerged({required this.lastMsg}) {
     unread = !(lastMsg.read ?? false);
   }
@@ -603,6 +607,9 @@ class ValidationTeamMessageMerged {
   NIMTeam? team;
 
   NIMUserInfo? user;
+
+  /// 对方是好友时的好友备注，用于入群邀请/进群申请等验证消息展示名。
+  String? alias;
 
   bool unread = false;
 

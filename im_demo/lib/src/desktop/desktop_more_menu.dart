@@ -5,6 +5,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/base/default_language.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
@@ -104,7 +105,7 @@ class _DesktopMoreMenuState extends State<DesktopMoreMenu> {
   /// LoginModel 状态变化无人响应，导致无法跳转到登录页。
   void _doSwitchLanguage(BuildContext context, String lang) {
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const SplashPage()),
+      DuoPageRoute(builder: (_) => const SplashPage()),
       (route) => false,
     );
   }

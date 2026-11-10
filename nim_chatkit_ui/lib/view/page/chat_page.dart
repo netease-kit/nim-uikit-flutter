@@ -28,12 +28,16 @@ import 'package:nim_chatkit/services/login/im_login_service.dart';
 import 'package:nim_chatkit/services/message/chat_message.dart';
 import 'package:nim_chatkit/services/message/nim_chat_cache.dart';
 import 'package:nim_chatkit/utils/toast_utils.dart';
+import 'package:nim_chatkit_ui/helper/foldable_window_adaptation.dart';
 import 'package:nim_chatkit_ui/helper/merge_message_helper.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/chat_kit_message_list.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/item/chat_kit_message_item.dart';
 import 'package:nim_chatkit_ui/view/chat_kit_message_list/pop_menu/chat_kit_pop_actions.dart';
 import 'package:nim_chatkit_ui/view/page/chat_setting_page.dart';
 import 'package:nim_chatkit_ui/view_model/chat_view_model.dart';
+import 'package:netease_common_ui/duo/duo_page_chrome.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
+import 'package:netease_common_ui/duo/duo_shell_controller.dart';
 import 'package:nim_core_v2/nim_core.dart';
 import 'package:provider/provider.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
@@ -46,6 +50,7 @@ import '../../media/audio_player.dart';
 import '../../model/history_read_position_tracker.dart';
 import '../history/chat_history_message_page.dart';
 import '../input/bottom_input_field.dart';
+import 'chat_page_header.dart';
 import 'chat_pin_page.dart';
 
 class ChatPage extends StatefulWidget {
@@ -72,6 +77,11 @@ class ChatPage extends StatefulWidget {
   /// 桌面端退群/解散群成功后的回调（用于关闭聊天页并清空选中会话）
   final VoidCallback? onQuitTeam;
 
+  /// 是否以桌面化宽布局内嵌在右侧面板（iPhone Duo 展开为双屏时使用）。
+  ///
+  /// 默认 false：普通手机路由页面、桌面端原有逻辑都保持不变。
+  final bool wideLayout;
+
   ChatPage({
     Key? key,
     required this.conversationId,
@@ -85,6 +95,7 @@ class ChatPage extends StatefulWidget {
     this.anchorDate,
     this.onMessageItemLongClick,
     this.onQuitTeam,
+    this.wideLayout = false,
   }) : super(key: key);
 
   @override
@@ -103,7 +114,7 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
     _unregisterAnchorRoute?.call();
     _unregisterAnchorRoute = null;
     final route = ModalRoute.of(context);
-    if (!ChatKitUtils.isDesktopOrWeb && route != null) {
+    if (!widget.wideLayout && !ChatKitUtils.isDesktopOrWeb && route != null) {
       _unregisterAnchorRoute = ChatAnchorRouteRegistry.register(
         route: route,
         conversationId: widget.conversationId,
@@ -138,6 +149,39 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
 
   /// 桌面端：当前激活的右侧面板
   _ActivePanel _activePanel = _ActivePanel.none;
+
+  bool get _isDuoWide =>
+      DuoShellController.instance.enabled && DuoShellController.instance.dual;
+
+  String _duoLayoutSignature() {
+    final shell = DuoShellController.instance;
+    return '${shell.enabled}|${shell.dual}|${shell.leftWidth}|'
+        '${shell.toolbarWidth}';
+  }
+
+  void _onDuoLayoutChanged() {
+    if (!mounted) return;
+    _syncDuoSelection();
+    final String signature = _duoLayoutSignature();
+    if (signature == _lastDuoLayoutSignature) return;
+    _lastDuoLayoutSignature = signature;
+    setState(() {});
+  }
+
+  void _syncDuoSelection() {
+    final shell = DuoShellController.instance;
+    if (shell.enabled && shell.dual && !_duoSelectionRegistered) {
+      _duoSelectionRegistered = true;
+      shell.pushSelectedConversation(widget.conversationId);
+    } else if ((!shell.enabled || !shell.dual) && _duoSelectionRegistered) {
+      _duoSelectionRegistered = false;
+      final String conversationId = widget.conversationId;
+      // dispose/路由切换期间通知列表会触发 locked 断言，延后一帧。
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        DuoShellController.instance.popSelectedConversation(conversationId);
+      });
+    }
+  }
 
   void _setTyping(BuildContext context) {
     _typingTimer?.cancel();
@@ -224,9 +268,17 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
 
   bool hasShowTeamDismissDialog = false;
 
+  bool _duoSelectionRegistered = false;
+  String _lastDuoLayoutSignature = '';
+
   @override
   void initState() {
     super.initState();
+    _lastDuoLayoutSignature = _duoLayoutSignature();
+    DuoShellController.instance.addListener(_onDuoLayoutChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _syncDuoSelection();
+    });
     chatUIConfig = widget.chatUIConfig ?? ChatKitClient.instance.chatUIConfig;
     autoController = AutoScrollController(
       viewportBoundaryGetter: () =>
@@ -349,6 +401,14 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
 
   @override
   void dispose() {
+    if (_duoSelectionRegistered) {
+      _duoSelectionRegistered = false;
+      final String conversationId = widget.conversationId;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        DuoShellController.instance.popSelectedConversation(conversationId);
+      });
+    }
+    DuoShellController.instance.removeListener(_onDuoLayoutChanged);
     _unregisterAnchorRoute?.call();
     _typingTimer?.cancel();
     ChatAudioPlayer.instance.release();
@@ -543,7 +603,7 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
                         String url = 'https://yunxin.163.com/survey/report';
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
+                          DuoFullScreenRoute(
                             builder: (context) => CommonBrowser(url: url),
                           ),
                         );
@@ -633,71 +693,90 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
             });
             hasShowTeamDismissDialog = true;
           }
-          final bool isDesktop = ChatKitUtils.isDesktopOrWeb;
+          final bool isDesktop =
+              widget.wideLayout || ChatKitUtils.isDesktopOrWeb || _isDuoWide;
           return PopScope(
             child: isDesktop
-                ? Scaffold(
-                    backgroundColor: Colors.white,
-                    body: Column(
-                      children: [
-                        _buildDesktopHeader(
+                ? (_isDuoWide
+                    ? DuoChrome(
+                        leading: _buildDuoBack(context),
+                        // 双屏下聊天页始终是一级抽屉，即使折叠态残留了
+                        // 下方抽屉路由，也不展示兜底返回按钮。
+                        hideBack: _isDuoWide,
+                        // 与折叠单屏的标题栏保持一致：普通状态是设置入口，
+                        // 多选时换成「取消」，且不再显示设置入口。
+                        actions: [_buildMobileAction(context)],
+                        child: _buildDuoWideScaffold(
                           context,
                           title,
                           subTitle,
                           subTitleWidget,
+                          inputHint,
+                          haveSelectedMessage,
                         ),
-                        Expanded(
-                          child: Stack(
-                            children: [
-                              // 底层：聊天内容区域 + 侧边栏
-                              Row(
+                      )
+                    : Scaffold(
+                        backgroundColor: Colors.white,
+                        body: Column(
+                          children: [
+                            _buildDesktopHeader(
+                              context,
+                              title,
+                              subTitle,
+                              subTitleWidget,
+                            ),
+                            Expanded(
+                              child: Stack(
                                 children: [
-                                  Expanded(
-                                    child: _buildChatBody(
-                                      context,
-                                      inputHint,
-                                      haveSelectedMessage,
-                                    ),
+                                  // 底层：聊天内容区域 + 侧边栏
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _buildChatBody(
+                                          context,
+                                          inputHint,
+                                          haveSelectedMessage,
+                                        ),
+                                      ),
+                                      _buildDesktopSidebar(context),
+                                    ],
                                   ),
-                                  _buildDesktopSidebar(context),
+                                  // 覆盖层：右侧面板（浮动在聊天区域上方，不挤占空间）
+                                  if (_activePanel != _ActivePanel.none)
+                                    Positioned.fill(
+                                      child: GestureDetector(
+                                        behavior: HitTestBehavior.translucent,
+                                        onTap: _closeActivePanel,
+                                        child: Row(
+                                          children: [
+                                            // 左侧透明区域可点击关闭面板
+                                            Expanded(
+                                                child: Container(
+                                                    color: Colors.transparent)),
+                                            // 右侧面板本体（357px）
+                                            GestureDetector(
+                                              onTap: () {}, // 阻止点击穿透到关闭手势
+                                              child: AnimatedContainer(
+                                                duration: const Duration(
+                                                    milliseconds: 200),
+                                                curve: Curves.easeOut,
+                                                width: 357.0,
+                                                child: _buildActivePanelContent(
+                                                    context),
+                                              ),
+                                            ),
+                                            // 侧边栏宽度占位（防止面板遮挡侧边栏按钮）
+                                            const SizedBox(width: 52),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
                                 ],
                               ),
-                              // 覆盖层：右侧面板（浮动在聊天区域上方，不挤占空间）
-                              if (_activePanel != _ActivePanel.none)
-                                Positioned.fill(
-                                  child: GestureDetector(
-                                    behavior: HitTestBehavior.translucent,
-                                    onTap: _closeActivePanel,
-                                    child: Row(
-                                      children: [
-                                        // 左侧透明区域可点击关闭面板
-                                        Expanded(
-                                            child: Container(
-                                                color: Colors.transparent)),
-                                        // 右侧面板本体（357px）
-                                        GestureDetector(
-                                          onTap: () {}, // 阻止点击穿透到关闭手势
-                                          child: AnimatedContainer(
-                                            duration: const Duration(
-                                                milliseconds: 200),
-                                            curve: Curves.easeOut,
-                                            width: 357.0,
-                                            child: _buildActivePanelContent(
-                                                context),
-                                          ),
-                                        ),
-                                        // 侧边栏宽度占位（防止面板遮挡侧边栏按钮）
-                                        const SizedBox(width: 52),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  )
+                      ))
                 : TransparentScaffold(
                     backgroundColor: Colors.white,
                     centerTitle: true,
@@ -726,61 +805,118 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
     );
   }
 
-  /// 桌面端顶部标题栏
-  Widget _buildDesktopHeader(
+  /// Duo 双屏宽布局：只渲染聊天内容，右侧工具栏由 Duo 首页统一承载。
+  Widget _buildDuoWideScaffold(
     BuildContext context,
     String title,
     String? subTitle,
     Widget? subTitleWidget,
+    String inputHint,
+    bool haveSelectedMessage,
   ) {
-    return Container(
-      height: 56,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: '#E8E8E8'.toColor(), width: 0.5),
-        ),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
+    // 多选时的「取消」由右侧工具栏承载；若当前页面不在 Duo 抽屉内
+    // （拿不到工具栏 chrome），仍由标题栏兜底，避免无法退出多选。
+    final bool hasDuoChrome = DuoPageChromeScope.maybeOf(context) != null;
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          _buildDesktopHeader(
+            context,
+            title,
+            subTitle,
+            subTitleWidget,
+            showMultiSelectCancel: !hasDuoChrome,
+            // 双屏聊天页在右侧内容区，标题需要与折叠单屏一样在面板内居中。
+            centerTitle: true,
+          ),
           Expanded(
-            child: Row(
+            child: Stack(
+              fit: StackFit.expand,
               children: [
-                Flexible(
-                  child: Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
+                _buildChatBody(
+                  context,
+                  inputHint,
+                  haveSelectedMessage,
                 ),
-                if (subTitle != null)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4),
-                    child: Text(
-                      subTitle,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: '#999999'.toColor(),
+                if (_activePanel != _ActivePanel.none)
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onTap: _closeActivePanel,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Container(color: Colors.transparent),
+                          ),
+                          GestureDetector(
+                            onTap: () {},
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeOut,
+                              width: 357.0,
+                              child: _buildActivePanelContent(context),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                if (subTitleWidget != null)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4),
-                    child: subTitleWidget,
                   ),
               ],
             ),
           ),
-          // 桌面端多选模式下的取消按钮
-          if (context.watch<ChatViewModel>().isMultiSelected)
-            TextButton(
+        ],
+      ),
+    );
+  }
+
+  Widget? _buildDuoBack(BuildContext context) {
+    // 双屏展开时聊天页是右侧一级抽屉，切换会话不应显示返回按钮；
+    // 折叠单屏仍保留原有返回行为。
+    if (DuoShellController.instance.dual) {
+      return null;
+    }
+    return IconButton(
+      icon: const Icon(Icons.arrow_back_ios_rounded, size: 26),
+      onPressed: () => Navigator.maybePop(context),
+    );
+  }
+
+  Widget _buildDuoSettingAction(BuildContext context) {
+    return IconButton(
+      onPressed: () => _openChatSettingPage(context),
+      icon: SvgPicture.asset(
+        'images/ic_setting.svg',
+        width: 26,
+        height: 26,
+        package: kPackage,
+      ),
+    );
+  }
+
+  /// 顶部标题栏。
+  ///
+  /// [centerTitle] 为 true 时标题（含副标题）在标题栏内水平居中，用于 Duo
+  /// 双屏聊天页与折叠单屏的居中标题保持一致；桌面端保持原有的左对齐布局。
+  Widget _buildDesktopHeader(
+    BuildContext context,
+    String title,
+    String? subTitle,
+    Widget? subTitleWidget, {
+    bool showMultiSelectCancel = true,
+    bool centerTitle = false,
+  }) {
+    final bool showCancel =
+        showMultiSelectCancel && context.watch<ChatViewModel>().isMultiSelected;
+    return ChatPageHeader(
+      title: title,
+      subTitle: subTitle,
+      subTitleWidget: subTitleWidget,
+      centerTitle: centerTitle,
+      // 桌面端多选模式下的取消按钮；Duo 双屏改由右侧工具栏承载。
+      trailing: showCancel
+          ? TextButton(
               onPressed: () {
                 context.read<ChatViewModel>().isMultiSelected = false;
               },
@@ -792,9 +928,8 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
                   color: '#333333'.toColor(),
                 ),
               ),
-            ),
-        ],
-      ),
+            )
+          : null,
     );
   }
 
@@ -813,34 +948,44 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           const SizedBox(height: 16),
-          // 设置按钮
-          _DesktopSidebarButton(
-            normalIconPath: 'images/ic_chat_desktop_setting.svg',
-            selectedIconPath: 'images/ic_chat_desktop_setting_selected.svg',
-            isSelected: _activePanel == _ActivePanel.settings,
-            enable: !isMultiSelected,
-            onTap: () => _togglePanel(_ActivePanel.settings),
-          ),
-          const SizedBox(height: 25),
-          // 查找聊天内容按钮
-          _DesktopSidebarButton(
-            normalIconPath: 'images/ic_chat_desktop_history.svg',
-            selectedIconPath: 'images/ic_chat_desktop_history_selected.svg',
-            isSelected: _activePanel == _ActivePanel.search,
-            enable: !isMultiSelected,
-            onTap: () => _togglePanel(_ActivePanel.search),
-          ),
-          const SizedBox(height: 25),
-          // 标记消息按钮
-          _DesktopSidebarButton(
-            normalIconPath: 'images/ic_chat_desktop_pin.svg',
-            selectedIconPath: 'images/ic_chat_desktop_pin_selected.svg',
-            isSelected: _activePanel == _ActivePanel.pin,
-            enable: !isMultiSelected,
-            onTap: () => _togglePanel(_ActivePanel.pin),
-          ),
+          _buildDesktopActionButtons(isMultiSelected),
         ],
       ),
+    );
+  }
+
+  /// 桌面端聊天操作按钮（设置 / 查找聊天内容 / 标记消息）。
+  Widget _buildDesktopActionButtons(bool isMultiSelected) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 设置按钮
+        _DesktopSidebarButton(
+          normalIconPath: 'images/ic_chat_desktop_setting.svg',
+          selectedIconPath: 'images/ic_chat_desktop_setting_selected.svg',
+          isSelected: _activePanel == _ActivePanel.settings,
+          enable: !isMultiSelected,
+          onTap: () => _togglePanel(_ActivePanel.settings),
+        ),
+        const SizedBox(height: 25),
+        // 查找聊天内容按钮
+        _DesktopSidebarButton(
+          normalIconPath: 'images/ic_chat_desktop_history.svg',
+          selectedIconPath: 'images/ic_chat_desktop_history_selected.svg',
+          isSelected: _activePanel == _ActivePanel.search,
+          enable: !isMultiSelected,
+          onTap: () => _togglePanel(_ActivePanel.search),
+        ),
+        const SizedBox(height: 25),
+        // 标记消息按钮
+        _DesktopSidebarButton(
+          normalIconPath: 'images/ic_chat_desktop_pin.svg',
+          selectedIconPath: 'images/ic_chat_desktop_pin_selected.svg',
+          isSelected: _activePanel == _ActivePanel.pin,
+          enable: !isMultiSelected,
+          onTap: () => _togglePanel(_ActivePanel.pin),
+        ),
+      ],
     );
   }
 
@@ -889,7 +1034,7 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
       child: Navigator(
         key: _panelNavigatorKey,
         onGenerateRoute: (settings) {
-          return MaterialPageRoute(
+          return DuoPageRoute(
             builder: (innerContext) {
               switch (_activePanel) {
                 case _ActivePanel.settings:
@@ -948,7 +1093,7 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
       child: Navigator(
         key: _panelNavigatorKey,
         onGenerateRoute: (settings) {
-          return MaterialPageRoute(
+          return DuoPageRoute(
             builder: (innerContext) => _buildSettingsPanelRoot(innerContext),
             settings: settings,
           );
@@ -1044,40 +1189,41 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
               ),
             ),
           )
-        : IconButton(
-            onPressed: () async {
-              ChatAudioPlayer.instance.stopAll();
-              if (widget.conversationType == NIMConversationType.p2p) {
-                ContactInfo? info = context.read<ChatViewModel>().contactInfo;
-                if (info != null) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ChatSettingPage(
-                        info,
-                        widget.conversationId,
-                      ),
-                    ),
-                  );
-                }
-              } else if (widget.conversationType == NIMConversationType.team) {
-                goToTeamSettingPage(
-                  context,
-                  await getSessionId(widget.conversationId),
-                ).then((value) {
-                  if (value == true) {
-                    Navigator.pop(context);
-                  }
-                });
-              }
-            },
-            icon: SvgPicture.asset(
-              'images/ic_setting.svg',
-              width: 26,
-              height: 26,
-              package: kPackage,
+        : _buildDuoSettingAction(context);
+  }
+
+  /// 打开聊天设置页，与单屏右上角设置入口保持一致。
+  ///
+  /// Duo 双屏内嵌时不再 pop 聊天路由，退群/解散后通过 [ChatPage.onQuitTeam]
+  /// 清空右侧面板。
+  Future<void> _openChatSettingPage(BuildContext context) async {
+    ChatAudioPlayer.instance.stopAll();
+    if (widget.conversationType == NIMConversationType.p2p) {
+      final ContactInfo? info = context.read<ChatViewModel>().contactInfo;
+      if (info != null) {
+        await Navigator.push(
+          context,
+          DuoPageRoute(
+            builder: (context) => ChatSettingPage(
+              info,
+              widget.conversationId,
             ),
-          );
+          ),
+        );
+      }
+    } else if (widget.conversationType == NIMConversationType.team) {
+      final result = await goToTeamSettingPage(
+        context,
+        await getSessionId(widget.conversationId),
+      );
+      if (result == true) {
+        if (widget.wideLayout) {
+          widget.onQuitTeam?.call();
+        } else {
+          Navigator.pop(context);
+        }
+      }
+    }
   }
 
   /// 聊天主体内容（桌面和移动端共享）
@@ -1086,129 +1232,156 @@ class ChatPageState extends BaseState<ChatPage> with RouteAware {
     String inputHint,
     bool haveSelectedMessage,
   ) {
-    return Stack(
-      alignment: Alignment.topCenter,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    final bool duo = DuoShellController.instance.enabled;
+    // Duo 面板高度有限，键盘弹出后如果再保留顶部安全提示和输入栏底部安全区，
+    // 固定高度会超过剩余空间，导致聊天主体 Column 底部溢出。键盘显示期间
+    // 隐藏提示、去掉输入栏底部安全区，把空间留给消息列表和输入栏。
+    final bool hideTipsForKeyboard =
+        duo && View.of(context).viewInsets.bottom > 0;
+    final bool showWarningTips = context.watch<ChatViewModel>().showWarningTips;
+    // Stack 默认会对非定位子节点使用 loose 约束。Duo 双屏右侧抽屉
+    // 通过 Stack 承载聊天主体时，这会让聊天列按内容宽度收缩，
+    // 进而导致底部输入栏无法铺满当前聊天面板。
+    return SizedBox.expand(
+      child: FoldableWindowAdaptation(
+        child: Stack(
+          alignment: Alignment.topCenter,
+          fit: DuoShellController.instance.enabled
+              ? StackFit.expand
+              : StackFit.loose,
           children: [
-            if (!ChatKitUtils.isDesktopOrWeb && !hasNetWork) NoNetWorkTip(),
-            if (context.watch<ChatViewModel>().showWarningTips)
-              getSwindleWidget(context),
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  if (!context.read<ChatViewModel>().isMultiSelected) {
-                    _inputField.currentState.hideAllPanel();
-                  }
-                },
-                child: ChatKitMessageList(
-                  scrollController: autoController,
-                  popMenuAction: widget.customPopActions ??
-                      chatUIConfig?.messageClickListener?.customPopActions,
-                  anchor: widget.anchor,
-                  anchorDate: widget.anchorDate,
-                  messageBuilder:
-                      widget.messageBuilder ?? chatUIConfig?.messageBuilder,
-                  onTapAvatar: (String? userId, {bool isSelf = false}) {
-                    if (context.read<ChatViewModel>().isMultiSelected) {
-                      return true;
-                    }
-                    if (widget.onTapAvatar != null &&
-                        widget.onTapAvatar!(userId, isSelf: isSelf)) {
-                      return true;
-                    }
-                    if (chatUIConfig?.messageClickListener?.onTapAvatar !=
-                            null &&
-                        chatUIConfig!.messageClickListener!.onTapAvatar!(userId,
-                            isSelf: isSelf)) {
-                      return true;
-                    }
-                    _defaultAvatarTap(userId, isSelf: isSelf);
-                    return true;
-                  },
-                  onAvatarLongPress: (userId, {isSelf = false}) {
-                    if (context.read<ChatViewModel>().isMultiSelected) {
-                      return true;
-                    }
-                    if (chatUIConfig?.messageClickListener?.onLongPressAvatar !=
-                            null &&
-                        chatUIConfig!.messageClickListener!.onLongPressAvatar!(
+            Column(
+              crossAxisAlignment: DuoShellController.instance.enabled
+                  ? CrossAxisAlignment.stretch
+                  : CrossAxisAlignment.start,
+              children: [
+                if (!hideTipsForKeyboard &&
+                    !(_isDuoWide ||
+                        widget.wideLayout ||
+                        ChatKitUtils.isDesktopOrWeb) &&
+                    !hasNetWork)
+                  NoNetWorkTip(),
+                if (!hideTipsForKeyboard && showWarningTips)
+                  getSwindleWidget(context),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      if (!context.read<ChatViewModel>().isMultiSelected) {
+                        _inputField.currentState.hideAllPanel();
+                      }
+                    },
+                    child: ChatKitMessageList(
+                      scrollController: autoController,
+                      popMenuAction: widget.customPopActions ??
+                          chatUIConfig?.messageClickListener?.customPopActions,
+                      anchor: widget.anchor,
+                      anchorDate: widget.anchorDate,
+                      messageBuilder:
+                          widget.messageBuilder ?? chatUIConfig?.messageBuilder,
+                      onTapAvatar: (String? userId, {bool isSelf = false}) {
+                        if (context.read<ChatViewModel>().isMultiSelected) {
+                          return true;
+                        }
+                        if (widget.onTapAvatar != null &&
+                            widget.onTapAvatar!(userId, isSelf: isSelf)) {
+                          return true;
+                        }
+                        if (chatUIConfig?.messageClickListener?.onTapAvatar !=
+                                null &&
+                            chatUIConfig!.messageClickListener!
+                                .onTapAvatar!(userId, isSelf: isSelf)) {
+                          return true;
+                        }
+                        _defaultAvatarTap(userId, isSelf: isSelf);
+                        return true;
+                      },
+                      onAvatarLongPress: (userId, {isSelf = false}) {
+                        if (context.read<ChatViewModel>().isMultiSelected) {
+                          return true;
+                        }
+                        if (chatUIConfig
+                                    ?.messageClickListener?.onLongPressAvatar !=
+                                null &&
+                            chatUIConfig!
+                                .messageClickListener!.onLongPressAvatar!(
+                              userId,
+                              isSelf: isSelf,
+                            )) {
+                          return true;
+                        }
+                        return _defaultAvatarLongPress(
                           userId,
                           isSelf: isSelf,
-                        )) {
-                      return true;
-                    }
-                    return _defaultAvatarLongPress(
-                      userId,
-                      isSelf: isSelf,
-                    );
-                  },
-                  chatUIConfig: chatUIConfig,
-                  teamInfo: context.watch<ChatViewModel>().teamInfo,
-                  onMessageItemClick: widget.onMessageItemClick ??
-                      chatUIConfig?.messageClickListener?.onMessageItemClick,
-                  onMessageItemLongClick: widget.onMessageItemLongClick ??
-                      chatUIConfig
-                          ?.messageClickListener?.onMessageItemLongClick,
+                        );
+                      },
+                      chatUIConfig: chatUIConfig,
+                      teamInfo: context.watch<ChatViewModel>().teamInfo,
+                      onMessageItemClick: widget.onMessageItemClick ??
+                          chatUIConfig
+                              ?.messageClickListener?.onMessageItemClick,
+                      onMessageItemLongClick: widget.onMessageItemLongClick ??
+                          chatUIConfig
+                              ?.messageClickListener?.onMessageItemLongClick,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            if (context.watch<ChatViewModel>().isMultiSelected)
-              Container(
-                color: '#EFF1F3'.toColor(),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    BottomOption(
-                      icon: haveSelectedMessage
-                          ? 'images/ic_chat_merge_forward.svg'
-                          : 'images/ic_chat_merge_forward_disable.svg',
-                      label: S.of(context).chatMessageMergeForward,
-                      onTap: () {
-                        _mergedForward(context);
-                      },
-                      enable: haveSelectedMessage,
+                if (context.watch<ChatViewModel>().isMultiSelected)
+                  Container(
+                    color: '#EFF1F3'.toColor(),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        BottomOption(
+                          icon: haveSelectedMessage
+                              ? 'images/ic_chat_merge_forward.svg'
+                              : 'images/ic_chat_merge_forward_disable.svg',
+                          label: S.of(context).chatMessageMergeForward,
+                          onTap: () {
+                            _mergedForward(context);
+                          },
+                          enable: haveSelectedMessage,
+                        ),
+                        BottomOption(
+                          icon: haveSelectedMessage
+                              ? 'images/ic_chat_item_forward.svg'
+                              : 'images/ic_chat_item_forward_disable.svg',
+                          label: S.of(context).chatMessageItemsForward,
+                          onTap: () {
+                            _forwardOneByOne(context);
+                          },
+                          enable: haveSelectedMessage,
+                        ),
+                        BottomOption(
+                          icon: haveSelectedMessage
+                              ? 'images/ic_chat_delete_round.svg'
+                              : 'images/ic_chat_delete_round_disable.svg',
+                          label: S.of(context).chatMessageActionDelete,
+                          onTap: () {
+                            _deleteMessageOneByOne(context);
+                          },
+                          enable: haveSelectedMessage,
+                        ),
+                      ],
                     ),
-                    BottomOption(
-                      icon: haveSelectedMessage
-                          ? 'images/ic_chat_item_forward.svg'
-                          : 'images/ic_chat_item_forward_disable.svg',
-                      label: S.of(context).chatMessageItemsForward,
-                      onTap: () {
-                        _forwardOneByOne(context);
-                      },
-                      enable: haveSelectedMessage,
-                    ),
-                    BottomOption(
-                      icon: haveSelectedMessage
-                          ? 'images/ic_chat_delete_round.svg'
-                          : 'images/ic_chat_delete_round_disable.svg',
-                      label: S.of(context).chatMessageActionDelete,
-                      onTap: () {
-                        _deleteMessageOneByOne(context);
-                      },
-                      enable: haveSelectedMessage,
-                    ),
-                  ],
+                  ),
+                Visibility(
+                  visible: !context.watch<ChatViewModel>().isMultiSelected,
+                  maintainState: true,
+                  child: BottomInputField(
+                    scrollController: autoController,
+                    conversationType: widget.conversationType,
+                    conversationId: widget.conversationId,
+                    hint: S.of(context).chatMessageSendHint(inputHint),
+                    chatUIConfig: chatUIConfig,
+                    key: _inputField,
+                  ),
                 ),
-              ),
-            Visibility(
-              visible: !context.watch<ChatViewModel>().isMultiSelected,
-              maintainState: true,
-              child: BottomInputField(
-                scrollController: autoController,
-                conversationType: widget.conversationType,
-                conversationId: widget.conversationId,
-                hint: S.of(context).chatMessageSendHint(inputHint),
-                chatUIConfig: chatUIConfig,
-                key: _inputField,
-              ),
+              ],
             ),
           ],
         ),
-      ],
+      ),
     );
   }
 }

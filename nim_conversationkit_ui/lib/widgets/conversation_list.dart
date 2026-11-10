@@ -5,9 +5,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/base/base_state.dart';
+import 'package:netease_common_ui/duo/duo_shell_controller.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
@@ -54,6 +56,7 @@ class _ConversationListState extends BaseState<ConversationList> {
 
   /// 桌面端当前选中的会话 ID（用于选中高亮）
   String? _desktopSelectedConversationId;
+  String? _duoOpeningConversationId;
 
   /// 桌面端当前 hover 的会话 ID
   String? _desktopHoveredConversationId;
@@ -144,12 +147,34 @@ class _ConversationListState extends BaseState<ConversationList> {
   void initState() {
     super.initState();
     _desktopSelectedConversationId = widget.selectedConversationId;
+    DuoShellController.instance.addListener(_syncDuoSelectedConversation);
+    _syncDuoSelectedConversation();
     _scrollController.addListener(_scrollListener);
     // 首帧后强制从顶部开始，兜底任何历史 offset 恢复路径。
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && _scrollController.hasClients) {
         _scrollController.jumpTo(0);
       }
+    });
+  }
+
+  void _syncDuoSelectedConversation() {
+    final shell = DuoShellController.instance;
+    if (!shell.enabled) return;
+    final String? selected = shell.dual ? shell.selectedConversationId : null;
+    if (selected == _duoOpeningConversationId) {
+      _duoOpeningConversationId = null;
+    }
+    if (!mounted || selected == _desktopSelectedConversationId) return;
+    if (SchedulerBinding.instance.schedulerPhase ==
+        SchedulerPhase.persistentCallbacks) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _syncDuoSelectedConversation();
+      });
+      return;
+    }
+    setState(() {
+      _desktopSelectedConversationId = selected;
     });
   }
 
@@ -202,6 +227,7 @@ class _ConversationListState extends BaseState<ConversationList> {
 
   @override
   void dispose() {
+    DuoShellController.instance.removeListener(_syncDuoSelectedConversation);
     _scrollEndTimer?.cancel();
     _visibleUserInfoTimer?.cancel();
     _scrollController.dispose();
@@ -539,14 +565,25 @@ class _ConversationListState extends BaseState<ConversationList> {
     }
 
     // 移动端：保持原有 Slidable 逻辑
+    final conversationId = conversationInfo.getConversationId();
+    final isSelected = !ChatKitUtils.isDesktopOrWeb &&
+        DuoShellController.instance.enabled &&
+        _desktopSelectedConversationId == conversationId;
     return Slidable(
       child: InkWell(
         child: widget.config.customItemBuilder != null
-            ? widget.config.customItemBuilder!(conversationInfo, index)
+            ? Container(
+                color: isSelected ? const Color(0xFFD6E4FF) : null,
+                child: widget.config.customItemBuilder!(
+                  conversationInfo,
+                  index,
+                ),
+              )
             : ConversationItem(
                 conversationInfo: conversationInfo,
                 config: widget.config,
                 index: index,
+                selected: isSelected,
               ),
         onLongPress: () {
           if (widget.config.itemLongClick != null &&
@@ -555,14 +592,33 @@ class _ConversationListState extends BaseState<ConversationList> {
           }
         },
         onTap: () {
+          final shell = DuoShellController.instance;
+          final bool isDuoDual = shell.enabled && shell.dual;
+          if (isDuoDual &&
+              (_duoOpeningConversationId == conversationId ||
+                  (shell.detailActive &&
+                      shell.selectedConversationId == conversationId))) {
+            return;
+          }
+          if (isDuoDual) {
+            _duoOpeningConversationId = conversationId;
+          }
+          setState(() {
+            _desktopSelectedConversationId = conversationId;
+          });
           if (widget.config.itemClick != null &&
               widget.config.itemClick!(conversationInfo, index)) {
             return;
           }
+          // 双屏下由 goToChatPage 使用 pushReplacement 替换右侧抽屉，
+          // 不先退回首页，避免右侧返回按钮在切换瞬间闪现。
           goToChatPage(
             context,
             conversationInfo.getConversationId(),
             conversationInfo.getConversationType(),
+            replaceCurrentRoute: DuoShellController.instance.enabled &&
+                DuoShellController.instance.dual &&
+                DuoShellController.instance.detailActive,
           );
         },
       ),
@@ -605,6 +661,7 @@ class _ConversationListState extends BaseState<ConversationList> {
                         widget.config.clearMessageWhenDeleteSession,
                   );
               widget.config.onDeleteConversation?.call(deletedId);
+              _closeDuoChatIfDeleted(deletedId);
             },
             backgroundColor: CommonColors.color_a8abb6,
             foregroundColor: Colors.white,
@@ -613,6 +670,26 @@ class _ConversationListState extends BaseState<ConversationList> {
         ],
       ),
     );
+  }
+
+  /// 双屏下删除正在右侧打开的会话时，同步关闭右侧聊天页。
+  ///
+  /// 双屏左侧列表和右侧聊天页是同一层的两个面板，删除会话只会移除列表项，
+  /// 右侧抽屉路由仍然保留已删除会话的聊天页，需要一并退回欢迎页。
+  void _closeDuoChatIfDeleted(String conversationId) {
+    final shell = DuoShellController.instance;
+    if (!shell.enabled || !shell.dual) {
+      return;
+    }
+    if (shell.selectedConversationId != conversationId) {
+      return;
+    }
+    shell.popSelectedConversation(conversationId);
+    final NavigatorState? navigator =
+        Navigator.maybeOf(context, rootNavigator: true);
+    if (navigator != null && navigator.canPop()) {
+      navigator.popUntil((route) => route.isFirst);
+    }
   }
 
   /// 桌面端会话列表项：带 hover 效果、选中高亮和右键菜单

@@ -6,6 +6,7 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
@@ -390,7 +391,7 @@ class _ContactKitDetailPageState extends State<ContactKitDetailPage> {
                       } else {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
+                          DuoPageRoute(
                             builder: (context) => UpdateTextInfoPage(
                               title: S.of(context).contactComment,
                               content: contact.friend?.alias,

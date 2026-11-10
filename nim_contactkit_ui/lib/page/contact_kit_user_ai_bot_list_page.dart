@@ -3,6 +3,8 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/widgets/duo_scaffold.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
@@ -68,7 +70,7 @@ class _ContactKitUserAIBotListPageState
     }
     final result = await Navigator.push<V2NIMUserAIBot>(
       context,
-      MaterialPageRoute(
+      DuoPageRoute(
         builder: (_) => const ContactKitUserAIBotFormPage(),
       ),
     );
@@ -76,7 +78,7 @@ class _ContactKitUserAIBotListPageState
     viewModel.upsertBot(result);
     await Navigator.push(
       context,
-      MaterialPageRoute(
+      DuoPageRoute(
         builder: (_) => ContactKitUserAIBotProfilePage(bot: result),
       ),
     );
@@ -91,7 +93,7 @@ class _ContactKitUserAIBotListPageState
   ) async {
     final result = await Navigator.push<UserAIBotProfileResult>(
       context,
-      MaterialPageRoute(
+      DuoPageRoute(
         builder: (_) => ContactKitUserAIBotProfilePage(bot: bot),
       ),
     );
@@ -214,7 +216,7 @@ class _ContactKitUserAIBotListPageState
         ];
         final body = _buildBody(viewModel);
         if (ChatKitUtils.isDesktopOrWeb) {
-          return Scaffold(
+          return DuoScaffold(
             backgroundColor: Colors.white,
             appBar: AppBar(
               automaticallyImplyLeading: false,

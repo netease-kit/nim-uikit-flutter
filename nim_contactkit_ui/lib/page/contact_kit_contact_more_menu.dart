@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:nim_chatkit/router/imkit_router.dart';
 import 'package:nim_chatkit/router/imkit_router_constants.dart';
@@ -40,7 +41,7 @@ class ContactKitContactMoreMenu extends StatelessWidget {
         } else {
           await Navigator.push(
             context,
-            MaterialPageRoute(
+            DuoFullScreenRoute(
               builder: (_) => const ContactKitUserAIBotScanPage(),
             ),
           );

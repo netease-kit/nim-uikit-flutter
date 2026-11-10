@@ -46,9 +46,12 @@ class _ContactState extends State<ContactPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDesktop = ChatKitUtils.isDesktopOrWeb;
+    // Duo 双屏的左侧面板仍然展示通讯录列表的标题栏（通讯录标题 + 搜索/添加好友），
+    // 因此这里只对真正的桌面端/Web 使用无标题栏布局；否则双屏下左侧顶部没有任何
+    // 入口按钮，与原生不一致。
+    final bool isDesktopLayout = ChatKitUtils.isDesktopOrWeb;
 
-    if (isDesktop) {
+    if (isDesktopLayout) {
       // 桌面端：不使用 AppBar，直接嵌入到 DesktopShell 中
       return Scaffold(
         backgroundColor: Colors.white,

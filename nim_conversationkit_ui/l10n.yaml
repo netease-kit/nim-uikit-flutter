@@ -4,5 +4,4 @@ template-arb-file: intl_en.arb
 output-localization-file: conversation_kit_client_localizations.dart
 output-class: ConversationKitClientLocalizations
 header-file: header.txt
-synthetic-package: false
 untranslated-messages-file: untranslated.txt

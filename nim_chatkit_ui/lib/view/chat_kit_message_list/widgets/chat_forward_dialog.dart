@@ -4,6 +4,7 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/duo/duo_dialog.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/text_untils.dart';
@@ -107,13 +108,13 @@ Future<ForwardResult?> showChatForwardDialog({
     return Container();
   }
 
-  Widget _getContent(double width) {
+  Widget _getContent(BuildContext dialogContext, double width) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          S.of(context).messageForwardTo,
+          S.of(dialogContext).messageForwardTo,
           style: TextStyle(fontSize: 16, color: '#333333'.toColor()),
         ),
         Container(height: 16),
@@ -134,7 +135,7 @@ Future<ForwardResult?> showChatForwardDialog({
           margin: EdgeInsets.only(top: 12),
           child: CupertinoTextField(
             controller: _inputControl,
-            placeholder: S.of(context).chatMessagePostScript,
+            placeholder: S.of(dialogContext).chatMessagePostScript,
             placeholderStyle: TextStyle(
               color: '#A6ADB6'.toColor(),
               fontSize: 16,
@@ -156,7 +157,7 @@ Future<ForwardResult?> showChatForwardDialog({
     );
   }
 
-  return showDialog(
+  return showDuoDialog(
     context: context,
     builder: (context) {
       final isDesktop = ChatKitUtils.isDesktopOrWeb;
@@ -171,7 +172,7 @@ Future<ForwardResult?> showChatForwardDialog({
         children: [
           Padding(
             padding: EdgeInsets.all(14),
-            child: _getContent(dialogWidth - 28),
+            child: _getContent(context, dialogWidth - 28),
           ),
           Container(height: 1, color: '#E1E6E8'.toColor()),
           SizedBox(
@@ -295,13 +296,13 @@ Future<ForwardResult?> showChatForwardNewDialog({
     return Container();
   }
 
-  Widget _getContent(double width) {
+  Widget _getContent(BuildContext dialogContext, double width) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          S.of(context).messageForwardTo,
+          S.of(dialogContext).messageForwardTo,
           style: TextStyle(fontSize: 16, color: '#333333'.toColor()),
         ),
         Container(height: 16),
@@ -322,7 +323,7 @@ Future<ForwardResult?> showChatForwardNewDialog({
           margin: EdgeInsets.only(top: 12),
           child: CupertinoTextField(
             controller: _inputControl,
-            placeholder: S.of(context).chatMessagePostScript,
+            placeholder: S.of(dialogContext).chatMessagePostScript,
             placeholderStyle: TextStyle(
               color: '#A6ADB6'.toColor(),
               fontSize: 16,
@@ -344,7 +345,7 @@ Future<ForwardResult?> showChatForwardNewDialog({
     );
   }
 
-  return showDialog(
+  return showDuoDialog(
     context: context,
     builder: (context) {
       final isDesktop = ChatKitUtils.isDesktopOrWeb;
@@ -359,7 +360,7 @@ Future<ForwardResult?> showChatForwardNewDialog({
         children: [
           Padding(
             padding: EdgeInsets.all(14),
-            child: _getContent(dialogWidth - 28),
+            child: _getContent(context, dialogWidth - 28),
           ),
           Container(height: 1, color: '#E1E6E8'.toColor()),
           SizedBox(

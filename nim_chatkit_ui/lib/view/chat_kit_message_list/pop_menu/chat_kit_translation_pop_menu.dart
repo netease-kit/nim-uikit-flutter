@@ -8,6 +8,7 @@ import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
 import 'package:nim_chatkit/services/message/chat_message.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
+import 'package:nim_chatkit_ui/helper/duo_layout.dart';
 import 'package:nim_chatkit_ui/l10n/S.dart';
 
 import 'chat_kit_menu_helper.dart';
@@ -45,6 +46,7 @@ class ChatKitTranslationPopMenu {
         arrowLength: 10,
         right: ChatKitMenuHelper.isSelf(message.nimMessage) ? 60 : null,
         left: ChatKitMenuHelper.isSelf(message.nimMessage) ? null : 60,
+        layoutBounds: DuoLayout.chatPaneBounds(context),
         borderColor: Colors.white,
         backgroundColor: Colors.white,
         shadowColor: Colors.black26,

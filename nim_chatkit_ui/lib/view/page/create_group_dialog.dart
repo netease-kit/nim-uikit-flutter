@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
@@ -305,7 +306,7 @@ class _CreateGroupDialogState extends State<CreateGroupDialog> {
             Expanded(
               child: Navigator(
                 onGenerateRoute: (settings) {
-                  return MaterialPageRoute(
+                  return DuoPageRoute(
                     settings: RouteSettings(
                       arguments: {
                         'mostCount': TeamProvider.createTeamInviteLimit,

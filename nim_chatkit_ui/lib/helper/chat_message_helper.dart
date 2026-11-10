@@ -7,6 +7,8 @@ import 'dart:math';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/duo/duo_dialog.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:netease_common/netease_common.dart';
@@ -613,19 +615,24 @@ class ChatMessageHelper {
     required String sessionName,
     ForwardType type = ForwardType.normal,
   }) {
+    // 转发选择期间可能发生布局切换（例如 Duo 展开双屏），调用方的 context
+    // 会被重建甚至销毁。这里先取好文案和根 Navigator 上下文，后续确认弹框
+    // 不再依赖可能失效的页面 context。
+    final String forwardStr;
+    if (type == ForwardType.normal) {
+      forwardStr = S.of(context).messageForwardMessageTips(sessionName);
+    } else if (type == ForwardType.merge) {
+      forwardStr = S.of(context).messageForwardMessageMergedTips(sessionName);
+    } else {
+      forwardStr = S.of(context).messageForwardMessageOneByOneTips(sessionName);
+    }
+    final BuildContext dialogContext =
+        Navigator.of(context, rootNavigator: true).context;
+
     // Task 8.1-8.3: 桌面/Web 端使用 Dialog 弹出，移动端保持全屏导航
     void _handleSelectedList(List<SelectedBeam> selectedList) {
-      String forwardStr;
-      if (type == ForwardType.normal) {
-        forwardStr = S.of(context).messageForwardMessageTips(sessionName);
-      } else if (type == ForwardType.merge) {
-        forwardStr = S.of(context).messageForwardMessageMergedTips(sessionName);
-      } else {
-        forwardStr =
-            S.of(context).messageForwardMessageOneByOneTips(sessionName);
-      }
       showChatForwardNewDialog(
-        context: context,
+        context: dialogContext,
         contentStr: forwardStr,
         selectedBeams: selectedList,
       ).then((result) async {
@@ -673,7 +680,7 @@ class ChatMessageHelper {
     } else {
       Navigator.push(
         context,
-        MaterialPageRoute(
+        DuoPageRoute(
           builder: (context) {
             return ChatForwardPage(filterSession: filterUser);
           },
@@ -976,7 +983,7 @@ class ChatMessageHelper {
     // 可以在这里添加打开浏览器、显示预览等功能
     Navigator.push(
       context,
-      MaterialPageRoute(
+      DuoFullScreenRoute(
         builder: (context) => CommonBrowser(
           url: formattedUrl,
           onHttpError: (error) {
@@ -1025,7 +1032,7 @@ class ChatMessageHelper {
 
   ///显示号码弹窗
   static void showPhoneDialog(BuildContext context, String phoneNumber) {
-    showModalBottomSheet(
+    showDuoModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (BuildContext context) {

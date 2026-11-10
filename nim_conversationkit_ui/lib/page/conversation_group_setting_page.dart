@@ -3,6 +3,8 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/duo/duo_dialog.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:netease_common_ui/base/base_state.dart';
@@ -47,136 +49,109 @@ class _ConversationGroupSettingPageState
     });
   }
 
-  void _selectAllIfCurrentGroupIsHidden() {
-    final group = widget.model.groups.firstWhere(
-      (item) => item.id == widget.group.id,
-      orElse: () => widget.group,
-    );
-    if (!group.visible) {
-      widget.model.selectAllGroup();
-    }
-  }
-
-  void _onPopInvoked(bool didPop, Object? result) {
-    if (didPop) {
-      return;
-    }
-    _selectAllIfCurrentGroupIsHidden();
-    Navigator.pop(context);
-  }
-
-  void _onBackPressed() {
-    _selectAllIfCurrentGroupIsHidden();
-    Navigator.pop(context);
-  }
-
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<ConversationGroupViewModel>.value(
       value: widget.model,
-      child: PopScope(
-        canPop: false,
-        onPopInvokedWithResult: _onPopInvoked,
-        child: TransparentScaffold(
-          title: S.of(context).conversationGroupSetting,
-          leading: IconButton(
-            icon: TransparentScaffold.defaultLeadingIcon ??
-                const Icon(Icons.arrow_back_ios_rounded, size: 26),
-            onPressed: _onBackPressed,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => _confirmDelete(context),
-              child: Text(
-                S.of(context).deleteTitle,
-                style: const TextStyle(color: Colors.red),
-              ),
+      child: TransparentScaffold(
+        title: S.of(context).conversationGroupSetting,
+        leading: IconButton(
+          icon: TransparentScaffold.defaultLeadingIcon ??
+              const Icon(Icons.arrow_back_ios_rounded, size: 26),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => _confirmDelete(context),
+            child: Text(
+              S.of(context).deleteTitle,
+              style: const TextStyle(color: Colors.red),
             ),
-          ],
-          body: Consumer<ConversationGroupViewModel>(
-            builder: (context, model, child) {
-              final currentGroup = model.groups.firstWhere(
-                (item) => item.id == widget.group.id,
-                orElse: () => widget.group,
-              );
-              final conversations = model.selectedGroup.id == currentGroup.id
-                  ? model.displayConversations
-                  : <ConversationInfo>[];
-              return ListView(
-                children: [
-                  ListTile(
-                    title: Row(
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            S.of(context).conversationGroupName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          flex: 3,
-                          child: Text(
-                            currentGroup.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.end,
-                            style: const TextStyle(
-                              color: CommonColors.color_999999,
-                            ),
-                          ),
-                        ),
-                        const Icon(Icons.chevron_right),
-                      ],
-                    ),
-                    onTap: () => _editName(context, currentGroup),
-                  ),
-                  _ConversationCountHeader(count: conversations.length),
-                  ListTile(
-                    leading: SvgPicture.asset(
-                      'images/ic_group_add_conversation.svg',
-                      package: kPackage,
-                    ),
-                    title: Text(
-                      S.of(context).conversationGroupAddConversation,
-                    ),
-                    onTap: () async {
-                      await model.loadAllConversationsForGroup(currentGroup);
-                      if (!context.mounted) {
-                        return;
-                      }
-                      Navigator.pushNamed(
-                        context,
-                        RouterConstants
-                            .PATH_CONVERSATION_GROUP_ADD_CONVERSATION_PAGE,
-                        arguments: {
-                          'model': model,
-                          'group': currentGroup,
-                        },
-                      );
-                    },
-                  ),
-                  if (conversations.isEmpty)
-                    _EmptyView()
-                  else
-                    ...conversations.map(
-                      (conversation) => _ConversationRow(
-                        key: ValueKey(conversation.getConversationId()),
-                        conversation: conversation,
-                        onDelete: () => _deleteConversation(
-                          currentGroup,
-                          conversation,
+          ),
+        ],
+        body: Consumer<ConversationGroupViewModel>(
+          builder: (context, model, child) {
+            final currentGroup = model.groups.firstWhere(
+              (item) => item.id == widget.group.id,
+              orElse: () => widget.group,
+            );
+            // 只读取当前分组自己的会话，避免把全局选中的分组切到该分组，
+            // 从而影响左侧会话列表（Duo 双屏下两者可同时展示）。
+            final conversations = model.conversationsForGroup(currentGroup);
+            return ListView(
+              children: [
+                ListTile(
+                  title: Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          S.of(context).conversationGroupName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          currentGroup.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
+                          style: const TextStyle(
+                            color: CommonColors.color_999999,
+                          ),
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right),
+                    ],
+                  ),
+                  onTap: () => _editName(context, currentGroup),
+                ),
+                _ConversationCountHeader(count: conversations.length),
+                ListTile(
+                  leading: SvgPicture.asset(
+                    'images/ic_group_add_conversation.svg',
+                    package: kPackage,
+                  ),
+                  title: Text(
+                    S.of(context).conversationGroupAddConversation,
+                  ),
+                  onTap: () async {
+                    await model.loadAllConversationsForGroup(currentGroup);
+                    if (!context.mounted) {
+                      return;
+                    }
+                    Navigator.pushNamed(
+                      context,
+                      RouterConstants
+                          .PATH_CONVERSATION_GROUP_ADD_CONVERSATION_PAGE,
+                      arguments: {
+                        'model': model,
+                        'group': currentGroup,
+                      },
+                    );
+                  },
+                ),
+                if (conversations.isEmpty)
+                  _EmptyView()
+                else
+                  ...conversations.map(
+                    (conversation) => _ConversationRow(
+                      key: ValueKey(conversation.getConversationId()),
+                      conversation: conversation,
+                      onDelete: () => _deleteConversation(
+                        currentGroup,
+                        conversation,
+                      ),
                     ),
-                ],
-              );
-            },
-          ),
-          backgroundColor: Colors.white,
+                  ),
+              ],
+            );
+          },
         ),
+        backgroundColor: Colors.white,
       ),
     );
   }
@@ -195,7 +170,7 @@ class _ConversationGroupSettingPageState
 
     Navigator.push(
       context,
-      MaterialPageRoute(
+      DuoPageRoute(
         builder: (context) => UpdateTextInfoPage(
           title: S.of(context).conversationGroupName,
           content: group.name,
@@ -217,7 +192,7 @@ class _ConversationGroupSettingPageState
   }
 
   void _confirmDelete(BuildContext context) {
-    showCupertinoDialog(
+    showDuoCupertinoDialog(
       context: context,
       builder: (dialogContext) {
         return CupertinoAlertDialog(

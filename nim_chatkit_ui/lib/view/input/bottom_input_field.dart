@@ -19,6 +19,7 @@ import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/imagePicker/wechat_assets_picker.dart';
 import 'package:netease_plugin_core_kit/netease_plugin_core_kit.dart';
 import 'package:nim_chatkit/chatkit_utils.dart';
+import 'package:nim_chatkit/window_adaptation.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
 import 'package:nim_chatkit/manager/ai_robot_manager.dart';
 import 'package:nim_chatkit/manager/ai_user_manager.dart';
@@ -33,6 +34,8 @@ import 'package:nim_chatkit_ui/helper/chat_image_send_helper.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_helper.dart';
 import 'package:nim_chatkit_ui/helper/chat_message_user_helper.dart';
 import 'package:nim_chatkit_ui/helper/chat_video_send_helper.dart';
+import 'package:netease_common_ui/duo/duo_shell_controller.dart';
+import 'package:nim_chatkit_ui/helper/duo_layout.dart';
 import 'package:nim_chatkit_ui/view/ait/ait_manager.dart';
 import 'package:nim_chatkit_ui/view/ait/ait_model.dart';
 import 'package:nim_chatkit_ui/view/input/emoji/emoji.dart';
@@ -355,6 +358,12 @@ class _BottomInputFieldState extends State<BottomInputField>
 
     final containerPosition = containerBox.localToGlobal(Offset.zero);
     final containerWidth = containerBox.size.width;
+    // Duo 双屏时 @ 列表属于右侧聊天面板，不能沿用输入框自身的宽度：
+    // 输入框通常带有左右边距，弹框会因此比右侧聊天屏幕窄一截。
+    // 使用聊天面板边界让弹框铺满右侧内容区，同时不覆盖最右侧工具栏。
+    final duoPaneBounds = DuoLayout.chatPaneBounds(context);
+    final popupPosition = duoPaneBounds?.topLeft ?? containerPosition;
+    final popupWidth = duoPaneBounds?.width ?? containerWidth;
 
     const double maxHeight = 320.0;
     const double itemHeight = 56.0;
@@ -369,8 +378,8 @@ class _BottomInputFieldState extends State<BottomInputField>
       builder: (overlayContext) {
         return _DesktopAitPopup(
           aitManager: _aitManager!,
-          containerPosition: containerPosition,
-          containerWidth: containerWidth,
+          containerPosition: popupPosition,
+          containerWidth: popupWidth,
           screenHeight: screenHeight,
           maxHeight: maxHeight,
           itemHeight: itemHeight,
@@ -653,24 +662,54 @@ class _BottomInputFieldState extends State<BottomInputField>
     setState(() {});
   }
 
+  /// 打开相册选择页。
+  ///
+  /// 选择页是整窗路由，而 Duo 的右侧工具栏绘制在 Navigator 之上。选择页展示
+  /// 期间隐藏工具栏，避免它盖住底部的确认按钮；选择页内部会通过
+  /// [DuoShellController.reservedRightWidth] 为工具栏宽度预留网格右侧留白，
+  /// 所以右侧一列图片和勾选框仍能完整展示。选择页自带关闭按钮，返回路径
+  /// 不受影响。
+  Future<List<AssetEntity>?> _pickAssets(
+    BuildContext context,
+    RequestType requestType,
+    int maxAssets,
+  ) async {
+    final DuoShellController shell = DuoShellController.instance;
+    final bool hideDuoRail = shell.enabled && !shell.fullScreenActive;
+    if (hideDuoRail) {
+      shell.fullScreenPushed();
+    }
+    try {
+      return await AssetPicker.pickAssets(
+        context,
+        pickerConfig: AssetPickerConfig(
+          requestType: requestType,
+          shouldRevertGrid: false,
+          maxAssets: maxAssets,
+          dragToSelect: false,
+          limitedPermissionOverlayPredicate: (state) => false,
+          filterOptions: FilterOptionGroup(
+            imageOption: const FilterOption(needTitle: true),
+            videoOption: const FilterOption(needTitle: true),
+          ),
+        ),
+      );
+    } finally {
+      if (hideDuoRail) {
+        shell.fullScreenPopped();
+      }
+    }
+  }
+
   void showImagePicker(
     BuildContext context,
     RequestType requestType,
     int maxAssets,
   ) async {
-    final List<AssetEntity>? result = await AssetPicker.pickAssets(
+    final List<AssetEntity>? result = await _pickAssets(
       context,
-      pickerConfig: AssetPickerConfig(
-        requestType: requestType,
-        shouldRevertGrid: false,
-        maxAssets: maxAssets,
-        dragToSelect: false,
-        limitedPermissionOverlayPredicate: (state) => false,
-        filterOptions: FilterOptionGroup(
-          imageOption: const FilterOption(needTitle: true),
-          videoOption: const FilterOption(needTitle: true),
-        ),
-      ),
+      requestType,
+      maxAssets,
     );
     if (result != null) {
       for (var entity in result) {
@@ -1693,11 +1732,24 @@ class _BottomInputFieldState extends State<BottomInputField>
   }
 
   /// 移动端输入框：保持原有行为
-  Widget _buildMobileInputField(String? hint, bool showTitle) {
+  Widget _buildMobileInputField(
+    String? hint,
+    bool showTitle, {
+    bool stretch = false,
+  }) {
+    // 多行展开态固定 8 行，键盘弹出后 8 行输入区 + 标题 + 发送栏会超过
+    // Duo 面板的剩余高度；Duo 键盘显示时收窄到 3 行（内容仍可内部滚动），
+    // 键盘收起后恢复完整展开高度。非 Duo 设备保持原来的 8 行行为。
+    final bool compactExpanded =
+        WindowAdaptationScope.maybeOf(context)?.isIPhoneDuoPath == true &&
+            View.of(context).viewInsets.bottom > 0;
     return Column(
+      crossAxisAlignment:
+          stretch ? CrossAxisAlignment.stretch : CrossAxisAlignment.center,
       children: [
         SingleChildScrollView(
           child: SizedBox(
+            width: double.infinity,
             height: showTitle ? null : 40,
             child: ExtendedTextField(
               controller: inputController,
@@ -1760,7 +1812,8 @@ class _BottomInputFieldState extends State<BottomInputField>
                 _handleAitText();
                 _translatePanel.currentState?.onInputTextChange();
               },
-              maxLines: _isExpanded ? 8 : (showTitle ? 2 : 1),
+              maxLines:
+                  _isExpanded ? (compactExpanded ? 3 : 8) : (showTitle ? 2 : 1),
               onEditingComplete: _sendTextMessage,
               enabled: !mute,
             ),
@@ -1810,9 +1863,19 @@ class _BottomInputFieldState extends State<BottomInputField>
       _titleFocusNode.unfocus();
     }
     final bool isDesktop = ChatKitUtils.isDesktopOrWeb;
+    final mediaQuery = MediaQuery.of(context);
+    final adaptation = WindowAdaptationScope.maybeOf(context);
+    final bool isDuoPath = adaptation?.isIPhoneDuoPath == true;
+    // Duo 上键盘已经由 Scaffold 让出空间；输入栏再保留底部安全区会把内容
+    // 顶出可视区域，键盘显示期间去掉底部安全区。
+    final bool isDuoKeyboard =
+        isDuoPath && View.of(context).viewInsets.bottom > 0;
+    // Duo 页面可能只占据窗口的一侧；使用父布局的最大约束，
+    // 不使用整块物理窗口宽度，避免折叠单屏/双屏时输入栏被居中或裁切。
+    final inputWidth = isDuoPath ? double.infinity : mediaQuery.size.width;
     return Container(
       key: _inputContainerKey,
-      width: MediaQuery.of(context).size.width,
+      width: inputWidth,
       color: !isDesktop ? const Color(0xffeff1f3) : null,
       margin: isDesktop
           ? const EdgeInsets.only(left: 10, right: 10, bottom: 8)
@@ -1824,9 +1887,19 @@ class _BottomInputFieldState extends State<BottomInputField>
             )
           : null,
       child: SafeArea(
-        // 桌面端不需要底部安全区域
-        bottom: !isDesktop,
+        // 桌面端不需要底部安全区域；Duo 键盘弹出时键盘已覆盖底部安全区。
+        bottom: !isDesktop && !isDuoKeyboard,
+        // Duo：聊天面板本身已由页面布局让出了右侧工具栏（DuoPageRoute 预留
+        // toolbarWidth），而系统上报的右侧安全区（内屏摄像头/状态栏）比工具栏
+        // 更宽，SafeArea 再内缩一次会让输入模块明显短于消息列表和顶部提示，
+        // 右侧留下一大片空白背景。Duo 路径只保留垂直安全区，让输入模块铺满
+        // 聊天面板；其他 iPhone 继续按原来的水平安全区处理，避免横屏刘海遮挡。
+        left: !isDuoPath,
+        right: !isDuoPath,
         child: Column(
+          crossAxisAlignment: isDuoPath
+              ? CrossAxisAlignment.stretch
+              : CrossAxisAlignment.center,
           children: [
             _isTranslating
                 ? AnimatedContainer(
@@ -1895,6 +1968,9 @@ class _BottomInputFieldState extends State<BottomInputField>
                 : Padding(
                     padding: const EdgeInsets.all(7.0),
                     child: Column(
+                      crossAxisAlignment: isDuoPath
+                          ? CrossAxisAlignment.stretch
+                          : CrossAxisAlignment.center,
                       children: [
                         if (showTitle && !mute)
                           TextField(
@@ -1962,18 +2038,27 @@ class _BottomInputFieldState extends State<BottomInputField>
                           ),
                         ChatKitUtils.isDesktopOrWeb
                             ? _buildDesktopInputField(hint, showTitle)
-                            : _buildMobileInputField(hint, showTitle),
+                            : _buildMobileInputField(
+                                hint,
+                                showTitle,
+                                stretch: isDuoPath,
+                              ),
                       ],
                     ),
                   ),
             if (_recording)
               SizedBox(
                 height: 47,
-                child: Text(
-                  S.of(context).chatMessageVoiceIn,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: CommonColors.color_999999,
+                // Duo 输入栏使用 stretch 布局，SizedBox 会占满宽度；这里显式
+                // 居中，避免录音提示文案在 Duo 上靠左。
+                child: Center(
+                  child: Text(
+                    S.of(context).chatMessageVoiceIn,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: CommonColors.color_999999,
+                    ),
                   ),
                 ),
               ),
@@ -2006,9 +2091,14 @@ class _BottomInputFieldState extends State<BottomInputField>
               ),
             if (!mute)
               AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                height: _getPanelHeight(),
-                child: _getPanel(),
+                // 键盘弹出瞬间表情/更多面板正在收起，若仍播放 300ms 动画，
+                // 面板和键盘会同时占用高度，Duo 上会把聊天主体顶到溢出。
+                // Duo 键盘显示时直接收起面板。
+                duration: isDuoKeyboard
+                    ? Duration.zero
+                    : const Duration(milliseconds: 300),
+                height: isDuoKeyboard ? 0 : _getPanelHeight(),
+                child: isDuoKeyboard ? const SizedBox.shrink() : _getPanel(),
               ),
           ],
         ),

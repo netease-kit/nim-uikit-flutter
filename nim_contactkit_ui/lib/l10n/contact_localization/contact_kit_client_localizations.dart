@@ -239,6 +239,8 @@ abstract class ContactKitClientLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Done({count})'**
+  String get contactSure;
+
   String contactSureWithCount(String count);
 
   /// No description provided for @contactSelectAsMost.

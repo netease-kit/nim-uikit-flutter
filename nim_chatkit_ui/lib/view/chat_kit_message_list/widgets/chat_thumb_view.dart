@@ -108,6 +108,10 @@ class _ChatThumbViewState extends State<ChatThumbView> {
         imageUrl: url,
         cacheKey: url,
         placeholder: (context, url) => _placeHolder(_getImageRatio()),
+        // 图片服务返回坏图或下载到损坏的缓存文件时，解码会抛
+        // “Could not decompress image”。这里展示占位图，避免异常冒泡到
+        // Flutter 的 image resource service，图片其他能力保持不变。
+        errorWidget: (context, url, error) => _placeHolder(_getImageRatio()),
         fit: BoxFit.fitWidth,
         fadeInDuration: const Duration(milliseconds: 0),
       ),
@@ -115,7 +119,14 @@ class _ChatThumbViewState extends State<ChatThumbView> {
   }
 
   Widget _localImage(String path) {
-    return getImage(Image.file(File(path), fit: BoxFit.fitWidth));
+    return getImage(
+      Image.file(
+        File(path),
+        fit: BoxFit.fitWidth,
+        errorBuilder: (context, error, stackTrace) =>
+            _placeHolder(_getImageRatio()),
+      ),
+    );
   }
 
   Size? _getPictureDisplaySize() {

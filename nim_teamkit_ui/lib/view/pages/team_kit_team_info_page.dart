@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/background.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
@@ -123,7 +124,7 @@ class _TeamKitTeamInfoState extends State<TeamKitTeamInfoPage> {
 
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
+                    DuoPageRoute(
                       builder: (context) {
                         return TeamKitAvatarEditorPage(
                           team: widget.team,
@@ -192,7 +193,7 @@ class _TeamKitTeamInfoState extends State<TeamKitTeamInfoPage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
+                    DuoPageRoute(
                       builder: (context) => UpdateTextInfoPage(
                         title: S.of(context).teamNameTitle,
                         content: _updatedName ?? widget.team.name,
@@ -247,7 +248,7 @@ class _TeamKitTeamInfoState extends State<TeamKitTeamInfoPage> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
+                      DuoPageRoute(
                         builder: (context) => UpdateTextInfoPage(
                           title: S.of(context).teamIntroduceTitle,
                           content: _updatedIntroduce ?? widget.team.intro,

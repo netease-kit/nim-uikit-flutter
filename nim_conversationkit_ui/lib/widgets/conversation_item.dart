@@ -43,11 +43,13 @@ class ConversationItem extends StatelessWidget {
     required this.conversationInfo,
     required this.config,
     required this.index,
+    this.selected = false,
   }) : super(key: key);
 
   final ConversationInfo conversationInfo;
   final ConversationItemConfig config;
   final int index;
+  final bool selected;
 
   String _getLastMessageContent(BuildContext context) {
     var configMessageContent = config.lastMessageContentBuilder?.call(
@@ -155,9 +157,11 @@ class ConversationItem extends StatelessWidget {
     // 桌面端背景色由外层 AnimatedContainer 控制，Item 内部设为透明
     final bgColor = ChatKitUtils.isDesktopOrWeb
         ? Colors.transparent
-        : (conversationInfo.isStickTop()
-            ? const Color(0xffededef)
-            : Colors.white);
+        : (selected
+            ? const Color(0xFFD6E4FF)
+            : (conversationInfo.isStickTop()
+                ? const Color(0xffededef)
+                : Colors.white));
     return Container(
       height: conversationItemHeight,
       padding: const EdgeInsets.symmetric(horizontal: 20),

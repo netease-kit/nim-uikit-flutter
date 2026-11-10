@@ -11,6 +11,7 @@ import 'package:nim_chatkit/im_kit_config_center.dart';
 import 'package:nim_chatkit/repo/chat_message_repo.dart';
 import 'package:nim_chatkit/services/message/chat_message.dart';
 import 'package:nim_chatkit/utils/toast_utils.dart';
+import 'package:nim_chatkit_ui/helper/duo_layout.dart';
 import 'package:nim_chatkit_ui/helper/message_reaction_helper.dart';
 import 'package:nim_chatkit_ui/helper/message_popup_coordinator.dart';
 import 'package:nim_chatkit_ui/l10n/S.dart';
@@ -50,6 +51,9 @@ class ChatKitMessagePopMenu {
   }) {
     final estimatedPopupHeight = _estimatedCollapsedPopupHeight(context);
     final placement = _getPopupPlacement(context, estimatedPopupHeight);
+    // Duo 双屏时聊天页只占窗口右侧，弹框位置和宽度都以聊天页为边界；
+    // 其他设备返回 null，继续使用整个窗口，保持原有行为。
+    final paneBounds = DuoLayout.chatPaneBounds(context);
 
     _tooltip = SuperTooltip(
       onClose: () => MessagePopupCoordinator.release(this),
@@ -66,6 +70,7 @@ class ChatKitMessagePopMenu {
       arrowLength: 10.0,
       right: ChatKitMenuHelper.isSelf(message.nimMessage) ? 60 : null,
       left: ChatKitMenuHelper.isSelf(message.nimMessage) ? null : 60,
+      layoutBounds: paneBounds,
       borderColor: Colors.white,
       backgroundColor: Colors.white,
       shadowColor: Colors.black26,

@@ -7,6 +7,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:nim_chatkit_ui/chat_kit_client.dart';
+import 'package:nim_chatkit_ui/helper/duo_layout.dart';
 import 'package:nim_chatkit_ui/helper/message_popup_coordinator.dart';
 import 'package:nim_chatkit_ui/l10n/S.dart';
 import 'package:nim_chatkit_ui/model/message_reaction.dart';
@@ -92,24 +93,35 @@ class _MessageReactionBarState extends State<MessageReactionBar> {
     final origin = box.localToGlobal(Offset.zero);
     final targetOrigin = targetBox.localToGlobal(Offset.zero);
     final targetRect = targetOrigin & targetBox.size;
-    final panelWidth = math.min(
+    // Duo 双屏下聊天页只占窗口右侧；表情面板挂在根 Overlay 上，必须按聊天
+    // 面板而不是整窗计算边界，否则自己发送的消息（靠右）打开面板时，右侧会
+    // 伸到 Duo 工具栏下面被遮住。非 Duo 返回 null，保持整窗行为。
+    final Rect? paneBounds = DuoLayout.chatPaneBounds(context);
+    final Rect bounds = paneBounds ?? (Offset.zero & mediaQuery.size);
+    final double panelWidth = math.min(
       MessageReactionPicker.width,
-      math.max(0.0, mediaQuery.size.width - 16),
+      math.max(0.0, bounds.width - 16),
     );
     if (panelWidth <= 0) {
       return;
     }
-    final viewportTop = mediaQuery.padding.top + kToolbarHeight + 8;
-    final viewportBottom =
-        mediaQuery.size.height - mediaQuery.padding.bottom - 8;
-    final height = MessageReactionPicker.heightFor(mediaQuery);
-    if (height <= 0) {
+    final double viewportTop =
+        math.max(bounds.top, mediaQuery.padding.top) + kToolbarHeight + 8;
+    final double viewportBottom = math.min(
+          bounds.bottom,
+          mediaQuery.size.height - mediaQuery.padding.bottom,
+        ) -
+        8;
+    final double height = MessageReactionPicker.heightFor(
+      paneBounds == null ? mediaQuery : mediaQuery.copyWith(size: bounds.size),
+    );
+    if (height <= 0 || viewportBottom <= viewportTop) {
       return;
     }
-    final left = origin.dx
+    final double left = origin.dx
         .clamp(
-          8.0,
-          math.max(8.0, mediaQuery.size.width - panelWidth - 8),
+          bounds.left + 8,
+          math.max(bounds.left + 8, bounds.right - panelWidth - 8),
         )
         .toDouble();
     const targetGap = 6.0;
@@ -127,7 +139,7 @@ class _MessageReactionBarState extends State<MessageReactionBar> {
           ? (visibleTop + visibleBottom) / 2
           : targetRect.center.dy.clamp(viewportTop, viewportBottom).toDouble();
       top = (centerY - height / 2)
-          .clamp(viewportTop, viewportBottom - height)
+          .clamp(viewportTop, math.max(viewportTop, viewportBottom - height))
           .toDouble();
     }
 

@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
 import 'package:im_demo/src/mine/setting/language_setting.dart';
 import 'package:im_demo/src/mine/setting/notify_setting_page.dart';
 import 'package:netease_common_ui/ui/background.dart';
@@ -162,7 +163,7 @@ class _MineSettingPageState extends State<MineSettingPage> {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
+                          DuoPageRoute(
                             builder: (context) => const NotifySettingPage(),
                           ),
                         );
@@ -176,7 +177,7 @@ class _MineSettingPageState extends State<MineSettingPage> {
                     //     onTap: () {
                     //       Navigator.push(
                     //           context,
-                    //           MaterialPageRoute(
+                    //           DuoPageRoute(
                     //               builder: (context) => const ClearCachePage()));
                     //     },
                     //   ),
@@ -206,7 +207,7 @@ class _MineSettingPageState extends State<MineSettingPage> {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
+                          DuoPageRoute(
                             builder: (context) => const LanguageSettingPage(),
                           ),
                         );
@@ -219,7 +220,7 @@ class _MineSettingPageState extends State<MineSettingPage> {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
+                            DuoPageRoute(
                               builder: (context) =>
                                   const MessageTranslationSettingPage(),
                             ),
@@ -234,7 +235,7 @@ class _MineSettingPageState extends State<MineSettingPage> {
                     //     onTap: () {
                     //       Navigator.push(
                     //           context,
-                    //           MaterialPageRoute(
+                    //           DuoPageRoute(
                     //               builder: (context) => const ClearCachePage()));
                     //     },
                     //   ),

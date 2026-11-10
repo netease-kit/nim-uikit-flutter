@@ -5,6 +5,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
@@ -212,7 +213,7 @@ class ChatKitMessageTextState extends State<ChatKitMessageTextItem> {
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
+            DuoPageRoute(
               builder: (context) {
                 return ChatKitMessageDetailTextPage(
                   content: widget.message.text ?? '',

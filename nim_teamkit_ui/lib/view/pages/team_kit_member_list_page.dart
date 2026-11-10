@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/base/base_state.dart';
+import 'package:netease_common_ui/duo/duo_page_chrome.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
@@ -103,6 +104,39 @@ class TeamKitMemberListPageState extends BaseState<TeamKitMemberListPage> {
     super.dispose();
   }
 
+  void _confirmSelectedMembers(BuildContext context) {
+    final viewModel = context.read<TeamSettingViewModel>();
+    if (viewModel.selectedList.isEmpty) {
+      ChatUIToast.show(S.of(context).teamSelectMembers);
+      return;
+    }
+    if (widget.maxSelectMemberCount != null) {
+      if (viewModel.selectedList.length > widget.maxSelectMemberCount!) {
+        ChatUIToast.show(
+          S.of(context).teamMemberSelectLimit(
+                widget.maxSelectMemberCount.toString(),
+              ),
+        );
+        return;
+      }
+    } else {
+      final int managerLimit =
+          TeamKitClient.instance.teamManagerLimit ?? teamManagersLimitDefault;
+      final int teamManagersCount =
+          NIMChatCache.instance.getTeamManagers()?.length ?? 0;
+      if (teamManagersCount + viewModel.selectedList.length > managerLimit) {
+        ChatUIToast.show(
+          S.of(context).teamManagerLimit(managerLimit.toString()),
+        );
+        return;
+      }
+    }
+    Navigator.pop(
+      context,
+      viewModel.selectedList.map((e) => e.teamInfo.accountId).toList(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -156,62 +190,28 @@ class TeamKitMemberListPageState extends BaseState<TeamKitMemberListPage> {
           centerTitle: true,
           actions: [
             if (widget.isMultiSelectModel)
-              TextButton(
-                onPressed: () {
-                  if (context
-                      .read<TeamSettingViewModel>()
-                      .selectedList
-                      .isNotEmpty) {
-                    if (widget.maxSelectMemberCount != null) {
-                      if (context
-                              .read<TeamSettingViewModel>()
-                              .selectedList
-                              .length >
-                          widget.maxSelectMemberCount!) {
-                        ChatUIToast.show(
-                          S.of(context).teamMemberSelectLimit(
-                                widget.maxSelectMemberCount.toString(),
-                              ),
-                        );
-                        return;
-                      }
-                    } else {
-                      int managerLimit =
-                          TeamKitClient.instance.teamManagerLimit ??
-                              teamManagersLimitDefault;
-                      int teamManagersCount =
-                          NIMChatCache.instance.getTeamManagers()?.length ?? 0;
-                      if (teamManagersCount +
-                              context
-                                  .read<TeamSettingViewModel>()
-                                  .selectedList
-                                  .length >
-                          managerLimit) {
-                        ChatUIToast.show(
-                          S
-                              .of(context)
-                              .teamManagerLimit(managerLimit.toString()),
-                        );
-                        return;
-                      }
-                    }
-                    Navigator.pop(
-                      context,
-                      context
-                          .read<TeamSettingViewModel>()
-                          .selectedList
-                          .map((e) => e.teamInfo.accountId)
-                          .toList(),
-                    );
-                  } else {
-                    ChatUIToast.show(
-                      S.of(context).teamSelectMembers,
-                    );
-                  }
-                },
-                child: Text(
-                  '${S.of(context).teamConfirm}(${context.read<TeamSettingViewModel>().selectedList.length})',
-                  style: TextStyle(color: '#337EFF'.toColor(), fontSize: 16),
+              DuoCountBadge(
+                count: context.read<TeamSettingViewModel>().selectedList.length,
+                badgeColor: '#337EFF'.toColor(),
+                child: TextButton(
+                  onPressed: () => _confirmSelectedMembers(context),
+                  child: Text(
+                    '${S.of(context).teamConfirm}(${context.read<TeamSettingViewModel>().selectedList.length})',
+                    style: TextStyle(
+                      color: '#337EFF'.toColor(),
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                duoChild: TextButton(
+                  onPressed: () => _confirmSelectedMembers(context),
+                  child: Text(
+                    S.of(context).teamConfirm,
+                    style: TextStyle(
+                      color: '#337EFF'.toColor(),
+                      fontSize: 16,
+                    ),
+                  ),
                 ),
               ),
           ],

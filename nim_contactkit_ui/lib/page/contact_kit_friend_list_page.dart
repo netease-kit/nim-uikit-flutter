@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/widgets/duo_scaffold.dart';
 import 'package:nim_contactkit_ui/contact_kit_client.dart';
 import 'package:nim_contactkit_ui/page/viewmodel/contact_viewmodel.dart';
 import 'package:provider/provider.dart';
@@ -33,7 +34,7 @@ class _FriendListPageState extends State<ContactKitFriendListPage> {
             .contacts
             .where((e) => e.isInBlack != true)
             .toList();
-        return Scaffold(
+        return DuoScaffold(
           backgroundColor: Colors.white,
           appBar: AppBar(
             automaticallyImplyLeading: false,

@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/widgets/duo_scaffold.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
@@ -165,7 +166,7 @@ class _MessageAckState extends State<ChatMessageAckPage> {
         initialIndex: 0,
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
-          child: Scaffold(
+          child: DuoScaffold(
             appBar: AppBar(
               title: Text(S.of(context).messageReadStatus),
               centerTitle: true,

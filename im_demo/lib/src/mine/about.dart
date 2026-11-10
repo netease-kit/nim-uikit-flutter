@@ -3,6 +3,8 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
+import 'package:netease_common_ui/widgets/duo_scaffold.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/common_browse_page.dart';
@@ -22,8 +24,12 @@ class AboutPage extends StatelessWidget {
     );
     TextStyle _style =
         const TextStyle(fontSize: 14, color: CommonColors.color_333333);
-    return Scaffold(
-      body: Container(
+    return DuoScaffold(
+      appBar: AppBar(
+        title: Text(S.of(context).mineAbout),
+        automaticallyImplyLeading: true,
+      ),
+      body: Material(
         color: Colors.white,
         child: Column(
           children: [
@@ -51,7 +57,7 @@ class AboutPage extends StatelessWidget {
               ),
               // 如果引入package_info 则不需要手动修改此处，但是如果只为了版本号引入不值得
               trailing: Text(
-                'V10.9.60',
+                'V10.9.70',
                 style: _style,
               ),
             ),
@@ -69,7 +75,7 @@ class AboutPage extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                     context,
-                    MaterialPageRoute(
+                    DuoPageRoute(
                         builder: (context) => CommonBrowser(
                             title: S.of(context).mineAbout,
                             url: 'https://netease.im/m/')));

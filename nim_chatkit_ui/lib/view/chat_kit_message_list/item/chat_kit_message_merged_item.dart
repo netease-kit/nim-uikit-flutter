@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/string_utils.dart';
 import 'package:netease_common_ui/widgets/text_untils.dart';
@@ -90,7 +91,7 @@ class _ChatKitMessageMergedItemState extends State<ChatKitMessageMergedItem> {
         } else {
           Navigator.push(
             context,
-            MaterialPageRoute(
+            DuoPageRoute(
               builder: (context) {
                 return MergedMessagePage(
                   mergedMessage: _mergedMessage,

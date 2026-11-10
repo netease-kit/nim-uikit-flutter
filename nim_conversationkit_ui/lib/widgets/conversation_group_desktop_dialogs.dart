@@ -383,21 +383,10 @@ class _SettingDialogState extends State<_SettingDialog> {
     super.dispose();
   }
 
-  void _selectAllIfCurrentGroupIsHidden() {
-    final group = widget.model.groups.firstWhere(
-      (item) => item.id == widget.group.id,
-      orElse: () => widget.group,
-    );
-    if (!group.visible) {
-      widget.model.selectAllGroup();
-    }
-  }
-
   void _onPopInvoked(bool didPop, Object? result) {
     if (didPop) {
       return;
     }
-    _selectAllIfCurrentGroupIsHidden();
     Navigator.pop(context);
   }
 
@@ -412,9 +401,8 @@ class _SettingDialogState extends State<_SettingDialog> {
             (item) => item.id == widget.group.id,
             orElse: () => widget.group,
           );
-          final conversations = model.selectedGroup.id == group.id
-              ? model.displayConversations
-              : <ConversationInfo>[];
+          // 只读取该分组自己的会话，不依赖也不改变全局选中的分组。
+          final conversations = model.conversationsForGroup(group);
           return Column(
             children: [
               _DialogHeader(
@@ -422,7 +410,6 @@ class _SettingDialogState extends State<_SettingDialog> {
                 onClose: () async {
                   await _flushName(group);
                   if (mounted) {
-                    _selectAllIfCurrentGroupIsHidden();
                     Navigator.pop(context);
                   }
                 },
@@ -441,7 +428,8 @@ class _SettingDialogState extends State<_SettingDialog> {
                       context,
                       model: model,
                       group: group,
-                      initialIds: model.displayConversations
+                      initialIds: model
+                          .conversationsForGroup(group)
                           .map((conversation) =>
                               conversation.getConversationId())
                           .toSet(),
@@ -461,7 +449,6 @@ class _SettingDialogState extends State<_SettingDialog> {
                 onConfirm: () async {
                   await _flushName(group);
                   if (mounted) {
-                    _selectAllIfCurrentGroupIsHidden();
                     Navigator.pop(context);
                   }
                 },
@@ -1236,12 +1223,14 @@ class _AddConversationDialogState extends BaseState<_AddConversationDialog> {
     if (!mounted) {
       return;
     }
+    final ConversationGroupUiModel? group = widget.group;
     _initialConversationIds
       ..clear()
       ..addAll(
-        widget.model.displayConversations.map(
-          (conversation) => conversation.getConversationId(),
-        ),
+        (group == null
+                ? const <ConversationInfo>[]
+                : widget.model.conversationsForGroup(group))
+            .map((conversation) => conversation.getConversationId()),
       );
     if (clearSelection) {
       _selectedIds.clear();

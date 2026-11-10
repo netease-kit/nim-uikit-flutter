@@ -3,8 +3,11 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/widgets/duo_scaffold.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/base/base_state.dart';
+import 'package:netease_common_ui/duo/duo_shell_controller.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/ui/dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
@@ -46,7 +49,7 @@ class _ContactKitUserAIBotProfilePageState
   Future<void> _openEdit(UserAIBotProfileViewModel viewModel) async {
     final result = await Navigator.push<V2NIMUserAIBot>(
       context,
-      MaterialPageRoute(
+      DuoPageRoute(
         builder: (_) => ContactKitUserAIBotFormPage(bot: viewModel.bot),
       ),
     );
@@ -72,7 +75,7 @@ class _ContactKitUserAIBotProfilePageState
     } else {
       await Navigator.push(
         context,
-        MaterialPageRoute(
+        DuoPageRoute(
           builder: (_) => ContactKitUserAIBotConfigPage(config: config),
         ),
       );
@@ -126,18 +129,21 @@ class _ContactKitUserAIBotProfilePageState
   }) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
+      child: Material(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        children: [
-          for (int i = 0; i < children.length; i++) ...[
-            children[i],
-            if (i != children.length - 1)
-              Divider(height: 1, color: '#F5F8FC'.toColor()),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          children: [
+            for (int i = 0; i < children.length; i++) ...[
+              children[i],
+              if (i != children.length - 1)
+                Divider(height: 1, color: '#F5F8FC'.toColor()),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -289,6 +295,22 @@ class _ContactKitUserAIBotProfilePageState
     );
   }
 
+  /// Duo 折叠/双屏下，路由已经为右侧工具栏预留了宽度，但系统上报的右侧安全区
+  /// （内屏摄像头/状态栏）比工具栏更宽。页面里的 AppBar 和 ListTile 内置的
+  /// SafeArea 会再按安全区内缩一次，而头像卡片等普通容器不会，导致标题、操作行
+  /// 箭头和卡片箭头左右错位。这里仅在 Duo 路径去掉右侧安全区，让标题、操作行
+  /// 与头像卡片共用同一条右边界；普通 iPhone、Android、桌面/Web 行为保持不变。
+  Widget _removeDuoRightSafeArea(BuildContext context, Widget child) {
+    if (!DuoShellController.instance.enabled) {
+      return child;
+    }
+    return MediaQuery.removePadding(
+      context: context,
+      removeRight: true,
+      child: child,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -302,10 +324,13 @@ class _ContactKitUserAIBotProfilePageState
               _popProfile();
             }
           },
-          child: Scaffold(
-            backgroundColor: const Color(0xFFEFF1F4),
-            appBar: _buildAppBar(),
-            body: _buildBody(viewModel),
+          child: _removeDuoRightSafeArea(
+            context,
+            DuoScaffold(
+              backgroundColor: const Color(0xFFEFF1F4),
+              appBar: _buildAppBar(),
+              body: _buildBody(viewModel),
+            ),
           ),
         );
       },

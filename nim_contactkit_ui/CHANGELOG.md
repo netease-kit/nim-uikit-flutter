@@ -1,5 +1,8 @@
 # NimContactKitUI ChangeLog
 
+## 10.9.70(Nov 10, 2026)
+* 支持iPhone Duo
+
 ## 10.9.60(Sep 16, 2026)
 * 支持在消息列表定位到未读消息
 * 支持自定义表情

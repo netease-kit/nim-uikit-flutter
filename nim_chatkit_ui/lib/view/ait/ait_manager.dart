@@ -6,6 +6,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:netease_common_ui/duo/duo_dialog.dart';
+import 'package:netease_common_ui/duo/duo_shell_controller.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:nim_chatkit/im_kit_client.dart';
@@ -20,6 +22,7 @@ import 'package:nim_core_v2/nim_core.dart';
 
 import '../../chat_kit_client.dart';
 import '../../helper/ait_member_search_helper.dart';
+import '../../helper/duo_layout.dart';
 import '../../l10n/S.dart';
 import '../../widget/ait_member_highlight_text.dart';
 import 'ait_model.dart';
@@ -221,10 +224,23 @@ class AitManager {
     if (isP2P && (_aiUserList == null || _aiUserList!.isEmpty)) {
       return null;
     }
-    return showModalBottomSheet(
+    final Rect? chatPaneBounds = DuoLayout.chatPaneBounds(context);
+    final bool isDuoPath =
+        DuoShellController.instance.enabled || chatPaneBounds != null;
+    return showDuoModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      useSafeArea: true,
+      // Duo 双屏的 @ 列表属于右侧聊天面板，需要显式占满面板宽度。
+      // 不设置时 ModalBottomSheetRoute 可能按子内容/主题约束收窄，
+      // 导致弹框无法铺满右侧屏幕；普通设备仍沿用默认约束。
+      constraints: chatPaneBounds == null
+          ? null
+          : BoxConstraints(
+              minWidth: chatPaneBounds.width,
+              maxWidth: chatPaneBounds.width,
+            ),
+      // Duo 页面不能再次应用整窗的左右 SafeArea，否则弹框右侧会留下空白。
+      useSafeArea: !isDuoPath,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(8),

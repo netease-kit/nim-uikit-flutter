@@ -86,6 +86,9 @@ class ContactKitClientLocalizationsEn extends ContactKitClientLocalizations {
   String get contactUserSelector => 'User Selector';
 
   @override
+  String get contactSure => 'Done';
+
+  @override
   String contactSureWithCount(String count) {
     return 'Done($count)';
   }

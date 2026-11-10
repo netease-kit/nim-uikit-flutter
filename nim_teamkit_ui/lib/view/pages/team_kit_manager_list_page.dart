@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:netease_common_ui/base/base_state.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
@@ -67,75 +68,79 @@ class TeamKitManagerListPageState extends BaseState<TeamKitManagerListPage> {
         return TransparentScaffold(
           title: S.of(context).teamManagers,
           appBarBackgroundColor: Colors.white,
-          iconTheme: Theme.of(
-            context,
-          ).primaryIconTheme.copyWith(color: Colors.grey),
+          iconTheme:
+              Theme.of(context).primaryIconTheme.copyWith(color: Colors.grey),
           elevation: 0,
           centerTitle: true,
-          body: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+          body: Material(
             color: Colors.white,
-            child: Column(
-              children: [
-                ListTile(
-                  title: Text(
-                    S.of(context).teamAddManagers,
-                    style: TextStyle(fontSize: 16, color: '#333333'.toColor()),
-                  ),
-                  trailing: const Icon(Icons.keyboard_arrow_right_outlined),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => TeamKitMemberListPage(
-                          tId: widget.tId,
-                          showOwnerAndManager: false,
-                          isMultiSelectModel: true,
-                          showAIMember: false,
-                        ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                children: [
+                  ListTile(
+                    title: Text(
+                      S.of(context).teamAddManagers,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: '#333333'.toColor(),
                       ),
-                    ).then((value) {
-                      if (value is List<String>) {
-                        if (checkNetwork()) {
-                          context.read<TeamSettingViewModel>().addTeamManager(
-                                widget.tId,
-                                value,
-                              );
-                        }
-                      }
-                    });
-                  },
-                ),
-                (memberList?.length ?? 0) > 0
-                    ? Expanded(
-                        child: ListView.builder(
-                          itemCount: memberList?.length ?? 0,
-                          itemBuilder: (context, index) {
-                            var user = memberList?[index];
-                            return TeamMemberListItem(teamMember: user!);
-                          },
-                        ),
-                      )
-                    : Column(
-                        children: [
-                          SizedBox(height: 170),
-                          SvgPicture.asset(
-                            'images/ic_member_empty.svg',
-                            package: kPackage,
+                    ),
+                    trailing: const Icon(Icons.keyboard_arrow_right_outlined),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        DuoPageRoute(
+                          builder: (context) => TeamKitMemberListPage(
+                            tId: widget.tId,
+                            showOwnerAndManager: false,
+                            isMultiSelectModel: true,
+                            showAIMember: false,
                           ),
-                          Padding(
-                            padding: EdgeInsets.only(top: 18),
-                            child: Text(
-                              S.of(context).teamManagerEmpty,
-                              style: TextStyle(
-                                color: CommonColors.color_b3b7bc,
-                                fontSize: 14,
+                        ),
+                      ).then((value) {
+                        if (value is List<String>) {
+                          if (checkNetwork()) {
+                            context.read<TeamSettingViewModel>().addTeamManager(
+                                  widget.tId,
+                                  value,
+                                );
+                          }
+                        }
+                      });
+                    },
+                  ),
+                  (memberList?.length ?? 0) > 0
+                      ? Expanded(
+                          child: ListView.builder(
+                            itemCount: memberList?.length ?? 0,
+                            itemBuilder: (context, index) {
+                              var user = memberList?[index];
+                              return TeamMemberListItem(teamMember: user!);
+                            },
+                          ),
+                        )
+                      : Column(
+                          children: [
+                            SizedBox(height: 170),
+                            SvgPicture.asset(
+                              'images/ic_member_empty.svg',
+                              package: kPackage,
+                            ),
+                            Padding(
+                              padding: EdgeInsets.only(top: 18),
+                              child: Text(
+                                S.of(context).teamManagerEmpty,
+                                style: TextStyle(
+                                  color: CommonColors.color_b3b7bc,
+                                  fontSize: 14,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-              ],
+                          ],
+                        ),
+                ],
+              ),
             ),
           ),
         );
@@ -174,9 +179,7 @@ class TeamMemberListItemState extends BaseState<TeamMemberListItem> {
               .removeTeamManager(tid, account)
               .then((value) {
             if (!value.isSuccess) {
-              ChatUIToast.show(
-                S.of(context).teamManagerRemoveFailed,
-              );
+              ChatUIToast.show(S.of(context).teamManagerRemoveFailed);
             }
           });
         }

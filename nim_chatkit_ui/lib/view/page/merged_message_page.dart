@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/widgets/duo_scaffold.dart';
 import 'package:nim_chatkit/utils/toast_utils.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 import 'package:nim_chatkit/message/merge_message.dart';
@@ -96,7 +97,7 @@ class _MergedMessagePageState extends State<MergedMessagePage> {
     if (widget.isDialog) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: Scaffold(
+        child: DuoScaffold(
           appBar: AppBar(
             title: Text(S.of(context).chatMessageChatHistory),
             centerTitle: true,

@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:netease_common_ui/duo/duo_page_chrome.dart';
 import 'package:netease_common_ui/ui/avatar.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/utils/connectivity_checker.dart';
@@ -536,6 +537,40 @@ class _ContactSelectorState extends State<ContactKitSelectorPage>
     );
   }
 
+  /// 顶部栏确定按钮。
+  ///
+  /// [duoRail] 为 true 时用于 Duo 右侧工具栏：工具栏宽度只有 76，去掉右侧
+  /// 留白后数量角标才不会超出屏幕被裁切。
+  Widget _buildConfirmAction({required bool showCount, bool duoRail = false}) {
+    return InkWell(
+      onTap: () async {
+        if (selectedUser.isEmpty) {
+          ChatUIToast.show(S.of(context).contactSelectEmptyTip);
+          return;
+        }
+        if (!(await haveConnectivity())) {
+          return;
+        }
+        Navigator.pop(
+          context,
+          widget.returnContact == true
+              ? selectedUser
+              : selectedUser.map((e) => e.user.accountId!).toList(),
+        );
+      },
+      child: Container(
+        alignment: Alignment.center,
+        padding: EdgeInsets.only(right: duoRail ? 0 : 20),
+        child: Text(
+          showCount
+              ? S.of(context).contactSureWithCount('${selectedUser.length}')
+              : S.of(context).contactSure,
+          style: TextStyle(fontSize: 16, color: '#337EFF'.toColor()),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.isEmbed) {
@@ -564,30 +599,11 @@ class _ContactSelectorState extends State<ContactKitSelectorPage>
       centerTitle: true,
       elevation: 0,
       actions: [
-        InkWell(
-          onTap: () async {
-            if (selectedUser.isEmpty) {
-              ChatUIToast.show(S.of(context).contactSelectEmptyTip);
-              return;
-            }
-            if (!(await haveConnectivity())) {
-              return;
-            }
-            Navigator.pop(
-              context,
-              widget.returnContact == true
-                  ? selectedUser
-                  : selectedUser.map((e) => e.user.accountId!).toList(),
-            );
-          },
-          child: Container(
-            alignment: Alignment.center,
-            padding: EdgeInsets.only(right: 20),
-            child: Text(
-              S.of(context).contactSureWithCount('${selectedUser.length}'),
-              style: TextStyle(fontSize: 16, color: '#337EFF'.toColor()),
-            ),
-          ),
+        DuoCountBadge(
+          count: selectedUser.length,
+          badgeColor: '#337EFF'.toColor(),
+          child: _buildConfirmAction(showCount: true),
+          duoChild: _buildConfirmAction(showCount: false, duoRail: true),
         ),
       ],
       body: Column(

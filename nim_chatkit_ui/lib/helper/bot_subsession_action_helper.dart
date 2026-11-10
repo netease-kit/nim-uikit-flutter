@@ -4,6 +4,7 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' as material;
+import 'package:netease_common_ui/duo/duo_dialog.dart';
 import 'package:nim_chatkit/utils/toast_utils.dart';
 import 'package:nim_chatkit_ui/l10n/S.dart';
 import 'package:nim_core_v2/nim_core.dart';
@@ -23,7 +24,7 @@ class BotSubsessionActionHelper {
     required Future<NIMResult<void>> Function() onDelete,
     bool Function()? checkNetwork,
   }) async {
-    final action = await showCupertinoModalPopup<_BotSubsessionAction>(
+    final action = await showDuoCupertinoModalPopup<_BotSubsessionAction>(
       context: context,
       builder: (context) {
         return CupertinoActionSheet(
@@ -144,7 +145,7 @@ class BotSubsessionActionHelper {
     bool Function()? checkNetwork,
   }) async {
     final controller = TextEditingController(text: currentTitle);
-    final confirmed = await showCupertinoDialog<bool>(
+    final confirmed = await showDuoCupertinoDialog<bool>(
       context: context,
       builder: (dialogContext) {
         return CupertinoAlertDialog(
@@ -205,7 +206,7 @@ class BotSubsessionActionHelper {
     required Future<NIMResult<void>> Function() onDelete,
     bool Function()? checkNetwork,
   }) async {
-    final confirmed = await showCupertinoDialog<bool>(
+    final confirmed = await showDuoCupertinoDialog<bool>(
       context: context,
       builder: (dialogContext) {
         return CupertinoAlertDialog(

@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:netease_common_ui/duo/duo_dialog.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:netease_common_ui/widgets/transparent_scaffold.dart';
 
@@ -270,11 +271,13 @@ class _DatePickerPageState extends State<DatePickerPage> {
   }
 
   void _showMonthPicker() {
-    showModalBottomSheet(
+    showDuoModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
-        return _MonthPickerBottomSheet(
+        // Duo 弹框路由已经按可见内容区（折叠单屏扣除右侧工具栏）布局，
+        // 这里不再额外让位，弹框右上角的“完成”按钮仍完整可见。
+        final Widget sheet = _MonthPickerBottomSheet(
           minDate: _minDate,
           maxDate: _maxDate,
           currentDate: _stickyDate ?? _selectedDate,
@@ -297,6 +300,7 @@ class _DatePickerPageState extends State<DatePickerPage> {
             Navigator.pop(context);
           },
         );
+        return sheet;
       },
     );
   }
@@ -357,13 +361,23 @@ class _DatePickerPageState extends State<DatePickerPage> {
 
   @override
   Widget build(BuildContext context) {
-    final newWidth = MediaQuery.of(context).size.width;
-    if (_screenWidth != newWidth) {
-      _screenWidth = newWidth;
-      _calculateMonthHeights();
-      WidgetsBinding.instance.addPostFrameCallback((_) => _onScroll());
-    }
+    // 使用页面实际可用宽度，而不是 MediaQuery 的整窗宽度。
+    // Duo 折叠单屏/双屏下路由已经为右侧工具栏让出了宽度，按整窗宽度计算
+    // 会让日历单元格和月份高度的估算偏大，吸顶月份与滚动定位随之偏移。
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double newWidth = constraints.maxWidth;
+        if (_screenWidth != newWidth) {
+          _screenWidth = newWidth;
+          _calculateMonthHeights();
+          WidgetsBinding.instance.addPostFrameCallback((_) => _onScroll());
+        }
+        return _buildContent(context);
+      },
+    );
+  }
 
+  Widget _buildContent(BuildContext context) {
     return TransparentScaffold(
       title: S.of(context).chatQuickSearchByDate,
       backgroundColor: Colors.white,

@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart' as Intl;
@@ -360,7 +361,10 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
         ChatUIToast.show(S.of().chatMessageCopySuccess);
       },
       onForward: () {
-        final sessionName = context.read<ChatViewModel>().chatTitle;
+        // 转发期间布局切换（如 Duo 展开双屏）会重建消息列表，
+        // 先缓存 ViewModel，避免回调里访问已失效的 context。
+        final viewModel = context.read<ChatViewModel>();
+        final sessionName = viewModel.chatTitle;
         ChatMessageHelper.showForwardSelector(
           context,
           (
@@ -368,11 +372,11 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
             String? postScript,
             bool? isLastUser,
           }) {
-            context.read<ChatViewModel>().forwardTranslatedText(
-                  translatedText,
-                  conversationId,
-                  postScript: postScript,
-                );
+            viewModel.forwardTranslatedText(
+              translatedText,
+              conversationId,
+              postScript: postScript,
+            );
           },
           sessionName: sessionName,
         );
@@ -829,7 +833,7 @@ class ChatKitMessageItemState extends State<ChatKitMessageItem> {
             } else {
               Navigator.push(
                 context,
-                MaterialPageRoute(
+                DuoPageRoute(
                   builder: (context) {
                     return ChatMessageAckPage(
                       message: message.nimMessage,

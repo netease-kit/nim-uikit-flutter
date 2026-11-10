@@ -3,7 +3,9 @@
 // found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:netease_common_ui/duo/duo_drawer_navigation.dart';
 import 'package:netease_common_ui/utils/color_utils.dart';
 import 'package:nim_chatkit/im_kit_config_center.dart';
 import 'package:nim_chatkit/router/imkit_router_constants.dart';
@@ -37,10 +39,24 @@ class ConversationGroupBar extends StatefulWidget {
 }
 
 class _ConversationGroupBarState extends State<ConversationGroupBar> {
+  /// 分组栏横向滚动位置的存储 key。
+  ///
+  /// 选中自定义分组时，会话列表会先短暂进入空数据态再切回列表态，
+  /// 分组栏因此被整体重建。没有存储 key 时横向滚动位置会复位到最左侧，
+  /// 导致选中的右侧分组不可见，这里用 PageStorage 保住滚动位置。
+  static const String _scrollOffsetStorageKey =
+      'conversation_group_bar_scroll_offset';
+
+  /// 分组列表页面是否已经由分组栏入口打开。
+  ///
+  /// Duo 双屏下左侧会话列表常驻可点，重复点击最右侧入口不应该重复打开、
+  /// 重复加载右侧的分组列表页面。使用 State 级静态标记，避免分组栏重建后
+  /// 丢失保护；页面出栈（含被替换）后自动复位。
+  static bool _managePageOpened = false;
+
   final ScrollController _groupScrollController = ScrollController();
   final Map<String, GlobalKey> _groupKeys = {};
   String? _lastSelectedGroupId;
-  bool _lastSelectedGroupAlignRight = false;
 
   @override
   void dispose() {
@@ -58,12 +74,7 @@ class _ConversationGroupBarState extends State<ConversationGroupBar> {
     if (groups.isEmpty) {
       return const SizedBox.shrink();
     }
-    final selectedIndex =
-        groups.indexWhere((group) => group.id == model.selectedGroup.id);
-    _scheduleSelectedGroupScroll(
-      model.selectedGroup.id,
-      alignRight: selectedIndex == groups.length - 1,
-    );
+    _scheduleSelectedGroupScroll(model.selectedGroup.id);
     return Container(
       height: 48,
       decoration: const BoxDecoration(
@@ -93,32 +104,38 @@ class _ConversationGroupBarState extends State<ConversationGroupBar> {
               ),
             ),
           Expanded(
-            child: ListView.separated(
+            child: SingleChildScrollView(
+              key: const PageStorageKey<String>(_scrollOffsetStorageKey),
               scrollDirection: Axis.horizontal,
-              // 移动端不绑定控制器，避免 ensureVisible 级联影响外层会话列表滚动；
-              // 分组 tab 横向滚动到选中项仅在桌面端需要（与 10.9.6 行为一致）。
-              controller: widget.isDesktop ? _groupScrollController : null,
+              // 全端统一绑定控制器：选中分组时只调整分组栏自身的滚动位置，
+              // 不使用 Scrollable.ensureVisible，避免级联滚动外层会话列表。
+              controller: _groupScrollController,
               padding: EdgeInsets.symmetric(
                 horizontal: widget.isDesktop ? 4 : 12,
                 vertical: 8,
               ),
-              itemCount: groups.length,
-              separatorBuilder: (context, index) => const SizedBox(width: 8),
-              itemBuilder: (context, index) {
-                final group = groups[index];
-                return KeyedSubtree(
-                  key: _keyForGroup(group.id),
-                  child: _GroupChip(
-                    group: group,
-                    selected: group.id == model.selectedGroup.id,
-                    count: model.unreadCountForGroup(group),
-                    onTap: () {
-                      model.selectGroup(group);
-                      widget.onGroupSelected?.call();
-                    },
-                  ),
-                );
-              },
+              // 分组数量有限（默认分组 + 最多 10 个自定义分组），一次性布局
+              // 全部 tab，才能在选中项尚未展示时准确计算滚动位置。
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (int index = 0; index < groups.length; index++) ...[
+                    if (index > 0) const SizedBox(width: 8),
+                    KeyedSubtree(
+                      key: _keyForGroup(groups[index].id),
+                      child: _GroupChip(
+                        group: groups[index],
+                        selected: groups[index].id == model.selectedGroup.id,
+                        count: model.unreadCountForGroup(groups[index]),
+                        onTap: () {
+                          model.selectGroup(groups[index]);
+                          widget.onGroupSelected?.call();
+                        },
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
           if (!widget.isDesktop)
@@ -128,49 +145,101 @@ class _ConversationGroupBarState extends State<ConversationGroupBar> {
                 package: kPackage,
               ),
               color: CommonColors.color_666666,
-              onPressed: () {
-                Navigator.pushNamed(
-                  context,
-                  RouterConstants.PATH_CONVERSATION_GROUP_MANAGE_PAGE,
-                  arguments: {'model': model},
-                );
-              },
+              onPressed: () => _openGroupManagePage(model),
             ),
         ],
       ),
     );
   }
 
+  /// 打开会话分组列表页面，同一时间只允许存在一个入口打开的页面。
+  ///
+  /// Duo 双屏下分组入口属于左侧常驻列表，右侧已有聊天等抽屉页面时应替换
+  /// 当前抽屉而不是叠加路由；否则折叠单屏后返回会先回到上一个抽屉页面，
+  /// 而不是回到左侧会话列表。其他形态保持普通 push。
+  Future<void> _openGroupManagePage(ConversationGroupViewModel model) async {
+    if (_managePageOpened) {
+      return;
+    }
+    _managePageOpened = true;
+    try {
+      await pushDuoDrawerNamed(
+        context,
+        RouterConstants.PATH_CONVERSATION_GROUP_MANAGE_PAGE,
+        arguments: {'model': model},
+      );
+    } finally {
+      _managePageOpened = false;
+    }
+  }
+
   GlobalKey _keyForGroup(String groupId) {
     return _groupKeys.putIfAbsent(groupId, GlobalKey.new);
   }
 
-  void _scheduleSelectedGroupScroll(
-    String groupId, {
-    required bool alignRight,
-  }) {
-    if (!widget.isDesktop ||
-        (_lastSelectedGroupId == groupId &&
-            _lastSelectedGroupAlignRight == alignRight)) {
+  void _scheduleSelectedGroupScroll(String groupId) {
+    if (_lastSelectedGroupId == groupId) {
       return;
     }
     _lastSelectedGroupId = groupId;
-    _lastSelectedGroupAlignRight = alignRight;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
       }
-      final groupContext = _groupKeys[groupId]?.currentContext;
-      if (groupContext == null) {
-        return;
+      if (!_revealSelectedGroup(groupId)) {
+        // 分组栏尚未完成布局（例如页面暂时离屏），下次构建时重新尝试。
+        _lastSelectedGroupId = null;
       }
-      Scrollable.ensureVisible(
-        groupContext,
-        alignment: alignRight ? 1 : 0,
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOut,
-      );
     });
+  }
+
+  /// 保证选中的分组 tab 完整展示在分组栏可视区域内。
+  ///
+  /// 只在分组栏自身的横向滚动视图内计算偏移量，不调用
+  /// [Scrollable.ensureVisible]，避免把滚动级联到外层会话列表。
+  ///
+  /// 返回 false 表示当前布局信息还不完整，需要后续重试。
+  bool _revealSelectedGroup(String groupId) {
+    if (!_groupScrollController.hasClients) {
+      return false;
+    }
+    final RenderObject? groupObject =
+        _groupKeys[groupId]?.currentContext?.findRenderObject();
+    if (groupObject is! RenderBox ||
+        !groupObject.attached ||
+        !groupObject.hasSize) {
+      return false;
+    }
+    final RenderObject? viewport = RenderAbstractViewport.maybeOf(groupObject);
+    if (viewport is! RenderBox) {
+      return false;
+    }
+    final ScrollPosition position = _groupScrollController.position;
+    if (!position.hasPixels || !position.hasContentDimensions) {
+      return false;
+    }
+    final double groupStart =
+        groupObject.localToGlobal(Offset.zero, ancestor: viewport).dx;
+    final double groupEnd = groupStart + groupObject.size.width;
+    final double viewportWidth = viewport.size.width;
+    double target = position.pixels;
+    if (groupStart < 0) {
+      target += groupStart;
+    } else if (groupEnd > viewportWidth) {
+      target += groupEnd - viewportWidth;
+    }
+    target = target
+        .clamp(position.minScrollExtent, position.maxScrollExtent)
+        .toDouble();
+    if ((target - position.pixels).abs() < 0.5) {
+      return true;
+    }
+    _groupScrollController.animateTo(
+      target,
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+    );
+    return true;
   }
 }
 

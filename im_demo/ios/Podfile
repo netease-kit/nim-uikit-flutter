@@ -1,9 +1,17 @@
 # Uncomment this line to define a global platform for your project
-# platform :ios, '12.0'
+# platform :ios, '15.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
-source 'https://github.com/CocoaPods/Specs.git'
-platform :ios, '13.0'
+# 自 V10.11.10 起，云信资源统一发布到 netease-im/Specs。
+# 优先使用 GitHub；如果无法访问 GitHub，注释掉 GitHub 行、启用 Gitee 行，两者不要同时写。
+source 'https://github.com/netease-im/Specs.git'
+# source 'https://gitee.com/netease-im/Specs.git'
+
+# 如果依赖公共 pod，保留以下 cocoapods 地址
+source 'https://cdn.cocoapods.org/'
+# FIXME(duo-simulator): 为在 iOS 27/iPhone Duo arm64 模拟器上编译，最低 iOS 版本提升到 15.0，
+# 并移除了模拟器 arm64 的 EXCLUDED_ARCHS。会影响所有 iOS 设备的支持版本，发布前请复核。
+platform :ios, '15.0'
 
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
@@ -42,11 +50,10 @@ post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
         target.build_configurations.each do |config|
-         config.build_settings["EXCLUDED_ARCHS[sdk=iphonesimulator*]"] = "arm64"
          config.build_settings['EXPANDED_CODE_SIGN_IDENTITY'] = ""
          config.build_settings['CODE_SIGNING_REQUIRED'] = "NO"
          config.build_settings['CODE_SIGNING_ALLOWED'] = "NO"
-         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '11.0'
+         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
          config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
              '$(inherited)',
 

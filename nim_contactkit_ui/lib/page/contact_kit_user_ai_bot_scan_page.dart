@@ -7,6 +7,8 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:netease_common_ui/duo/duo_page_chrome.dart';
+import 'package:netease_common_ui/duo/duo_page_route.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:nim_chatkit/utils/toast_utils.dart';
@@ -33,13 +35,12 @@ class _ContactKitUserAIBotScanPageState
   @override
   void initState() {
     super.initState();
+    // FIXME(duo-simulator): mobile_scanner 7.x 默认 autoStart，移除了手动 start()，
+    // 会影响所有手机的相机启动时机，发布前请真机回归扫码页。
     _scanAnim = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2200),
     )..repeat();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _controller.start();
-    });
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -81,7 +82,7 @@ class _ContactKitUserAIBotScanPageState
     if (!mounted) return;
     await Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
+      DuoPageRoute(
         builder: (_) => ContactKitUserAIBotBindingPage(qrCode: result.qrCode),
       ),
     );
@@ -131,7 +132,10 @@ class _ContactKitUserAIBotScanPageState
   @override
   Widget build(BuildContext context) {
     final scanFrameSize = min(MediaQuery.of(context).size.width * 0.65, 260.0);
-    return AnnotatedRegion<SystemUiOverlayStyle>(
+    // Duo 抽屉页：返回按钮统一注册到右侧工具栏，页面内不再重复展示；
+    // 非 Duo 设备及全屏扫码路由（工具栏被隐藏）仍保留左上角返回。
+    final bool hasDuoChrome = DuoPageChromeScope.maybeOf(context) != null;
+    final Widget page = AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.light,
@@ -143,10 +147,14 @@ class _ContactKitUserAIBotScanPageState
           backgroundColor: Colors.transparent,
           elevation: 0,
           centerTitle: true,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
-            onPressed: () => Navigator.pop(context),
-          ),
+          automaticallyImplyLeading: false,
+          leading: hasDuoChrome
+              ? null
+              : IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_rounded,
+                      color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
           title: Text(
             S.of(context).contactRobotScan,
             style: const TextStyle(
@@ -166,7 +174,8 @@ class _ContactKitUserAIBotScanPageState
                     capture.barcodes.isNotEmpty ? capture.barcodes.first : null;
                 unawaited(_handleCode(barcode?.rawValue));
               },
-              errorBuilder: (context, error, child) {
+              // FIXME(duo-simulator): mobile_scanner 7.x 的 errorBuilder 签名变更，发布前请真机回归错误态。
+              errorBuilder: (context, error) {
                 return Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -220,6 +229,16 @@ class _ContactKitUserAIBotScanPageState
           ],
         ),
       ),
+    );
+    if (!hasDuoChrome) {
+      return page;
+    }
+    // 返回按钮交给右侧工具栏，与 Duo 其它抽屉页保持一致。
+    return DuoChrome(
+      leading: buildDuoBackButton(
+        onPressed: () => Navigator.of(context).maybePop(),
+      ),
+      child: page,
     );
   }
 }

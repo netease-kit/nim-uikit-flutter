@@ -121,6 +121,12 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
   bool _forceNextScrollToBottom = false;
   int _scrollToBottomSessionId = 0;
 
+  /// 监听 [ChatKitMessageList.scrollController] 的回调。
+  ///
+  /// 控制器可能由聊天页/ViewModel 持有并比消息列表活得更久，必须在
+  /// [dispose] 时移除，否则异步滚动完成后仍会回调已销毁的 State。
+  VoidCallback? _scrollControllerListener;
+
   // 用户点击"查看更下方消息/回到底部"后，忽略路由入参自带的初始 anchor，
   // 避免重新拉取最新消息后 build 又根据 widget.anchorDate/widget.anchor
   // 回写 pivot，导致列表重新围绕历史锚点布局，进而出现"按钮点了但没到底"。
@@ -554,17 +560,20 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
       return true;
     }
     // 转发
-    var sessionName = context.read<ChatViewModel>().chatTitle;
+    // 转发选择期间可能发生布局切换（如 Duo 展开双屏），消息列表会被重建，
+    // 因此先拿到 ViewModel，回调里不再通过可能失效的 context 查找。
+    final viewModel = context.read<ChatViewModel>();
+    final sessionName = viewModel.chatTitle;
     ChatMessageHelper.showForwardSelector(context, (
       conversationId, {
       String? postScript,
       bool? isLastUser,
     }) {
-      context.read<ChatViewModel>().forwardMessage(
-            message.nimMessage,
-            conversationId,
-            postScript: postScript,
-          );
+      viewModel.forwardMessage(
+        message.nimMessage,
+        conversationId,
+        postScript: postScript,
+      );
     }, sessionName: sessionName);
 
     return true;
@@ -788,6 +797,11 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
 
   @override
   void dispose() {
+    final listener = _scrollControllerListener;
+    if (listener != null) {
+      widget.scrollController.removeListener(listener);
+      _scrollControllerListener = null;
+    }
     _scrollToBottomGuardTimer?.cancel();
     IMKitRouter.instance.routeObserver.unsubscribe(this);
     super.dispose();
@@ -795,6 +809,9 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
 
   //收到新消息后滑动到底部，对齐原生端交互
   _scrollToBottom() {
+    if (!mounted) {
+      return;
+    }
     final forceScroll = _forceNextScrollToBottom;
     _forceNextScrollToBottom = false;
     final now = DateTime.now();
@@ -842,7 +859,12 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
   }
 
   _initScrollController() {
-    widget.scrollController.addListener(() {
+    final listener = () {
+      // scroll_to_index 在异步动画结束时会继续 notifyListeners，列表
+      // 可能已经随路由切换被销毁，这里必须再次兜底避免 setState。
+      if (!mounted) {
+        return;
+      }
       _scheduleHistoryPositionEvaluation();
       // 滚动时关闭桌面端右键菜单
       ChatKitDesktopContextMenu.currentInstance?.close();
@@ -935,8 +957,24 @@ class ChatKitMessageListState extends State<ChatKitMessageList>
           }
         }
       }
-    });
+    };
+    _scrollControllerListener = listener;
+    widget.scrollController.addListener(listener);
     context.read<ChatViewModel>().scrollToEnd = _scrollToBottom;
+  }
+
+  @override
+  void didUpdateWidget(covariant ChatKitMessageList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (identical(oldWidget.scrollController, widget.scrollController)) {
+      return;
+    }
+    final listener = _scrollControllerListener;
+    if (listener == null) {
+      return;
+    }
+    oldWidget.scrollController.removeListener(listener);
+    widget.scrollController.addListener(listener);
   }
 
   Widget _buildMessageItem(ChatViewModel chatViewModel, int index) {
